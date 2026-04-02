@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(php artisan:*)",
+      "Bash(vendor/bin/pint --dirty --format agent)",
+      "Bash(npm run:*)",
+      "mcp__laravel-boost__get-absolute-url",
+      "Bash(herd links:*)",
+      "Bash(herd sites:*)",
+      "Bash(herd list:*)",
+      "Bash(herd parked:*)",
+      "Bash(herd link:*)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://crosswordloft.test/login)",
+      "Bash(curl -s http://crosswordloft.test/login)",
+      "Bash(curl -s http://crosswordloft.test/)",
+      "Bash(herd restart:*)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://crossword-loft.test/login)",
+      "Bash(find /Users/michael/Herd/Crossword-Loft -type f -name *sidebar* -o -name *Sidebar*)",
+      "mcp__laravel-boost__search-docs",
+      "mcp__laravel-boost__database-schema",
+      "mcp__laravel-boost__application-info",
+      "mcp__laravel-boost__database-query",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:alexboisvert.com)",
+      "WebFetch(domain:crossword.info)",
+      "Bash(/opt/homebrew/bin/php artisan:*)",
+      "Bash(/opt/homebrew/bin/php vendor/bin/pint --dirty --format agent)",
+      "Bash(/opt/homebrew/bin/npm run:*)",
+      "Bash(export PATH=\"/opt/homebrew/bin:$PATH\")",
+      "Bash(herd php:*)"
+    ]
+  }
+}

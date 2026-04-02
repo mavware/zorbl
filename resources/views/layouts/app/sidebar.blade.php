@@ -15,6 +15,12 @@
                     <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
                         {{ __('Dashboard') }}
                     </flux:sidebar.item>
+                    <flux:sidebar.item icon="puzzle-piece" :href="route('crosswords.index')" :current="request()->routeIs('crosswords.index') || request()->routeIs('crosswords.editor')" wire:navigate>
+                        {{ __('My Puzzles') }}
+                    </flux:sidebar.item>
+                    <flux:sidebar.item icon="play" :href="route('crosswords.solving')" :current="request()->routeIs('crosswords.solving') || request()->routeIs('crosswords.solver')" wire:navigate>
+                        {{ __('Solving') }}
+                    </flux:sidebar.item>
                 </flux:sidebar.group>
             </flux:sidebar.nav>
 
