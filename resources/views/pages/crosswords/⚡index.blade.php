@@ -4,6 +4,7 @@ use App\Exceptions\IpuzImportException;
 use App\Exceptions\JpzImportException;
 use App\Exceptions\PuzImportException;
 use App\Models\Crossword;
+use App\Services\GridNumberer;
 use App\Services\IpuzImporter;
 use App\Services\JpzImporter;
 use App\Services\PuzImporter;
@@ -36,14 +37,19 @@ new #[Title('My Puzzles')] class extends Component {
             'newHeight' => ['required', 'integer', 'min:3', 'max:30'],
         ]);
 
+        $emptyGrid = Crossword::emptyGrid($this->newWidth, $this->newHeight);
+        $result = app(GridNumberer::class)->number($emptyGrid, $this->newWidth, $this->newHeight);
+
         $crossword = Auth::user()->crosswords()->create([
             'title' => 'Untitled Puzzle',
+            'author' => Auth::user()->copyright_name ?? Auth::user()->name,
+            'copyright' => copyright(Auth::user()->copyright_name ?? Auth::user()->name ?? ''),
             'width' => $this->newWidth,
             'height' => $this->newHeight,
-            'grid' => Crossword::emptyGrid($this->newWidth, $this->newHeight),
+            'grid' => $result['grid'],
             'solution' => Crossword::emptySolution($this->newWidth, $this->newHeight),
-            'clues_across' => [],
-            'clues_down' => [],
+            'clues_across' => array_map(fn ($s) => ['number' => $s['number'], 'clue' => ''], $result['across']),
+            'clues_down' => array_map(fn ($s) => ['number' => $s['number'], 'clue' => ''], $result['down']),
         ]);
 
         $this->redirect(route('crosswords.editor', $crossword), navigate: true);
@@ -145,6 +151,7 @@ new #[Title('My Puzzles')] class extends Component {
                         wire:key="crossword-{{ $crossword->id }}"
                         class="group relative rounded-xl border border-zinc-200 p-4 transition-colors hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-500"
                     >
+                        @php($completeness = $crossword->completeness())
                         <a href="{{ route('crosswords.editor', $crossword) }}" wire:navigate class="block">
                             {{-- Mini grid thumbnail --}}
                             <div class="mb-3 flex justify-center">
@@ -166,6 +173,17 @@ new #[Title('My Puzzles')] class extends Component {
                                 &middot;
                                 {{ $crossword->updated_at->diffForHumans() }}
                             </flux:text>
+
+                            {{-- Completeness bar --}}
+                            <div class="mt-2 flex items-center gap-2">
+                                <div class="h-1.5 flex-1 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-700">
+                                    <div
+                                        class="h-full rounded-full transition-all {{ $completeness['percentage'] === 100 ? 'bg-emerald-500' : ($completeness['percentage'] >= 60 ? 'bg-amber-500' : 'bg-zinc-400') }}"
+                                        style="width: {{ $completeness['percentage'] }}%"
+                                    ></div>
+                                </div>
+                                <span class="text-xs tabular-nums text-zinc-400">{{ $completeness['percentage'] }}%</span>
+                            </div>
                         </a>
 
                         <div class="absolute top-2 right-2 opacity-0 transition-opacity group-hover:opacity-100">

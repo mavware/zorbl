@@ -20,8 +20,10 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
         clueSuggestions: [],
         clueSuggestionsLoading: false,
         clueSuggestionsWord: '',
+        incompleteHighlights: [],
         contextMenu: { show: false, row: -1, col: -1, x: 0, y: 0 },
         _saveTimer: null,
+        _saving: false,
         _savedTimer: null,
         _longPressTimer: null,
 
@@ -43,6 +45,20 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
                 if (this.isDirty) {
                     e.preventDefault();
                     e.returnValue = '';
+                }
+            });
+
+            document.addEventListener('livewire:navigating', () => {
+                if (this.isDirty && !this._saving) {
+                    clearTimeout(this._saveTimer);
+                    this.$wire.save(
+                        JSON.parse(JSON.stringify(this.grid)),
+                        JSON.parse(JSON.stringify(this.solution)),
+                        Object.keys(this.styles).length > 0 ? JSON.parse(JSON.stringify(this.styles)) : null,
+                        JSON.parse(JSON.stringify(this.cluesAcross)),
+                        JSON.parse(JSON.stringify(this.cluesDown)),
+                    );
+                    this.isDirty = false;
                 }
             });
         },
@@ -75,10 +91,19 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
         // --- Grid numbering (mirrors PHP GridNumberer) ---
         numberGrid() {
             const minLen = this.minAnswerLength || 2;
-            const numbered = this.grid.map(row => row.map(cell => cell === '#' ? '#' : (cell === null ? null : 0)));
             const acrossSlots = [];
             const downSlots = [];
             let clueNum = 0;
+
+            // Reset all non-block, non-void cells to 0 in place
+            for (let row = 0; row < this.height; row++) {
+                for (let col = 0; col < this.width; col++) {
+                    const cell = this.grid[row][col];
+                    if (cell !== '#' && cell !== null) {
+                        this.grid[row][col] = 0;
+                    }
+                }
+            }
 
             for (let row = 0; row < this.height; row++) {
                 for (let col = 0; col < this.width; col++) {
@@ -104,7 +129,7 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
 
                     if (hasAcross || hasDown) {
                         clueNum++;
-                        numbered[row][col] = clueNum;
+                        this.grid[row][col] = clueNum;
 
                         if (hasAcross) {
                             acrossSlots.push({ number: clueNum, row, col, length: acrossLen });
@@ -116,7 +141,6 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
                 }
             }
 
-            this.grid = numbered;
             this.remapClues(acrossSlots, downSlots);
         },
 
@@ -241,13 +265,16 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
             const wordCells = this.selectedRow >= 0 ? this.getWordCells(this.selectedRow, this.selectedCol, this.direction) : [];
             const isInWord = wordCells.some(([r, c]) => r === row && c === col);
 
+            const emptyHighlight = this.isCellIncomplete() && !this.solution[row]?.[col]?.trim()
+                ? ' ring-2 ring-inset ring-amber-400 dark:ring-amber-500' : '';
+
             if (isSelected) {
-                return 'bg-blue-300 dark:bg-blue-700 cursor-pointer';
+                return 'bg-blue-300 dark:bg-blue-700 cursor-pointer' + emptyHighlight;
             }
             if (isInWord) {
-                return 'bg-blue-100 dark:bg-blue-900/50 cursor-pointer';
+                return 'bg-blue-100 dark:bg-blue-900/50 cursor-pointer' + emptyHighlight;
             }
-            return 'bg-white dark:bg-zinc-800 cursor-pointer';
+            return 'bg-white dark:bg-zinc-800 cursor-pointer' + emptyHighlight;
         },
 
         // --- Selection ---
@@ -674,21 +701,31 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
         },
 
         async saveNow() {
-            if (!this.isDirty) return;
+            if (!this.isDirty || this._saving) return;
 
+            this._saving = true;
             this.saving = true;
             this.showSaved = false;
-
-            await this.$wire.save(
-                JSON.parse(JSON.stringify(this.grid)),
-                JSON.parse(JSON.stringify(this.solution)),
-                Object.keys(this.styles).length > 0 ? JSON.parse(JSON.stringify(this.styles)) : null,
-                JSON.parse(JSON.stringify(this.cluesAcross)),
-                JSON.parse(JSON.stringify(this.cluesDown)),
-            );
-
             this.isDirty = false;
-            this.saving = false;
+
+            try {
+                await this.$wire.save(
+                    JSON.parse(JSON.stringify(this.grid)),
+                    JSON.parse(JSON.stringify(this.solution)),
+                    Object.keys(this.styles).length > 0 ? JSON.parse(JSON.stringify(this.styles)) : null,
+                    JSON.parse(JSON.stringify(this.cluesAcross)),
+                    JSON.parse(JSON.stringify(this.cluesDown)),
+                );
+            } catch (e) {
+                this.isDirty = true;
+            } finally {
+                this._saving = false;
+                this.saving = false;
+
+                if (this.isDirty) {
+                    this.debouncedSave();
+                }
+            }
         },
 
         onSaved() {
@@ -709,6 +746,23 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
             }
         },
 
+        highlightIncomplete(checks) {
+            this.incompleteHighlights = checks;
+
+            // Auto-clear highlights after 8 seconds
+            setTimeout(() => {
+                this.incompleteHighlights = [];
+            }, 8000);
+        },
+
+        isClueIncomplete(dir) {
+            return this.incompleteHighlights.includes(dir === 'across' ? 'clues_across' : 'clues_down');
+        },
+
+        isCellIncomplete() {
+            return this.incompleteHighlights.includes('fill');
+        },
+
         onGridResized() {
             // Re-sync from Livewire after resize
             this.width = this.$wire.width;
@@ -721,22 +775,6 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
             this.selectedRow = -1;
             this.selectedCol = -1;
             this.isDirty = false;
-        },
-
-        async saveAndSolve() {
-            const solveUrl = this.$el.querySelector('[data-solve-url]')?.dataset.solveUrl;
-            if (!solveUrl) return;
-
-            if (this.isDirty) {
-                await this.$wire.save(
-                    JSON.parse(JSON.stringify(this.grid)),
-                    JSON.parse(JSON.stringify(this.solution)),
-                    Object.keys(this.styles).length > 0 ? JSON.parse(JSON.stringify(this.styles)) : null,
-                    JSON.parse(JSON.stringify(this.cluesAcross)),
-                    JSON.parse(JSON.stringify(this.cluesDown)),
-                );
-            }
-            Livewire.navigate(solveUrl);
         },
 
         // --- Clue suggestions ---

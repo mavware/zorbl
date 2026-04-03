@@ -28,6 +28,36 @@ test('profile information can be updated', function () {
     expect($user->email_verified_at)->toBeNull();
 });
 
+test('copyright name can be updated', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::settings.profile')
+        ->set('copyrightName', 'Jane Q. Public')
+        ->set('name', $user->name)
+        ->set('email', $user->email)
+        ->call('updateProfileInformation')
+        ->assertHasNoErrors();
+
+    expect($user->refresh()->copyright_name)->toBe('Jane Q. Public');
+});
+
+test('blank copyright name is stored as null', function () {
+    $user = User::factory()->create(['copyright_name' => 'Old Name']);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::settings.profile')
+        ->set('copyrightName', '')
+        ->set('name', $user->name)
+        ->set('email', $user->email)
+        ->call('updateProfileInformation')
+        ->assertHasNoErrors();
+
+    expect($user->refresh()->copyright_name)->toBeNull();
+});
+
 test('email verification status is unchanged when email address is unchanged', function () {
     $user = User::factory()->create();
 

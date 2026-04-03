@@ -81,6 +81,60 @@ class Crossword extends Model
     }
 
     /**
+     * Calculate puzzle completeness as a breakdown of individual checks.
+     *
+     * @return array{percentage: int, checks: array{title: bool, author: bool, fill: bool, clues_across: bool, clues_down: bool}}
+     */
+    public function completeness(): array
+    {
+        $hasTitle = filled($this->title) && $this->title !== 'Untitled Puzzle';
+        $hasAuthor = filled($this->author);
+
+        // Check all non-block, non-void cells have letters
+        $totalCells = 0;
+        $filledCells = 0;
+
+        foreach ($this->solution ?? [] as $row) {
+            foreach ($row as $cell) {
+                if ($cell === '#' || $cell === null) {
+                    continue;
+                }
+
+                $totalCells++;
+
+                if (filled($cell)) {
+                    $filledCells++;
+                }
+            }
+        }
+
+        $hasFill = $totalCells > 0 && $filledCells === $totalCells;
+
+        // Check all clue slots have text
+        $acrossClues = $this->clues_across ?? [];
+        $hasAllAcross = count($acrossClues) > 0 && collect($acrossClues)->every(fn ($c) => filled($c['clue'] ?? ''));
+
+        $downClues = $this->clues_down ?? [];
+        $hasAllDown = count($downClues) > 0 && collect($downClues)->every(fn ($c) => filled($c['clue'] ?? ''));
+
+        $checks = [
+            'title' => $hasTitle,
+            'author' => $hasAuthor,
+            'fill' => $hasFill,
+            'clues_across' => $hasAllAcross,
+            'clues_down' => $hasAllDown,
+        ];
+
+        $passed = count(array_filter($checks));
+        $percentage = (int) round(($passed / count($checks)) * 100);
+
+        return [
+            'percentage' => $percentage,
+            'checks' => $checks,
+        ];
+    }
+
+    /**
      * Generate an empty grid of the given dimensions.
      *
      * @return array<int, array<int, int>>

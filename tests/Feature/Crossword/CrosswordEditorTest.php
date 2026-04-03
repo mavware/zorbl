@@ -159,6 +159,36 @@ test('author preserves existing value when set', function () {
         ->assertSet('author', 'Custom Author');
 });
 
+test('copyright defaults to user copyright name', function () {
+    $user = User::factory()->create(['copyright_name' => 'Pen Name']);
+    $crossword = Crossword::factory()->for($user)->create(['copyright' => null]);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->assertSet('copyright', copyright('Pen Name'));
+});
+
+test('copyright defaults to user name when no copyright name set', function () {
+    $user = User::factory()->create(['name' => 'Alice', 'copyright_name' => null]);
+    $crossword = Crossword::factory()->for($user)->create(['copyright' => null]);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->assertSet('copyright', copyright('Alice'));
+});
+
+test('copyright preserves existing value when set', function () {
+    $user = User::factory()->create(['copyright_name' => 'Pen Name']);
+    $crossword = Crossword::factory()->for($user)->create(['copyright' => '© 2026 Custom']);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->assertSet('copyright', '© 2026 Custom');
+});
+
 test('settings modal preserves existing metadata keys', function () {
     $user = User::factory()->create();
     $crossword = Crossword::factory()->for($user)->create([

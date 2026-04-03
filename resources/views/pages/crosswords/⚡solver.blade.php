@@ -279,7 +279,7 @@ new #[Title('Solve Crossword')] class extends Component {
                                     class="font-semibold uppercase"
                                     :class="letterClass(rowIdx, colIdx)"
                                     :style="'font-size: ' + Math.max(12, Math.min(24, 600 / width * 0.55)) + 'px'"
-                                    x-text="progress[rowIdx]?.[colIdx] || ''"
+                                    x-text="isBlock(rowIdx, colIdx) ? '' : (progress[rowIdx]?.[colIdx] || '')"
                                 ></span>
 
                                 {{-- Incorrect marker --}}

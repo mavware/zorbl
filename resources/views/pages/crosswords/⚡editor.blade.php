@@ -32,6 +32,9 @@ new #[Title('Crossword Editor')] class extends Component {
 
     public bool $isPublished = false;
 
+    public bool $showPublishWarning = false;
+    public array $incompleteChecks = [];
+
     public bool $showSettingsModal = false;
     public int $resizeWidth;
     public int $resizeHeight;
@@ -50,7 +53,7 @@ new #[Title('Crossword Editor')] class extends Component {
         $this->cluesAcross = $crossword->clues_across ?? [];
         $this->cluesDown = $crossword->clues_down ?? [];
         $this->styles = $crossword->styles;
-        $this->copyright = $crossword->copyright ?? '';
+        $this->copyright = $crossword->copyright ?? copyright(Auth::user()->copyright_name ?? Auth::user()->name ?? '');
         $this->notes = $crossword->notes ?? '';
         $this->minAnswerLength = $crossword->metadata['min_answer_length'] ?? 3;
         $this->isPublished = $crossword->is_published;
@@ -62,12 +65,6 @@ new #[Title('Crossword Editor')] class extends Component {
     {
         $crossword = Crossword::findOrFail($this->crosswordId);
         $this->authorize('update', $crossword);
-
-        $this->grid = $grid;
-        $this->solution = $solution;
-        $this->styles = $styles;
-        $this->cluesAcross = $cluesAcross;
-        $this->cluesDown = $cluesDown;
 
         $crossword->update([
             'grid' => $grid,
@@ -81,6 +78,7 @@ new #[Title('Crossword Editor')] class extends Component {
             app(ClueHarvester::class)->harvest($crossword);
         }
 
+        $this->skipRender();
         $this->dispatch('saved');
     }
 
@@ -113,6 +111,27 @@ new #[Title('Crossword Editor')] class extends Component {
         $this->dispatch('saved');
     }
 
+    public function attemptPublish(): void
+    {
+        if ($this->isPublished) {
+            $this->togglePublished();
+
+            return;
+        }
+
+        $crossword = Crossword::findOrFail($this->crosswordId);
+        $completeness = $crossword->completeness();
+
+        if ($completeness['percentage'] === 100) {
+            $this->togglePublished();
+
+            return;
+        }
+
+        $this->incompleteChecks = array_keys(array_filter($completeness['checks'], fn ($v) => ! $v));
+        $this->showPublishWarning = true;
+    }
+
     public function togglePublished(): void
     {
         $crossword = Crossword::findOrFail($this->crosswordId);
@@ -128,6 +147,15 @@ new #[Title('Crossword Editor')] class extends Component {
         } else {
             $harvester->purge($crossword);
         }
+
+        $this->showPublishWarning = false;
+        $this->incompleteChecks = [];
+    }
+
+    public function cancelPublish(): void
+    {
+        $this->showPublishWarning = false;
+        $this->dispatch('highlight-incomplete', checks: $this->incompleteChecks);
     }
 
     /**
@@ -263,6 +291,7 @@ new #[Title('Crossword Editor')] class extends Component {
         x-on:saved.window="onSaved()"
         x-on:grid-resized.window="onGridResized()"
         x-on:settings-updated.window="onSettingsUpdated()"
+        x-on:highlight-incomplete.window="highlightIncomplete($event.detail.checks)"
         class="flex h-full flex-col"
     >
         {{-- Toolbar --}}
@@ -278,7 +307,7 @@ new #[Title('Crossword Editor')] class extends Component {
                 />
             </div>
 
-            <div class="flex items-center gap-1">
+            <div class="flex items-center gap-2">
                 {{-- Save status --}}
                 <div class="flex items-center gap-1 pl-2 text-sm text-zinc-400">
                     <template x-if="saving">
@@ -295,12 +324,11 @@ new #[Title('Crossword Editor')] class extends Component {
                 {{-- Mode toggle --}}
                 <div class="flex rounded-lg border border-zinc-200 dark:border-zinc-700">
                     <span class="rounded-l-lg bg-zinc-800 px-3 py-1 text-sm font-medium text-white dark:bg-zinc-200 dark:text-zinc-900">{{ __('Edit') }}</span>
-                    <button
-                        type="button"
-                        data-solve-url="{{ route('crosswords.solver', $crosswordId) }}"
-                        x-on:click="saveAndSolve()"
+                    <a
+                        href="{{ route('crosswords.solver', $crosswordId) }}"
+                        wire:navigate
                         class="rounded-r-lg px-3 py-1 text-sm font-medium text-zinc-600 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
-                    >{{ __('Solve') }}</button>
+                    >{{ __('Solve') }}</a>
                 </div>
 
                 {{-- Symmetry --}}
@@ -334,7 +362,7 @@ new #[Title('Crossword Editor')] class extends Component {
                         variant="{{ $isPublished ? 'primary' : 'ghost' }}"
                         size="sm"
                         icon="{{ $isPublished ? 'eye' : 'eye-slash' }}"
-                        wire:click="togglePublished"
+                        wire:click="attemptPublish"
                     />
                 </flux:tooltip>
 
@@ -349,12 +377,12 @@ new #[Title('Crossword Editor')] class extends Component {
                         <flux:menu.item wire:click="exportJpz">{{ __('.jpz (Crossword Compiler)') }}</flux:menu.item>
                     </flux:menu>
                 </flux:dropdown>
-            </div>
 
-            {{-- Settings --}}
-            <flux:tooltip content="{{ __('Puzzle settings') }}">
-                <flux:button variant="ghost" size="sm" icon="cog-6-tooth" wire:click="$set('showSettingsModal', true)" />
-            </flux:tooltip>
+                {{-- Settings --}}
+                <flux:tooltip content="{{ __('Puzzle settings') }}">
+                    <flux:button variant="ghost" size="sm" icon="cog-6-tooth" wire:click="$set('showSettingsModal', true)" />
+                </flux:tooltip>
+            </div>
         </div>
 
         {{-- Main editor layout --}}
@@ -369,7 +397,10 @@ new #[Title('Crossword Editor')] class extends Component {
                             x-on:focusin="selectClue('across', clue.number, $event)"
                             x-on:keydown.tab.prevent="focusNextClue($el, 'across', false)"
                             x-on:keydown.shift.tab.prevent="focusNextClue($el, 'across', true)"
-                            :class="activeClueNumber === clue.number && direction === 'across' ? 'bg-blue-100 dark:bg-blue-900/40' : 'hover:bg-zinc-100 dark:hover:bg-zinc-700/50'"
+                            :class="[
+                                activeClueNumber === clue.number && direction === 'across' ? 'bg-blue-100 dark:bg-blue-900/40' : 'hover:bg-zinc-100 dark:hover:bg-zinc-700/50',
+                                isClueIncomplete('across') && !clue.clue?.trim() ? 'ring-2 ring-amber-400 dark:ring-amber-500' : ''
+                            ]"
                             class="cursor-pointer rounded px-2 py-1"
                             :id="'clue-across-' + clue.number"
                         >
@@ -476,7 +507,7 @@ new #[Title('Crossword Editor')] class extends Component {
                                     <span
                                         class="font-semibold uppercase text-zinc-900 dark:text-zinc-100"
                                         :style="'font-size: ' + Math.max(12, Math.min(24, 600 / width * 0.55)) + 'px'"
-                                        x-text="solution[rowIdx]?.[colIdx] || ''"
+                                        x-text="isBlock(rowIdx, colIdx) ? '' : (solution[rowIdx]?.[colIdx] || '')"
                                     ></span>
                                 </div>
                             </template>
@@ -535,7 +566,10 @@ new #[Title('Crossword Editor')] class extends Component {
                             x-on:focusin="selectClue('down', clue.number, $event)"
                             x-on:keydown.tab.prevent="focusNextClue($el, 'down', false)"
                             x-on:keydown.shift.tab.prevent="focusNextClue($el, 'down', true)"
-                            :class="activeClueNumber === clue.number && direction === 'down' ? 'bg-blue-100 dark:bg-blue-900/40' : 'hover:bg-zinc-100 dark:hover:bg-zinc-700/50'"
+                            :class="[
+                                activeClueNumber === clue.number && direction === 'down' ? 'bg-blue-100 dark:bg-blue-900/40' : 'hover:bg-zinc-100 dark:hover:bg-zinc-700/50',
+                                isClueIncomplete('down') && !clue.clue?.trim() ? 'ring-2 ring-amber-400 dark:ring-amber-500' : ''
+                            ]"
                             class="cursor-pointer rounded px-2 py-1"
                             :id="'clue-down-' + clue.number"
                         >
@@ -617,7 +651,10 @@ new #[Title('Crossword Editor')] class extends Component {
                                     x-on:focusin="selectClue('across', clue.number, $event)"
                                     x-on:keydown.tab.prevent="focusNextClue($el, 'across', false)"
                                     x-on:keydown.shift.tab.prevent="focusNextClue($el, 'across', true)"
-                                    :class="activeClueNumber === clue.number && direction === 'across' ? 'bg-blue-100 dark:bg-blue-900/40' : ''"
+                                    :class="[
+                                        activeClueNumber === clue.number && direction === 'across' ? 'bg-blue-100 dark:bg-blue-900/40' : '',
+                                        isClueIncomplete('across') && !clue.clue?.trim() ? 'ring-2 ring-amber-400 dark:ring-amber-500' : ''
+                                    ]"
                                     class="cursor-pointer rounded px-2 py-1"
                                 >
                                     <div class="flex items-start gap-1.5">
@@ -673,7 +710,10 @@ new #[Title('Crossword Editor')] class extends Component {
                                     x-on:focusin="selectClue('down', clue.number, $event)"
                                     x-on:keydown.tab.prevent="focusNextClue($el, 'down', false)"
                                     x-on:keydown.shift.tab.prevent="focusNextClue($el, 'down', true)"
-                                    :class="activeClueNumber === clue.number && direction === 'down' ? 'bg-blue-100 dark:bg-blue-900/40' : ''"
+                                    :class="[
+                                        activeClueNumber === clue.number && direction === 'down' ? 'bg-blue-100 dark:bg-blue-900/40' : '',
+                                        isClueIncomplete('down') && !clue.clue?.trim() ? 'ring-2 ring-amber-400 dark:ring-amber-500' : ''
+                                    ]"
                                     class="cursor-pointer rounded px-2 py-1"
                                 >
                                     <div class="flex items-start gap-1.5">
@@ -725,6 +765,46 @@ new #[Title('Crossword Editor')] class extends Component {
             </div>
         </div>
 
+        {{-- Publish Warning Modal --}}
+        <flux:modal wire:model="showPublishWarning">
+            <div class="space-y-6">
+                <flux:heading size="lg">{{ __('Publish Incomplete Puzzle?') }}</flux:heading>
+                <flux:text>{{ __('This puzzle is missing the following:') }}</flux:text>
+
+                <ul class="space-y-1.5 text-sm">
+                    @foreach($incompleteChecks as $check)
+                        <li class="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="size-4 shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+                            </svg>
+                            @switch($check)
+                                @case('title')
+                                    {{ __('Puzzle title') }}
+                                    @break
+                                @case('author')
+                                    {{ __('Constructor name') }}
+                                    @break
+                                @case('fill')
+                                    {{ __('Not all cells have letters') }}
+                                    @break
+                                @case('clues_across')
+                                    {{ __('Missing across clues') }}
+                                    @break
+                                @case('clues_down')
+                                    {{ __('Missing down clues') }}
+                                    @break
+                            @endswitch
+                        </li>
+                    @endforeach
+                </ul>
+
+                <div class="flex justify-end gap-2">
+                    <flux:button wire:click="cancelPublish">{{ __('Cancel') }}</flux:button>
+                    <flux:button variant="primary" wire:click="togglePublished">{{ __('Publish Anyway') }}</flux:button>
+                </div>
+            </div>
+        </flux:modal>
+
         {{-- Settings Modal --}}
         <flux:modal wire:model="showSettingsModal">
             <div class="space-y-6">
@@ -744,7 +824,7 @@ new #[Title('Crossword Editor')] class extends Component {
 
                 <flux:field>
                     <flux:label>{{ __('Copyright') }}</flux:label>
-                    <flux:input wire:model="copyright" placeholder="{{ __('© 2026 Your Name') }}" />
+                    <flux:input wire:model="copyright" placeholder="{{ copyright(__('Your Name')) }}" />
                     <flux:error name="copyright" />
                 </flux:field>
 

@@ -8,15 +8,19 @@
     "mcp": true,
     "nightwatch_mcp": false,
     "packages": [
-        "laravel/fortify"
+        "laravel/fortify",
+        "filament/filament",
+        "spatie/laravel-permission"
     ],
     "sail": false,
     "skills": [
         "laravel-best-practices",
+        "pulse-development",
         "fluxui-development",
         "livewire-development",
         "pest-testing",
         "tailwindcss-development",
-        "fortify-development"
+        "fortify-development",
+        "laravel-permission-development"
     ]
 }

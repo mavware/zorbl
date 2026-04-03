@@ -198,6 +198,10 @@
             <div class="mx-auto max-w-6xl px-6 text-center text-sm text-zinc-600">
                 &copy; {{ date('Y') }} {{ config('app.name', 'Crossword Loft') }}. All rights reserved.
             </div>
+
+            <div class="mx-auto max-w-6xl px-6 text-center text-sm text-zinc-600">
+                <a href="{{ route('roadmap.index') }}" class="text-zinc-400 hover:text-zinc-300">Roadmap</a>
+            </div>
         </footer>
     </body>
 </html>

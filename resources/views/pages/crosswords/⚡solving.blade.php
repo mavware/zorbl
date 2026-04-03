@@ -70,6 +70,16 @@ new #[Title('Solving')] class extends Component {
                                 &middot;
                                 {{ $attempt->crossword->width }}&times;{{ $attempt->crossword->height }}
                             </flux:text>
+                            @php($solveProgress = $attempt->is_completed ? 100 : $attempt->solveProgress())
+                            <div class="mt-2 flex items-center gap-2">
+                                <div class="h-1.5 flex-1 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-700">
+                                    <div
+                                        class="h-full rounded-full transition-all {{ $solveProgress === 100 ? 'bg-emerald-500' : ($solveProgress >= 50 ? 'bg-sky-500' : 'bg-zinc-400') }}"
+                                        style="width: {{ $solveProgress }}%"
+                                    ></div>
+                                </div>
+                                <span class="text-xs tabular-nums text-zinc-400">{{ $solveProgress }}%</span>
+                            </div>
                             <div class="mt-1.5 flex items-center gap-2">
                                 @if($attempt->is_completed)
                                     <flux:badge size="sm" variant="solid" color="green">{{ __('Completed') }}</flux:badge>

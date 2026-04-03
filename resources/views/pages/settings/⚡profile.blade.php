@@ -12,6 +12,7 @@ new #[Title('Profile settings')] class extends Component {
     use ProfileValidationRules;
 
     public string $name = '';
+    public string $copyrightName = '';
     public string $email = '';
 
     /**
@@ -20,6 +21,7 @@ new #[Title('Profile settings')] class extends Component {
     public function mount(): void
     {
         $this->name = Auth::user()->name;
+        $this->copyrightName = Auth::user()->copyright_name ?? '';
         $this->email = Auth::user()->email;
     }
 
@@ -32,7 +34,11 @@ new #[Title('Profile settings')] class extends Component {
 
         $validated = $this->validate($this->profileRules($user->id));
 
-        $user->fill($validated);
+        $user->fill([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'copyright_name' => $validated['copyrightName'] ?: null,
+        ]);
 
         if ($user->isDirty('email')) {
             $user->email_verified_at = null;
@@ -83,6 +89,13 @@ new #[Title('Profile settings')] class extends Component {
     <x-pages::settings.layout :heading="__('Profile')" :subheading="__('Update your name and email address')">
         <form wire:submit="updateProfileInformation" class="my-6 w-full space-y-6">
             <flux:input wire:model="name" :label="__('Name')" type="text" required autofocus autocomplete="name" />
+
+            <flux:field>
+                <flux:label>{{ __('Copyright name') }}</flux:label>
+                <flux:input wire:model="copyrightName" type="text" :placeholder="Auth::user()->name" />
+                <flux:description>{{ __('Used as the default copyright holder on your puzzles. Defaults to your name if blank.') }}</flux:description>
+                <flux:error name="copyrightName" />
+            </flux:field>
 
             <div>
                 <flux:input wire:model="email" :label="__('Email')" type="email" required autocomplete="email" />

@@ -40,4 +40,38 @@ class PuzzleAttempt extends Model
     {
         return $this->belongsTo(Crossword::class);
     }
+
+    /**
+     * Calculate what percentage of fillable cells the solver has entered.
+     *
+     * @return int 0–100
+     */
+    public function solveProgress(): int
+    {
+        $grid = $this->crossword->grid ?? [];
+        $progress = $this->progress ?? [];
+        $totalCells = 0;
+        $filledCells = 0;
+
+        foreach ($grid as $rowIdx => $row) {
+            foreach ($row as $colIdx => $cell) {
+                // Skip blocks and void cells
+                if ($cell === '#' || $cell === null) {
+                    continue;
+                }
+
+                $totalCells++;
+
+                if (filled($progress[$rowIdx][$colIdx] ?? '')) {
+                    $filledCells++;
+                }
+            }
+        }
+
+        if ($totalCells === 0) {
+            return 0;
+        }
+
+        return (int) round(($filledCells / $totalCells) * 100);
+    }
 }
