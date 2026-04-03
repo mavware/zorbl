@@ -18,7 +18,7 @@ class IpuzExporter
         $clues = $this->buildClues($crossword);
 
         $ipuz = [
-            'version' => 'http://ipuz.org/v2',
+            'version' => 'https://ipuz.org/v2',
             'kind' => [$crossword->kind],
             'dimensions' => [
                 'width' => $crossword->width,
@@ -76,7 +76,7 @@ class IpuzExporter
 
             for ($col = 0; $col < $crossword->width; $col++) {
                 $cellValue = $grid[$row][$col];
-                $styleKey = "{$row},{$col}";
+                $styleKey = "$row,$col";
 
                 if (isset($styles[$styleKey])) {
                     $cell = ['cell' => $cellValue];

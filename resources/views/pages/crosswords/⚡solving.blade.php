@@ -34,7 +34,12 @@ new #[Title('Solving')] class extends Component {
 <div class="space-y-8">
     {{-- In Progress --}}
     <div class="space-y-4">
-        <flux:heading size="xl">{{ __('Solving') }}</flux:heading>
+        <div class="flex items-center justify-between">
+            <flux:heading size="xl">{{ __('Solving') }}</flux:heading>
+            <flux:button variant="ghost" size="sm" :href="route('crosswords.stats')" wire:navigate icon="chart-bar">
+                {{ __('Stats') }}
+            </flux:button>
+        </div>
 
         @if($this->attempts->isEmpty())
             <div class="flex flex-col items-center justify-center rounded-xl border border-dashed border-zinc-300 py-12 dark:border-zinc-600">
@@ -83,6 +88,12 @@ new #[Title('Solving')] class extends Component {
                             <div class="mt-1.5 flex items-center gap-2">
                                 @if($attempt->is_completed)
                                     <flux:badge size="sm" variant="solid" color="green">{{ __('Completed') }}</flux:badge>
+                                    @if($attempt->formattedSolveTime())
+                                        <flux:text size="sm" class="flex items-center gap-1 text-zinc-400">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                            {{ $attempt->formattedSolveTime() }}
+                                        </flux:text>
+                                    @endif
                                 @else
                                     <flux:badge size="sm" variant="solid" color="sky">{{ __('In Progress') }}</flux:badge>
                                 @endif

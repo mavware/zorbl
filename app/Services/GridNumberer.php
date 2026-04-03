@@ -107,7 +107,7 @@ class GridNumberer
 
     /**
      * Check if there is a word boundary on the left side of this cell.
-     * True if: left edge of grid, black square to the left, bar on left edge of this cell,
+     * True if: left edge of the grid, black square to the left, bar on the left edge of this cell,
      * or bar on the right edge of the cell to the left.
      *
      * @param  array<string, array{bars?: list<string>}>  $styles

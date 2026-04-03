@@ -1,4 +1,4 @@
-export function crosswordSolver({ width, height, grid, solution, progress, styles, cluesAcross, cluesDown }) {
+export function crosswordSolver({ width, height, grid, solution, progress, styles, cluesAcross, cluesDown, initialElapsed, initialSolved, initialPencilCells }) {
     return {
         width,
         height,
@@ -13,18 +13,60 @@ export function crosswordSolver({ width, height, grid, solution, progress, style
         direction: 'across',
         checked: {},
         revealed: {},
-        solved: false,
+        solved: initialSolved || false,
         isDirty: false,
         saving: false,
         showSaved: false,
         mobileClueTab: 'across',
         _saveTimer: null,
         _savedTimer: null,
+        _timerInterval: null,
+        elapsedSeconds: initialElapsed || 0,
+        rebusMode: false,
+        pencilMode: false,
+        pencilCells: initialPencilCells || {},
+        achievementToasts: [],
 
         init() {
             this.$watch('isDirty', (val) => {
                 if (val) this.debouncedSave();
             });
+
+            // Start the timer if puzzle isn't already solved
+            if (!this.solved) {
+                this._timerInterval = setInterval(() => {
+                    this.elapsedSeconds++;
+                }, 1000);
+            }
+
+            // Pause timer when window loses focus, resume on focus
+            this._onVisibilityChange = () => {
+                if (document.hidden && this._timerInterval) {
+                    clearInterval(this._timerInterval);
+                    this._timerInterval = null;
+                } else if (!document.hidden && !this.solved && !this._timerInterval) {
+                    this._timerInterval = setInterval(() => {
+                        this.elapsedSeconds++;
+                    }, 1000);
+                }
+            };
+            document.addEventListener('visibilitychange', this._onVisibilityChange);
+        },
+
+        destroy() {
+            if (this._timerInterval) clearInterval(this._timerInterval);
+            if (this._onVisibilityChange) document.removeEventListener('visibilitychange', this._onVisibilityChange);
+        },
+
+        formattedTime() {
+            const s = this.elapsedSeconds;
+            const hours = Math.floor(s / 3600);
+            const minutes = Math.floor((s % 3600) / 60);
+            const secs = s % 60;
+            if (hours > 0) {
+                return `${hours}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+            }
+            return `${minutes}:${String(secs).padStart(2, '0')}`;
         },
 
         // --- Computed clue lists with lengths ---
@@ -174,11 +216,41 @@ export function crosswordSolver({ width, height, grid, solution, progress, style
             return 'bg-white dark:bg-zinc-800 cursor-pointer';
         },
 
+        isRebus(row, col) {
+            const val = this.progress[row]?.[col] || '';
+            return val.length > 1;
+        },
+
+        letterFontStyle(row, col) {
+            const val = this.progress[row]?.[col] || '';
+            const baseFontSize = Math.max(12, Math.min(24, 600 / this.width * 0.55));
+            if (val.length <= 1) {
+                return 'font-size: ' + baseFontSize + 'px';
+            }
+            const scaled = Math.max(6, baseFontSize / Math.max(val.length * 0.55, 1));
+            return 'font-size: ' + scaled + 'px; letter-spacing: -0.5px';
+        },
+
+        isPencil(row, col) {
+            return !!this.pencilCells[row + ',' + col];
+        },
+
+        activeClueAnnouncement() {
+            if (this.selectedRow < 0) return '';
+            const num = this.activeClueNumber;
+            if (num < 0) return '';
+            const clues = this.direction === 'across' ? this.cluesAcross : this.cluesDown;
+            const clue = clues.find(c => c.number === num);
+            if (!clue) return '';
+            return `${num} ${this.direction}: ${clue.clue || 'no clue'}`;
+        },
+
         letterClass(row, col) {
             const key = row + ',' + col;
             if (this.revealed[key]) return 'text-blue-600 dark:text-blue-400';
             if (this.checked[key] === 'wrong') return 'text-red-600 dark:text-red-400';
             if (this.checked[key] === 'correct') return 'text-emerald-600 dark:text-emerald-400';
+            if (this.pencilCells[key]) return 'text-zinc-400 dark:text-zinc-500';
             return 'text-zinc-900 dark:text-zinc-100';
         },
 
@@ -246,8 +318,59 @@ export function crosswordSolver({ width, height, grid, solution, progress, style
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
             const key = e.key;
 
-            if (key === 'Escape') { this.selectedRow = -1; this.selectedCol = -1; return; }
+            if (key === 'Escape') {
+                if (this.rebusMode) { this.rebusMode = false; return; }
+                this.selectedRow = -1; this.selectedCol = -1; return;
+            }
             if (this.selectedRow < 0) return;
+
+            // Toggle rebus mode with Insert key
+            if (key === 'Insert') {
+                e.preventDefault();
+                if (!this.isBlock(this.selectedRow, this.selectedCol)) {
+                    this.rebusMode = !this.rebusMode;
+                    if (this.rebusMode) {
+                        this.progress[this.selectedRow][this.selectedCol] = '';
+                        delete this.checked[this.selectedRow + ',' + this.selectedCol];
+                        this.isDirty = true;
+                    }
+                }
+                return;
+            }
+
+            // In rebus mode, accumulate letters
+            if (this.rebusMode) {
+                if (key === 'Enter' || key === 'Tab') {
+                    e.preventDefault();
+                    this.rebusMode = false;
+                    this.advanceCursor();
+                    this.checkIfSolved();
+                    return;
+                }
+                if (key === 'Backspace') {
+                    e.preventDefault();
+                    const val = this.progress[this.selectedRow][this.selectedCol] || '';
+                    this.progress[this.selectedRow][this.selectedCol] = val.slice(0, -1);
+                    delete this.checked[this.selectedRow + ',' + this.selectedCol];
+                    this.isDirty = true;
+                    return;
+                }
+                if (/^[a-zA-Z0-9]$/.test(key)) {
+                    e.preventDefault();
+                    const cellKey = this.selectedRow + ',' + this.selectedCol;
+                    const current = this.progress[this.selectedRow][this.selectedCol] || '';
+                    this.progress[this.selectedRow][this.selectedCol] = current + key.toUpperCase();
+                    delete this.checked[cellKey];
+                    if (this.pencilMode) {
+                        this.pencilCells[cellKey] = true;
+                    } else {
+                        delete this.pencilCells[cellKey];
+                    }
+                    this.isDirty = true;
+                    return;
+                }
+                return;
+            }
 
             if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(key)) {
                 e.preventDefault();
@@ -271,8 +394,14 @@ export function crosswordSolver({ width, height, grid, solution, progress, style
             if (/^[a-zA-Z]$/.test(key)) {
                 e.preventDefault();
                 if (!this.isBlock(this.selectedRow, this.selectedCol)) {
+                    const cellKey = this.selectedRow + ',' + this.selectedCol;
                     this.progress[this.selectedRow][this.selectedCol] = key.toUpperCase();
-                    delete this.checked[this.selectedRow + ',' + this.selectedCol];
+                    delete this.checked[cellKey];
+                    if (this.pencilMode) {
+                        this.pencilCells[cellKey] = true;
+                    } else {
+                        delete this.pencilCells[cellKey];
+                    }
                     this.advanceCursor();
                     this.isDirty = true;
                     this.checkIfSolved();
@@ -353,9 +482,11 @@ export function crosswordSolver({ width, height, grid, solution, progress, style
             const row = this.selectedRow, col = this.selectedCol;
             const answer = this.solution[row]?.[col];
             if (answer && answer !== '#') {
+                const key = row + ',' + col;
                 this.progress[row][col] = answer;
-                this.revealed[row + ',' + col] = true;
-                delete this.checked[row + ',' + col];
+                this.revealed[key] = true;
+                delete this.checked[key];
+                delete this.pencilCells[key];
                 this.isDirty = true;
                 this.advanceCursor();
                 this.checkIfSolved();
@@ -370,6 +501,7 @@ export function crosswordSolver({ width, height, grid, solution, progress, style
             }
             this.checked = {};
             this.revealed = {};
+            this.pencilCells = {};
             this.solved = false;
             this.isDirty = true;
         },
@@ -379,8 +511,10 @@ export function crosswordSolver({ width, height, grid, solution, progress, style
                 for (let col = 0; col < this.width; col++) {
                     if (this.isBlock(row, col)) continue;
                     if (this.progress[row][col] && this.progress[row][col] !== this.solution[row][col]) {
+                        const key = row + ',' + col;
                         this.progress[row][col] = '';
-                        delete this.checked[row + ',' + col];
+                        delete this.checked[key];
+                        delete this.pencilCells[key];
                     }
                 }
             }
@@ -395,10 +529,15 @@ export function crosswordSolver({ width, height, grid, solution, progress, style
                 }
             }
             this.solved = true;
-            // Save immediately with completed flag
+            // Stop the timer
+            if (this._timerInterval) {
+                clearInterval(this._timerInterval);
+                this._timerInterval = null;
+            }
+            // Save immediately with completed flag and final time
             this.saving = true;
             this.showSaved = false;
-            await this.$wire.saveProgress(JSON.parse(JSON.stringify(this.progress)), true);
+            await this.$wire.saveProgress(JSON.parse(JSON.stringify(this.progress)), true, this.elapsedSeconds, JSON.parse(JSON.stringify(this.pencilCells)));
             this.isDirty = false;
             this.saving = false;
         },
@@ -413,7 +552,7 @@ export function crosswordSolver({ width, height, grid, solution, progress, style
             if (!this.isDirty) return;
             this.saving = true;
             this.showSaved = false;
-            await this.$wire.saveProgress(JSON.parse(JSON.stringify(this.progress)), this.solved);
+            await this.$wire.saveProgress(JSON.parse(JSON.stringify(this.progress)), this.solved, this.elapsedSeconds, JSON.parse(JSON.stringify(this.pencilCells)));
             this.isDirty = false;
             this.saving = false;
         },
@@ -423,6 +562,19 @@ export function crosswordSolver({ width, height, grid, solution, progress, style
             this.showSaved = true;
             clearTimeout(this._savedTimer);
             this._savedTimer = setTimeout(() => { this.showSaved = false; }, 2000);
+        },
+
+        showAchievements(achievements) {
+            if (!achievements || achievements.length === 0) return;
+            achievements.forEach((a, i) => {
+                setTimeout(() => {
+                    const toast = { ...a, id: Date.now() + i };
+                    this.achievementToasts.push(toast);
+                    setTimeout(() => {
+                        this.achievementToasts = this.achievementToasts.filter(t => t.id !== toast.id);
+                    }, 5000);
+                }, i * 800);
+            });
         },
     };
 }

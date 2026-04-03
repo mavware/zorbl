@@ -5,9 +5,8 @@ use App\Exceptions\JpzImportException;
 use App\Exceptions\PuzImportException;
 use App\Models\Crossword;
 use App\Services\GridNumberer;
-use App\Services\IpuzImporter;
-use App\Services\JpzImporter;
-use App\Services\PuzImporter;
+use App\Services\GridTemplateProvider;
+use App\Services\ImportDetector;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
@@ -21,6 +20,7 @@ new #[Title('My Puzzles')] class extends Component {
     public bool $showImportModal = false;
     public int $newWidth = 15;
     public int $newHeight = 15;
+    public ?int $selectedTemplate = null;
     public $importFile;
     public string $importError = '';
 
@@ -30,6 +30,24 @@ new #[Title('My Puzzles')] class extends Component {
         return Auth::user()->crosswords()->latest()->get();
     }
 
+    #[Computed]
+    public function templates(): array
+    {
+        return app(GridTemplateProvider::class)->getTemplates($this->newWidth, $this->newHeight);
+    }
+
+    public function updatedNewWidth(): void
+    {
+        $this->selectedTemplate = null;
+        unset($this->templates);
+    }
+
+    public function updatedNewHeight(): void
+    {
+        $this->selectedTemplate = null;
+        unset($this->templates);
+    }
+
     public function createPuzzle(): void
     {
         $this->validate([
@@ -37,8 +55,13 @@ new #[Title('My Puzzles')] class extends Component {
             'newHeight' => ['required', 'integer', 'min:3', 'max:30'],
         ]);
 
-        $emptyGrid = Crossword::emptyGrid($this->newWidth, $this->newHeight);
-        $result = app(GridNumberer::class)->number($emptyGrid, $this->newWidth, $this->newHeight);
+        if ($this->selectedTemplate !== null && isset($this->templates[$this->selectedTemplate])) {
+            $grid = $this->templates[$this->selectedTemplate]['grid'];
+        } else {
+            $grid = Crossword::emptyGrid($this->newWidth, $this->newHeight);
+        }
+
+        $result = app(GridNumberer::class)->number($grid, $this->newWidth, $this->newHeight);
 
         $crossword = Auth::user()->crosswords()->create([
             'title' => 'Untitled Puzzle',
@@ -65,8 +88,8 @@ new #[Title('My Puzzles')] class extends Component {
 
         try {
             $contents = file_get_contents($this->importFile->getRealPath());
-            $importer = $this->detectImporter($contents);
-            $data = $importer->import($contents);
+            $extension = $this->importFile->getClientOriginalExtension();
+            $data = app(ImportDetector::class)->import($contents, $extension);
 
             $crossword = Auth::user()->crosswords()->create($data);
 
@@ -74,37 +97,6 @@ new #[Title('My Puzzles')] class extends Component {
         } catch (IpuzImportException|PuzImportException|JpzImportException $e) {
             $this->importError = $e->getMessage();
         }
-    }
-
-    private function detectImporter(string $contents): IpuzImporter|PuzImporter|JpzImporter
-    {
-        $ext = strtolower($this->importFile->getClientOriginalExtension());
-
-        // Extension-based detection
-        if ($ext === 'puz') {
-            return app(PuzImporter::class);
-        }
-
-        if ($ext === 'jpz') {
-            return app(JpzImporter::class);
-        }
-
-        if ($ext === 'ipuz' || $ext === 'json') {
-            return app(IpuzImporter::class);
-        }
-
-        // Content-sniffing fallback
-        if (strlen($contents) >= 14 && str_contains(substr($contents, 0, 14), "ACROSS&DOWN")) {
-            return app(PuzImporter::class);
-        }
-
-        // Check gzip magic bytes or XML declaration
-        if ((strlen($contents) >= 2 && $contents[0] === "\x1f" && $contents[1] === "\x8b") || str_starts_with(trim($contents), '<?xml')) {
-            return app(JpzImporter::class);
-        }
-
-        // Default to ipuz (JSON)
-        return app(IpuzImporter::class);
     }
 
     public function deletePuzzle(int $id): void
@@ -121,6 +113,9 @@ new #[Title('My Puzzles')] class extends Component {
             <flux:heading size="xl">{{ __('My Puzzles') }}</flux:heading>
 
             <div class="flex gap-2">
+                <flux:button variant="ghost" size="sm" icon="chart-bar" :href="route('crosswords.analytics')" wire:navigate>
+                    {{ __('Analytics') }}
+                </flux:button>
                 <flux:button variant="primary" icon="plus" wire:click="$set('showNewModal', true)">
                     {{ __('New Puzzle') }}
                 </flux:button>
@@ -209,16 +204,63 @@ new #[Title('My Puzzles')] class extends Component {
             <div class="grid grid-cols-2 gap-4">
                 <flux:field>
                     <flux:label>{{ __('Width') }}</flux:label>
-                    <flux:input type="number" wire:model="newWidth" min="3" max="30" />
+                    <flux:input type="number" wire:model.live="newWidth" min="3" max="30" />
                     <flux:error name="newWidth" />
                 </flux:field>
 
                 <flux:field>
                     <flux:label>{{ __('Height') }}</flux:label>
-                    <flux:input type="number" wire:model="newHeight" min="3" max="30" />
+                    <flux:input type="number" wire:model.live="newHeight" min="3" max="30" />
                     <flux:error name="newHeight" />
                 </flux:field>
             </div>
+
+            @if(count($this->templates) > 0)
+                <div>
+                    <flux:label class="mb-2">{{ __('Grid Template') }} <span class="text-zinc-400 text-xs font-normal">{{ __('(optional)') }}</span></flux:label>
+                    <div class="flex gap-3 overflow-x-auto pb-2">
+                        {{-- Blank grid option --}}
+                        <button
+                            type="button"
+                            wire:click="$set('selectedTemplate', null)"
+                            class="flex flex-col items-center gap-1.5 rounded-lg border-2 p-2 transition-colors {{ $selectedTemplate === null ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' : 'border-zinc-200 hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-500' }}"
+                        >
+                            <div
+                                class="inline-grid gap-px rounded border border-zinc-200 bg-zinc-200 p-px dark:border-zinc-600 dark:bg-zinc-600"
+                                style="grid-template-columns: repeat({{ $newWidth }}, minmax(0, 1fr)); width: {{ min($newWidth * 6, 80) }}px;"
+                            >
+                                @for($r = 0; $r < $newHeight; $r++)
+                                    @for($c = 0; $c < $newWidth; $c++)
+                                        <div class="bg-white dark:bg-zinc-800" style="aspect-ratio: 1;"></div>
+                                    @endfor
+                                @endfor
+                            </div>
+                            <span class="whitespace-nowrap text-xs text-zinc-600 dark:text-zinc-400">{{ __('Blank') }}</span>
+                        </button>
+
+                        {{-- Template options --}}
+                        @foreach($this->templates as $index => $template)
+                            <button
+                                type="button"
+                                wire:click="$set('selectedTemplate', {{ $index }})"
+                                class="flex flex-col items-center gap-1.5 rounded-lg border-2 p-2 transition-colors {{ $selectedTemplate === $index ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' : 'border-zinc-200 hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-500' }}"
+                            >
+                                <div
+                                    class="inline-grid gap-px rounded border border-zinc-200 bg-zinc-200 p-px dark:border-zinc-600 dark:bg-zinc-600"
+                                    style="grid-template-columns: repeat({{ $newWidth }}, minmax(0, 1fr)); width: {{ min($newWidth * 6, 80) }}px;"
+                                >
+                                    @foreach($template['grid'] as $row)
+                                        @foreach($row as $cell)
+                                            <div class="{{ $cell === '#' ? 'bg-zinc-800 dark:bg-zinc-300' : 'bg-white dark:bg-zinc-800' }}" style="aspect-ratio: 1;"></div>
+                                        @endforeach
+                                    @endforeach
+                                </div>
+                                <span class="whitespace-nowrap text-xs text-zinc-600 dark:text-zinc-400">{{ $template['name'] }}</span>
+                            </button>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
 
             <div class="flex justify-end gap-2">
                 <flux:button wire:click="$set('showNewModal', false)">{{ __('Cancel') }}</flux:button>

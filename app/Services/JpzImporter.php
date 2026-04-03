@@ -7,9 +7,9 @@ use SimpleXMLElement;
 
 class JpzImporter
 {
-    private const NS = 'http://crossword.info/xml/rectangular-puzzle';
+    private const string NS = 'https://crossword.info/xml/rectangular-puzzle';
 
-    public function __construct(private GridNumberer $numberer) {}
+    public function __construct(private readonly GridNumberer $numberer) {}
 
     /**
      * Parse a .jpz file's contents into an array suitable for Crossword::create().
@@ -55,7 +55,7 @@ class JpzImporter
             'notes' => $metadata['notes'],
             'width' => $width,
             'height' => $height,
-            'kind' => 'http://ipuz.org/crossword#1',
+            'kind' => 'https://ipuz.org/crossword#1',
             'grid' => $result['grid'],
             'solution' => $solution,
             'clues_across' => $finalAcross,
@@ -190,7 +190,7 @@ class JpzImporter
 
                 $bgShape = $this->attr($cell, 'background-shape');
                 if ($bgShape === 'circle') {
-                    $styles["{$row},{$col}"] = ['shapebg' => 'circle'];
+                    $styles["$row,$col"] = ['shapebg' => 'circle'];
                 }
             }
         }
@@ -314,9 +314,9 @@ class JpzImporter
             $isAcross = str_contains(strtolower($titleText), 'across');
             $isDown = str_contains(strtolower($titleText), 'down');
 
-            // If we can't determine from title, try word map directions
+            // If we can't determine from the title, try word map directions
             if (! $isAcross && ! $isDown) {
-                // Check direction of first clue's word
+                // Check the direction of the first clue's word
                 $firstClue = ($section->children(self::NS)->clue ?? $section->clue ?? [])[0] ?? null;
                 if ($firstClue !== null) {
                     $wordId = (int) $this->attr($firstClue, 'word');

@@ -6,11 +6,11 @@ use App\Models\Crossword;
 
 class PuzExporter
 {
-    private const VERSION = "1.3\0";
+    private const string VERSION = "1.3\0";
 
-    private const MAGIC = "ACROSS&DOWN\0";
+    private const string MAGIC = "ACROSS&DOWN\0";
 
-    public function __construct(private GridNumberer $numberer) {}
+    public function __construct(private readonly GridNumberer $numberer) {}
 
     /**
      * Export a Crossword model to .puz binary format.
@@ -71,7 +71,9 @@ class PuzExporter
         $header .= str_repeat("\0", 12); // reserved
         $header .= $cib;
 
-        return $header.$solutionBoard.$playerState.$stringTable.$gext;
+        $grbs = $this->buildRebusSection($crossword);
+
+        return $header.$solutionBoard.$playerState.$stringTable.$gext.$grbs;
     }
 
     /**
@@ -107,7 +109,7 @@ class PuzExporter
     }
 
     /**
-     * Order clues in .puz sequence: by number, across before down at same number.
+     * Order clues in .puz sequence: by number, across before down at the same number.
      *
      * @return array<int, string>
      */
@@ -164,7 +166,7 @@ class PuzExporter
     }
 
     /**
-     * Build GEXT extension section for circled cells.
+     * Build a GEXT extension section for circled cells.
      */
     private function buildGextSection(Crossword $crossword): string
     {
@@ -200,6 +202,53 @@ class PuzExporter
     }
 
     /**
+     * Build GRBS + RTBL extension sections for rebus cells.
+     */
+    private function buildRebusSection(Crossword $crossword): string
+    {
+        $boardSize = $crossword->width * $crossword->height;
+        $rebusValues = [];
+        $rebusGrid = str_repeat("\0", $boardSize);
+        $nextIndex = 1;
+
+        for ($row = 0; $row < $crossword->height; $row++) {
+            for ($col = 0; $col < $crossword->width; $col++) {
+                $cell = $crossword->solution[$row][$col] ?? '';
+                if (strlen($cell) > 1 && $cell !== '#') {
+                    $val = strtoupper($cell);
+                    // Reuse index if this value already exists
+                    $index = array_search($val, $rebusValues, true);
+                    if ($index === false) {
+                        $index = $nextIndex++;
+                        $rebusValues[$index] = $val;
+                    }
+                    $pos = $row * $crossword->width + $col;
+                    $rebusGrid[$pos] = chr($index);
+                }
+            }
+        }
+
+        if (empty($rebusValues)) {
+            return '';
+        }
+
+        // Build GRBS section
+        $grbsCksum = $this->cksum($rebusGrid);
+        $grbs = 'GRBS'.pack('v', $boardSize).pack('v', $grbsCksum).$rebusGrid."\0";
+
+        // Build RTBL section: " 0:VALUE; 1:VALUE;" format
+        $entries = [];
+        foreach ($rebusValues as $index => $value) {
+            $entries[] = sprintf('%2d:%s', $index - 1, $value);
+        }
+        $rtblData = implode(';', $entries).';';
+        $rtblCksum = $this->cksum($rtblData);
+        $rtbl = 'RTBL'.pack('v', strlen($rtblData)).pack('v', $rtblCksum).$rtblData."\0";
+
+        return $grbs.$rtbl;
+    }
+
+    /**
      * Compute masked checksums (8 bytes for offsets 0x10-0x17).
      */
     private function computeMaskedChecksums(string $cib, string $solution, string $state, string $strings): string
@@ -211,14 +260,12 @@ class PuzExporter
         $stateCk = $this->cksum($state);
         $strCk = $this->cksum($strings);
 
-        $lowMask = '';
-        $lowMask .= chr(($cibCk & 0xFF) ^ ord($mask[0]));
+        $lowMask = chr(($cibCk & 0xFF) ^ ord($mask[0]));
         $lowMask .= chr(($solCk & 0xFF) ^ ord($mask[1]));
         $lowMask .= chr(($stateCk & 0xFF) ^ ord($mask[2]));
         $lowMask .= chr(($strCk & 0xFF) ^ ord($mask[3]));
 
-        $highMask = '';
-        $highMask .= chr((($cibCk >> 8) & 0xFF) ^ ord($mask[4]));
+        $highMask = chr((($cibCk >> 8) & 0xFF) ^ ord($mask[4]));
         $highMask .= chr((($solCk >> 8) & 0xFF) ^ ord($mask[5]));
         $highMask .= chr((($stateCk >> 8) & 0xFF) ^ ord($mask[6]));
         $highMask .= chr((($strCk >> 8) & 0xFF) ^ ord($mask[7]));

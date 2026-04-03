@@ -28,6 +28,9 @@ new class extends Component {
     public string $dateRange = '';
 
     #[Url]
+    public string $difficulty = '';
+
+    #[Url]
     public string $sortBy = 'newest';
 
     public int $limit = 0;
@@ -110,6 +113,10 @@ new class extends Component {
             };
         }
 
+        if ($this->difficulty !== '') {
+            $query->where('difficulty_label', $this->difficulty);
+        }
+
         if ($this->dateRange !== '') {
             match ($this->dateRange) {
                 'today' => $query->whereDate('created_at', today()),
@@ -173,9 +180,14 @@ new class extends Component {
         $this->redirect(route('crosswords.solver', $crossword), navigate: true);
     }
 
+    public function updatedDifficulty(): void
+    {
+        $this->resetPage();
+    }
+
     public function clearFilters(): void
     {
-        $this->reset('search', 'gridSize', 'puzzleType', 'constructor', 'dateRange', 'sortBy');
+        $this->reset('search', 'gridSize', 'puzzleType', 'constructor', 'dateRange', 'difficulty', 'sortBy');
         $this->sortBy = 'newest';
         $this->resetPage();
         unset($this->puzzles);
@@ -231,6 +243,7 @@ new class extends Component {
             || $this->puzzleType !== ''
             || $this->constructor !== ''
             || $this->dateRange !== ''
+            || $this->difficulty !== ''
             || $this->sortBy !== 'newest';
     }
 
@@ -273,7 +286,7 @@ new class extends Component {
 
     {{-- Filters Panel --}}
     @if($showFilters)
-        <div class="grid gap-3 rounded-xl border border-zinc-200 p-4 sm:grid-cols-2 lg:grid-cols-4 dark:border-zinc-700">
+        <div class="grid gap-3 rounded-xl border border-zinc-200 p-4 sm:grid-cols-2 lg:grid-cols-5 dark:border-zinc-700">
             <flux:field>
                 <flux:label>{{ __('Grid Size') }}</flux:label>
                 <flux:select wire:model.live="gridSize" size="sm">
@@ -297,6 +310,17 @@ new class extends Component {
             <flux:field>
                 <flux:label>{{ __('Constructor') }}</flux:label>
                 <flux:input wire:model.live.debounce.300ms="constructor" size="sm" placeholder="{{ __('Name...') }}" />
+            </flux:field>
+
+            <flux:field>
+                <flux:label>{{ __('Difficulty') }}</flux:label>
+                <flux:select wire:model.live="difficulty" size="sm">
+                    <flux:select.option value="">{{ __('Any Difficulty') }}</flux:select.option>
+                    <flux:select.option value="Easy">{{ __('Easy') }}</flux:select.option>
+                    <flux:select.option value="Medium">{{ __('Medium') }}</flux:select.option>
+                    <flux:select.option value="Hard">{{ __('Hard') }}</flux:select.option>
+                    <flux:select.option value="Expert">{{ __('Expert') }}</flux:select.option>
+                </flux:select>
             </flux:field>
 
             <flux:field>
@@ -372,6 +396,12 @@ new class extends Component {
 
                     <div class="mt-1.5 flex items-center gap-2">
                         <flux:badge size="sm" variant="outline">{{ $this->puzzleTypeLabel($crossword) }}</flux:badge>
+                        @if($crossword->difficulty_label)
+                            <flux:badge
+                                size="sm"
+                                :color="match($crossword->difficulty_label) { 'Easy' => 'green', 'Medium' => 'amber', 'Hard' => 'orange', 'Expert' => 'red', default => 'zinc' }"
+                            >{{ __($crossword->difficulty_label) }}</flux:badge>
+                        @endif
                     </div>
 
                     <div class="mt-3 flex items-center justify-between">

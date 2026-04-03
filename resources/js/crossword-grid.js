@@ -1,4 +1,4 @@
-export function crosswordGrid({ width, height, grid, solution, styles, cluesAcross, cluesDown, minAnswerLength }) {
+export function crosswordGrid({ width, height, grid, solution, styles, cluesAcross, cluesDown, minAnswerLength, prefilled }) {
     return {
         width,
         height,
@@ -8,6 +8,8 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
         cluesAcross: cluesAcross || [],
         cluesDown: cluesDown || [],
         minAnswerLength: minAnswerLength || 3,
+        prefilled: prefilled || null,
+        prefillMode: false,
         selectedRow: -1,
         selectedCol: -1,
         direction: 'across',
@@ -21,6 +23,7 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
         clueSuggestionsLoading: false,
         clueSuggestionsWord: '',
         incompleteHighlights: [],
+        rebusMode: false,
         contextMenu: { show: false, row: -1, col: -1, x: 0, y: 0 },
         _saveTimer: null,
         _saving: false,
@@ -277,6 +280,22 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
             return 'bg-white dark:bg-zinc-800 cursor-pointer' + emptyHighlight;
         },
 
+        isRebus(row, col) {
+            const val = this.solution[row]?.[col] || '';
+            return val.length > 1;
+        },
+
+        letterFontStyle(row, col) {
+            const val = this.solution[row]?.[col] || '';
+            const baseFontSize = Math.max(12, Math.min(24, 600 / this.width * 0.55));
+            if (val.length <= 1) {
+                return 'font-size: ' + baseFontSize + 'px';
+            }
+            // Scale down for multi-letter cells
+            const scaled = Math.max(6, baseFontSize / Math.max(val.length * 0.55, 1));
+            return 'font-size: ' + scaled + 'px; letter-spacing: -0.5px';
+        },
+
         // --- Selection ---
         selectCell(row, col) {
             if (this.isVoid(row, col)) return;
@@ -370,6 +389,49 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
             }
 
             if (this.selectedRow < 0) return;
+
+            // Toggle rebus mode with Insert key
+            if (key === 'Insert') {
+                e.preventDefault();
+                if (!this.isBlock(this.selectedRow, this.selectedCol)) {
+                    this.rebusMode = !this.rebusMode;
+                    if (this.rebusMode) {
+                        this.solution[this.selectedRow][this.selectedCol] = '';
+                        this.markDirty();
+                    }
+                }
+                return;
+            }
+
+            // In rebus mode, accumulate letters and handle special keys
+            if (this.rebusMode) {
+                if (key === 'Escape') {
+                    e.preventDefault();
+                    this.rebusMode = false;
+                    return;
+                }
+                if (key === 'Enter' || key === 'Tab') {
+                    e.preventDefault();
+                    this.rebusMode = false;
+                    this.advanceCursor();
+                    return;
+                }
+                if (key === 'Backspace') {
+                    e.preventDefault();
+                    const val = this.solution[this.selectedRow][this.selectedCol] || '';
+                    this.solution[this.selectedRow][this.selectedCol] = val.slice(0, -1);
+                    this.markDirty();
+                    return;
+                }
+                if (/^[a-zA-Z0-9]$/.test(key)) {
+                    e.preventDefault();
+                    const current = this.solution[this.selectedRow][this.selectedCol] || '';
+                    this.solution[this.selectedRow][this.selectedCol] = current + key.toUpperCase();
+                    this.markDirty();
+                    return;
+                }
+                return;
+            }
 
             if (key === 'ArrowUp' || key === 'ArrowDown' || key === 'ArrowLeft' || key === 'ArrowRight') {
                 e.preventDefault();
@@ -735,6 +797,45 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
             this._savedTimer = setTimeout(() => {
                 this.showSaved = false;
             }, 2000);
+        },
+
+        togglePrefillMode() {
+            this.prefillMode = !this.prefillMode;
+            if (this.prefillMode && !this.prefilled) {
+                // Initialize empty prefilled grid
+                this.prefilled = [];
+                for (let r = 0; r < this.height; r++) {
+                    this.prefilled.push([]);
+                    for (let c = 0; c < this.width; c++) {
+                        this.prefilled[r].push('');
+                    }
+                }
+            }
+        },
+
+        togglePrefillCell(row, col) {
+            if (!this.prefillMode || this.isBlock(row, col)) return;
+            const letter = this.solution[row]?.[col] || '';
+            if (!letter || letter === '#') return;
+
+            if (this.prefilled[row][col]) {
+                this.prefilled[row][col] = '';
+            } else {
+                this.prefilled[row][col] = letter;
+            }
+        },
+
+        isPrefilled(row, col) {
+            if (!this.prefilled) return false;
+            return !!this.prefilled[row]?.[col];
+        },
+
+        async savePrefilled() {
+            if (!this.prefilled) return;
+            this.saving = true;
+            this.showSaved = false;
+            await this.$wire.savePrefilled(JSON.parse(JSON.stringify(this.prefilled)));
+            this.saving = false;
         },
 
         onSettingsUpdated() {

@@ -3,14 +3,14 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>{{ config('app.name', 'Crossword Loft') }}</title>
+        <title>{{ config('app.name') }}</title>
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
     <body class="bg-zinc-950 text-zinc-100 antialiased">
         {{-- Navigation --}}
         <nav class="fixed top-0 inset-x-0 z-50 border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-lg">
             <div class="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
-                <a href="/" class="text-xl font-bold tracking-tight text-amber-500">Crossword Loft</a>
+                <a href="/" class="text-xl font-bold tracking-tight text-amber-500">{{ config('app.name') }}</a>
                 <div class="flex items-center gap-4">
                     @auth
                         <a href="{{ route('crosswords.index') }}" class="text-sm text-zinc-400 hover:text-zinc-100 transition">Dashboard</a>
@@ -90,7 +90,7 @@
         <section class="relative border-t border-zinc-800 bg-zinc-950 py-24">
             <div class="mx-auto max-w-6xl px-6">
                 <h2 class="text-center text-3xl font-bold tracking-tight sm:text-4xl">Everything you need to build & solve</h2>
-                <p class="mx-auto mt-4 max-w-2xl text-center text-zinc-400">From construction to solving, Crossword Loft has the tools for every crossword enthusiast.</p>
+                <p class="mx-auto mt-4 max-w-2xl text-center text-zinc-400">From construction to solving, {{ config('app.name') }} has the tools for every crossword enthusiast.</p>
 
                 <div class="mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                     {{-- Feature 1 --}}
@@ -178,7 +178,7 @@
         <section class="border-t border-zinc-800 py-24">
             <div class="mx-auto max-w-2xl px-6 text-center">
                 <h2 class="text-3xl font-bold tracking-tight sm:text-4xl">Ready to get started?</h2>
-                <p class="mt-4 text-zinc-400">Join Crossword Loft and start crafting or solving puzzles today.</p>
+                <p class="mt-4 text-zinc-400">Join {{ config('app.name') }} and start crafting or solving puzzles today.</p>
                 <div class="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
                     @auth
                         <a href="{{ route('crosswords.index') }}" class="rounded-xl bg-amber-500 px-8 py-3.5 text-base font-semibold text-zinc-950 shadow-lg shadow-amber-500/20 hover:bg-amber-400 transition">
@@ -196,7 +196,7 @@
         {{-- Footer --}}
         <footer class="border-t border-zinc-800 py-8">
             <div class="mx-auto max-w-6xl px-6 text-center text-sm text-zinc-600">
-                &copy; {{ date('Y') }} {{ config('app.name', 'Crossword Loft') }}. All rights reserved.
+                &copy; {{ date('Y') }} {{ config('app.name') }}. All rights reserved.
             </div>
 
             <div class="mx-auto max-w-6xl px-6 text-center text-sm text-zinc-600">

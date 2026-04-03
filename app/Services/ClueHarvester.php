@@ -7,7 +7,7 @@ use App\Models\Crossword;
 
 class ClueHarvester
 {
-    public function __construct(private GridNumberer $numberer) {}
+    public function __construct(private readonly GridNumberer $numberer) {}
 
     /**
      * Extract answer→clue pairs from a published crossword and upsert into clue_entries.

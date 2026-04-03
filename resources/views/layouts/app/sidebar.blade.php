@@ -28,6 +28,20 @@
                         {{ __('Clue Library') }}
                     </flux:sidebar.item>
                 </flux:sidebar.group>
+
+                @if (auth()->user()->hasRole('Admin'))
+                    <flux:sidebar.group :heading="__('Admin')" class="grid">
+                        <flux:sidebar.item icon="map" :href="route('roadmap.index')" :current="request()->routeIs('roadmap.index')" wire:navigate>
+                            {{ __('Roadmap') }}
+                        </flux:sidebar.item>
+                    </flux:sidebar.group>
+                @endif
+
+                <flux:sidebar.group :heading="__('Help')" class="grid">
+                    <flux:sidebar.item icon="chat-bubble-left-right" :href="route('support.index')" :current="request()->routeIs('support.*')" wire:navigate>
+                        {{ __('Support') }}
+                    </flux:sidebar.item>
+                </flux:sidebar.group>
             </flux:sidebar.nav>
 
             <flux:spacer />

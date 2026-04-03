@@ -3,7 +3,7 @@
     "laravel-boost": {
       "command": "/Users/michael/Library/Application Support/Herd/bin/php85",
       "args": [
-        "/Users/michael/Herd/Crossword-Loft/artisan",
+        "/Users/michael/Herd/zorbl/artisan",
         "boost:mcp"
       ]
     }

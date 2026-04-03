@@ -2,19 +2,54 @@
 
 namespace App\Models;
 
+use Carbon\CarbonImmutable;
 use Database\Factories\CrosswordFactory;
+use Eloquent;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property int $id
+ * @property int $user_id
+ * @property string|null $title
+ * @property string|null $author
+ * @property string|null $copyright
+ * @property string|null $notes
+ * @property int $width
+ * @property int $height
+ * @property string $kind
+ * @property array<array-key, mixed> $grid
+ * @property array<array-key, mixed> $solution
+ * @property array<array-key, mixed> $clues_across
+ * @property array<array-key, mixed> $clues_down
+ * @property array<array-key, mixed>|null $styles
+ * @property array<array-key, mixed>|null $metadata
+ * @property bool $is_published
+ * @property CarbonImmutable|null $created_at
+ * @property CarbonImmutable|null $updated_at
+ * @property array<array-key, mixed>|null $user_progress
+ * @property numeric|null $difficulty_score
+ * @property string|null $difficulty_label
+ * @property-read Collection<int, PuzzleAttempt> $attempts
+ * @property-read int|null $attempts_count
+ * @property-read Collection<int, ClueEntry> $clueEntries
+ * @property-read int|null $clue_entries_count
+ * @property-read Collection<int, CrosswordLike> $likes
+ * @property-read int|null $likes_count
+ * @property-read User $user
+ *
+ * @mixin Eloquent
+ */
 #[Fillable([
     'title', 'author', 'copyright', 'notes',
     'width', 'height', 'kind',
-    'grid', 'solution', 'user_progress', 'clues_across', 'clues_down',
+    'grid', 'solution', 'prefilled', 'user_progress', 'clues_across', 'clues_down',
     'styles', 'metadata', 'is_published',
+    'difficulty_score', 'difficulty_label',
 ])]
 class Crossword extends Model
 {
@@ -31,6 +66,7 @@ class Crossword extends Model
             'height' => 'integer',
             'grid' => 'array',
             'solution' => 'array',
+            'prefilled' => 'array',
             'user_progress' => 'array',
             'clues_across' => 'array',
             'clues_down' => 'array',
@@ -73,11 +109,11 @@ class Crossword extends Model
     }
 
     /**
-     * @return BelongsToMany<User, $this>
+     * @return HasMany<PuzzleComment, $this>
      */
-    public function likedByUsers(): BelongsToMany
+    public function comments(): HasMany
     {
-        return $this->belongsToMany(User::class, 'crossword_likes')->withTimestamps();
+        return $this->hasMany(PuzzleComment::class);
     }
 
     /**

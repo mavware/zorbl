@@ -34,6 +34,9 @@ class PuzzleAttemptFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'is_completed' => true,
+            'started_at' => now()->subMinutes(10),
+            'completed_at' => now(),
+            'solve_time_seconds' => fake()->numberBetween(60, 3600),
         ]);
     }
 }

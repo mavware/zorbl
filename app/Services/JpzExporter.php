@@ -8,9 +8,9 @@ use DOMElement;
 
 class JpzExporter
 {
-    private const NS = 'http://crossword.info/xml/rectangular-puzzle';
+    private const string NS = 'https://crossword.info/xml/rectangular-puzzle';
 
-    public function __construct(private GridNumberer $numberer) {}
+    public function __construct(private readonly GridNumberer $numberer) {}
 
     /**
      * Export a Crossword model to gzip-compressed .jpz format.
@@ -22,6 +22,8 @@ class JpzExporter
 
     /**
      * Export a Crossword model to uncompressed XML string.
+     *
+     * @throws \DOMException
      */
     public function toXml(Crossword $crossword): string
     {
@@ -114,7 +116,7 @@ class JpzExporter
                         $cellEl->setAttribute('number', (string) $gridValue);
                     }
 
-                    $styleKey = "{$row},{$col}";
+                    $styleKey = "$row,$col";
                     if (isset($styles[$styleKey]['shapebg']) && $styles[$styleKey]['shapebg'] === 'circle') {
                         $cellEl->setAttribute('background-shape', 'circle');
                     }
@@ -125,6 +127,9 @@ class JpzExporter
         }
     }
 
+    /**
+     * @throws \DOMException
+     */
     private function buildWords(DOMDocument $dom, DOMElement $crosswordEl, array $result, Crossword $crossword): void
     {
         $wordId = 1;

@@ -6,11 +6,11 @@ use App\Exceptions\PuzImportException;
 
 class PuzImporter
 {
-    private const HEADER_SIZE = 52;
+    private const int HEADER_SIZE = 52;
 
-    private const MAGIC = "ACROSS&DOWN\0";
+    private const string MAGIC = "ACROSS&DOWN\0";
 
-    public function __construct(private GridNumberer $numberer) {}
+    public function __construct(private readonly GridNumberer $numberer) {}
 
     /**
      * Parse a .puz file's binary contents into an array suitable for Crossword::create().
@@ -37,7 +37,7 @@ class PuzImporter
             throw new PuzImportException('File is too short for the specified grid dimensions');
         }
 
-        [$grid, $solution] = $this->parseSolutionBoard($contents, self::HEADER_SIZE, $width, $height);
+        [$grid, $solution] = $this->parseSolutionBoard($contents, $width, $height);
 
         $stringsOffset = self::HEADER_SIZE + (2 * $boardSize);
         $strings = $this->parseStrings($contents, $stringsOffset, $numClues);
@@ -45,7 +45,16 @@ class PuzImporter
         $result = $this->numberer->number($grid, $width, $height);
         [$cluesAcross, $cluesDown] = $this->orderClues($strings['clues'], $result['across'], $result['down']);
 
-        $styles = $this->parseExtensions($contents, $strings['endOffset'], $width, $height);
+        $extensions = $this->parseExtensions($contents, $strings['endOffset'], $width, $height);
+        $styles = $extensions['styles'];
+        $rebus = $extensions['rebus'];
+
+        // Apply rebus values to the solution grid
+        foreach ($rebus as $row => $cols) {
+            foreach ($cols as $col => $value) {
+                $solution[$row][$col] = $value;
+            }
+        }
 
         return [
             'title' => $strings['title'] ?: null,
@@ -54,7 +63,7 @@ class PuzImporter
             'notes' => $strings['notes'] ?: null,
             'width' => $width,
             'height' => $height,
-            'kind' => 'http://ipuz.org/crossword#1',
+            'kind' => 'https://ipuz.org/crossword#1',
             'grid' => $result['grid'],
             'solution' => $solution,
             'clues_across' => $cluesAcross,
@@ -101,7 +110,7 @@ class PuzImporter
      *
      * @return array{0: array<int, array<int, mixed>>, 1: array<int, array<int, string>>}
      */
-    private function parseSolutionBoard(string $contents, int $offset, int $width, int $height): array
+    private function parseSolutionBoard(string $contents, int $width, int $height): array
     {
         $grid = [];
         $solution = [];
@@ -111,7 +120,7 @@ class PuzImporter
             $solRow = [];
 
             for ($col = 0; $col < $width; $col++) {
-                $byte = $contents[$offset + ($row * $width) + $col];
+                $byte = $contents[self::HEADER_SIZE + ($row * $width) + $col];
 
                 if ($byte === '.') {
                     $gridRow[] = '#';
@@ -233,9 +242,14 @@ class PuzImporter
      *
      * @return array<string, array<string, mixed>>
      */
+    /**
+     * @return array{styles: array<string, array<string, mixed>>, rebus: array<int, array<int, string>>}
+     */
     private function parseExtensions(string $contents, int $offset, int $width, int $height): array
     {
         $styles = [];
+        $extensions = [];
+        $rebusData = [];
         $boardSize = $width * $height;
 
         while ($offset + 8 <= strlen($contents)) {
@@ -257,16 +271,65 @@ class PuzImporter
                     if ($flags & 0x80) {
                         $row = intdiv($i, $width);
                         $col = $i % $width;
-                        $styles["{$row},{$col}"] = ['shapebg' => 'circle'];
+                        $styles["$row,$col"] = ['shapebg' => 'circle'];
                     }
                 }
+            }
+
+            if ($sectionName === 'GRBS' && $dataLength === $boardSize) {
+                $rebusGrid = $data;
+                $extensions['GRBS'] = $rebusGrid;
+            }
+
+            if ($sectionName === 'RTBL') {
+                $extensions['RTBL'] = $data;
             }
 
             // Move past data + null terminator
             $offset = $dataStart + $dataLength + 1;
         }
 
-        return $styles;
+        // Process rebus data if both GRBS and RTBL are present
+        if (isset($extensions['GRBS'], $extensions['RTBL'])) {
+            $rebusTable = $this->parseRebusTable($extensions['RTBL']);
+            $rebusGrid = $extensions['GRBS'];
+
+            for ($i = 0; $i < $boardSize; $i++) {
+                $index = ord($rebusGrid[$i]);
+                if ($index > 0 && isset($rebusTable[$index - 1])) {
+                    $row = intdiv($i, $width);
+                    $col = $i % $width;
+                    $rebusData[$row][$col] = strtoupper($rebusTable[$index - 1]);
+                }
+            }
+        }
+
+        return ['styles' => $styles, 'rebus' => $rebusData ?? []];
+    }
+
+    /**
+     * Parse the RTBL rebus table section: " 0:THEME; 1:HELLO;" format.
+     *
+     * @return array<int, string>
+     */
+    private function parseRebusTable(string $data): array
+    {
+        $table = [];
+        $entries = explode(';', rtrim($data, "\0"));
+
+        foreach ($entries as $entry) {
+            $entry = trim($entry);
+            if ($entry === '') {
+                continue;
+            }
+
+            $parts = explode(':', $entry, 2);
+            if (count($parts) === 2) {
+                $table[(int) trim($parts[0])] = trim($parts[1]);
+            }
+        }
+
+        return $table;
     }
 
     /**
