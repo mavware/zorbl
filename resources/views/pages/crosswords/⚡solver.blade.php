@@ -7,6 +7,7 @@ use App\Models\PuzzleComment;
 use App\Services\AchievementService;
 use App\Services\IpuzExporter;
 use App\Services\JpzExporter;
+use App\Services\PdfExporter;
 use App\Services\PuzExporter;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
@@ -257,6 +258,20 @@ new #[Title('Solve Crossword')] class extends Component {
             echo $compressed;
         }, $filename, ['Content-Type' => 'application/octet-stream']);
     }
+
+    public function downloadPdf()
+    {
+        $crossword = Crossword::findOrFail($this->crosswordId);
+        $this->authorize('solve', $crossword);
+
+        $exporter = app(PdfExporter::class);
+        $pdf = $exporter->export($crossword, includeSolution: false);
+        $filename = str($crossword->title ?: 'crossword')->slug()->append('.pdf')->toString();
+
+        return response()->streamDownload(function () use ($pdf) {
+            echo $pdf;
+        }, $filename, ['Content-Type' => 'application/pdf']);
+    }
 }
 ?>
 
@@ -382,6 +397,7 @@ new #[Title('Solve Crossword')] class extends Component {
                     <flux:menu.item wire:click="downloadIpuz">{{ __('.ipuz') }}</flux:menu.item>
                     <flux:menu.item wire:click="downloadPuz">{{ __('.puz (Across Lite)') }}</flux:menu.item>
                     <flux:menu.item wire:click="downloadJpz">{{ __('.jpz (Crossword Compiler)') }}</flux:menu.item>
+                    <flux:menu.item wire:click="downloadPdf">{{ __('.pdf (Print-Ready)') }}</flux:menu.item>
                 </flux:menu>
             </flux:dropdown>
 

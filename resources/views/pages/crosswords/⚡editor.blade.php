@@ -6,6 +6,7 @@ use App\Services\ClueHarvester;
 use App\Services\GridNumberer;
 use App\Services\IpuzExporter;
 use App\Services\JpzExporter;
+use App\Services\PdfExporter;
 use App\Services\PuzExporter;
 use App\Services\DifficultyRater;
 use Illuminate\Support\Facades\Auth;
@@ -314,6 +315,20 @@ class extends Component {
             echo $compressed;
         }, $filename, ['Content-Type' => 'application/octet-stream']);
     }
+
+    public function exportPdf(): StreamedResponse
+    {
+        $crossword = Crossword::findOrFail($this->crosswordId);
+        $this->authorize('view', $crossword);
+
+        $exporter = app(PdfExporter::class);
+        $pdf = $exporter->export($crossword, includeSolution: true);
+        $filename = str($crossword->title ?: 'crossword')->slug()->append('.pdf')->toString();
+
+        return response()->streamDownload(function () use ($pdf) {
+            echo $pdf;
+        }, $filename, ['Content-Type' => 'application/pdf']);
+    }
 }
 ?>
 
@@ -440,6 +455,7 @@ class extends Component {
                     <flux:menu.item wire:click="exportIpuz">{{ __('.ipuz') }}</flux:menu.item>
                     <flux:menu.item wire:click="exportPuz">{{ __('.puz (Across Lite)') }}</flux:menu.item>
                     <flux:menu.item wire:click="exportJpz">{{ __('.jpz (Crossword Compiler)') }}</flux:menu.item>
+                    <flux:menu.item wire:click="exportPdf">{{ __('.pdf (Print-Ready)') }}</flux:menu.item>
                 </flux:menu>
             </flux:dropdown>
 
