@@ -5,33 +5,49 @@ use App\Models\CrosswordLike;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Computed;
-use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
 
 new class extends Component {
     use WithPagination;
 
-    #[Url]
     public string $search = '';
 
-    #[Url]
     public string $gridSize = '';
 
-    #[Url]
     public string $puzzleType = '';
 
-    #[Url]
     public string $constructor = '';
 
-    #[Url]
     public string $dateRange = '';
 
-    #[Url]
     public string $difficulty = '';
 
-    #[Url]
     public string $sortBy = 'newest';
+
+    /**
+     * Only sync filter properties to the URL when used as a standalone component (limit=0).
+     * When embedded with a limit (e.g. on the dashboard), URL syncing is disabled to
+     * avoid conflicts with the parent page component.
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    protected function queryString(): array
+    {
+        if ($this->limit > 0) {
+            return [];
+        }
+
+        return [
+            'search' => ['except' => ''],
+            'gridSize' => ['except' => ''],
+            'puzzleType' => ['except' => ''],
+            'constructor' => ['except' => ''],
+            'dateRange' => ['except' => ''],
+            'difficulty' => ['except' => ''],
+            'sortBy' => ['except' => 'newest'],
+        ];
+    }
 
     public int $limit = 0;
 
@@ -351,7 +367,7 @@ new class extends Component {
     {{-- Results --}}
     @php
         $results = $this->puzzles;
-        $items = $limit > 0 ? $results : $results->items();
+        $items = ($limit ?? 0) > 0 ? $results : $results->items();
     @endphp
 
     @if(count($items) === 0)

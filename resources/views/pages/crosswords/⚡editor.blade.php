@@ -10,6 +10,9 @@ use App\Services\PdfExporter;
 use App\Services\PuzExporter;
 use App\Services\WordSuggester;
 use App\Services\DifficultyRater;
+use App\Services\GridFiller;
+use App\Services\AiGridFiller;
+use App\Services\AiClueGenerator;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Title;
@@ -245,6 +248,113 @@ class extends Component {
         return app(WordSuggester::class)->suggest($pattern, $length);
     }
 
+    /**
+     * Fill empty grid slots using heuristic backtracking.
+     *
+     * @return array{success: bool, fills: list<array{direction: string, number: int, word: string}>, message: string}
+     */
+    public function heuristicFill(array $solution): array
+    {
+        $crossword = Crossword::findOrFail($this->crosswordId);
+        $this->authorize('update', $crossword);
+
+        return app(GridFiller::class)->fill(
+            $this->grid,
+            $solution,
+            $this->width,
+            $this->height,
+            $this->styles ?? [],
+            $this->minAnswerLength,
+        );
+    }
+
+    /**
+     * Fill empty grid slots using AI (Anthropic Claude).
+     *
+     * @return array{success: bool, fills: list<array{direction: string, number: int, word: string}>, message: string}
+     */
+    public function aiFill(array $solution): array
+    {
+        $crossword = Crossword::findOrFail($this->crosswordId);
+        $this->authorize('update', $crossword);
+
+        $numberer = app(GridNumberer::class);
+        $numbered = $numberer->number($this->grid, $this->width, $this->height, $this->styles ?? [], $this->minAnswerLength);
+
+        $slots = [];
+        $filledWords = [];
+
+        foreach (['across', 'down'] as $dir) {
+            foreach ($numbered[$dir] as $slot) {
+                $pattern = $this->extractPattern($solution, $slot, $dir);
+                if (str_contains($pattern, '_')) {
+                    $slots[] = [
+                        'direction' => $dir,
+                        'number' => $slot['number'],
+                        'length' => $slot['length'],
+                        'pattern' => $pattern,
+                        'row' => $slot['row'],
+                        'col' => $slot['col'],
+                    ];
+                } else {
+                    $filledWords[] = [
+                        'direction' => $dir,
+                        'number' => $slot['number'],
+                        'word' => $pattern,
+                    ];
+                }
+            }
+        }
+
+        return app(AiGridFiller::class)->fill($slots, $filledWords, $this->title, $this->notes);
+    }
+
+    /**
+     * Generate clues for all filled words using AI.
+     *
+     * @return array{success: bool, clues: array{across: array<int, string>, down: array<int, string>}, message: string}
+     */
+    public function aiGenerateClues(array $solution): array
+    {
+        $crossword = Crossword::findOrFail($this->crosswordId);
+        $this->authorize('update', $crossword);
+
+        $numberer = app(GridNumberer::class);
+        $numbered = $numberer->number($this->grid, $this->width, $this->height, $this->styles ?? [], $this->minAnswerLength);
+
+        $words = [];
+        foreach (['across', 'down'] as $dir) {
+            foreach ($numbered[$dir] as $slot) {
+                $word = $this->extractPattern($solution, $slot, $dir);
+                if (! str_contains($word, '_')) {
+                    $words[] = [
+                        'direction' => $dir,
+                        'number' => $slot['number'],
+                        'word' => $word,
+                    ];
+                }
+            }
+        }
+
+        return app(AiClueGenerator::class)->generate($words, $this->title, $this->notes);
+    }
+
+    /**
+     * Extract the current letter pattern for a slot from the solution grid.
+     */
+    private function extractPattern(array $solution, array $slot, string $direction): string
+    {
+        $pattern = '';
+        for ($i = 0; $i < $slot['length']; $i++) {
+            $r = $direction === 'across' ? $slot['row'] : $slot['row'] + $i;
+            $c = $direction === 'across' ? $slot['col'] + $i : $slot['col'];
+            $letter = $solution[$r][$c] ?? '';
+            $pattern .= ($letter !== '' && $letter !== '#' && $letter !== null) ? strtoupper($letter) : '_';
+        }
+
+        return $pattern;
+    }
+
     public function resizeGrid(): void
     {
         $this->validate([
@@ -425,6 +535,48 @@ class extends Component {
                     </svg>
                 </button>
             </flux:tooltip>
+
+            {{-- Fill Grid dropdown --}}
+            <flux:dropdown position="bottom" align="end">
+                <flux:tooltip content="{{ __('Auto-fill grid') }}">
+                    <flux:button variant="ghost" size="sm" icon="sparkles" x-bind:disabled="fillInProgress">
+                        <span x-show="!fillInProgress">{{ __('Fill') }}</span>
+                        <span x-show="fillInProgress" x-cloak>
+                            <flux:icon.loading class="size-4" />
+                        </span>
+                    </flux:button>
+                </flux:tooltip>
+                <flux:menu>
+                    <flux:menu.item x-on:click="quickFill()" x-bind:disabled="fillInProgress">
+                        <div class="flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="size-4 text-amber-500" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M11.983 1.907a.75.75 0 0 0-1.292-.657l-8.5 9.5A.75.75 0 0 0 2.75 12h6.572l-1.305 6.093a.75.75 0 0 0 1.292.657l8.5-9.5A.75.75 0 0 0 17.25 8h-6.572l1.305-6.093Z" />
+                            </svg>
+                            {{ __('Quick Fill') }}
+                        </div>
+                        <span class="text-xs text-zinc-400">{{ __('Dictionary-based') }}</span>
+                    </flux:menu.item>
+                    <flux:menu.item x-on:click="aiFill()" x-bind:disabled="fillInProgress">
+                        <div class="flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="size-4 text-purple-500" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M15.98 1.804a1 1 0 0 0-1.96 0l-.24 1.192a1 1 0 0 1-.784.785l-1.192.238a1 1 0 0 0 0 1.962l1.192.238a1 1 0 0 1 .785.785l.238 1.192a1 1 0 0 0 1.962 0l.238-1.192a1 1 0 0 1 .785-.785l1.192-.238a1 1 0 0 0 0-1.962l-1.192-.238a1 1 0 0 1-.785-.785l-.238-1.192ZM6.949 5.684a1 1 0 0 0-1.898 0l-.683 2.051a1 1 0 0 1-.633.633l-2.051.683a1 1 0 0 0 0 1.898l2.051.683a1 1 0 0 1 .633.633l.683 2.051a1 1 0 0 0 1.898 0l.683-2.051a1 1 0 0 1 .633-.633l2.051-.683a1 1 0 0 0 0-1.898l-2.051-.683a1 1 0 0 1-.633-.633l-.683-2.051ZM15.98 13.804a1 1 0 0 0-1.96 0l-.24 1.192a1 1 0 0 1-.784.785l-1.192.238a1 1 0 0 0 0 1.962l1.192.238a1 1 0 0 1 .785.785l.238 1.192a1 1 0 0 0 1.962 0l.238-1.192a1 1 0 0 1 .785-.785l1.192-.238a1 1 0 0 0 0-1.962l-1.192-.238a1 1 0 0 1-.785-.785l-.238-1.192Z" />
+                            </svg>
+                            {{ __('AI Fill') }}
+                        </div>
+                        <span class="text-xs text-zinc-400">{{ __('Thematic, Claude-powered') }}</span>
+                    </flux:menu.item>
+                    <flux:separator />
+                    <flux:menu.item x-on:click="aiGenerateClues()" x-bind:disabled="fillInProgress || hasUnfilledSlots">
+                        <div class="flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="size-4 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 2c-2.236 0-4.43.18-6.57.524C1.993 2.755 1 4.014 1 5.426v5.148c0 1.413.993 2.67 2.43 2.902 1.168.188 2.352.327 3.55.414.28.02.521.18.642.413l1.713 3.293a.75.75 0 0 0 1.33 0l1.713-3.293a.783.783 0 0 1 .642-.413 41.102 41.102 0 0 0 3.55-.414c1.437-.231 2.43-1.49 2.43-2.902V5.426c0-1.413-.993-2.67-2.43-2.902A41.289 41.289 0 0 0 10 2ZM6.75 6a.75.75 0 0 0 0 1.5h6.5a.75.75 0 0 0 0-1.5h-6.5ZM6 9.25a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5A.75.75 0 0 1 6 9.25Z" clip-rule="evenodd" />
+                            </svg>
+                            {{ __('AI Generate Clues') }}
+                        </div>
+                        <span class="text-xs text-zinc-400">{{ __('Write clues with AI') }}</span>
+                    </flux:menu.item>
+                </flux:menu>
+            </flux:dropdown>
 
             {{-- Clear dropdown --}}
             <flux:dropdown position="bottom" align="end">

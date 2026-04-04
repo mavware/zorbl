@@ -531,7 +531,6 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
                     this.markDirty();
                     this.debouncedRefreshWordSuggestions();
                 }
-                return;
             }
 
         },
@@ -1163,8 +1162,7 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
 
             this.clueSuggestionsLoading = true;
             try {
-                const results = await this.$wire.lookupClues(word);
-                this.clueSuggestions = results;
+                this.clueSuggestions = await this.$wire.lookupClues(word);
                 this.clueSuggestionsWord = word;
             } catch (e) {
                 this.clueSuggestions = [];
@@ -1248,8 +1246,7 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
 
             this.wordSuggestionsLoading = true;
             try {
-                const results = await this.$wire.suggestWords(pattern, pattern.length);
-                this.wordSuggestions = results;
+                this.wordSuggestions = await this.$wire.suggestWords(pattern, pattern.length);
                 this.wordSuggestionsPattern = pattern;
             } catch (e) {
                 this.wordSuggestions = [];
@@ -1270,6 +1267,129 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
             }
 
             this.closeWordSuggestions();
+            this.markDirty();
+        },
+
+        // --- Grid autofill ---
+        fillInProgress: false,
+        fillMode: null,
+
+        get hasUnfilledSlots() {
+            for (const clue of this.computedCluesAcross) {
+                const pattern = this.getPatternForSlot('across', clue.number);
+                if (pattern && pattern.includes('_')) return true;
+            }
+            for (const clue of this.computedCluesDown) {
+                const pattern = this.getPatternForSlot('down', clue.number);
+                if (pattern && pattern.includes('_')) return true;
+            }
+            return false;
+        },
+
+        async quickFill() {
+            this.fillInProgress = true;
+            this.fillMode = 'heuristic';
+            try {
+                const result = await this.$wire.heuristicFill(
+                    JSON.parse(JSON.stringify(this.solution))
+                );
+                if (result.fills && result.fills.length) {
+                    this.applyFills(result.fills);
+                }
+                this.$dispatch('notify', {
+                    message: result.message,
+                    type: result.success ? 'success' : 'warning',
+                });
+            } catch (e) {
+                this.$dispatch('notify', {
+                    message: 'Fill failed: ' + (e.message || 'Unknown error'),
+                    type: 'error',
+                });
+            }
+            this.fillInProgress = false;
+            this.fillMode = null;
+        },
+
+        async aiFill() {
+            this.fillInProgress = true;
+            this.fillMode = 'ai';
+            try {
+                const result = await this.$wire.aiFill(
+                    JSON.parse(JSON.stringify(this.solution))
+                );
+                if (result.fills && result.fills.length) {
+                    this.applyFills(result.fills);
+                }
+                this.$dispatch('notify', {
+                    message: result.message,
+                    type: result.success ? 'success' : 'warning',
+                });
+            } catch (e) {
+                this.$dispatch('notify', {
+                    message: 'AI fill failed: ' + (e.message || 'Unknown error'),
+                    type: 'error',
+                });
+            }
+            this.fillInProgress = false;
+            this.fillMode = null;
+        },
+
+        async aiGenerateClues() {
+            this.fillInProgress = true;
+            this.fillMode = 'ai';
+            try {
+                const result = await this.$wire.aiGenerateClues(
+                    JSON.parse(JSON.stringify(this.solution))
+                );
+                if (result.success && result.clues) {
+                    this.applyClues(result.clues);
+                }
+                this.$dispatch('notify', {
+                    message: result.message,
+                    type: result.success ? 'success' : 'warning',
+                });
+            } catch (e) {
+                this.$dispatch('notify', {
+                    message: 'Clue generation failed: ' + (e.message || 'Unknown error'),
+                    type: 'error',
+                });
+            }
+            this.fillInProgress = false;
+            this.fillMode = null;
+        },
+
+        applyFills(fills) {
+            for (const fill of fills) {
+                const slot = this.findSlot(fill.direction, fill.number);
+                if (!slot) continue;
+                for (let i = 0; i < slot.length && i < fill.word.length; i++) {
+                    const r = fill.direction === 'across' ? slot.row : slot.row + i;
+                    const c = fill.direction === 'across' ? slot.col + i : slot.col;
+                    this.solution[r][c] = fill.word[i].toUpperCase();
+                }
+            }
+            this.markDirty();
+        },
+
+        applyClues(clues) {
+            if (clues.across) {
+                for (const [num, text] of Object.entries(clues.across)) {
+                    const key = parseInt(num);
+                    const clue = this.cluesAcross.find(c => c.number === key);
+                    if (clue) {
+                        clue.clue = text;
+                    }
+                }
+            }
+            if (clues.down) {
+                for (const [num, text] of Object.entries(clues.down)) {
+                    const key = parseInt(num);
+                    const clue = this.cluesDown.find(c => c.number === key);
+                    if (clue) {
+                        clue.clue = text;
+                    }
+                }
+            }
             this.markDirty();
         },
     };
