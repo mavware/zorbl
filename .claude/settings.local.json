@@ -51,7 +51,18 @@
       "Read(//Users/michael/.composer/vendor/bin/**)",
       "Read(//opt/homebrew/**)",
       "Bash(/opt/homebrew/bin/composer require:*)",
-      "Bash(PATH=\"/opt/homebrew/bin:$PATH\" /opt/homebrew/bin/composer require barryvdh/laravel-dompdf)"
+      "Bash(PATH=\"/opt/homebrew/bin:$PATH\" /opt/homebrew/bin/composer require barryvdh/laravel-dompdf)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(PATH=\"/opt/homebrew/bin:$PATH\" php artisan filament:assets)",
+      "Bash(PATH=\"/opt/homebrew/bin:$PATH\" composer show filament/filament)",
+      "Bash(PATH=\"/opt/homebrew/bin:$PATH\" curl -sk https://zorbl.test/admin)",
+      "Bash(PATH=\"/opt/homebrew/bin:$PATH\" curl -sk https://zorbl.test/admin/login -o /dev/null -w \"%{http_code}\")",
+      "Bash(PATH=\"/opt/homebrew/bin:$PATH\" php artisan filament:upgrade)",
+      "Bash(PATH=\"/opt/homebrew/bin:$PATH\" vendor/bin/pint --dirty --format agent)",
+      "Bash(PATH=\"/opt/homebrew/bin:$PATH\" npm run build)",
+      "Bash(PATH=\"/opt/homebrew/bin:$PATH\" php artisan test --compact)",
+      "Bash(ls -t /Users/michael/Herd/zorbl/database/migrations/*.php)",
+      "Bash(find /Users/michael/Herd/zorbl/app/Policies -type f -name *.php)"
     ]
   }
 }

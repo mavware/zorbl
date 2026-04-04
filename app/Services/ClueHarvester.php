@@ -2,8 +2,10 @@
 
 namespace App\Services;
 
+use App\Console\Commands\GenerateWordList;
 use App\Models\ClueEntry;
 use App\Models\Crossword;
+use App\Models\Word;
 
 class ClueHarvester
 {
@@ -53,6 +55,31 @@ class ClueHarvester
                 ['crossword_id', 'direction', 'clue_number'],
                 ['answer', 'clue', 'user_id'],
             );
+
+            $this->syncWords($entries);
+        }
+    }
+
+    /**
+     * Sync harvested words into the words table with a library bonus score.
+     *
+     * @param  array<int, array{answer: string}>  $entries
+     */
+    private function syncWords(array $entries): void
+    {
+        $words = collect($entries)
+            ->pluck('answer')
+            ->unique()
+            ->map(fn (string $answer) => [
+                'word' => $answer,
+                'length' => strlen($answer),
+                'score' => GenerateWordList::calculateScore($answer) + 5.0,
+            ])
+            ->values()
+            ->all();
+
+        if (count($words) > 0) {
+            Word::upsert($words, ['word'], ['score']);
         }
     }
 

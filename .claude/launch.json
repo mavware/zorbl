@@ -1,0 +1,13 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "zorbl",
+      "runtimeExecutable": "echo",
+      "runtimeArgs": ["Herd serves this app"],
+      "port": 443,
+      "autoPort": false,
+      "url": "https://zorbl.test"
+    }
+  ]
+}

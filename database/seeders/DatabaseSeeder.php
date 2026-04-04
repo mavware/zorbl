@@ -13,16 +13,20 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        if (App()->environment('local')) {
+            User::factory()->create([
+                'name' => 'Test User',
+                'email' => 'test@example.com',
+                'password' => 'password',
+            ]);
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-            'password' => 'password',
-        ]);
+            $this->call([
+                RoadmapSeeder::class,
+            ]);
+        }
 
         $this->call([
-            RoadmapSeeder::class
+            WordListSeeder::class,
         ]);
     }
 }

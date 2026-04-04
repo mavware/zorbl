@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Achievement;
+use App\Models\ContestEntry;
 use App\Models\User;
 use Illuminate\Support\Carbon;
 
@@ -48,6 +49,21 @@ class AchievementService
             'label' => 'Speed Demon',
             'description' => 'Solved a puzzle in under 2 minutes',
             'icon' => 'clock',
+        ],
+        'first_contest' => [
+            'label' => 'Contest Debut',
+            'description' => 'Completed all puzzles in a contest',
+            'icon' => 'flag',
+        ],
+        'first_meta_solve' => [
+            'label' => 'Meta Mind',
+            'description' => 'Solved your first meta puzzle answer',
+            'icon' => 'puzzle-piece',
+        ],
+        'contest_winner' => [
+            'label' => 'Champion',
+            'description' => 'Finished 1st place in a contest',
+            'icon' => 'trophy',
         ],
     ];
 
@@ -137,6 +153,43 @@ class AchievementService
         // Speed achievement
         if ($solveTimeSeconds !== null && $solveTimeSeconds > 0 && $solveTimeSeconds <= 120) {
             $achievement = $this->award($user, 'speed_demon');
+            if ($achievement) {
+                $earned[] = $achievement;
+            }
+        }
+
+        return $earned;
+    }
+
+    /**
+     * Check and award contest-related achievements.
+     *
+     * @return array<int, Achievement>
+     */
+    public function checkContestAchievements(User $user, ContestEntry $entry): array
+    {
+        $earned = [];
+
+        // Contest Debut: completed all puzzles in a contest
+        $totalPuzzles = $entry->contest->crosswords()->count();
+        if ($totalPuzzles > 0 && $entry->puzzles_completed >= $totalPuzzles) {
+            $achievement = $this->award($user, 'first_contest');
+            if ($achievement) {
+                $earned[] = $achievement;
+            }
+        }
+
+        // Meta Mind: solved first meta answer
+        if ($entry->meta_solved) {
+            $achievement = $this->award($user, 'first_meta_solve');
+            if ($achievement) {
+                $earned[] = $achievement;
+            }
+        }
+
+        // Champion: finished 1st place (checked on contest end)
+        if ($entry->rank === 1 && $entry->contest->hasEnded()) {
+            $achievement = $this->award($user, 'contest_winner');
             if ($achievement) {
                 $earned[] = $achievement;
             }

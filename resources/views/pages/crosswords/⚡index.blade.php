@@ -65,7 +65,7 @@ new #[Title('My Puzzles')] class extends Component {
 
         $crossword = Auth::user()->crosswords()->create([
             'title' => 'Untitled Puzzle',
-            'author' => Auth::user()->copyright_name ?? Auth::user()->name,
+            'author' => Auth::user()->name,
             'copyright' => copyright(Auth::user()->copyright_name ?? Auth::user()->name ?? ''),
             'width' => $this->newWidth,
             'height' => $this->newHeight,

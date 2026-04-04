@@ -1,4 +1,4 @@
-export function crosswordSolver({ width, height, grid, solution, progress, styles, cluesAcross, cluesDown, initialElapsed, initialSolved, initialPencilCells }) {
+export function crosswordSolver({ width, height, grid, solution, progress, styles, prefilled, cluesAcross, cluesDown, initialElapsed, initialSolved, initialPencilCells, persistence }) {
     return {
         width,
         height,
@@ -6,6 +6,7 @@ export function crosswordSolver({ width, height, grid, solution, progress, style
         solution,
         progress,
         styles: styles || {},
+        prefilled: prefilled || null,
         cluesAcross: cluesAcross || [],
         cluesDown: cluesDown || [],
         selectedRow: -1,
@@ -26,6 +27,7 @@ export function crosswordSolver({ width, height, grid, solution, progress, style
         pencilMode: false,
         pencilCells: initialPencilCells || {},
         achievementToasts: [],
+        persistence: persistence || null,
 
         init() {
             this.$watch('isDirty', (val) => {
@@ -211,8 +213,11 @@ export function crosswordSolver({ width, height, grid, solution, progress, style
             const wordCells = this.selectedRow >= 0 ? this.getWordCells(this.selectedRow, this.selectedCol, this.direction) : [];
             const isInWord = wordCells.some(([r, c]) => r === row && c === col);
 
-            if (isSelected) return 'bg-blue-300 dark:bg-blue-700 cursor-pointer';
-            if (isInWord) return 'bg-blue-100 dark:bg-blue-900/50 cursor-pointer';
+            const prefilled = this.isPrefilled(row, col);
+
+            if (isSelected) return prefilled ? 'bg-blue-200 dark:bg-blue-800 cursor-pointer' : 'bg-blue-300 dark:bg-blue-700 cursor-pointer';
+            if (isInWord) return prefilled ? 'bg-blue-50 dark:bg-blue-900/30 cursor-pointer' : 'bg-blue-100 dark:bg-blue-900/50 cursor-pointer';
+            if (prefilled) return 'bg-zinc-100 dark:bg-zinc-700 cursor-pointer';
             return 'bg-white dark:bg-zinc-800 cursor-pointer';
         },
 
@@ -229,6 +234,11 @@ export function crosswordSolver({ width, height, grid, solution, progress, style
             }
             const scaled = Math.max(6, baseFontSize / Math.max(val.length * 0.55, 1));
             return 'font-size: ' + scaled + 'px; letter-spacing: -0.5px';
+        },
+
+        isPrefilled(row, col) {
+            if (!this.prefilled) return false;
+            return !!this.prefilled[row]?.[col];
         },
 
         isPencil(row, col) {
@@ -327,7 +337,7 @@ export function crosswordSolver({ width, height, grid, solution, progress, style
             // Toggle rebus mode with Insert key
             if (key === 'Insert') {
                 e.preventDefault();
-                if (!this.isBlock(this.selectedRow, this.selectedCol)) {
+                if (!this.isBlock(this.selectedRow, this.selectedCol) && !this.isPrefilled(this.selectedRow, this.selectedCol)) {
                     this.rebusMode = !this.rebusMode;
                     if (this.rebusMode) {
                         this.progress[this.selectedRow][this.selectedCol] = '';
@@ -383,7 +393,7 @@ export function crosswordSolver({ width, height, grid, solution, progress, style
             if (key === 'Backspace') { e.preventDefault(); this.handleBackspace(); return; }
             if (key === 'Delete') {
                 e.preventDefault();
-                if (!this.isBlock(this.selectedRow, this.selectedCol)) {
+                if (!this.isBlock(this.selectedRow, this.selectedCol) && !this.isPrefilled(this.selectedRow, this.selectedCol)) {
                     this.progress[this.selectedRow][this.selectedCol] = '';
                     delete this.checked[this.selectedRow + ',' + this.selectedCol];
                     this.isDirty = true;
@@ -393,7 +403,7 @@ export function crosswordSolver({ width, height, grid, solution, progress, style
 
             if (/^[a-zA-Z]$/.test(key)) {
                 e.preventDefault();
-                if (!this.isBlock(this.selectedRow, this.selectedCol)) {
+                if (!this.isBlock(this.selectedRow, this.selectedCol) && !this.isPrefilled(this.selectedRow, this.selectedCol)) {
                     const cellKey = this.selectedRow + ',' + this.selectedCol;
                     this.progress[this.selectedRow][this.selectedCol] = key.toUpperCase();
                     delete this.checked[cellKey];
@@ -433,24 +443,32 @@ export function crosswordSolver({ width, height, grid, solution, progress, style
 
         handleBackspace() {
             const row = this.selectedRow, col = this.selectedCol;
-            if (!this.isBlock(row, col) && this.progress[row][col]) {
+            if (!this.isBlock(row, col) && !this.isPrefilled(row, col) && this.progress[row][col]) {
                 this.progress[row][col] = '';
                 delete this.checked[row + ',' + col];
                 this.isDirty = true;
             } else {
                 if (this.direction === 'across') {
                     if (!this.hasLeftBoundary(row, col)) {
-                        this.selectedCol = col - 1;
-                        this.progress[row][col - 1] = '';
-                        delete this.checked[row + ',' + (col - 1)];
-                        this.isDirty = true;
+                        if (!this.isPrefilled(row, col - 1)) {
+                            this.selectedCol = col - 1;
+                            this.progress[row][col - 1] = '';
+                            delete this.checked[row + ',' + (col - 1)];
+                            this.isDirty = true;
+                        } else {
+                            this.selectedCol = col - 1;
+                        }
                     }
                 } else {
                     if (!this.hasTopBoundary(row, col)) {
-                        this.selectedRow = row - 1;
-                        this.progress[row - 1][col] = '';
-                        delete this.checked[(row - 1) + ',' + col];
-                        this.isDirty = true;
+                        if (!this.isPrefilled(row - 1, col)) {
+                            this.selectedRow = row - 1;
+                            this.progress[row - 1][col] = '';
+                            delete this.checked[(row - 1) + ',' + col];
+                            this.isDirty = true;
+                        } else {
+                            this.selectedRow = row - 1;
+                        }
                     }
                 }
             }
@@ -470,7 +488,7 @@ export function crosswordSolver({ width, height, grid, solution, progress, style
             this.checked = {};
             for (let row = 0; row < this.height; row++) {
                 for (let col = 0; col < this.width; col++) {
-                    if (this.isBlock(row, col) || !this.progress[row][col]) continue;
+                    if (this.isBlock(row, col) || this.isPrefilled(row, col) || !this.progress[row][col]) continue;
                     const key = row + ',' + col;
                     this.checked[key] = this.progress[row][col] === this.solution[row][col] ? 'correct' : 'wrong';
                 }
@@ -496,7 +514,7 @@ export function crosswordSolver({ width, height, grid, solution, progress, style
         clearProgress() {
             for (let row = 0; row < this.height; row++) {
                 for (let col = 0; col < this.width; col++) {
-                    if (!this.isBlock(row, col)) this.progress[row][col] = '';
+                    if (!this.isBlock(row, col) && !this.isPrefilled(row, col)) this.progress[row][col] = '';
                 }
             }
             this.checked = {};
@@ -509,7 +527,7 @@ export function crosswordSolver({ width, height, grid, solution, progress, style
         clearErrors() {
             for (let row = 0; row < this.height; row++) {
                 for (let col = 0; col < this.width; col++) {
-                    if (this.isBlock(row, col)) continue;
+                    if (this.isBlock(row, col) || this.isPrefilled(row, col)) continue;
                     if (this.progress[row][col] && this.progress[row][col] !== this.solution[row][col]) {
                         const key = row + ',' + col;
                         this.progress[row][col] = '';
@@ -537,7 +555,14 @@ export function crosswordSolver({ width, height, grid, solution, progress, style
             // Save immediately with completed flag and final time
             this.saving = true;
             this.showSaved = false;
-            await this.$wire.saveProgress(JSON.parse(JSON.stringify(this.progress)), true, this.elapsedSeconds, JSON.parse(JSON.stringify(this.pencilCells)));
+            const progressCopy = JSON.parse(JSON.stringify(this.progress));
+            const pencilCopy = JSON.parse(JSON.stringify(this.pencilCells));
+            if (this.persistence) {
+                await this.persistence.save(progressCopy, true, this.elapsedSeconds, pencilCopy);
+                this.onSaved();
+            } else {
+                await this.$wire.saveProgress(progressCopy, true, this.elapsedSeconds, pencilCopy);
+            }
             this.isDirty = false;
             this.saving = false;
         },
@@ -552,7 +577,14 @@ export function crosswordSolver({ width, height, grid, solution, progress, style
             if (!this.isDirty) return;
             this.saving = true;
             this.showSaved = false;
-            await this.$wire.saveProgress(JSON.parse(JSON.stringify(this.progress)), this.solved, this.elapsedSeconds, JSON.parse(JSON.stringify(this.pencilCells)));
+            const progressCopy = JSON.parse(JSON.stringify(this.progress));
+            const pencilCopy = JSON.parse(JSON.stringify(this.pencilCells));
+            if (this.persistence) {
+                await this.persistence.save(progressCopy, this.solved, this.elapsedSeconds, pencilCopy);
+                this.onSaved();
+            } else {
+                await this.$wire.saveProgress(progressCopy, this.solved, this.elapsedSeconds, pencilCopy);
+            }
             this.isDirty = false;
             this.saving = false;
         },

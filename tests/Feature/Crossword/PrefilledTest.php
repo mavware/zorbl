@@ -100,7 +100,32 @@ test('existing attempt is not overwritten by prefilled values', function () {
         ->assertSet('progress', [['A', 'B'], ['C', '']]);
 });
 
-test('editor shows prefill button', function () {
+test('rebus and symbol prefilled cells are merged into existing attempts', function () {
+    $constructor = User::factory()->create();
+    $crossword = Crossword::factory()->published()->for($constructor)->create([
+        'width' => 2,
+        'height' => 2,
+        'grid' => [[1, 2], [3, 0]],
+        'solution' => [['THE', '★'], ['C', 'D']],
+        'prefilled' => [['THE', '★'], ['', '']],
+    ]);
+
+    $solver = User::factory()->create();
+
+    // Create an existing attempt with empty progress (started before rebus was added)
+    PuzzleAttempt::factory()->for($solver)->for($crossword)->create([
+        'progress' => [['', ''], ['', '']],
+        'started_at' => now(),
+    ]);
+
+    $this->actingAs($solver);
+
+    // Rebus (multi-char) and symbol prefilled cells should be merged into existing progress
+    Livewire\Livewire::test('pages::crosswords.solver', ['crossword' => $crossword])
+        ->assertSet('progress', [['THE', '★'], ['', '']]);
+});
+
+test('editor has pre-fill option in context menu', function () {
     $user = User::factory()->create();
     $crossword = Crossword::factory()->for($user)->create([
         'width' => 2,
@@ -112,5 +137,5 @@ test('editor shows prefill button', function () {
     $this->actingAs($user)
         ->get(route('crosswords.editor', $crossword))
         ->assertOk()
-        ->assertSee('Pre-fill cells for solvers');
+        ->assertSee('Pre-fill cell...');
 });

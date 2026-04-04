@@ -12,6 +12,7 @@
             <div class="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
                 <a href="/" class="text-xl font-bold tracking-tight text-amber-500">{{ config('app.name') }}</a>
                 <div class="flex items-center gap-4">
+                    <a href="{{ route('puzzles.index') }}" class="text-sm text-zinc-400 hover:text-zinc-100 transition">Browse Puzzles</a>
                     @auth
                         <a href="{{ route('crosswords.index') }}" class="text-sm text-zinc-400 hover:text-zinc-100 transition">Dashboard</a>
                     @else
@@ -47,8 +48,8 @@
                         <a href="{{ route('register') }}" class="rounded-xl bg-amber-500 px-8 py-3.5 text-base font-semibold text-zinc-950 shadow-lg shadow-amber-500/20 hover:bg-amber-400 transition">
                             Start Creating
                         </a>
-                        <a href="{{ route('login') }}" class="rounded-xl border border-zinc-700 px-8 py-3.5 text-base font-semibold text-zinc-100 hover:border-zinc-500 hover:bg-zinc-800 transition">
-                            Sign In to Solve
+                        <a href="{{ route('puzzles.index') }}" class="rounded-xl border border-zinc-700 px-8 py-3.5 text-base font-semibold text-zinc-100 hover:border-zinc-500 hover:bg-zinc-800 transition">
+                            Browse Puzzles
                         </a>
                     @endauth
                 </div>
@@ -187,6 +188,9 @@
                     @else
                         <a href="{{ route('register') }}" class="rounded-xl bg-amber-500 px-8 py-3.5 text-base font-semibold text-zinc-950 shadow-lg shadow-amber-500/20 hover:bg-amber-400 transition">
                             Create Free Account
+                        </a>
+                        <a href="{{ route('puzzles.index') }}" class="rounded-xl border border-zinc-700 px-8 py-3.5 text-base font-semibold text-zinc-100 hover:border-zinc-500 hover:bg-zinc-800 transition">
+                            Browse Puzzles
                         </a>
                     @endauth
                 </div>

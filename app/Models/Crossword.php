@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
@@ -117,6 +118,16 @@ class Crossword extends Model
     }
 
     /**
+     * @return BelongsToMany<Contest, $this>
+     */
+    public function contests(): BelongsToMany
+    {
+        return $this->belongsToMany(Contest::class)
+            ->withPivot(['sort_order', 'extraction_hint'])
+            ->withTimestamps();
+    }
+
+    /**
      * Calculate puzzle completeness as a breakdown of individual checks.
      *
      * @return array{percentage: int, checks: array{title: bool, author: bool, fill: bool, clues_across: bool, clues_down: bool}}
@@ -188,5 +199,23 @@ class Crossword extends Model
     public static function emptySolution(int $width, int $height): array
     {
         return array_fill(0, $height, array_fill(0, $width, ''));
+    }
+
+    /**
+     * Obfuscate the solution using XOR cipher + base64 encoding.
+     * Prevents casual view-source cheating while keeping implementation simple.
+     */
+    public function obfuscateSolution(): string
+    {
+        $json = json_encode($this->solution);
+        $key = 'zorbl_'.$this->id;
+        $keyLength = strlen($key);
+        $result = '';
+
+        for ($i = 0, $len = strlen($json); $i < $len; $i++) {
+            $result .= chr(ord($json[$i]) ^ ord($key[$i % $keyLength]));
+        }
+
+        return base64_encode($result);
     }
 }

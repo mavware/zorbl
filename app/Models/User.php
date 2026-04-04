@@ -189,6 +189,24 @@ class User extends Authenticatable implements FilamentUser
     }
 
     /**
+     * @return HasMany<ContestEntry, $this>
+     */
+    public function contestEntries(): HasMany
+    {
+        return $this->hasMany(ContestEntry::class);
+    }
+
+    /**
+     * Contests the user has entered.
+     *
+     * @return BelongsToMany<Contest, $this>
+     */
+    public function contests(): BelongsToMany
+    {
+        return $this->belongsToMany(Contest::class, 'contest_entries')->withTimestamps();
+    }
+
+    /**
      * Check if this user is following another user.
      */
     public function isFollowing(User $user): bool

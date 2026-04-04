@@ -40,12 +40,50 @@ new #[Title('Dashboard')] class extends Component {
     }
 
     #[Computed]
-    public function recentLikes()
+    public function recentDrafts()
     {
         return Auth::user()
-            ->likedCrosswords()
+            ->crosswords()
+            ->where('is_published', false)
+            ->latest('updated_at')
+            ->limit(3)
+            ->get();
+    }
+
+    #[Computed]
+    public function trendingPuzzles()
+    {
+        $recentlyLikedIds = CrosswordLike::where('created_at', '>=', now()->subWeek())
+            ->select('crossword_id')
+            ->selectRaw('count(*) as recent_likes')
+            ->groupBy('crossword_id')
+            ->orderByDesc('recent_likes')
+            ->limit(10)
+            ->pluck('recent_likes', 'crossword_id');
+
+        if ($recentlyLikedIds->isEmpty()) {
+            return collect();
+        }
+
+        return Crossword::where('is_published', true)
+            ->where('user_id', '!=', Auth::id())
+            ->whereIn('id', $recentlyLikedIds->keys())
             ->with('user:id,name')
-            ->latest('crossword_likes.created_at')
+            ->withCount('likes')
+            ->get()
+            ->sortByDesc(fn ($c) => $recentlyLikedIds[$c->id] ?? 0)
+            ->take(3)
+            ->values();
+    }
+
+    #[Computed]
+    public function newestPuzzles()
+    {
+        return Crossword::where('is_published', true)
+            ->where('user_id', '!=', Auth::id())
+            ->with('user:id,name')
+            ->withCount('likes')
+            ->latest()
             ->limit(3)
             ->get();
     }
@@ -72,6 +110,223 @@ new #[Title('Dashboard')] class extends Component {
 
 <div class="space-y-6">
     <flux:heading size="xl">{{ __('Dashboard') }}</flux:heading>
+
+    <div class="grid gap-6 lg:grid-cols-2">
+        {{-- In Progress --}}
+        <div class="rounded-xl border border-zinc-200 p-5 dark:border-zinc-700">
+            <div class="mb-4 flex items-center justify-between">
+                <flux:heading size="lg">{{ __('Continue Solving') }}</flux:heading>
+                <flux:button variant="ghost" size="sm" :href="route('crosswords.solving')" wire:navigate>
+                    {{ __('View All') }}
+                </flux:button>
+            </div>
+
+            @if($this->inProgressAttempts->isEmpty())
+                <div class="flex flex-col items-center justify-center rounded-lg border border-dashed border-zinc-300 py-8 dark:border-zinc-600">
+                    <flux:icon name="play" class="mb-2 size-8 text-zinc-400" />
+                    <flux:text size="sm" class="text-zinc-400">{{ __('No puzzles in progress') }}</flux:text>
+                    <flux:button variant="ghost" size="sm" class="mt-2" :href="route('crosswords.solving')" wire:navigate>
+                        {{ __('Browse Puzzles') }}
+                    </flux:button>
+                </div>
+            @else
+                <div class="space-y-3">
+                    @foreach($this->inProgressAttempts as $attempt)
+                        <a
+                            href="{{ route('crosswords.solver', $attempt->crossword) }}"
+                            wire:navigate
+                            class="flex items-center gap-3 rounded-lg p-2 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                        >
+                            {{-- Mini grid --}}
+                            <div
+                                class="inline-grid shrink-0 gap-px rounded border border-zinc-200 bg-zinc-200 p-px dark:border-zinc-600 dark:bg-zinc-600"
+                                style="grid-template-columns: repeat({{ $attempt->crossword->width }}, minmax(0, 1fr)); width: {{ min($attempt->crossword->width * 5, 48) }}px;"
+                            >
+                                @for($row = 0; $row < $attempt->crossword->height; $row++)
+                                    @for($col = 0; $col < $attempt->crossword->width; $col++)
+                                        <div class="{{ $attempt->crossword->grid[$row][$col] === null ? 'invisible' : (($attempt->crossword->grid[$row][$col] ?? 0) === '#' ? 'bg-zinc-800 dark:bg-zinc-300' : 'bg-white dark:bg-zinc-800') }}" style="aspect-ratio: 1;"></div>
+                                    @endfor
+                                @endfor
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <div class="truncate text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ $attempt->crossword->title ?: __('Untitled Puzzle') }}</div>
+                                <flux:text size="sm" class="text-zinc-400">
+                                    {{ __('by :author', ['author' => $attempt->crossword->user->name ?? __('Unknown')]) }}
+                                    &middot;
+                                    {{ $attempt->updated_at->diffForHumans() }}
+                                </flux:text>
+                            </div>
+                            <flux:icon name="chevron-right" class="size-4 shrink-0 text-zinc-400" />
+                        </a>
+                    @endforeach
+                </div>
+            @endif
+        </div>
+
+        {{-- Continue Constructing --}}
+        <div class="rounded-xl border border-zinc-200 p-5 dark:border-zinc-700">
+            <div class="mb-4 flex items-center justify-between">
+                <flux:heading size="lg">{{ __('Continue Constructing') }}</flux:heading>
+                <flux:button variant="ghost" size="sm" :href="route('crosswords.index')" wire:navigate>
+                    {{ __('View All') }}
+                </flux:button>
+            </div>
+
+            @if($this->recentDrafts->isEmpty())
+                <div class="flex flex-col items-center justify-center rounded-lg border border-dashed border-zinc-300 py-8 dark:border-zinc-600">
+                    <flux:icon name="pencil-square" class="mb-2 size-8 text-zinc-400" />
+                    <flux:text size="sm" class="text-zinc-400">{{ __('No drafts in progress') }}</flux:text>
+                    <flux:button variant="ghost" size="sm" class="mt-2" :href="route('crosswords.index')" wire:navigate>
+                        {{ __('Create a Puzzle') }}
+                    </flux:button>
+                </div>
+            @else
+                <div class="space-y-3">
+                    @foreach($this->recentDrafts as $crossword)
+                        <a
+                            href="{{ route('crosswords.editor', $crossword) }}"
+                            wire:navigate
+                            class="flex items-center gap-3 rounded-lg p-2 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                        >
+                            {{-- Mini grid --}}
+                            <div
+                                class="inline-grid shrink-0 gap-px rounded border border-zinc-200 bg-zinc-200 p-px dark:border-zinc-600 dark:bg-zinc-600"
+                                style="grid-template-columns: repeat({{ $crossword->width }}, minmax(0, 1fr)); width: {{ min($crossword->width * 5, 48) }}px;"
+                            >
+                                @for($row = 0; $row < $crossword->height; $row++)
+                                    @for($col = 0; $col < $crossword->width; $col++)
+                                        <div class="{{ $crossword->grid[$row][$col] === null ? 'invisible' : (($crossword->grid[$row][$col] ?? 0) === '#' ? 'bg-zinc-800 dark:bg-zinc-300' : 'bg-white dark:bg-zinc-800') }}" style="aspect-ratio: 1;"></div>
+                                    @endfor
+                                @endfor
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <div class="truncate text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ $crossword->title ?: __('Untitled Puzzle') }}</div>
+                                <flux:text size="sm" class="text-zinc-400">
+                                    {{ $crossword->width }}&times;{{ $crossword->height }}
+                                    &middot;
+                                    @php($completeness = $crossword->completeness())
+                                    {{ $completeness['percentage'] }}% {{ __('complete') }}
+                                </flux:text>
+                            </div>
+                            <flux:icon name="chevron-right" class="size-4 shrink-0 text-zinc-400" />
+                        </a>
+                    @endforeach
+                </div>
+            @endif
+        </div>
+    </div>
+
+    {{-- Trending & Newest --}}
+    <div class="grid gap-6 lg:grid-cols-2">
+        {{-- Trending --}}
+        <div class="rounded-xl border border-zinc-200 p-5 dark:border-zinc-700">
+            <div class="mb-4 flex items-center justify-between">
+                <flux:heading size="lg">{{ __('Trending') }}</flux:heading>
+                <flux:button variant="ghost" size="sm" :href="route('crosswords.solving')" wire:navigate>
+                    {{ __('Browse All') }}
+                </flux:button>
+            </div>
+
+            @if($this->trendingPuzzles->isEmpty())
+                <div class="flex flex-col items-center justify-center rounded-lg border border-dashed border-zinc-300 py-8 dark:border-zinc-600">
+                    <flux:icon name="fire" class="mb-2 size-8 text-zinc-400" />
+                    <flux:text size="sm" class="text-zinc-400">{{ __('No trending puzzles this week') }}</flux:text>
+                </div>
+            @else
+                <div class="space-y-3">
+                    @foreach($this->trendingPuzzles as $crossword)
+                        <a
+                            href="{{ route('crosswords.solver', $crossword) }}"
+                            wire:navigate
+                            class="flex items-center gap-3 rounded-lg p-2 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                        >
+                            <div
+                                class="inline-grid shrink-0 gap-px rounded border border-zinc-200 bg-zinc-200 p-px dark:border-zinc-600 dark:bg-zinc-600"
+                                style="grid-template-columns: repeat({{ $crossword->width }}, minmax(0, 1fr)); width: {{ min($crossword->width * 5, 48) }}px;"
+                            >
+                                @for($row = 0; $row < $crossword->height; $row++)
+                                    @for($col = 0; $col < $crossword->width; $col++)
+                                        <div class="{{ $crossword->grid[$row][$col] === null ? 'invisible' : (($crossword->grid[$row][$col] ?? 0) === '#' ? 'bg-zinc-800 dark:bg-zinc-300' : 'bg-white dark:bg-zinc-800') }}" style="aspect-ratio: 1;"></div>
+                                    @endfor
+                                @endfor
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <div class="truncate text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ $crossword->title ?: __('Untitled Puzzle') }}</div>
+                                <flux:text size="sm" class="text-zinc-400">
+                                    {{ __('by :author', ['author' => $crossword->user->name ?? __('Unknown')]) }}
+                                    &middot;
+                                    <span class="text-red-400">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="inline size-3" viewBox="0 0 24 24" fill="currentColor"><path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" /></svg>
+                                        {{ $crossword->likes_count }}
+                                    </span>
+                                </flux:text>
+                            </div>
+                            <flux:icon name="chevron-right" class="size-4 shrink-0 text-zinc-400" />
+                        </a>
+                    @endforeach
+                </div>
+            @endif
+        </div>
+
+        {{-- Newest --}}
+        <div class="rounded-xl border border-zinc-200 p-5 dark:border-zinc-700">
+            <div class="mb-4 flex items-center justify-between">
+                <flux:heading size="lg">{{ __('Newest') }}</flux:heading>
+                <flux:button variant="ghost" size="sm" :href="route('crosswords.solving')" wire:navigate>
+                    {{ __('Browse All') }}
+                </flux:button>
+            </div>
+
+            @if($this->newestPuzzles->isEmpty())
+                <div class="flex flex-col items-center justify-center rounded-lg border border-dashed border-zinc-300 py-8 dark:border-zinc-600">
+                    <flux:icon name="sparkles" class="mb-2 size-8 text-zinc-400" />
+                    <flux:text size="sm" class="text-zinc-400">{{ __('No published puzzles yet') }}</flux:text>
+                </div>
+            @else
+                <div class="space-y-3">
+                    @foreach($this->newestPuzzles as $crossword)
+                        <a
+                            href="{{ route('crosswords.solver', $crossword) }}"
+                            wire:navigate
+                            class="flex items-center gap-3 rounded-lg p-2 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                        >
+                            <div
+                                class="inline-grid shrink-0 gap-px rounded border border-zinc-200 bg-zinc-200 p-px dark:border-zinc-600 dark:bg-zinc-600"
+                                style="grid-template-columns: repeat({{ $crossword->width }}, minmax(0, 1fr)); width: {{ min($crossword->width * 5, 48) }}px;"
+                            >
+                                @for($row = 0; $row < $crossword->height; $row++)
+                                    @for($col = 0; $col < $crossword->width; $col++)
+                                        <div class="{{ $crossword->grid[$row][$col] === null ? 'invisible' : (($crossword->grid[$row][$col] ?? 0) === '#' ? 'bg-zinc-800 dark:bg-zinc-300' : 'bg-white dark:bg-zinc-800') }}" style="aspect-ratio: 1;"></div>
+                                    @endfor
+                                @endfor
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <div class="truncate text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ $crossword->title ?: __('Untitled Puzzle') }}</div>
+                                <flux:text size="sm" class="text-zinc-400">
+                                    {{ __('by :author', ['author' => $crossword->user->name ?? __('Unknown')]) }}
+                                    &middot;
+                                    {{ $crossword->created_at->diffForHumans() }}
+                                </flux:text>
+                            </div>
+                            <flux:icon name="chevron-right" class="size-4 shrink-0 text-zinc-400" />
+                        </a>
+                    @endforeach
+                </div>
+            @endif
+        </div>
+    </div>
+
+    {{-- Discover Puzzles --}}
+    <div class="rounded-xl border border-zinc-200 p-5 dark:border-zinc-700">
+        <div class="mb-4 flex items-center justify-between">
+            <flux:heading size="lg">{{ __('Discover Puzzles') }}</flux:heading>
+            <flux:button variant="ghost" size="sm" :href="route('crosswords.solving')" wire:navigate>
+                {{ __('Browse All') }}
+            </flux:button>
+        </div>
+
+        <livewire:puzzle-discovery :limit="3" :exclude-attempted="true" />
+    </div>
 
     {{-- Stats Cards --}}
     <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -126,122 +381,6 @@ new #[Title('Dashboard')] class extends Component {
                 </div>
             </div>
         </div>
-    </div>
-
-    <div class="grid gap-6 lg:grid-cols-2">
-        {{-- In Progress --}}
-        <div class="rounded-xl border border-zinc-200 p-5 dark:border-zinc-700">
-            <div class="mb-4 flex items-center justify-between">
-                <flux:heading size="lg">{{ __('Continue Solving') }}</flux:heading>
-                <flux:button variant="ghost" size="sm" :href="route('crosswords.solving')" wire:navigate>
-                    {{ __('View All') }}
-                </flux:button>
-            </div>
-
-            @if($this->inProgressAttempts->isEmpty())
-                <div class="flex flex-col items-center justify-center rounded-lg border border-dashed border-zinc-300 py-8 dark:border-zinc-600">
-                    <flux:icon name="play" class="mb-2 size-8 text-zinc-400" />
-                    <flux:text size="sm" class="text-zinc-400">{{ __('No puzzles in progress') }}</flux:text>
-                    <flux:button variant="ghost" size="sm" class="mt-2" :href="route('crosswords.solving')" wire:navigate>
-                        {{ __('Browse Puzzles') }}
-                    </flux:button>
-                </div>
-            @else
-                <div class="space-y-3">
-                    @foreach($this->inProgressAttempts as $attempt)
-                        <a
-                            href="{{ route('crosswords.solver', $attempt->crossword) }}"
-                            wire:navigate
-                            class="flex items-center gap-3 rounded-lg p-2 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800"
-                        >
-                            {{-- Mini grid --}}
-                            <div
-                                class="inline-grid shrink-0 gap-px rounded border border-zinc-200 bg-zinc-200 p-px dark:border-zinc-600 dark:bg-zinc-600"
-                                style="grid-template-columns: repeat({{ $attempt->crossword->width }}, minmax(0, 1fr)); width: {{ min($attempt->crossword->width * 5, 48) }}px;"
-                            >
-                                @for($row = 0; $row < $attempt->crossword->height; $row++)
-                                    @for($col = 0; $col < $attempt->crossword->width; $col++)
-                                        <div class="{{ $attempt->crossword->grid[$row][$col] === null ? 'invisible' : (($attempt->crossword->grid[$row][$col] ?? 0) === '#' ? 'bg-zinc-800 dark:bg-zinc-300' : 'bg-white dark:bg-zinc-800') }}" style="aspect-ratio: 1;"></div>
-                                    @endfor
-                                @endfor
-                            </div>
-                            <div class="min-w-0 flex-1">
-                                <div class="truncate text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ $attempt->crossword->title ?: __('Untitled Puzzle') }}</div>
-                                <flux:text size="sm" class="text-zinc-400">
-                                    {{ __('by :author', ['author' => $attempt->crossword->user->name ?? __('Unknown')]) }}
-                                    &middot;
-                                    {{ $attempt->updated_at->diffForHumans() }}
-                                </flux:text>
-                            </div>
-                            <flux:icon name="chevron-right" class="size-4 shrink-0 text-zinc-400" />
-                        </a>
-                    @endforeach
-                </div>
-            @endif
-        </div>
-
-        {{-- Recent Likes --}}
-        <div class="rounded-xl border border-zinc-200 p-5 dark:border-zinc-700">
-            <div class="mb-4 flex items-center justify-between">
-                <flux:heading size="lg">{{ __('Recently Liked') }}</flux:heading>
-                <flux:button variant="ghost" size="sm" :href="route('favorites.index')" wire:navigate>
-                    {{ __('View All') }}
-                </flux:button>
-            </div>
-
-            @if($this->recentLikes->isEmpty())
-                <div class="flex flex-col items-center justify-center rounded-lg border border-dashed border-zinc-300 py-8 dark:border-zinc-600">
-                    <flux:icon name="heart" class="mb-2 size-8 text-zinc-400" />
-                    <flux:text size="sm" class="text-zinc-400">{{ __('No liked puzzles yet') }}</flux:text>
-                    <flux:button variant="ghost" size="sm" class="mt-2" :href="route('crosswords.solving')" wire:navigate>
-                        {{ __('Discover Puzzles') }}
-                    </flux:button>
-                </div>
-            @else
-                <div class="space-y-3">
-                    @foreach($this->recentLikes as $crossword)
-                        <a
-                            href="{{ route('crosswords.solver', $crossword) }}"
-                            wire:navigate
-                            class="flex items-center gap-3 rounded-lg p-2 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800"
-                        >
-                            {{-- Mini grid --}}
-                            <div
-                                class="inline-grid shrink-0 gap-px rounded border border-zinc-200 bg-zinc-200 p-px dark:border-zinc-600 dark:bg-zinc-600"
-                                style="grid-template-columns: repeat({{ $crossword->width }}, minmax(0, 1fr)); width: {{ min($crossword->width * 5, 48) }}px;"
-                            >
-                                @for($row = 0; $row < $crossword->height; $row++)
-                                    @for($col = 0; $col < $crossword->width; $col++)
-                                        <div class="{{ $crossword->grid[$row][$col] === null ? 'invisible' : (($crossword->grid[$row][$col] ?? 0) === '#' ? 'bg-zinc-800 dark:bg-zinc-300' : 'bg-white dark:bg-zinc-800') }}" style="aspect-ratio: 1;"></div>
-                                    @endfor
-                                @endfor
-                            </div>
-                            <div class="min-w-0 flex-1">
-                                <div class="truncate text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ $crossword->title ?: __('Untitled Puzzle') }}</div>
-                                <flux:text size="sm" class="text-zinc-400">
-                                    {{ __('by :author', ['author' => $crossword->user->name ?? __('Unknown')]) }}
-                                    &middot;
-                                    {{ $crossword->width }}&times;{{ $crossword->height }}
-                                </flux:text>
-                            </div>
-                            <flux:icon name="chevron-right" class="size-4 shrink-0 text-zinc-400" />
-                        </a>
-                    @endforeach
-                </div>
-            @endif
-        </div>
-    </div>
-
-    {{-- Discover Puzzles --}}
-    <div class="rounded-xl border border-zinc-200 p-5 dark:border-zinc-700">
-        <div class="mb-4 flex items-center justify-between">
-            <flux:heading size="lg">{{ __('Discover Puzzles') }}</flux:heading>
-            <flux:button variant="ghost" size="sm" :href="route('crosswords.solving')" wire:navigate>
-                {{ __('Browse All') }}
-            </flux:button>
-        </div>
-
-        <livewire:puzzle-discovery :limit="3" :exclude-attempted="true" />
     </div>
 
     {{-- Community Stats --}}

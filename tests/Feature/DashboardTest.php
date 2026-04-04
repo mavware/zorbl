@@ -71,27 +71,22 @@ test('dashboard limits in-progress attempts to 3', function () {
     expect($component->get('inProgressAttempts'))->toHaveCount(3);
 });
 
-test('dashboard shows recently liked puzzles', function () {
+test('dashboard shows recent draft puzzles', function () {
     $user = User::factory()->create();
-    $crossword = Crossword::factory()->published()->create(['title' => 'Liked Dash Puzzle']);
-    CrosswordLike::create(['user_id' => $user->id, 'crossword_id' => $crossword->id]);
+    Crossword::factory()->create(['user_id' => $user->id, 'title' => 'Draft Dash Puzzle', 'is_published' => false]);
 
     Livewire::actingAs($user)
         ->test('pages::dashboard')
-        ->assertSee('Liked Dash Puzzle');
+        ->assertSee('Draft Dash Puzzle');
 });
 
-test('dashboard limits recent likes to 3', function () {
+test('dashboard limits recent drafts to 3', function () {
     $user = User::factory()->create();
-
-    foreach (range(1, 5) as $i) {
-        $crossword = Crossword::factory()->published()->create();
-        CrosswordLike::create(['user_id' => $user->id, 'crossword_id' => $crossword->id]);
-    }
+    Crossword::factory()->count(5)->create(['user_id' => $user->id, 'is_published' => false]);
 
     $component = Livewire::actingAs($user)->test('pages::dashboard');
 
-    expect($component->get('recentLikes'))->toHaveCount(3);
+    expect($component->get('recentDrafts'))->toHaveCount(3);
 });
 
 test('dashboard shows community stats', function () {
@@ -105,9 +100,51 @@ test('dashboard shows community stats', function () {
         ->and($component->get('totalSolves'))->toBe(2);
 });
 
+test('dashboard shows newest puzzles from other users', function () {
+    $user = User::factory()->create();
+    $other = User::factory()->create();
+    Crossword::factory()->published()->create(['user_id' => $other->id, 'title' => 'Fresh Puzzle']);
+
+    Livewire::actingAs($user)
+        ->test('pages::dashboard')
+        ->assertSee('Fresh Puzzle');
+});
+
+test('dashboard newest excludes own puzzles', function () {
+    $user = User::factory()->create();
+    Crossword::factory()->published()->create(['user_id' => $user->id, 'title' => 'My Own Puzzle']);
+
+    $component = Livewire::actingAs($user)->test('pages::dashboard');
+
+    expect($component->get('newestPuzzles'))->toHaveCount(0);
+});
+
+test('dashboard limits newest puzzles to 3', function () {
+    $user = User::factory()->create();
+    Crossword::factory()->count(5)->published()->create();
+
+    $component = Livewire::actingAs($user)->test('pages::dashboard');
+
+    expect($component->get('newestPuzzles'))->toHaveCount(3);
+});
+
+test('dashboard shows trending puzzles based on recent likes', function () {
+    $user = User::factory()->create();
+    $other = User::factory()->create();
+    $crossword = Crossword::factory()->published()->create(['user_id' => $other->id, 'title' => 'Hot Puzzle']);
+
+    // Add recent likes
+    CrosswordLike::create(['user_id' => $user->id, 'crossword_id' => $crossword->id]);
+    CrosswordLike::create(['user_id' => User::factory()->create()->id, 'crossword_id' => $crossword->id]);
+
+    Livewire::actingAs($user)
+        ->test('pages::dashboard')
+        ->assertSee('Hot Puzzle');
+});
+
 test('dashboard shows empty states when user has no activity', function () {
     Livewire::actingAs(User::factory()->create())
         ->test('pages::dashboard')
         ->assertSee('No puzzles in progress')
-        ->assertSee('No liked puzzles yet');
+        ->assertSee('No drafts in progress');
 });

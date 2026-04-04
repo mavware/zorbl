@@ -5,6 +5,7 @@ use App\Models\CrosswordLike;
 use App\Models\PuzzleAttempt;
 use App\Models\PuzzleComment;
 use App\Services\AchievementService;
+use App\Services\ContestService;
 use App\Services\IpuzExporter;
 use App\Services\JpzExporter;
 use App\Services\PdfExporter;
@@ -26,6 +27,9 @@ new #[Title('Solve Crossword')] class extends Component {
     public bool $isOwner = false;
 
     #[Locked]
+    public bool $isPublished = false;
+
+    #[Locked]
     public int $authorUserId = 0;
 
     public string $title = '';
@@ -38,6 +42,7 @@ new #[Title('Solve Crossword')] class extends Component {
     public array $cluesAcross = [];
     public array $cluesDown = [];
     public ?array $styles = null;
+    public ?array $prefilled = null;
 
     #[Computed]
     public function isLiked(): bool
@@ -126,6 +131,7 @@ new #[Title('Solve Crossword')] class extends Component {
 
         $user = Auth::user();
         $this->isOwner = $user->id === $crossword->user_id;
+        $this->isPublished = (bool) $crossword->is_published;
         $this->authorUserId = $crossword->user_id;
 
         // Find or create the user's attempt for this puzzle
@@ -143,6 +149,34 @@ new #[Title('Solve Crossword')] class extends Component {
             $attempt->update(['started_at' => now()]);
         }
 
+        // Merge special prefilled cells into existing progress
+        // Single A-Z letters are only set on initial attempt creation,
+        // but rebus (multi-char), symbols, and emoji should always be synced
+        // since solvers can't edit them and they may have been added after the attempt started
+        if ($crossword->prefilled && ! $attempt->wasRecentlyCreated) {
+            $progress = $attempt->progress;
+            $dirty = false;
+
+            foreach ($crossword->prefilled as $r => $row) {
+                foreach ($row as $c => $cell) {
+                    if (! filled($cell)) {
+                        continue;
+                    }
+
+                    $isSimpleLetter = preg_match('/^[A-Z]$/u', $cell);
+
+                    if (! $isSimpleLetter && ($progress[$r][$c] ?? '') !== $cell) {
+                        $progress[$r][$c] = $cell;
+                        $dirty = true;
+                    }
+                }
+            }
+
+            if ($dirty) {
+                $attempt->update(['progress' => $progress]);
+            }
+        }
+
         $this->crosswordId = $crossword->id;
         $this->attemptId = $attempt->id;
         $this->title = $crossword->title ?? 'Untitled Puzzle';
@@ -155,6 +189,7 @@ new #[Title('Solve Crossword')] class extends Component {
         $this->cluesAcross = $crossword->clues_across ?? [];
         $this->cluesDown = $crossword->clues_down ?? [];
         $this->styles = $crossword->styles;
+        $this->prefilled = $crossword->prefilled;
         $this->pencilCells = $attempt->pencil_cells ?? [];
         $this->elapsedSeconds = $attempt->solve_time_seconds ?? 0;
         $this->isSolved = (bool) $attempt->is_completed;
@@ -209,6 +244,12 @@ new #[Title('Solve Crossword')] class extends Component {
                     'description' => $a->description,
                     'icon' => $a->icon,
                 ])->all());
+            }
+
+            // Process contest solve if this crossword belongs to any contests
+            $crossword = Crossword::find($this->crosswordId);
+            if ($crossword && $crossword->contests()->exists()) {
+                app(ContestService::class)->processContestSolve(Auth::user(), $crossword);
             }
         }
 
@@ -283,6 +324,7 @@ new #[Title('Solve Crossword')] class extends Component {
         solution: @js($solution),
         progress: @js($progress),
         styles: @js($styles ?? []),
+        prefilled: @js($prefilled),
         cluesAcross: @js($cluesAcross),
         cluesDown: @js($cluesDown),
         initialElapsed: @js($elapsedSeconds),
@@ -400,6 +442,64 @@ new #[Title('Solve Crossword')] class extends Component {
                     <flux:menu.item wire:click="downloadPdf">{{ __('.pdf (Print-Ready)') }}</flux:menu.item>
                 </flux:menu>
             </flux:dropdown>
+
+            {{-- Embed code (published puzzles only) --}}
+            @if($isPublished)
+                <div x-data="{ showEmbed: false }">
+                    <flux:tooltip content="{{ __('Embed this puzzle') }}">
+                        <flux:button variant="ghost" size="sm" icon="code-bracket" x-on:click="showEmbed = true" />
+                    </flux:tooltip>
+
+                    <template x-teleport="body">
+                        <div x-show="showEmbed" x-cloak x-on:keydown.escape.window="showEmbed = false" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50" x-on:click.self="showEmbed = false">
+                            <div class="mx-4 w-full max-w-lg rounded-xl bg-white p-6 shadow-xl dark:bg-zinc-800" x-on:click.stop>
+                                <div class="mb-4 flex items-center justify-between">
+                                    <h3 class="text-lg font-semibold">{{ __('Embed Puzzle') }}</h3>
+                                    <button x-on:click="showEmbed = false" class="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 20 20" fill="currentColor"><path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z"/></svg>
+                                    </button>
+                                </div>
+
+                                {{-- iframe embed --}}
+                                <div class="mb-4">
+                                    <label class="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">{{ __('iframe (recommended)') }}</label>
+                                    <div class="relative">
+                                        <textarea
+                                            readonly
+                                            rows="2"
+                                            class="w-full rounded-lg border border-zinc-300 bg-zinc-50 px-3 py-2 font-mono text-xs text-zinc-600 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-400"
+                                            x-ref="iframeCode"
+                                        >&lt;iframe src="{{ route('embed.solver', $crosswordId) }}" width="100%" height="700" frameborder="0" style="border:none;"&gt;&lt;/iframe&gt;</textarea>
+                                        <button
+                                            x-on:click="navigator.clipboard.writeText($refs.iframeCode.value); $el.textContent = '{{ __('Copied!') }}'; setTimeout(() => $el.textContent = '{{ __('Copy') }}', 2000)"
+                                            class="absolute top-2 right-2 rounded bg-zinc-200 px-2 py-0.5 text-xs font-medium text-zinc-600 hover:bg-zinc-300 dark:bg-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-600"
+                                        >{{ __('Copy') }}</button>
+                                    </div>
+                                </div>
+
+                                {{-- Script embed --}}
+                                <div>
+                                    <label class="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">{{ __('Script tag') }}</label>
+                                    <div class="relative">
+                                        <textarea
+                                            readonly
+                                            rows="3"
+                                            class="w-full rounded-lg border border-zinc-300 bg-zinc-50 px-3 py-2 font-mono text-xs text-zinc-600 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-400"
+                                            x-ref="scriptCode"
+                                        >&lt;div data-zorbl-embed data-crossword-id="{{ $crosswordId }}" data-api-url="{{ url('/api/embed') }}/"&gt;&lt;/div&gt;
+&lt;link rel="stylesheet" href="{{ Vite::asset('resources/css/embed.css') }}"&gt;
+&lt;script src="{{ Vite::asset('resources/js/embed.js') }}" defer&gt;&lt;/script&gt;</textarea>
+                                        <button
+                                            x-on:click="navigator.clipboard.writeText($refs.scriptCode.value); $el.textContent = '{{ __('Copied!') }}'; setTimeout(() => $el.textContent = '{{ __('Copy') }}', 2000)"
+                                            class="absolute top-2 right-2 rounded bg-zinc-200 px-2 py-0.5 text-xs font-medium text-zinc-600 hover:bg-zinc-300 dark:bg-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-600"
+                                        >{{ __('Copy') }}</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            @endif
 
             {{-- Save status --}}
             <div class="flex items-center gap-1 pl-2 text-sm text-zinc-400">
