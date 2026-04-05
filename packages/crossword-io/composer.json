@@ -1,0 +1,36 @@
+{
+    "name": "zorbl/crossword-io",
+    "description": "Import and export crossword puzzles in iPUZ, PUZ, and JPZ formats.",
+    "type": "library",
+    "license": "MIT",
+    "keywords": ["crossword", "puzzle", "ipuz", "puz", "jpz", "import", "export"],
+    "require": {
+        "php": "^8.3",
+        "ext-dom": "*",
+        "ext-json": "*",
+        "ext-libxml": "*",
+        "ext-mbstring": "*",
+        "ext-simplexml": "*",
+        "ext-zlib": "*"
+    },
+    "require-dev": {
+        "pestphp/pest": "^3.0 || ^4.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Zorbl\\CrosswordIO\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Zorbl\\CrosswordIO\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "minimum-stability": "stable"
+}
