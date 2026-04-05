@@ -13,6 +13,7 @@ class UsersTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn ($query) => $query->with('roles'))
             ->columns([
                 TextColumn::make('name')
                     ->searchable(),
@@ -38,6 +39,16 @@ class UsersTable
                 TextColumn::make('roles.name')
                     ->badge()
                     ->separator(','),
+                TextColumn::make('subscription_status')
+                    ->label('Plan')
+                    ->badge()
+                    ->state(fn ($record): string => $record->isPro() ? 'Pro' : 'Free')
+                    ->color(fn (string $state): string => $state === 'Pro' ? 'success' : 'gray'),
+                TextColumn::make('grandfathered_at')
+                    ->label('Grandfathered')
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 //

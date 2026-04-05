@@ -2,8 +2,12 @@
 
 namespace App\Http\Resources\Api\V1;
 
+use App\Models\Crossword;
 use Illuminate\Http\Request;
 
+/**
+ * @mixin Crossword
+ */
 class CrosswordResource extends JsonApiResource
 {
     protected function resourceType(): string

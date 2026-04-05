@@ -6,8 +6,23 @@ use App\Models\Word;
 use App\Services\AiClueGenerator;
 use App\Services\AiGridFiller;
 use App\Services\GridFiller;
-use App\Services\GridNumberer;
 use Illuminate\Support\Facades\Http;
+use Laravel\Cashier\Subscription;
+use Zorbl\CrosswordIO\GridNumberer;
+
+function createProUserForAutofill(): User
+{
+    $user = User::factory()->create(['stripe_id' => 'cus_test_'.uniqid()]);
+    Subscription::create([
+        'user_id' => $user->id,
+        'type' => 'default',
+        'stripe_id' => 'sub_test_'.uniqid(),
+        'stripe_status' => 'active',
+        'stripe_price' => 'price_fake',
+    ]);
+
+    return $user;
+}
 use Livewire\Livewire;
 
 beforeEach(function () {
@@ -19,7 +34,11 @@ beforeEach(function () {
         ['word' => 'ATE', 'length' => 3, 'score' => 58.0, 'created_at' => now(), 'updated_at' => now()],
         ['word' => 'TOE', 'length' => 3, 'score' => 52.0, 'created_at' => now(), 'updated_at' => now()],
         ['word' => 'TEA', 'length' => 3, 'score' => 62.0, 'created_at' => now(), 'updated_at' => now()],
+        ['word' => 'TAP', 'length' => 3, 'score' => 48.0, 'created_at' => now(), 'updated_at' => now()],
+        ['word' => 'APE', 'length' => 3, 'score' => 45.0, 'created_at' => now(), 'updated_at' => now()],
         ['word' => 'OAT', 'length' => 3, 'score' => 44.0, 'created_at' => now(), 'updated_at' => now()],
+        ['word' => 'PEA', 'length' => 3, 'score' => 42.0, 'created_at' => now(), 'updated_at' => now()],
+        ['word' => 'OPE', 'length' => 3, 'score' => 30.0, 'created_at' => now(), 'updated_at' => now()],
     ]);
 });
 
@@ -104,7 +123,7 @@ test('ai fill calls anthropic api', function () {
         ]),
     ]);
 
-    $user = User::factory()->create();
+    $user = createProUserForAutofill();
     $crossword = makeSmallCrossword($user);
 
     $solution = [['', '', ''], ['', '', ''], ['', '', '']];
@@ -174,7 +193,7 @@ test('ai generate clues calls anthropic api', function () {
         ]),
     ]);
 
-    $user = User::factory()->create();
+    $user = createProUserForAutofill();
     $crossword = makeSmallCrossword($user);
 
     $solution = [

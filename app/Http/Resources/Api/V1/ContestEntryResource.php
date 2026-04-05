@@ -2,8 +2,12 @@
 
 namespace App\Http\Resources\Api\V1;
 
+use App\Models\ContestEntry;
 use Illuminate\Http\Request;
 
+/**
+ * @mixin ContestEntry
+ */
 class ContestEntryResource extends JsonApiResource
 {
     protected function resourceType(): string

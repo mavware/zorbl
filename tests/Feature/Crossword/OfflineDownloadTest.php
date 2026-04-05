@@ -22,7 +22,7 @@ test('solver can download puzzle as ipuz', function () {
     $this->actingAs($user);
 
     Livewire\Livewire::test('pages::crosswords.solver', ['crossword' => $crossword])
-        ->call('downloadIpuz')
+        ->call('exportIpuz')
         ->assertFileDownloaded('test-puzzle.ipuz');
 });
 
@@ -44,7 +44,7 @@ test('solver can download puzzle as puz', function () {
     $this->actingAs($user);
 
     Livewire\Livewire::test('pages::crosswords.solver', ['crossword' => $crossword])
-        ->call('downloadPuz')
+        ->call('exportPuz')
         ->assertFileDownloaded('test-puzzle.puz');
 });
 
@@ -66,7 +66,7 @@ test('solver can download puzzle as jpz', function () {
     $this->actingAs($user);
 
     Livewire\Livewire::test('pages::crosswords.solver', ['crossword' => $crossword])
-        ->call('downloadJpz')
+        ->call('exportJpz')
         ->assertFileDownloaded('test-puzzle.jpz');
 });
 

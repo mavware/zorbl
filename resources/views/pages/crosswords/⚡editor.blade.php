@@ -3,26 +3,32 @@
 use App\Models\ClueEntry;
 use App\Models\Crossword;
 use App\Services\ClueHarvester;
-use App\Services\GridNumberer;
-use App\Services\IpuzExporter;
-use App\Services\JpzExporter;
-use App\Services\PdfExporter;
-use App\Services\PuzExporter;
+use App\Livewire\Concerns\ExportsCrossword;
+use Zorbl\CrosswordIO\GridNumberer;
 use App\Services\WordSuggester;
 use App\Services\DifficultyRater;
 use App\Services\GridFiller;
 use App\Services\AiGridFiller;
 use App\Services\AiClueGenerator;
+use App\Support\AiUsageTracker;
 use Illuminate\Support\Facades\Auth;
+use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Title;
 use Livewire\Component;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 
 new #[Title('Crossword Editor')]
 class extends Component {
+    use ExportsCrossword;
+
     #[Locked]
     public int $crosswordId;
+
+    #[Computed]
+    public function crossword(): Crossword
+    {
+        return Crossword::findOrFail($this->crosswordId);
+    }
 
     public string $title = '';
     public string $author = '';
@@ -74,7 +80,7 @@ class extends Component {
 
     public function save(array $grid, array $solution, ?array $styles, array $cluesAcross, array $cluesDown): void
     {
-        $crossword = Crossword::findOrFail($this->crosswordId);
+        $crossword = $this->crossword;
         $this->authorize('update', $crossword);
 
         $crossword->update([
@@ -95,7 +101,7 @@ class extends Component {
 
     public function savePrefilled(array $prefilled): void
     {
-        $crossword = Crossword::findOrFail($this->crosswordId);
+        $crossword = $this->crossword;
         $this->authorize('update', $crossword);
 
         // Check if the prefilled grid has any non-empty values
@@ -129,7 +135,7 @@ class extends Component {
             'minAnswerLength' => ['required', 'integer', 'min:1', 'max:15'],
         ]);
 
-        $crossword = Crossword::findOrFail($this->crosswordId);
+        $crossword = $this->crossword;
         $this->authorize('update', $crossword);
 
         $metadata = $crossword->metadata ?? [];
@@ -156,7 +162,7 @@ class extends Component {
             return;
         }
 
-        $crossword = Crossword::findOrFail($this->crosswordId);
+        $crossword = $this->crossword;
         $completeness = $crossword->completeness();
 
         if ($completeness['percentage'] === 100) {
@@ -171,7 +177,7 @@ class extends Component {
 
     public function togglePublished(): void
     {
-        $crossword = Crossword::findOrFail($this->crosswordId);
+        $crossword = $this->crossword;
         $this->authorize('update', $crossword);
 
         $this->isPublished = !$this->isPublished;
@@ -255,7 +261,7 @@ class extends Component {
      */
     public function heuristicFill(array $solution): array
     {
-        $crossword = Crossword::findOrFail($this->crosswordId);
+        $crossword = $this->crossword;
         $this->authorize('update', $crossword);
 
         return app(GridFiller::class)->fill(
@@ -275,8 +281,22 @@ class extends Component {
      */
     public function aiFill(array $solution): array
     {
-        $crossword = Crossword::findOrFail($this->crosswordId);
+        $crossword = $this->crossword;
         $this->authorize('update', $crossword);
+
+        $tracker = app(AiUsageTracker::class);
+        $user = Auth::user();
+
+        if (! $tracker->canUse($user, 'grid_fill')) {
+            return [
+                'success' => false,
+                'fills' => [],
+                'message' => $user->isPro()
+                    ? __('You have used all 50 AI fills this month. Resets on the 1st.')
+                    : __('AI Autofill is a Pro feature. Upgrade to unlock it.'),
+                'upgrade' => ! $user->isPro(),
+            ];
+        }
 
         $numberer = app(GridNumberer::class);
         $numbered = $numberer->number($this->grid, $this->width, $this->height, $this->styles ?? [], $this->minAnswerLength);
@@ -286,7 +306,7 @@ class extends Component {
 
         foreach (['across', 'down'] as $dir) {
             foreach ($numbered[$dir] as $slot) {
-                $pattern = $this->extractPattern($solution, $slot, $dir);
+                $pattern = GridFiller::getPattern($solution, $slot, $dir);
                 if (str_contains($pattern, '_')) {
                     $slots[] = [
                         'direction' => $dir,
@@ -306,7 +326,13 @@ class extends Component {
             }
         }
 
-        return app(AiGridFiller::class)->fill($slots, $filledWords, $this->title, $this->notes);
+        $result = app(AiGridFiller::class)->fill($slots, $filledWords, $this->title, $this->notes);
+
+        if ($result['success'] || ! empty($result['fills'])) {
+            $tracker->record($user, 'grid_fill');
+        }
+
+        return $result;
     }
 
     /**
@@ -316,8 +342,22 @@ class extends Component {
      */
     public function aiGenerateClues(array $solution): array
     {
-        $crossword = Crossword::findOrFail($this->crosswordId);
+        $crossword = $this->crossword;
         $this->authorize('update', $crossword);
+
+        $tracker = app(AiUsageTracker::class);
+        $user = Auth::user();
+
+        if (! $tracker->canUse($user, 'clue_generation')) {
+            return [
+                'success' => false,
+                'clues' => ['across' => [], 'down' => []],
+                'message' => $user->isPro()
+                    ? __('You have used all 50 AI clue generations this month. Resets on the 1st.')
+                    : __('AI Clue Generation is a Pro feature. Upgrade to unlock it.'),
+                'upgrade' => ! $user->isPro(),
+            ];
+        }
 
         $numberer = app(GridNumberer::class);
         $numbered = $numberer->number($this->grid, $this->width, $this->height, $this->styles ?? [], $this->minAnswerLength);
@@ -325,7 +365,7 @@ class extends Component {
         $words = [];
         foreach (['across', 'down'] as $dir) {
             foreach ($numbered[$dir] as $slot) {
-                $word = $this->extractPattern($solution, $slot, $dir);
+                $word = GridFiller::getPattern($solution, $slot, $dir);
                 if (! str_contains($word, '_')) {
                     $words[] = [
                         'direction' => $dir,
@@ -336,24 +376,15 @@ class extends Component {
             }
         }
 
-        return app(AiClueGenerator::class)->generate($words, $this->title, $this->notes);
-    }
+        $result = app(AiClueGenerator::class)->generate($words, $this->title, $this->notes);
 
-    /**
-     * Extract the current letter pattern for a slot from the solution grid.
-     */
-    private function extractPattern(array $solution, array $slot, string $direction): string
-    {
-        $pattern = '';
-        for ($i = 0; $i < $slot['length']; $i++) {
-            $r = $direction === 'across' ? $slot['row'] : $slot['row'] + $i;
-            $c = $direction === 'across' ? $slot['col'] + $i : $slot['col'];
-            $letter = $solution[$r][$c] ?? '';
-            $pattern .= ($letter !== '' && $letter !== '#' && $letter !== null) ? strtoupper($letter) : '_';
+        if ($result['success'] && ! empty($result['clues'])) {
+            $tracker->record($user, 'clue_generation');
         }
 
-        return $pattern;
+        return $result;
     }
+
 
     public function resizeGrid(): void
     {
@@ -388,7 +419,7 @@ class extends Component {
         $this->cluesAcross = [];
         $this->cluesDown = [];
 
-        $crossword = Crossword::findOrFail($this->crosswordId);
+        $crossword = $this->crossword;
         $crossword->update([
             'width'        => $this->width,
             'height'       => $this->height,
@@ -403,60 +434,26 @@ class extends Component {
         $this->dispatch('grid-resized');
     }
 
-    public function exportIpuz(): StreamedResponse
+    protected function getExportableCrossword(): Crossword
     {
-        $crossword = Crossword::findOrFail($this->crosswordId);
+        $crossword = $this->crossword;
         $this->authorize('view', $crossword);
 
-        $exporter = new IpuzExporter;
-        $json = $exporter->toJson($crossword);
-        $filename = str($crossword->title ?: 'crossword')->slug()->append('.ipuz')->toString();
-
-        return response()->streamDownload(function () use ($json) {
-            echo $json;
-        }, $filename, ['Content-Type' => 'application/json']);
+        return $crossword;
     }
 
-    public function exportPuz(): StreamedResponse
+    protected function getPdfIncludeSolution(): bool
     {
-        $crossword = Crossword::findOrFail($this->crosswordId);
-        $this->authorize('view', $crossword);
-
-        $exporter = app(PuzExporter::class);
-        $binary = $exporter->export($crossword);
-        $filename = str($crossword->title ?: 'crossword')->slug()->append('.puz')->toString();
-
-        return response()->streamDownload(function () use ($binary) {
-            echo $binary;
-        }, $filename, ['Content-Type' => 'application/octet-stream']);
+        return true;
     }
 
-    public function exportJpz(): StreamedResponse
+    protected function getExportPlanGates(): array
     {
-        $crossword = Crossword::findOrFail($this->crosswordId);
-        $this->authorize('view', $crossword);
-
-        $exporter = app(JpzExporter::class);
-        $compressed = $exporter->export($crossword);
-        $filename = str($crossword->title ?: 'crossword')->slug()->append('.jpz')->toString();
-
-        return response()->streamDownload(function () use ($compressed) {
-            echo $compressed;
-        }, $filename, ['Content-Type' => 'application/octet-stream']);
-    }
-
-    public function exportPdf(): StreamedResponse
-    {
-        $crossword = Crossword::findOrFail($this->crosswordId);
-        $this->authorize('view', $crossword);
-
-        $exporter = app(PdfExporter::class);
-        $pdf = $exporter->export($crossword, includeSolution: true);
-        $filename = str($crossword->title ?: 'crossword')->slug()->append('.pdf')->toString();
-
-        return response()->streamDownload(function () use ($pdf) {
-            echo $pdf;
-        }, $filename, ['Content-Type' => 'application/pdf']);
+        return [
+            'puz' => 'canExportPuz',
+            'jpz' => 'canExportJpz',
+            'pdf' => 'canExportPdf',
+        ];
     }
 }
 ?>
@@ -556,22 +553,28 @@ class extends Component {
                         </div>
                         <span class="text-xs text-zinc-400">{{ __('Dictionary-based') }}</span>
                     </flux:menu.item>
-                    <flux:menu.item x-on:click="aiFill()" x-bind:disabled="fillInProgress">
+                    <flux:menu.item x-on:click="aiFill()" x-bind:disabled="fillInProgress" :class="! Auth::user()->isPro() ? 'opacity-60' : ''">
                         <div class="flex items-center gap-2">
                             <svg xmlns="http://www.w3.org/2000/svg" class="size-4 text-purple-500" viewBox="0 0 20 20" fill="currentColor">
                                 <path d="M15.98 1.804a1 1 0 0 0-1.96 0l-.24 1.192a1 1 0 0 1-.784.785l-1.192.238a1 1 0 0 0 0 1.962l1.192.238a1 1 0 0 1 .785.785l.238 1.192a1 1 0 0 0 1.962 0l.238-1.192a1 1 0 0 1 .785-.785l1.192-.238a1 1 0 0 0 0-1.962l-1.192-.238a1 1 0 0 1-.785-.785l-.238-1.192ZM6.949 5.684a1 1 0 0 0-1.898 0l-.683 2.051a1 1 0 0 1-.633.633l-2.051.683a1 1 0 0 0 0 1.898l2.051.683a1 1 0 0 1 .633.633l.683 2.051a1 1 0 0 0 1.898 0l.683-2.051a1 1 0 0 1 .633-.633l2.051-.683a1 1 0 0 0 0-1.898l-2.051-.683a1 1 0 0 1-.633-.633l-.683-2.051ZM15.98 13.804a1 1 0 0 0-1.96 0l-.24 1.192a1 1 0 0 1-.784.785l-1.192.238a1 1 0 0 0 0 1.962l1.192.238a1 1 0 0 1 .785.785l.238 1.192a1 1 0 0 0 1.962 0l.238-1.192a1 1 0 0 1 .785-.785l1.192-.238a1 1 0 0 0 0-1.962l-1.192-.238a1 1 0 0 1-.785-.785l-.238-1.192Z" />
                             </svg>
                             {{ __('AI Fill') }}
+                            @unless (Auth::user()->isPro())
+                                <flux:badge color="purple" size="sm">{{ __('Pro') }}</flux:badge>
+                            @endunless
                         </div>
                         <span class="text-xs text-zinc-400">{{ __('Thematic, Claude-powered') }}</span>
                     </flux:menu.item>
                     <flux:separator />
-                    <flux:menu.item x-on:click="aiGenerateClues()" x-bind:disabled="fillInProgress || hasUnfilledSlots">
+                    <flux:menu.item x-on:click="aiGenerateClues()" x-bind:disabled="fillInProgress || hasUnfilledSlots" :class="! Auth::user()->isPro() ? 'opacity-60' : ''">
                         <div class="flex items-center gap-2">
                             <svg xmlns="http://www.w3.org/2000/svg" class="size-4 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
                                 <path fill-rule="evenodd" d="M10 2c-2.236 0-4.43.18-6.57.524C1.993 2.755 1 4.014 1 5.426v5.148c0 1.413.993 2.67 2.43 2.902 1.168.188 2.352.327 3.55.414.28.02.521.18.642.413l1.713 3.293a.75.75 0 0 0 1.33 0l1.713-3.293a.783.783 0 0 1 .642-.413 41.102 41.102 0 0 0 3.55-.414c1.437-.231 2.43-1.49 2.43-2.902V5.426c0-1.413-.993-2.67-2.43-2.902A41.289 41.289 0 0 0 10 2ZM6.75 6a.75.75 0 0 0 0 1.5h6.5a.75.75 0 0 0 0-1.5h-6.5ZM6 9.25a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5A.75.75 0 0 1 6 9.25Z" clip-rule="evenodd" />
                             </svg>
                             {{ __('AI Generate Clues') }}
+                            @unless (Auth::user()->isPro())
+                                <flux:badge color="blue" size="sm">{{ __('Pro') }}</flux:badge>
+                            @endunless
                         </div>
                         <span class="text-xs text-zinc-400">{{ __('Write clues with AI') }}</span>
                     </flux:menu.item>
@@ -606,10 +609,25 @@ class extends Component {
                     {{ __('Export') }}
                 </flux:button>
                 <flux:menu>
-                    <flux:menu.item wire:click="exportIpuz">{{ __('.ipuz') }}</flux:menu.item>
-                    <flux:menu.item wire:click="exportPuz">{{ __('.puz (Across Lite)') }}</flux:menu.item>
-                    <flux:menu.item wire:click="exportJpz">{{ __('.jpz (Crossword Compiler)') }}</flux:menu.item>
-                    <flux:menu.item wire:click="exportPdf">{{ __('.pdf (Print-Ready)') }}</flux:menu.item>
+                    <flux:menu.item wire:click="attemptExport('ipuz')">{{ __('.ipuz') }}</flux:menu.item>
+                    <flux:menu.item wire:click="attemptExport('puz')" :class="! Auth::user()->planLimits()->canExportPuz() ? 'opacity-60' : ''">
+                        {{ __('.puz (Across Lite)') }}
+                        @unless (Auth::user()->planLimits()->canExportPuz())
+                            <flux:badge color="purple" size="sm">{{ __('Pro') }}</flux:badge>
+                        @endunless
+                    </flux:menu.item>
+                    <flux:menu.item wire:click="attemptExport('jpz')" :class="! Auth::user()->planLimits()->canExportJpz() ? 'opacity-60' : ''">
+                        {{ __('.jpz (Crossword Compiler)') }}
+                        @unless (Auth::user()->planLimits()->canExportJpz())
+                            <flux:badge color="purple" size="sm">{{ __('Pro') }}</flux:badge>
+                        @endunless
+                    </flux:menu.item>
+                    <flux:menu.item wire:click="exportPdf" :class="! Auth::user()->planLimits()->canExportPdf() ? 'opacity-60' : ''">
+                        {{ __('.pdf (Print-Ready)') }}
+                        @unless (Auth::user()->planLimits()->canExportPdf())
+                            <flux:badge color="purple" size="sm">{{ __('Pro') }}</flux:badge>
+                        @endunless
+                    </flux:menu.item>
                 </flux:menu>
             </flux:dropdown>
 
@@ -1273,6 +1291,33 @@ class extends Component {
             <div class="flex justify-end gap-2">
                 <flux:button wire:click="cancelPublish">{{ __('Cancel') }}</flux:button>
                 <flux:button variant="primary" wire:click="togglePublished">{{ __('Publish Anyway') }}</flux:button>
+            </div>
+        </div>
+    </flux:modal>
+
+    {{-- Export Warning Modal --}}
+    <flux:modal wire:model="showExportWarning">
+        <div class="space-y-6">
+            <flux:heading size="lg">{{ __('Export Warning') }}</flux:heading>
+            <flux:text>{{ __('This crossword uses features not fully supported by :format export:', ['format' => '.' . $pendingExportFormat]) }}</flux:text>
+
+            <ul class="space-y-1.5 text-sm">
+                @foreach($exportWarnings as $warning)
+                    <li class="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="size-4 shrink-0" viewBox="0 0 20 20"
+                             fill="currentColor">
+                            <path fill-rule="evenodd"
+                                  d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z"
+                                  clip-rule="evenodd"/>
+                        </svg>
+                        {{ __($warning) }}
+                    </li>
+                @endforeach
+            </ul>
+
+            <div class="flex justify-end gap-2">
+                <flux:button wire:click="cancelExport">{{ __('Cancel') }}</flux:button>
+                <flux:button variant="primary" wire:click="confirmExport">{{ __('Export Anyway') }}</flux:button>
             </div>
         </div>
     </flux:modal>

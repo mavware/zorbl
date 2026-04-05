@@ -80,9 +80,18 @@ new #[Title('Favorites')] class extends Component {
             'newListName' => ['required', 'string', 'min:1', 'max:100'],
         ]);
 
+        $user = Auth::user();
+        $limits = $user->planLimits();
+
+        if ($user->favoriteLists()->count() >= $limits->maxFavoriteLists()) {
+            $this->addError('newListName', __('Free accounts can create up to :count favorite lists. Upgrade to Pro for unlimited.', ['count' => $limits->maxFavoriteLists()]));
+
+            return;
+        }
+
         $name = trim($this->newListName);
 
-        $exists = Auth::user()->favoriteLists()->where('name', $name)->exists();
+        $exists = $user->favoriteLists()->where('name', $name)->exists();
 
         if ($exists) {
             $this->addError('newListName', __('You already have a list with this name.'));
@@ -90,7 +99,7 @@ new #[Title('Favorites')] class extends Component {
             return;
         }
 
-        $list = Auth::user()->favoriteLists()->create(['name' => $name]);
+        $list = $user->favoriteLists()->create(['name' => $name]);
 
         $this->newListName = '';
         $this->showNewListModal = false;

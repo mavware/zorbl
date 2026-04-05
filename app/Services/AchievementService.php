@@ -116,6 +116,7 @@ class AchievementService
     public function checkAchievements(User $user, ?int $solveTimeSeconds = null): array
     {
         $earned = [];
+        $existingTypes = Achievement::where('user_id', $user->id)->pluck('type')->all();
         $completedCount = $user->puzzleAttempts()->where('is_completed', true)->count();
 
         // Milestone achievements
@@ -128,7 +129,7 @@ class AchievementService
 
         foreach ($milestones as $type => $threshold) {
             if ($completedCount >= $threshold) {
-                $achievement = $this->award($user, $type);
+                $achievement = $this->award($user, $type, $existingTypes);
                 if ($achievement) {
                     $earned[] = $achievement;
                 }
@@ -143,7 +144,7 @@ class AchievementService
 
         foreach ($streakMilestones as $type => $threshold) {
             if ($user->current_streak >= $threshold) {
-                $achievement = $this->award($user, $type);
+                $achievement = $this->award($user, $type, $existingTypes);
                 if ($achievement) {
                     $earned[] = $achievement;
                 }
@@ -152,7 +153,7 @@ class AchievementService
 
         // Speed achievement
         if ($solveTimeSeconds !== null && $solveTimeSeconds > 0 && $solveTimeSeconds <= 120) {
-            $achievement = $this->award($user, 'speed_demon');
+            $achievement = $this->award($user, 'speed_demon', $existingTypes);
             if ($achievement) {
                 $earned[] = $achievement;
             }
@@ -169,11 +170,12 @@ class AchievementService
     public function checkContestAchievements(User $user, ContestEntry $entry): array
     {
         $earned = [];
+        $existingTypes = Achievement::where('user_id', $user->id)->pluck('type')->all();
 
         // Contest Debut: completed all puzzles in a contest
         $totalPuzzles = $entry->contest->crosswords()->count();
         if ($totalPuzzles > 0 && $entry->puzzles_completed >= $totalPuzzles) {
-            $achievement = $this->award($user, 'first_contest');
+            $achievement = $this->award($user, 'first_contest', $existingTypes);
             if ($achievement) {
                 $earned[] = $achievement;
             }
@@ -181,7 +183,7 @@ class AchievementService
 
         // Meta Mind: solved first meta answer
         if ($entry->meta_solved) {
-            $achievement = $this->award($user, 'first_meta_solve');
+            $achievement = $this->award($user, 'first_meta_solve', $existingTypes);
             if ($achievement) {
                 $earned[] = $achievement;
             }
@@ -189,7 +191,7 @@ class AchievementService
 
         // Champion: finished 1st place (checked on contest end)
         if ($entry->rank === 1 && $entry->contest->hasEnded()) {
-            $achievement = $this->award($user, 'contest_winner');
+            $achievement = $this->award($user, 'contest_winner', $existingTypes);
             if ($achievement) {
                 $earned[] = $achievement;
             }
@@ -201,15 +203,12 @@ class AchievementService
     /**
      * Award an achievement if not already earned.
      */
-    private function award(User $user, string $type): ?Achievement
+    /**
+     * @param  array<int, string>  $existingTypes
+     */
+    private function award(User $user, string $type, array $existingTypes): ?Achievement
     {
-        if (! isset(self::DEFINITIONS[$type])) {
-            return null;
-        }
-
-        $existing = Achievement::where('user_id', $user->id)->where('type', $type)->first();
-
-        if ($existing) {
+        if (! isset(self::DEFINITIONS[$type]) || in_array($type, $existingTypes, true)) {
             return null;
         }
 

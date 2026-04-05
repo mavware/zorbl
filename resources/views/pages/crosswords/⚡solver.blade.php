@@ -6,10 +6,7 @@ use App\Models\PuzzleAttempt;
 use App\Models\PuzzleComment;
 use App\Services\AchievementService;
 use App\Services\ContestService;
-use App\Services\IpuzExporter;
-use App\Services\JpzExporter;
-use App\Services\PdfExporter;
-use App\Services\PuzExporter;
+use App\Livewire\Concerns\ExportsCrossword;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
@@ -17,6 +14,8 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 
 new #[Title('Solve Crossword')] class extends Component {
+    use ExportsCrossword;
+
     #[Locked]
     public int $crosswordId;
 
@@ -258,60 +257,12 @@ new #[Title('Solve Crossword')] class extends Component {
         $this->dispatch('progress-saved');
     }
 
-    public function downloadIpuz()
+    protected function getExportableCrossword(): Crossword
     {
         $crossword = Crossword::findOrFail($this->crosswordId);
         $this->authorize('solve', $crossword);
 
-        $exporter = new IpuzExporter;
-        $json = $exporter->toJson($crossword);
-        $filename = str($crossword->title ?: 'crossword')->slug()->append('.ipuz')->toString();
-
-        return response()->streamDownload(function () use ($json) {
-            echo $json;
-        }, $filename, ['Content-Type' => 'application/json']);
-    }
-
-    public function downloadPuz()
-    {
-        $crossword = Crossword::findOrFail($this->crosswordId);
-        $this->authorize('solve', $crossword);
-
-        $exporter = app(PuzExporter::class);
-        $binary = $exporter->export($crossword);
-        $filename = str($crossword->title ?: 'crossword')->slug()->append('.puz')->toString();
-
-        return response()->streamDownload(function () use ($binary) {
-            echo $binary;
-        }, $filename, ['Content-Type' => 'application/octet-stream']);
-    }
-
-    public function downloadJpz()
-    {
-        $crossword = Crossword::findOrFail($this->crosswordId);
-        $this->authorize('solve', $crossword);
-
-        $exporter = app(JpzExporter::class);
-        $compressed = $exporter->export($crossword);
-        $filename = str($crossword->title ?: 'crossword')->slug()->append('.jpz')->toString();
-
-        return response()->streamDownload(function () use ($compressed) {
-            echo $compressed;
-        }, $filename, ['Content-Type' => 'application/octet-stream']);
-    }
-
-    public function downloadPdf()
-    {
-        $crossword = Crossword::findOrFail($this->crosswordId);
-        $this->authorize('solve', $crossword);
-
-        $exporter = app(PdfExporter::class);
-        $pdf = $exporter->export($crossword, includeSolution: false);
-        $filename = str($crossword->title ?: 'crossword')->slug()->append('.pdf')->toString();
-
-        return response()->streamDownload(function () use ($pdf) {
-            echo $pdf;
-        }, $filename, ['Content-Type' => 'application/pdf']);
+        return $crossword;
     }
 }
 ?>
@@ -436,10 +387,10 @@ new #[Title('Solve Crossword')] class extends Component {
                     <flux:button variant="ghost" size="sm" icon="arrow-down-tray" />
                 </flux:tooltip>
                 <flux:menu>
-                    <flux:menu.item wire:click="downloadIpuz">{{ __('.ipuz') }}</flux:menu.item>
-                    <flux:menu.item wire:click="downloadPuz">{{ __('.puz (Across Lite)') }}</flux:menu.item>
-                    <flux:menu.item wire:click="downloadJpz">{{ __('.jpz (Crossword Compiler)') }}</flux:menu.item>
-                    <flux:menu.item wire:click="downloadPdf">{{ __('.pdf (Print-Ready)') }}</flux:menu.item>
+                    <flux:menu.item wire:click="attemptExport('ipuz')">{{ __('.ipuz') }}</flux:menu.item>
+                    <flux:menu.item wire:click="attemptExport('puz')">{{ __('.puz (Across Lite)') }}</flux:menu.item>
+                    <flux:menu.item wire:click="attemptExport('jpz')">{{ __('.jpz (Crossword Compiler)') }}</flux:menu.item>
+                    <flux:menu.item wire:click="exportPdf">{{ __('.pdf (Print-Ready)') }}</flux:menu.item>
                 </flux:menu>
             </flux:dropdown>
 
@@ -827,4 +778,31 @@ new #[Title('Solve Crossword')] class extends Component {
             </div>
         </template>
     </div>
+
+    {{-- Export Warning Modal --}}
+    <flux:modal wire:model="showExportWarning">
+        <div class="space-y-6">
+            <flux:heading size="lg">{{ __('Export Warning') }}</flux:heading>
+            <flux:text>{{ __('This crossword uses features not fully supported by :format export:', ['format' => '.' . $pendingExportFormat]) }}</flux:text>
+
+            <ul class="space-y-1.5 text-sm">
+                @foreach($exportWarnings as $warning)
+                    <li class="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="size-4 shrink-0" viewBox="0 0 20 20"
+                             fill="currentColor">
+                            <path fill-rule="evenodd"
+                                  d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z"
+                                  clip-rule="evenodd"/>
+                        </svg>
+                        {{ __($warning) }}
+                    </li>
+                @endforeach
+            </ul>
+
+            <div class="flex justify-end gap-2">
+                <flux:button wire:click="cancelExport">{{ __('Cancel') }}</flux:button>
+                <flux:button variant="primary" wire:click="confirmExport">{{ __('Export Anyway') }}</flux:button>
+            </div>
+        </div>
+    </flux:modal>
 </div>

@@ -2,8 +2,12 @@
 
 namespace App\Http\Resources\Api\V1;
 
+use App\Models\ClueEntry;
 use Illuminate\Http\Request;
 
+/**
+ * @mixin ClueEntry
+ */
 class ClueEntryResource extends JsonApiResource
 {
     protected function resourceType(): string

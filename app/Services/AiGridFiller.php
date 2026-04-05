@@ -2,11 +2,12 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class AiGridFiller
 {
+    public function __construct(private readonly AnthropicClient $client) {}
+
     /**
      * Fill empty grid slots using Anthropic Claude API.
      *
@@ -16,16 +17,6 @@ class AiGridFiller
      */
     public function fill(array $slots, array $filledWords, string $title = '', string $notes = ''): array
     {
-        $apiKey = config('services.anthropic.key');
-
-        if (empty($apiKey)) {
-            return [
-                'success' => false,
-                'fills' => [],
-                'message' => 'Anthropic API key is not configured. Add ANTHROPIC_API_KEY to your .env file.',
-            ];
-        }
-
         if (empty($slots)) {
             return [
                 'success' => true,
@@ -38,24 +29,20 @@ class AiGridFiller
         $userMessage = $this->buildUserMessage($slots, $filledWords, $title, $notes);
 
         try {
-            $response = Http::withHeaders([
-                'x-api-key' => $apiKey,
-                'anthropic-version' => '2023-06-01',
-            ])
-                ->timeout(60)
-                ->post('https://api.anthropic.com/v1/messages', [
-                    'model' => config('services.anthropic.model', 'claude-sonnet-4-20250514'),
-                    'max_tokens' => 4096,
-                    'system' => $systemPrompt,
-                    'messages' => [
-                        ['role' => 'user', 'content' => $userMessage],
-                    ],
-                ]);
+            $result = $this->client->sendMessage($systemPrompt, $userMessage);
 
-            if (! $response->successful()) {
+            if (! $result['success']) {
+                if ($result['status'] === null) {
+                    return [
+                        'success' => false,
+                        'fills' => [],
+                        'message' => 'Anthropic API key is not configured. Add ANTHROPIC_API_KEY to your .env file.',
+                    ];
+                }
+
                 Log::warning('Anthropic API error', [
-                    'status' => $response->status(),
-                    'body' => $response->body(),
+                    'status' => $result['status'],
+                    'body' => $result['body'],
                 ]);
 
                 return [
@@ -65,7 +52,7 @@ class AiGridFiller
                 ];
             }
 
-            return $this->parseResponse($response->json(), $slots);
+            return $this->parseResponse($result['data'], $slots);
         } catch (\Exception $e) {
             Log::error('AI grid fill failed', ['error' => $e->getMessage()]);
 
@@ -137,7 +124,7 @@ PROMPT;
      */
     private function parseResponse(array $response, array $slots): array
     {
-        $text = $response['content'][0]['text'] ?? '';
+        $text = AnthropicClient::extractText($response);
 
         // Extract JSON from response (may be wrapped in a Markdown code block)
         if (preg_match('/\[[\s\S]*]/', $text, $matches)) {

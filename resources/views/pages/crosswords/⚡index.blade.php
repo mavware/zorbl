@@ -1,12 +1,12 @@
 <?php
 
-use App\Exceptions\IpuzImportException;
-use App\Exceptions\JpzImportException;
-use App\Exceptions\PuzImportException;
+use Zorbl\CrosswordIO\Exceptions\IpuzImportException;
+use Zorbl\CrosswordIO\Exceptions\JpzImportException;
+use Zorbl\CrosswordIO\Exceptions\PuzImportException;
 use App\Models\Crossword;
-use App\Services\GridNumberer;
 use App\Services\GridTemplateProvider;
-use App\Services\ImportDetector;
+use Zorbl\CrosswordIO\GridNumberer;
+use Zorbl\CrosswordIO\ImportDetector;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
@@ -54,6 +54,17 @@ new #[Title('My Puzzles')] class extends Component {
             'newWidth' => ['required', 'integer', 'min:3', 'max:30'],
             'newHeight' => ['required', 'integer', 'min:3', 'max:30'],
         ]);
+
+        $user = Auth::user();
+        $limits = $user->planLimits();
+
+        if ($user->crosswords()->count() >= $limits->maxPuzzles()) {
+            $this->addError('newWidth', $user->isPro()
+                ? __('You have reached your puzzle limit.')
+                : __('Free accounts can create up to :count puzzles. Upgrade to Pro for unlimited.', ['count' => $limits->maxPuzzles()]));
+
+            return;
+        }
 
         if ($this->selectedTemplate !== null && isset($this->templates[$this->selectedTemplate])) {
             $grid = $this->templates[$this->selectedTemplate]['grid'];
@@ -197,7 +208,7 @@ new #[Title('My Puzzles')] class extends Component {
         @endif
 
         {{-- New Puzzle Modal --}}
-    <flux:modal wire:model="showNewModal">
+    <flux:modal wire:model="showNewModal" class="w-full max-w-lg">
         <div class="space-y-6">
             <flux:heading size="lg">{{ __('New Puzzle') }}</flux:heading>
 
@@ -216,34 +227,33 @@ new #[Title('My Puzzles')] class extends Component {
             </div>
 
             @if(count($this->templates) > 0)
-                <div>
-                    <flux:label class="mb-2">{{ __('Grid Template') }} <span class="text-zinc-400 text-xs font-normal">{{ __('(optional)') }}</span></flux:label>
-                    <div class="flex gap-3 overflow-x-auto pb-2">
-                        {{-- Blank grid option --}}
-                        <button
-                            type="button"
-                            wire:click="$set('selectedTemplate', null)"
-                            class="flex flex-col items-center gap-1.5 rounded-lg border-2 p-2 transition-colors {{ $selectedTemplate === null ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' : 'border-zinc-200 hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-500' }}"
+            <div>
+                <flux:label class="mb-2">{{ __('Grid Template') }} <span class="text-zinc-400 text-xs font-normal">{{ __('(optional)') }}</span></flux:label>
+                <div class="flex min-h-[6.5rem] gap-3 overflow-x-auto pb-2">
+                    {{-- Blank grid option --}}
+                    <button
+                        type="button"
+                        wire:click="$set('selectedTemplate', null)"
+                        class="flex shrink-0 flex-col items-center gap-1.5 rounded-lg border-2 p-2 transition-colors {{ $selectedTemplate === null ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' : 'border-zinc-200 hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-500' }}"
+                    >
+                        <div
+                            class="inline-grid gap-px rounded border border-zinc-200 bg-zinc-200 p-px dark:border-zinc-600 dark:bg-zinc-600"
+                            style="grid-template-columns: repeat({{ $newWidth }}, minmax(0, 1fr)); width: {{ min($newWidth * 6, 80) }}px;"
                         >
-                            <div
-                                class="inline-grid gap-px rounded border border-zinc-200 bg-zinc-200 p-px dark:border-zinc-600 dark:bg-zinc-600"
-                                style="grid-template-columns: repeat({{ $newWidth }}, minmax(0, 1fr)); width: {{ min($newWidth * 6, 80) }}px;"
-                            >
-                                @for($r = 0; $r < $newHeight; $r++)
-                                    @for($c = 0; $c < $newWidth; $c++)
-                                        <div class="bg-white dark:bg-zinc-800" style="aspect-ratio: 1;"></div>
-                                    @endfor
+                            @for($r = 0; $r < $newHeight; $r++)
+                                @for($c = 0; $c < $newWidth; $c++)
+                                    <div class="bg-white dark:bg-zinc-800" style="aspect-ratio: 1;"></div>
                                 @endfor
-                            </div>
-                            <span class="whitespace-nowrap text-xs text-zinc-600 dark:text-zinc-400">{{ __('Blank') }}</span>
-                        </button>
+                            @endfor
+                        </div>
+                        <span class="whitespace-nowrap text-xs text-zinc-600 dark:text-zinc-400">{{ __('Blank') }}</span>
+                    </button>
 
-                        {{-- Template options --}}
-                        @foreach($this->templates as $index => $template)
+                    @foreach($this->templates as $index => $template)
                             <button
                                 type="button"
                                 wire:click="$set('selectedTemplate', {{ $index }})"
-                                class="flex flex-col items-center gap-1.5 rounded-lg border-2 p-2 transition-colors {{ $selectedTemplate === $index ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' : 'border-zinc-200 hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-500' }}"
+                                class="flex shrink-0 flex-col items-center gap-1.5 rounded-lg border-2 p-2 transition-colors {{ $selectedTemplate === $index ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' : 'border-zinc-200 hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-500' }}"
                             >
                                 <div
                                     class="inline-grid gap-px rounded border border-zinc-200 bg-zinc-200 p-px dark:border-zinc-600 dark:bg-zinc-600"
@@ -257,9 +267,9 @@ new #[Title('My Puzzles')] class extends Component {
                                 </div>
                                 <span class="whitespace-nowrap text-xs text-zinc-600 dark:text-zinc-400">{{ $template['name'] }}</span>
                             </button>
-                        @endforeach
-                    </div>
+                    @endforeach
                 </div>
+            </div>
             @endif
 
             <div class="flex justify-end gap-2">

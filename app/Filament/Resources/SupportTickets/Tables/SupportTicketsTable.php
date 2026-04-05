@@ -14,6 +14,7 @@ class SupportTicketsTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn ($query) => $query->with(['user', 'assignee']))
             ->columns([
                 TextColumn::make('id')
                     ->sortable()

@@ -3,9 +3,10 @@
 use App\Models\Crossword;
 use App\Models\PuzzleAttempt;
 use App\Models\User;
-use App\Services\IpuzExporter;
-use App\Services\IpuzImporter;
-use App\Services\PuzExporter;
+use Zorbl\CrosswordIO\Exporters\IpuzExporter;
+use Zorbl\CrosswordIO\Exporters\PuzExporter;
+use Zorbl\CrosswordIO\GridNumberer;
+use Zorbl\CrosswordIO\Importers\IpuzImporter;
 
 test('crossword can store multi-letter solution values', function () {
     $crossword = Crossword::factory()->create([
@@ -86,8 +87,8 @@ test('ipuz export preserves rebus values in solution', function () {
         'clues_down' => [],
     ]);
 
-    $exporter = app(IpuzExporter::class);
-    $data = $exporter->export($crossword);
+    $exporter = new IpuzExporter;
+    $data = $exporter->export($crossword->toCrosswordIO());
 
     expect($data['solution'][0][0])->toBe('THEME')
         ->and($data['solution'][0][1])->toBe('A');
@@ -106,7 +107,7 @@ test('ipuz import preserves rebus values', function () {
         ],
     ]);
 
-    $importer = app(IpuzImporter::class);
+    $importer = new IpuzImporter(new GridNumberer);
     $result = $importer->import($ipuz);
 
     expect($result['solution'][0][0])->toBe('THEME')
@@ -123,8 +124,8 @@ test('puz export includes rebus GRBS and RTBL sections', function () {
         'clues_down' => [],
     ]);
 
-    $exporter = app(PuzExporter::class);
-    $binary = $exporter->export($crossword);
+    $exporter = new PuzExporter(new GridNumberer);
+    $binary = $exporter->export($crossword->toCrosswordIO());
 
     // The export should contain GRBS and RTBL section markers
     expect($binary)->toContain('GRBS')

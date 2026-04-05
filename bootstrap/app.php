@@ -17,7 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $schedule->command('contests:process-ended')->hourly();
     })
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $middleware->validateCsrfTokens(except: ['stripe/*']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

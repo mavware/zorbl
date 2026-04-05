@@ -3,6 +3,21 @@
 use App\Models\Crossword;
 use App\Models\PuzzleAttempt;
 use App\Models\User;
+use Laravel\Cashier\Subscription;
+
+function makeAnalyticsProUser(): User
+{
+    $user = User::factory()->create(['stripe_id' => 'cus_test_'.uniqid()]);
+    Subscription::create([
+        'user_id' => $user->id,
+        'type' => 'default',
+        'stripe_id' => 'sub_test_'.uniqid(),
+        'stripe_status' => 'active',
+        'stripe_price' => 'price_fake',
+    ]);
+
+    return $user;
+}
 
 test('analytics page is accessible for authenticated users', function () {
     $user = User::factory()->create();
@@ -14,7 +29,7 @@ test('analytics page is accessible for authenticated users', function () {
 });
 
 test('analytics page shows empty state without published puzzles', function () {
-    $user = User::factory()->create();
+    $user = makeAnalyticsProUser();
 
     $this->actingAs($user)
         ->get(route('crosswords.analytics'))
@@ -23,7 +38,7 @@ test('analytics page shows empty state without published puzzles', function () {
 });
 
 test('analytics page shows puzzle performance data', function () {
-    $constructor = User::factory()->create();
+    $constructor = makeAnalyticsProUser();
     $solver = User::factory()->create();
 
     $crossword = Crossword::factory()->published()->for($constructor)->create([
@@ -47,7 +62,7 @@ test('analytics page shows puzzle performance data', function () {
 });
 
 test('analytics counts solves and completions across all published puzzles', function () {
-    $constructor = User::factory()->create();
+    $constructor = makeAnalyticsProUser();
     $solver1 = User::factory()->create();
     $solver2 = User::factory()->create();
 

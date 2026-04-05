@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Support\PlanLimits;
 use Carbon\CarbonImmutable;
 use Database\Factories\UserFactory;
 use Eloquent;
@@ -19,6 +20,7 @@ use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Notifications\DatabaseNotificationCollection;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
+use Laravel\Cashier\Billable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Models\Permission;
@@ -41,6 +43,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property int $current_streak
  * @property int $longest_streak
  * @property string|null $last_solve_date
+ * @property CarbonImmutable|null $grandfathered_at
  * @property-read Collection<int, Achievement> $achievements
  * @property-read int|null $achievements_count
  * @property-read Collection<int, ClueEntry> $clueEntries
@@ -74,12 +77,12 @@ use Spatie\Permission\Traits\HasRoles;
  *
  * @mixin Eloquent
  */
-#[Fillable(['name', 'email', 'password', 'copyright_name', 'current_streak', 'longest_streak', 'last_solve_date'])]
+#[Fillable(['name', 'email', 'password', 'copyright_name', 'current_streak', 'longest_streak', 'last_solve_date', 'grandfathered_at'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements FilamentUser
 {
     /** @use HasFactory<UserFactory> */
-    use HasApiTokens, HasFactory, HasRoles, Notifiable, TwoFactorAuthenticatable;
+    use Billable, HasApiTokens, HasFactory, HasRoles, Notifiable, TwoFactorAuthenticatable;
 
     /**
      * Get the attributes that should be cast.
@@ -90,6 +93,7 @@ class User extends Authenticatable implements FilamentUser
     {
         return [
             'email_verified_at' => 'datetime',
+            'grandfathered_at' => 'datetime',
             'password' => 'hashed',
         ];
     }
@@ -222,6 +226,22 @@ class User extends Authenticatable implements FilamentUser
             ->take(2)
             ->map(fn ($word) => Str::substr($word, 0, 1))
             ->implode('');
+    }
+
+    /**
+     * Check if the user has an active Pro subscription.
+     */
+    public function isPro(): bool
+    {
+        return $this->hasRole('Admin') || $this->subscribed('default');
+    }
+
+    /**
+     * Get the plan limits for the user's current subscription tier.
+     */
+    public function planLimits(): PlanLimits
+    {
+        return new PlanLimits($this->isPro(), $this->grandfathered_at !== null);
     }
 
     public function canAccessPanel(Panel $panel): bool

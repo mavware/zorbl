@@ -129,6 +129,55 @@ it('returns already filled message when grid is complete', function () {
         ->and($result['message'])->toContain('already fully filled');
 });
 
+it('does not use the same word twice', function () {
+    $filler = app(GridFiller::class);
+
+    // 3x3 open grid
+    $grid = [
+        [1, 2, 3],
+        [4, 0, 0],
+        [5, 0, 0],
+    ];
+
+    $solution = [
+        ['', '', ''],
+        ['', '', ''],
+        ['', '', ''],
+    ];
+
+    $result = $filler->fill($grid, $solution, 3, 3, [], 3);
+
+    expect($result['success'])->toBeTrue();
+
+    $words = array_map(fn ($fill) => $fill['word'], $result['fills']);
+    expect($words)->toHaveCount(count(array_unique($words)));
+});
+
+it('does not repeat a pre-filled word', function () {
+    $filler = app(GridFiller::class);
+
+    $grid = [
+        [1, 2, 3],
+        [4, 0, 0],
+        [5, 0, 0],
+    ];
+
+    // Pre-fill first row with CAT
+    $solution = [
+        ['C', 'A', 'T'],
+        ['', '', ''],
+        ['', '', ''],
+    ];
+
+    $result = $filler->fill($grid, $solution, 3, 3, [], 3);
+
+    expect($result['success'])->toBeTrue();
+
+    // None of the filled words should be CAT since it's already in the grid
+    $filledWords = array_map(fn ($fill) => $fill['word'], $result['fills']);
+    expect($filledWords)->not->toContain('CAT');
+});
+
 it('handles grid with blocks', function () {
     $filler = app(GridFiller::class);
 

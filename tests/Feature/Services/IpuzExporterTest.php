@@ -1,8 +1,10 @@
 <?php
 
 use App\Models\Crossword;
-use App\Services\IpuzExporter;
-use App\Services\IpuzImporter;
+use Zorbl\CrosswordIO\Crossword as CrosswordDTO;
+use Zorbl\CrosswordIO\Exporters\IpuzExporter;
+use Zorbl\CrosswordIO\GridNumberer;
+use Zorbl\CrosswordIO\Importers\IpuzImporter;
 
 it('exports a crossword to valid ipuz format', function () {
     $crossword = Crossword::factory()->make([
@@ -34,9 +36,9 @@ it('exports a crossword to valid ipuz format', function () {
     ]);
 
     $exporter = new IpuzExporter;
-    $ipuz = $exporter->export($crossword);
+    $ipuz = $exporter->export($crossword->toCrosswordIO());
 
-    expect($ipuz['version'])->toBe('http://ipuz.org/v2')
+    expect($ipuz['version'])->toBe('https://ipuz.org/v2')
         ->and($ipuz['kind'])->toBe(['http://ipuz.org/crossword#1'])
         ->and($ipuz['dimensions'])->toBe(['width' => 3, 'height' => 3])
         ->and($ipuz['title'])->toBe('Export Test')
@@ -54,7 +56,7 @@ it('exports a crossword to valid ipuz format', function () {
 
 it('roundtrips through import and export', function () {
     $originalIpuz = json_encode([
-        'version' => 'http://ipuz.org/v2',
+        'version' => 'https://ipuz.org/v2',
         'kind' => ['http://ipuz.org/crossword#1'],
         'dimensions' => ['width' => 3, 'height' => 3],
         'puzzle' => [
@@ -74,13 +76,13 @@ it('roundtrips through import and export', function () {
         'title' => 'Roundtrip Test',
     ]);
 
-    $importer = app(IpuzImporter::class);
+    $importer = new IpuzImporter(new GridNumberer);
     $imported = $importer->import($originalIpuz);
 
-    $crossword = Crossword::factory()->make($imported);
+    $dto = CrosswordDTO::fromArray($imported);
 
     $exporter = new IpuzExporter;
-    $exported = $exporter->export($crossword);
+    $exported = $exporter->export($dto);
 
     expect($exported['dimensions'])->toBe(['width' => 3, 'height' => 3])
         ->and($exported['title'])->toBe('Roundtrip Test')
@@ -104,10 +106,44 @@ it('exports to valid JSON string', function () {
     ]);
 
     $exporter = new IpuzExporter;
-    $json = $exporter->toJson($crossword);
+    $json = $exporter->toJson($crossword->toCrosswordIO());
 
     $decoded = json_decode($json, true);
 
     expect(json_last_error())->toBe(JSON_ERROR_NONE)
-        ->and($decoded['version'])->toBe('http://ipuz.org/v2');
+        ->and($decoded['version'])->toBe('https://ipuz.org/v2');
+});
+
+it('does not throw for crosswords with bars, void cells, and non-ASCII', function () {
+    $crossword = Crossword::factory()->make([
+        'width' => 3,
+        'height' => 3,
+        'grid' => [
+            [null, 1, 2],
+            [3, 0, 0],
+            [0, 0, null],
+        ],
+        'solution' => [
+            [null, "\u{0100}", 'B'],
+            ['C', 'D', 'E'],
+            ['F', 'G', null],
+        ],
+        'clues_across' => [
+            ['number' => 1, 'clue' => "\u{0100}B"],
+            ['number' => 3, 'clue' => 'CDE'],
+            ['number' => 4, 'clue' => 'FG'],
+        ],
+        'clues_down' => [
+            ['number' => 1, 'clue' => "\u{0100}D"],
+            ['number' => 2, 'clue' => 'BE'],
+            ['number' => 3, 'clue' => 'CF'],
+        ],
+        'styles' => ['1,0' => ['bars' => ['right']]],
+    ]);
+
+    $exporter = new IpuzExporter;
+    $result = $exporter->export($crossword->toCrosswordIO());
+
+    expect($result)->toBeArray()
+        ->and($result['dimensions'])->toBe(['width' => 3, 'height' => 3]);
 });

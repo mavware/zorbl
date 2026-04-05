@@ -2,8 +2,12 @@
 
 namespace App\Http\Resources\Api\V1;
 
+use App\Models\Achievement;
 use Illuminate\Http\Request;
 
+/**
+ * @mixin Achievement
+ */
 class AchievementResource extends JsonApiResource
 {
     protected function resourceType(): string

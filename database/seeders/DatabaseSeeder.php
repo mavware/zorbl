@@ -5,6 +5,9 @@ namespace Database\Seeders;
 use App\Models\User;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 
 class DatabaseSeeder extends Seeder
 {
@@ -13,13 +16,22 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        if (App()->environment('local')) {
-            User::factory()->create([
-                'name' => 'Test User',
-                'email' => 'test@example.com',
-                'password' => 'password',
-            ]);
+        $adminPermission = Permission::firstOrCreate(['name' => 'admin']);
 
+        $adminRole = Role::firstOrCreate(['name' => 'Admin']);
+        $adminRole->givePermissionTo($adminPermission);
+
+        $michael = User::firstOrCreate(
+            ['email' => 'michael@zorbol.com'],
+            [
+                'name' => 'Michael Greer',
+                'password' => Hash::make('Sunday#1'),
+                'email_verified_at' => now(),
+            ]
+        );
+        $michael->assignRole($adminRole);
+
+        if (App()->environment('local')) {
             $this->call([
                 RoadmapSeeder::class,
             ]);

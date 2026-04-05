@@ -1,8 +1,10 @@
 <?php
 
 use App\Models\Crossword;
-use App\Services\PuzExporter;
-use App\Services\PuzImporter;
+use Zorbl\CrosswordIO\Exceptions\ExportValidationException;
+use Zorbl\CrosswordIO\Exporters\PuzExporter;
+use Zorbl\CrosswordIO\GridNumberer;
+use Zorbl\CrosswordIO\Importers\PuzImporter;
 
 it('exports a crossword to valid puz binary', function () {
     $crossword = Crossword::factory()->make([
@@ -32,8 +34,9 @@ it('exports a crossword to valid puz binary', function () {
         ],
     ]);
 
-    $exporter = app(PuzExporter::class);
-    $binary = $exporter->export($crossword);
+    $numberer = new GridNumberer;
+    $exporter = new PuzExporter($numberer);
+    $binary = $exporter->export($crossword->toCrosswordIO());
 
     // Validate magic string
     expect(substr($binary, 0x02, 12))->toBe("ACROSS&DOWN\0");
@@ -77,10 +80,11 @@ it('roundtrips through export and import', function () {
         ],
     ]);
 
-    $exporter = app(PuzExporter::class);
-    $importer = app(PuzImporter::class);
+    $numberer = new GridNumberer;
+    $exporter = new PuzExporter($numberer);
+    $importer = new PuzImporter($numberer);
 
-    $binary = $exporter->export($crossword);
+    $binary = $exporter->export($crossword->toCrosswordIO());
     $result = $importer->import($binary);
 
     expect($result['title'])->toBe('Roundtrip')
@@ -122,8 +126,8 @@ it('converts void cells to blocks in puz export', function () {
         ],
     ]);
 
-    $exporter = app(PuzExporter::class);
-    $binary = $exporter->export($crossword);
+    $exporter = new PuzExporter(new GridNumberer);
+    $binary = $exporter->export($crossword->toCrosswordIO(), allowLossyExport: true);
 
     // Void cells should be '.' (blocks) in the solution board
     $solutionBoard = substr($binary, 52, 9);
@@ -161,17 +165,48 @@ it('includes GEXT section when circles exist', function () {
         ],
     ]);
 
-    $exporter = app(PuzExporter::class);
-    $binary = $exporter->export($crossword);
+    $numberer = new GridNumberer;
+    $exporter = new PuzExporter($numberer);
+    $binary = $exporter->export($crossword->toCrosswordIO());
 
     // GEXT section should be present
     expect(str_contains($binary, 'GEXT'))->toBeTrue();
 
     // Re-import and verify circles survived
-    $importer = app(PuzImporter::class);
+    $importer = new PuzImporter($numberer);
     $result = $importer->import($binary);
 
     expect($result['styles'])->not->toBeNull()
         ->and($result['styles']['0,0'])->toBe(['shapebg' => 'circle'])
         ->and($result['styles']['1,2'])->toBe(['shapebg' => 'circle']);
 });
+
+it('throws ExportValidationException for void cells', function () {
+    $crossword = Crossword::factory()->make([
+        'width' => 3,
+        'height' => 3,
+        'grid' => [
+            [null, 1, 2],
+            [3, 0, 0],
+            [0, 0, null],
+        ],
+        'solution' => [
+            [null, 'A', 'B'],
+            ['C', 'D', 'E'],
+            ['F', 'G', null],
+        ],
+        'clues_across' => [
+            ['number' => 1, 'clue' => 'AB'],
+            ['number' => 3, 'clue' => 'CDE'],
+            ['number' => 4, 'clue' => 'FG'],
+        ],
+        'clues_down' => [
+            ['number' => 1, 'clue' => 'AD'],
+            ['number' => 2, 'clue' => 'BE'],
+            ['number' => 3, 'clue' => 'CF'],
+        ],
+    ]);
+
+    $exporter = new PuzExporter(new GridNumberer);
+    $exporter->export($crossword->toCrosswordIO());
+})->throws(ExportValidationException::class);

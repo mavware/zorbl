@@ -40,4 +40,9 @@ return [
         'model' => env('ANTHROPIC_MODEL', 'claude-sonnet-4-20250514'),
     ],
 
+    'stripe' => [
+        'pro_monthly_price' => env('ZORBL_PRO_MONTHLY_PRICE'),
+        'pro_yearly_price' => env('ZORBL_PRO_YEARLY_PRICE'),
+    ],
+
 ];

@@ -2,8 +2,12 @@
 
 namespace App\Http\Resources\Api\V1;
 
+use App\Models\User;
 use Illuminate\Http\Request;
 
+/**
+ * @mixin User
+ */
 class MeResource extends JsonApiResource
 {
     protected function resourceType(): string

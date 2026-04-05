@@ -2,11 +2,12 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class AiClueGenerator
 {
+    public function __construct(private readonly AnthropicClient $client) {}
+
     /**
      * Generate crossword clues using Anthropic Claude API.
      *
@@ -15,16 +16,6 @@ class AiClueGenerator
      */
     public function generate(array $words, string $title = '', string $notes = ''): array
     {
-        $apiKey = config('services.anthropic.key');
-
-        if (empty($apiKey)) {
-            return [
-                'success' => false,
-                'clues' => ['across' => [], 'down' => []],
-                'message' => 'Anthropic API key is not configured. Add ANTHROPIC_API_KEY to your .env file.',
-            ];
-        }
-
         if (empty($words)) {
             return [
                 'success' => true,
@@ -37,24 +28,20 @@ class AiClueGenerator
         $userMessage = $this->buildUserMessage($words, $title, $notes);
 
         try {
-            $response = Http::withHeaders([
-                'x-api-key' => $apiKey,
-                'anthropic-version' => '2023-06-01',
-            ])
-                ->timeout(60)
-                ->post('https://api.anthropic.com/v1/messages', [
-                    'model' => config('services.anthropic.model', 'claude-sonnet-4-20250514'),
-                    'max_tokens' => 4096,
-                    'system' => $systemPrompt,
-                    'messages' => [
-                        ['role' => 'user', 'content' => $userMessage],
-                    ],
-                ]);
+            $result = $this->client->sendMessage($systemPrompt, $userMessage);
 
-            if (! $response->successful()) {
+            if (! $result['success']) {
+                if ($result['status'] === null) {
+                    return [
+                        'success' => false,
+                        'clues' => ['across' => [], 'down' => []],
+                        'message' => 'Anthropic API key is not configured. Add ANTHROPIC_API_KEY to your .env file.',
+                    ];
+                }
+
                 Log::warning('Anthropic API error during clue generation', [
-                    'status' => $response->status(),
-                    'body' => $response->body(),
+                    'status' => $result['status'],
+                    'body' => $result['body'],
                 ]);
 
                 return [
@@ -64,7 +51,7 @@ class AiClueGenerator
                 ];
             }
 
-            return $this->parseResponse($response->json(), $words);
+            return $this->parseResponse($result['data'], $words);
         } catch (\Exception $e) {
             Log::error('AI clue generation failed', ['error' => $e->getMessage()]);
 
@@ -155,7 +142,7 @@ PROMPT;
      */
     private function parseResponse(array $response, array $words): array
     {
-        $text = $response['content'][0]['text'] ?? '';
+        $text = AnthropicClient::extractText($response);
 
         // Extract JSON object from response
         if (preg_match('/\{[\s\S]*}/', $text, $matches)) {

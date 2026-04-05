@@ -4,6 +4,9 @@ namespace App\Http\Resources\Api\V1;
 
 use Illuminate\Http\Request;
 
+/*
+ * @mixin \App\Models\PuzzleComment
+ */
 class PuzzleCommentResource extends JsonApiResource
 {
     protected function resourceType(): string

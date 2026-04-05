@@ -7,6 +7,7 @@ use App\Models\ContestEntry;
 use App\Models\Crossword;
 use App\Models\PuzzleAttempt;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 
 class ContestService
 {
@@ -75,16 +76,20 @@ class ContestService
      */
     public function recalculateLeaderboard(Contest $contest): void
     {
-        $entries = $contest->entries()
+        $entryIds = $contest->entries()
             ->orderByDesc('meta_solved')
             ->orderBy('meta_submitted_at')
             ->orderBy('total_solve_time_seconds')
-            ->get();
+            ->pluck('id');
 
-        $rank = 1;
-        foreach ($entries as $entry) {
-            $entry->update(['rank' => $rank++]);
+        if ($entryIds->isEmpty()) {
+            return;
         }
+
+        $cases = $entryIds->map(fn ($id, $i) => "WHEN {$id} THEN ".($i + 1))->implode(' ');
+
+        ContestEntry::whereIn('id', $entryIds)
+            ->update(['rank' => DB::raw("CASE id {$cases} END")]);
     }
 
     /**
@@ -101,7 +106,12 @@ class ContestService
 
         foreach ($entries as $entry) {
             $this->syncPuzzleCompletion($entry);
-            $this->recalculateLeaderboard($entry->contest);
+        }
+
+        $contests = Contest::whereIn('id', $contestIds)->get();
+
+        foreach ($contests as $contest) {
+            $this->recalculateLeaderboard($contest);
         }
     }
 }

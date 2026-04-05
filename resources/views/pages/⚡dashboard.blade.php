@@ -4,6 +4,7 @@ use App\Models\Crossword;
 use App\Models\CrosswordLike;
 use App\Models\PuzzleAttempt;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -91,19 +92,19 @@ new #[Title('Dashboard')] class extends Component {
     #[Computed]
     public function totalPublishedPuzzles(): int
     {
-        return Crossword::where('is_published', true)->count();
+        return Cache::remember('stats:published_puzzles', 300, fn () => Crossword::where('is_published', true)->count());
     }
 
     #[Computed]
     public function totalSolves(): int
     {
-        return PuzzleAttempt::where('is_completed', true)->count();
+        return Cache::remember('stats:total_solves', 300, fn () => PuzzleAttempt::where('is_completed', true)->count());
     }
 
     #[Computed]
     public function totalLikes(): int
     {
-        return CrosswordLike::count();
+        return Cache::remember('stats:total_likes', 300, fn () => CrosswordLike::count());
     }
 }
 ?>

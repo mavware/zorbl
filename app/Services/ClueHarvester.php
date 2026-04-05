@@ -6,6 +6,7 @@ use App\Console\Commands\GenerateWordList;
 use App\Models\ClueEntry;
 use App\Models\Crossword;
 use App\Models\Word;
+use Zorbl\CrosswordIO\GridNumberer;
 
 class ClueHarvester
 {

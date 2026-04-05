@@ -1,6 +1,10 @@
 <?php
 
-use App\Services\ImportDetector;
+use Zorbl\CrosswordIO\GridNumberer;
+use Zorbl\CrosswordIO\ImportDetector;
+use Zorbl\CrosswordIO\Importers\IpuzImporter;
+use Zorbl\CrosswordIO\Importers\JpzImporter;
+use Zorbl\CrosswordIO\Importers\PuzImporter;
 
 test('detects ipuz from extension', function () {
     $ipuzContent = json_encode([
@@ -23,7 +27,8 @@ test('detects ipuz from extension', function () {
         ],
     ]);
 
-    $detector = app(ImportDetector::class);
+    $numberer = new GridNumberer;
+    $detector = new ImportDetector(new IpuzImporter($numberer), new PuzImporter($numberer), new JpzImporter($numberer));
     $result = $detector->import($ipuzContent, 'ipuz');
 
     expect($result['width'])->toBe(3)
@@ -51,7 +56,8 @@ test('detects ipuz from content when no extension provided', function () {
         ],
     ]);
 
-    $detector = app(ImportDetector::class);
+    $numberer = new GridNumberer;
+    $detector = new ImportDetector(new IpuzImporter($numberer), new PuzImporter($numberer), new JpzImporter($numberer));
     $result = $detector->import($ipuzContent, '');
 
     expect($result['width'])->toBe(3);
@@ -79,7 +85,8 @@ test('strips UTF-8 BOM from content', function () {
         ],
     ]);
 
-    $detector = app(ImportDetector::class);
+    $numberer = new GridNumberer;
+    $detector = new ImportDetector(new IpuzImporter($numberer), new PuzImporter($numberer), new JpzImporter($numberer));
     $result = $detector->import($ipuzContent, 'json');
 
     expect($result['width'])->toBe(3);
@@ -107,13 +114,15 @@ test('falls back to content sniffing when extension is wrong', function () {
     ]);
 
     // Pass wrong extension (.puz) but content is actually iPUZ JSON
-    $detector = app(ImportDetector::class);
+    $numberer = new GridNumberer;
+    $detector = new ImportDetector(new IpuzImporter($numberer), new PuzImporter($numberer), new JpzImporter($numberer));
     $result = $detector->import($ipuzContent, 'puz');
 
     expect($result['width'])->toBe(3);
 });
 
 test('throws exception for completely invalid content', function () {
-    $detector = app(ImportDetector::class);
+    $numberer = new GridNumberer;
+    $detector = new ImportDetector(new IpuzImporter($numberer), new PuzImporter($numberer), new JpzImporter($numberer));
     $detector->import('not a valid puzzle file at all', 'txt');
 })->throws(Exception::class);

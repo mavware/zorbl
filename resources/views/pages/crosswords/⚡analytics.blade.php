@@ -161,6 +161,38 @@ new #[Title('Constructor Analytics')] class extends Component {
         </flux:button>
     </div>
 
+    @unless (Auth::user()->isPro())
+        <div class="relative">
+            {{-- Blurred preview --}}
+            <div class="pointer-events-none select-none blur-sm">
+                <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    @for ($i = 0; $i < 4; $i++)
+                        <div class="rounded-xl border border-zinc-200 p-5 dark:border-zinc-700">
+                            <div class="flex items-center gap-3">
+                                <div class="size-10 rounded-lg bg-zinc-100 dark:bg-zinc-800"></div>
+                                <div>
+                                    <div class="h-3 w-16 rounded bg-zinc-200 dark:bg-zinc-700"></div>
+                                    <div class="mt-1 h-6 w-10 rounded bg-zinc-200 dark:bg-zinc-700"></div>
+                                </div>
+                            </div>
+                        </div>
+                    @endfor
+                </div>
+            </div>
+
+            {{-- Overlay CTA --}}
+            <div class="absolute inset-0 flex items-center justify-center">
+                <div class="rounded-xl border border-zinc-200 bg-white/90 p-8 text-center shadow-lg dark:border-zinc-700 dark:bg-zinc-900/90">
+                    <flux:icon name="chart-bar" class="mx-auto mb-3 size-8 text-purple-500" />
+                    <flux:heading size="lg">{{ __('Upgrade to Pro') }}</flux:heading>
+                    <flux:subheading class="mb-4">{{ __('Get detailed analytics on how solvers interact with your puzzles.') }}</flux:subheading>
+                    <flux:button :href="route('billing.index')" wire:navigate variant="primary">
+                        {{ __('Upgrade Now') }}
+                    </flux:button>
+                </div>
+            </div>
+        </div>
+    @else
     {{-- Overview Cards --}}
     <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div class="rounded-xl border border-zinc-200 p-5 dark:border-zinc-700">
@@ -303,4 +335,5 @@ new #[Title('Constructor Analytics')] class extends Component {
             </div>
         </div>
     @endif
+    @endunless
 </div>

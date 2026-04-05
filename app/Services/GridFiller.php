@@ -3,11 +3,15 @@
 namespace App\Services;
 
 use App\Models\Word;
+use Zorbl\CrosswordIO\GridNumberer;
 
 class GridFiller
 {
     /** @var array<string, list<string>> Pattern → candidate words cache */
     private array $candidateCache = [];
+
+    /** @var array<string, true> Words already placed in the grid (keyed by uppercase word) */
+    private array $usedWords = [];
 
     private float $deadline;
 
@@ -34,14 +38,15 @@ class GridFiller
     ): array {
         $this->deadline = microtime(true) + $timeout;
         $this->candidateCache = [];
+        $this->usedWords = [];
 
         $numbered = $this->numberer->number($grid, $width, $height, $styles, $minLength);
 
-        // Build slot list with current patterns
+        // Build slot list with current patterns, and track pre-filled words
         $slots = [];
         foreach (['across', 'down'] as $dir) {
             foreach ($numbered[$dir] as $slot) {
-                $pattern = $this->getPattern($solution, $slot, $dir);
+                $pattern = self::getPattern($solution, $slot, $dir);
                 if (str_contains($pattern, '_')) {
                     $slots[] = [
                         'direction' => $dir,
@@ -51,6 +56,9 @@ class GridFiller
                         'length' => $slot['length'],
                         'pattern' => $pattern,
                     ];
+                } else {
+                    // Track fully pre-filled words to prevent duplicates
+                    $this->usedWords[$pattern] = true;
                 }
             }
         }
@@ -114,7 +122,7 @@ class GridFiller
         // Rebuild patterns from current solution state
         $unfilled = [];
         foreach ($slots as $slot) {
-            $pattern = $this->getPattern($solution, $slot, $slot['direction']);
+            $pattern = self::getPattern($solution, $slot, $slot['direction']);
             if (str_contains($pattern, '_')) {
                 $slot['pattern'] = $pattern;
                 $unfilled[] = $slot;
@@ -128,7 +136,10 @@ class GridFiller
         // Get candidates for each unfilled slot, sort by fewest candidates (most constrained first)
         $withCandidates = [];
         foreach ($unfilled as $slot) {
-            $candidates = $this->getCandidates($slot['pattern'], $slot['length']);
+            $candidates = array_values(array_filter(
+                $this->getCandidates($slot['pattern'], $slot['length']),
+                fn (string $w) => ! isset($this->usedWords[$w]),
+            ));
             if (empty($candidates)) {
                 return false; // Dead end — no candidates for this slot
             }
@@ -145,6 +156,9 @@ class GridFiller
             // Place word in solution
             $newSolution = $solution;
             $this->placeWord($newSolution, $target, $word);
+
+            // Mark word as used
+            $this->usedWords[$word] = true;
 
             // Check all crossing slots still have candidates
             if ($this->isConsistent($slots, $newSolution, $target)) {
@@ -167,6 +181,9 @@ class GridFiller
 
                 array_pop($fills);
             }
+
+            // Backtrack — release word for reuse in other slots
+            unset($this->usedWords[$word]);
         }
 
         return false;
@@ -201,7 +218,7 @@ class GridFiller
                 continue;
             }
 
-            $pattern = $this->getPattern($solution, $slot, $slot['direction']);
+            $pattern = self::getPattern($solution, $slot, $slot['direction']);
             if (! str_contains($pattern, '_')) {
                 // Fully filled — check it's a valid word
                 $candidates = $this->getCandidates($pattern, $slot['length']);
@@ -212,7 +229,10 @@ class GridFiller
                 continue;
             }
 
-            $candidates = $this->getCandidates($pattern, $slot['length']);
+            $candidates = array_filter(
+                $this->getCandidates($pattern, $slot['length']),
+                fn (string $w) => ! isset($this->usedWords[$w]),
+            );
             if (empty($candidates)) {
                 return false;
             }
@@ -247,9 +267,12 @@ class GridFiller
     }
 
     /**
-     * Extract the current pattern for a slot from the solution grid.
+     * Extract the current letter pattern for a slot from the solution grid.
+     *
+     * @param  array<int, array<int, string|null>>  $solution
+     * @param  array{row: int, col: int, length: int}  $slot
      */
-    private function getPattern(array $solution, array $slot, string $direction): string
+    public static function getPattern(array $solution, array $slot, string $direction): string
     {
         $pattern = '';
         for ($i = 0; $i < $slot['length']; $i++) {

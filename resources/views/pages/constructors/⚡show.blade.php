@@ -2,6 +2,7 @@
 
 use App\Models\Crossword;
 use App\Models\Follow;
+use App\Models\PuzzleAttempt;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
@@ -56,17 +57,18 @@ new #[Title('Constructor Profile')] class extends Component {
             return false;
         }
 
-        return Auth::user()->isFollowing($this->constructor);
+        return Follow::where('follower_id', Auth::id())
+            ->where('following_id', $this->constructorId)
+            ->exists();
     }
 
     #[Computed]
     public function totalSolves(): int
     {
-        return Crossword::where('user_id', $this->constructorId)
+        return PuzzleAttempt::whereHas('crossword', fn ($q) => $q
+            ->where('user_id', $this->constructorId)
             ->where('is_published', true)
-            ->withCount('attempts')
-            ->get()
-            ->sum('attempts_count');
+        )->count();
     }
 
     public function toggleFollow(): void
@@ -103,7 +105,12 @@ new #[Title('Constructor Profile')] class extends Component {
                 {{ $this->constructor->initials() }}
             </div>
             <div>
-                <flux:heading size="xl">{{ $constructorName }}</flux:heading>
+                <flux:heading size="xl">
+                    {{ $constructorName }}
+                    @if ($this->constructor->isPro())
+                        <flux:badge color="purple" size="sm" class="ml-1 align-middle">{{ __('Pro') }}</flux:badge>
+                    @endif
+                </flux:heading>
                 <div class="mt-1 flex items-center gap-4 text-sm text-zinc-500">
                     <span>{{ trans_choice(':count puzzle|:count puzzles', $this->publishedPuzzles->count()) }}</span>
                     <span>{{ trans_choice(':count follower|:count followers', $this->followersCount) }}</span>

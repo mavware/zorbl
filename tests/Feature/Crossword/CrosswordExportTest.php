@@ -2,7 +2,22 @@
 
 use App\Models\Crossword;
 use App\Models\User;
+use Laravel\Cashier\Subscription;
 use Livewire\Livewire;
+
+function makeExportProUser(): User
+{
+    $user = User::factory()->create(['stripe_id' => 'cus_test_'.uniqid()]);
+    Subscription::create([
+        'user_id' => $user->id,
+        'type' => 'default',
+        'stripe_id' => 'sub_test_'.uniqid(),
+        'stripe_status' => 'active',
+        'stripe_price' => 'price_fake',
+    ]);
+
+    return $user;
+}
 
 test('users can export their puzzle as ipuz', function () {
     $user = User::factory()->create();
@@ -40,7 +55,7 @@ test('users can export their puzzle as ipuz', function () {
 });
 
 test('users can export their puzzle as puz', function () {
-    $user = User::factory()->create();
+    $user = makeExportProUser();
     $crossword = Crossword::factory()->for($user)->create([
         'title' => 'Export Puz',
         'width' => 3,
@@ -75,7 +90,7 @@ test('users can export their puzzle as puz', function () {
 });
 
 test('users can export their puzzle as jpz', function () {
-    $user = User::factory()->create();
+    $user = makeExportProUser();
     $crossword = Crossword::factory()->for($user)->create([
         'title' => 'Export Jpz',
         'width' => 3,

@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Zorbl\CrosswordIO\Crossword as CrosswordDTO;
 
 /**
  * @property int $id
@@ -125,6 +126,29 @@ class Crossword extends Model
         return $this->belongsToMany(Contest::class)
             ->withPivot(['sort_order', 'extraction_hint'])
             ->withTimestamps();
+    }
+
+    /**
+     * Convert this Eloquent model to a package-level DTO for import/export operations.
+     */
+    public function toCrosswordIO(): CrosswordDTO
+    {
+        return CrosswordDTO::fromArray([
+            'width' => $this->width,
+            'height' => $this->height,
+            'grid' => $this->grid,
+            'solution' => $this->solution,
+            'clues_across' => $this->clues_across ?? [],
+            'clues_down' => $this->clues_down ?? [],
+            'title' => $this->title,
+            'author' => $this->author,
+            'copyright' => $this->copyright,
+            'notes' => $this->notes,
+            'kind' => $this->kind ?? 'https://ipuz.org/crossword#1',
+            'styles' => $this->styles,
+            'metadata' => $this->metadata,
+            'prefilled' => $this->prefilled,
+        ]);
     }
 
     /**

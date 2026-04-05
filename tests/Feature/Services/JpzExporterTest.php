@@ -1,8 +1,10 @@
 <?php
 
 use App\Models\Crossword;
-use App\Services\JpzExporter;
-use App\Services\JpzImporter;
+use Zorbl\CrosswordIO\Exceptions\ExportValidationException;
+use Zorbl\CrosswordIO\Exporters\JpzExporter;
+use Zorbl\CrosswordIO\GridNumberer;
+use Zorbl\CrosswordIO\Importers\JpzImporter;
 
 it('exports a crossword to valid jpz XML', function () {
     $crossword = Crossword::factory()->make([
@@ -32,8 +34,8 @@ it('exports a crossword to valid jpz XML', function () {
         ],
     ]);
 
-    $exporter = app(JpzExporter::class);
-    $xml = $exporter->toXml($crossword);
+    $exporter = new JpzExporter(new GridNumberer);
+    $xml = $exporter->toXml($crossword->toCrosswordIO());
 
     expect($xml)->toContain('rectangular-puzzle')
         ->and($xml)->toContain('Test JPZ Export')
@@ -71,8 +73,8 @@ it('produces gzip-compressed output from export()', function () {
         ],
     ]);
 
-    $exporter = app(JpzExporter::class);
-    $compressed = $exporter->export($crossword);
+    $exporter = new JpzExporter(new GridNumberer);
+    $compressed = $exporter->export($crossword->toCrosswordIO());
 
     // Should start with gzip magic bytes
     expect($compressed[0])->toBe("\x1f")
@@ -109,8 +111,8 @@ it('exports void cells as type void', function () {
         ],
     ]);
 
-    $exporter = app(JpzExporter::class);
-    $xml = $exporter->toXml($crossword);
+    $exporter = new JpzExporter(new GridNumberer);
+    $xml = $exporter->toXml($crossword->toCrosswordIO());
 
     expect($xml)->toContain('type="void"');
 });
@@ -145,10 +147,11 @@ it('roundtrips through export and import', function () {
         ],
     ]);
 
-    $exporter = app(JpzExporter::class);
-    $importer = app(JpzImporter::class);
+    $numberer = new GridNumberer;
+    $exporter = new JpzExporter($numberer);
+    $importer = new JpzImporter($numberer);
 
-    $compressed = $exporter->export($crossword);
+    $compressed = $exporter->export($crossword->toCrosswordIO());
     $result = $importer->import($compressed);
 
     expect($result['title'])->toBe('Roundtrip JPZ')
@@ -193,14 +196,48 @@ it('includes circle styles in exported cells', function () {
         ],
     ]);
 
-    $exporter = app(JpzExporter::class);
-    $xml = $exporter->toXml($crossword);
+    $numberer = new GridNumberer;
+    $exporter = new JpzExporter($numberer);
+    $xml = $exporter->toXml($crossword->toCrosswordIO());
 
     expect($xml)->toContain('background-shape="circle"');
 
     // Roundtrip to verify circles survive
-    $importer = app(JpzImporter::class);
+    $importer = new JpzImporter($numberer);
     $result = $importer->import($xml);
 
     expect($result['styles']['0,0'])->toBe(['shapebg' => 'circle']);
 });
+
+it('throws ExportValidationException for bars', function () {
+    $crossword = Crossword::factory()->make([
+        'width' => 3,
+        'height' => 3,
+        'grid' => [
+            [1, 2, '#'],
+            [3, 0, 4],
+            ['#', 5, 0],
+        ],
+        'solution' => [
+            ['C', 'A', '#'],
+            ['B', 'O', 'T'],
+            ['#', 'L', 'O'],
+        ],
+        'clues_across' => [
+            ['number' => 1, 'clue' => 'CA'],
+            ['number' => 3, 'clue' => 'BOT'],
+            ['number' => 5, 'clue' => 'LO'],
+        ],
+        'clues_down' => [
+            ['number' => 1, 'clue' => 'CB'],
+            ['number' => 2, 'clue' => 'AOL'],
+            ['number' => 4, 'clue' => 'TO'],
+        ],
+        'styles' => [
+            '0,1' => ['bars' => ['right']],
+        ],
+    ]);
+
+    $exporter = new JpzExporter(new GridNumberer);
+    $exporter->export($crossword->toCrosswordIO());
+})->throws(ExportValidationException::class);
