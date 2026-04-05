@@ -195,3 +195,41 @@ it('returns null for empty optional fields', function () {
         ->and($result['notes'])->toBeNull()
         ->and($result['styles'])->toBeNull();
 });
+
+it('preserves arbitrary numbering as custom numbers in styles', function () {
+    // Cell at (0,0) has number 42 instead of the auto-computed 1
+    // Cell at (1,0) has number 99 instead of the auto-computed 3
+    $ipuz = json_encode([
+        'version' => 'http://ipuz.org/v2',
+        'kind' => ['http://ipuz.org/crossword#1'],
+        'dimensions' => ['width' => 3, 'height' => 3],
+        'puzzle' => [
+            [42, 2, '#'],
+            [99, 0, 4],
+            ['#', 5, 0],
+        ],
+        'solution' => [
+            ['C', 'A', '#'],
+            ['B', 'O', 'T'],
+            ['#', 'L', 'O'],
+        ],
+        'clues' => [
+            'Across' => [[1, 'California'], [3, 'Robot helper'], [5, 'Hello']],
+            'Down' => [[1, 'Cowboy'], [2, 'All'], [4, 'Also']],
+        ],
+    ]);
+
+    $result = $this->importer->import($ipuz);
+
+    // Auto-numbering should be applied to the grid
+    expect($result['grid'][0][0])->toBe(1)
+        ->and($result['grid'][1][0])->toBe(3);
+
+    // Custom numbers should be preserved in styles
+    expect($result['styles']['0,0']['number'])->toBe(42)
+        ->and($result['styles']['1,0']['number'])->toBe(99);
+
+    // Cells with matching numbers should not get custom numbers
+    expect($result['styles'])->not->toHaveKey('0,1')
+        ->and($result['styles'])->not->toHaveKey('1,2');
+});

@@ -491,7 +491,7 @@ new #[Title('Solve Crossword')] class extends Component {
                         tabindex="0"
                     >
                         <div class="flex items-start gap-1.5">
-                            <span class="mt-px text-xs font-bold text-zinc-500" x-text="clue.number"></span>
+                            <span class="mt-px text-xs font-bold text-zinc-500" x-text="clue.displayNumber"></span>
                             <div class="flex-1">
                                 <span class="text-sm text-zinc-700 dark:text-zinc-300" x-text="clue.clue || '—'"></span>
                                 <span class="text-xs text-zinc-400" x-text="'(' + clue.length + ')'"></span>
@@ -530,14 +530,14 @@ new #[Title('Solve Crossword')] class extends Component {
                                 class="relative box-border flex aspect-square items-center justify-center select-none"
                                 role="gridcell"
                                 :aria-selected="rowIdx === selectedRow && colIdx === selectedCol ? 'true' : 'false'"
-                                :aria-label="isBlock(rowIdx, colIdx) ? 'Black cell' : (typeof cell === 'number' && cell > 0 ? cell + ' ' : '') + (progress[rowIdx]?.[colIdx] || 'empty') + (isPencil(rowIdx, colIdx) ? ' pencil' : '')"
+                                :aria-label="isBlock(rowIdx, colIdx) ? 'Black cell' : (getDisplayNumber(rowIdx, colIdx) !== null ? getDisplayNumber(rowIdx, colIdx) + ' ' : '') + (progress[rowIdx]?.[colIdx] || 'empty') + (isPencil(rowIdx, colIdx) ? ' pencil' : '')"
                             >
                                 {{-- Clue number --}}
-                                <template x-if="typeof cell === 'number' && cell > 0">
+                                <template x-if="getDisplayNumber(rowIdx, colIdx) !== null">
                                     <span
                                         class="absolute top-0 left-0.5 text-zinc-700 dark:text-zinc-400 leading-none"
                                         :style="'font-size: ' + Math.max(8, Math.min(11, 600 / width * 0.22)) + 'px'"
-                                        x-text="cell"
+                                        x-text="getDisplayNumber(rowIdx, colIdx)"
                                     ></span>
                                 </template>
 
@@ -593,7 +593,7 @@ new #[Title('Solve Crossword')] class extends Component {
                         tabindex="0"
                     >
                         <div class="flex items-start gap-1.5">
-                            <span class="mt-px text-xs font-bold text-zinc-500" x-text="clue.number"></span>
+                            <span class="mt-px text-xs font-bold text-zinc-500" x-text="clue.displayNumber"></span>
                             <div class="flex-1">
                                 <span class="text-sm text-zinc-700 dark:text-zinc-300" x-text="clue.clue || '—'"></span>
                                 <span class="text-xs text-zinc-400" x-text="'(' + clue.length + ')'"></span>
@@ -632,7 +632,7 @@ new #[Title('Solve Crossword')] class extends Component {
                                 tabindex="0"
                             >
                                 <div class="flex items-start gap-1.5">
-                                    <span class="mt-px text-xs font-bold text-zinc-500" x-text="clue.number"></span>
+                                    <span class="mt-px text-xs font-bold text-zinc-500" x-text="clue.displayNumber"></span>
                                     <div class="flex-1">
                                         <span class="text-sm text-zinc-700 dark:text-zinc-300" x-text="clue.clue || '—'"></span>
                                         <span class="text-xs text-zinc-400" x-text="'(' + clue.length + ')'"></span>
@@ -655,7 +655,7 @@ new #[Title('Solve Crossword')] class extends Component {
                                 tabindex="0"
                             >
                                 <div class="flex items-start gap-1.5">
-                                    <span class="mt-px text-xs font-bold text-zinc-500" x-text="clue.number"></span>
+                                    <span class="mt-px text-xs font-bold text-zinc-500" x-text="clue.displayNumber"></span>
                                     <div class="flex-1">
                                         <span class="text-sm text-zinc-700 dark:text-zinc-300" x-text="clue.clue || '—'"></span>
                                         <span class="text-xs text-zinc-400" x-text="'(' + clue.length + ')'"></span>

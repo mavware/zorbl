@@ -88,10 +88,18 @@ class IpuzExporter
                 $cellValue = $grid[$row][$col];
                 $styleKey = "$row,$col";
 
-                if (isset($styles[$styleKey])) {
-                    $cell = ['cell' => $cellValue];
-                    $cell['style'] = $styles[$styleKey];
-                    $puzzleRow[] = $cell;
+                // Use custom number as the cell value for iPuz (arbitrary numbering)
+                if (isset($styles[$styleKey]['number'])) {
+                    $cellValue = $styles[$styleKey]['number'];
+                }
+
+                // Export style without the 'number' key (represented by cell value in iPuz)
+                $exportStyle = isset($styles[$styleKey])
+                    ? array_diff_key($styles[$styleKey], ['number' => true])
+                    : [];
+
+                if (! empty($exportStyle)) {
+                    $puzzleRow[] = ['cell' => $cellValue, 'style' => $exportStyle];
                 } else {
                     $puzzleRow[] = $cellValue;
                 }

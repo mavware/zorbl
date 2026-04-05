@@ -161,11 +161,39 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
             }));
         },
 
+        // --- Custom numbers ---
+        getCustomNumber(row, col) {
+            return this.styles[row + ',' + col]?.number ?? null;
+        },
+
+        setCustomNumber(row, col, number) {
+            const key = row + ',' + col;
+            if (number !== null && number !== '') {
+                this.styles[key] = { ...this.styles[key], number: parseInt(number, 10) };
+            } else {
+                const entry = { ...this.styles[key] };
+                delete entry.number;
+                if (Object.keys(entry).length === 0 || (Object.keys(entry).length === 1 && entry.bars?.length === 0)) {
+                    delete this.styles[key];
+                } else {
+                    this.styles[key] = entry;
+                }
+            }
+        },
+
+        getDisplayNumber(row, col) {
+            const custom = this.getCustomNumber(row, col);
+            if (custom !== null) return custom;
+            const cell = this.grid[row]?.[col];
+            return typeof cell === 'number' && cell > 0 ? cell : null;
+        },
+
         // --- Computed clue lists with lengths ---
         get computedCluesAcross() {
             return this.cluesAcross.map(clue => {
                 const slot = this.findSlot('across', clue.number);
                 clue.length = slot ? slot.length : 0;
+                clue.displayNumber = slot ? (this.getCustomNumber(slot.row, slot.col) ?? clue.number) : clue.number;
                 return clue;
             });
         },
@@ -174,6 +202,7 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
             return this.cluesDown.map(clue => {
                 const slot = this.findSlot('down', clue.number);
                 clue.length = slot ? slot.length : 0;
+                clue.displayNumber = slot ? (this.getCustomNumber(slot.row, slot.col) ?? clue.number) : clue.number;
                 return clue;
             });
         },
@@ -823,6 +852,71 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
 
             this.clearMultiSelection();
             this.showRebusInput = false;
+            this.markDirty();
+            this.$refs.gridContainer?.focus();
+        },
+
+        // --- Custom number overlay ---
+        showCustomNumberInput: false,
+        customNumberInputValue: '',
+        customNumberCells: [],
+
+        contextSetCustomNumber() {
+            const row = this.contextMenu.row;
+            const col = this.contextMenu.col;
+            if (this.isBlock(row, col)) return;
+
+            const cells = this.getMultiSelectedCoords();
+            if (cells.length > 0) {
+                this.customNumberCells = cells.filter(([r, c]) => !this.isBlock(r, c));
+            } else {
+                this.customNumberCells = [[row, col]];
+            }
+
+            const existing = this.getCustomNumber(row, col);
+            this.customNumberInputValue = existing !== null ? String(existing) : '';
+            this.showCustomNumberInput = true;
+            this.closeContextMenu();
+
+            this.$nextTick(() => {
+                this.$refs.customNumberInput?.focus();
+                this.$refs.customNumberInput?.select();
+            });
+        },
+
+        applyCustomNumber() {
+            const value = this.customNumberInputValue.trim();
+            this.showCustomNumberInput = false;
+
+            if (value === '') {
+                this.$refs.gridContainer?.focus();
+                return;
+            }
+
+            for (const [row, col] of this.customNumberCells) {
+                if (this.isBlock(row, col)) continue;
+                this.setCustomNumber(row, col, value);
+            }
+
+            this.clearMultiSelection();
+            this.markDirty();
+            this.$refs.gridContainer?.focus();
+        },
+
+        cancelCustomNumber() {
+            this.showCustomNumberInput = false;
+            this.customNumberInputValue = '';
+            this.customNumberCells = [];
+            this.$refs.gridContainer?.focus();
+        },
+
+        removeCustomNumber() {
+            for (const [row, col] of this.customNumberCells) {
+                this.setCustomNumber(row, col, null);
+            }
+
+            this.clearMultiSelection();
+            this.showCustomNumberInput = false;
             this.markDirty();
             this.$refs.gridContainer?.focus();
         },

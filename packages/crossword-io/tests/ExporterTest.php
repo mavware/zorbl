@@ -56,6 +56,42 @@ describe('IpuzExporter', function () {
             ->and($result['clues_across'])->toHaveCount(3)
             ->and($result['clues_down'])->toHaveCount(3);
     });
+
+    it('exports custom numbers as cell values in ipuz', function () {
+        $crossword = makeCrossword([
+            'styles' => [
+                '0,0' => ['number' => 42, 'shapebg' => 'circle'],
+                '1,0' => ['number' => 99],
+            ],
+        ]);
+
+        $exporter = new IpuzExporter;
+        $ipuz = $exporter->export($crossword);
+
+        // Custom number should replace the auto-number as the cell value
+        expect($ipuz['puzzle'][0][0])->toBe(['cell' => 42, 'style' => ['shapebg' => 'circle']]);
+
+        // Cell with only a custom number (no other styles) should still be a dict cell
+        // because the number differs from auto-number
+        expect($ipuz['puzzle'][1][0])->toBe(99);
+
+        // Non-custom cells should remain unchanged
+        expect($ipuz['puzzle'][0][1])->toBe(2);
+    });
+
+    it('roundtrips custom numbers through export and import', function () {
+        $crossword = makeCrossword([
+            'styles' => ['0,0' => ['number' => 42]],
+        ]);
+
+        $exporter = new IpuzExporter;
+        $json = $exporter->toJson($crossword);
+
+        $importer = new IpuzImporter(new GridNumberer);
+        $result = $importer->import($json);
+
+        expect($result['styles']['0,0']['number'])->toBe(42);
+    });
 });
 
 describe('PuzExporter', function () {

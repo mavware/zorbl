@@ -147,11 +147,11 @@ class JpzExporter
                         $cellEl->setAttribute('solution', strtoupper($solutionValue));
                     }
 
-                    if (is_int($gridValue) && $gridValue > 0) {
-                        $cellEl->setAttribute('number', (string) $gridValue);
-                    }
-
                     $styleKey = "$row,$col";
+                    $displayNumber = $styles[$styleKey]['number'] ?? ($gridValue > 0 ? $gridValue : null);
+                    if ($displayNumber !== null) {
+                        $cellEl->setAttribute('number', (string) $displayNumber);
+                    }
                     if (isset($styles[$styleKey]['shapebg']) && $styles[$styleKey]['shapebg'] === 'circle') {
                         $cellEl->setAttribute('background-shape', 'circle');
                     }

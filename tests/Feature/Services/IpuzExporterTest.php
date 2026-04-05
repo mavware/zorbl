@@ -114,6 +114,125 @@ it('exports to valid JSON string', function () {
         ->and($decoded['version'])->toBe('https://ipuz.org/v2');
 });
 
+it('exports custom numbers as cell values in ipuz', function () {
+    $crossword = Crossword::factory()->make([
+        'width' => 3,
+        'height' => 3,
+        'grid' => [
+            [1, 2, '#'],
+            [3, 0, 4],
+            ['#', 5, 0],
+        ],
+        'solution' => [
+            ['C', 'A', '#'],
+            ['B', 'O', 'T'],
+            ['#', 'L', 'O'],
+        ],
+        'clues_across' => [
+            ['number' => 1, 'clue' => 'CA'],
+            ['number' => 3, 'clue' => 'BOT'],
+            ['number' => 5, 'clue' => 'LO'],
+        ],
+        'clues_down' => [
+            ['number' => 1, 'clue' => 'CB'],
+            ['number' => 2, 'clue' => 'AOL'],
+            ['number' => 4, 'clue' => 'TO'],
+        ],
+        'styles' => [
+            '0,0' => ['number' => 42, 'shapebg' => 'circle'],
+            '1,0' => ['number' => 99],
+        ],
+    ]);
+
+    $exporter = new IpuzExporter;
+    $ipuz = $exporter->export($crossword->toCrosswordIO());
+
+    // Custom number replaces auto-number; circle style preserved without 'number' key
+    expect($ipuz['puzzle'][0][0])->toBe(['cell' => 42, 'style' => ['shapebg' => 'circle']]);
+
+    // Cell with only custom number (no other styles) exports as plain value
+    expect($ipuz['puzzle'][1][0])->toBe(99);
+
+    // Non-custom cells remain unchanged
+    expect($ipuz['puzzle'][0][1])->toBe(2);
+});
+
+it('roundtrips custom numbers through ipuz export and import', function () {
+    $crossword = Crossword::factory()->make([
+        'width' => 3,
+        'height' => 3,
+        'grid' => [
+            [1, 2, '#'],
+            [3, 0, 4],
+            ['#', 5, 0],
+        ],
+        'solution' => [
+            ['C', 'A', '#'],
+            ['B', 'O', 'T'],
+            ['#', 'L', 'O'],
+        ],
+        'clues_across' => [
+            ['number' => 1, 'clue' => 'CA'],
+            ['number' => 3, 'clue' => 'BOT'],
+            ['number' => 5, 'clue' => 'LO'],
+        ],
+        'clues_down' => [
+            ['number' => 1, 'clue' => 'CB'],
+            ['number' => 2, 'clue' => 'AOL'],
+            ['number' => 4, 'clue' => 'TO'],
+        ],
+        'styles' => ['0,0' => ['number' => 42]],
+    ]);
+
+    $exporter = new IpuzExporter;
+    $json = $exporter->toJson($crossword->toCrosswordIO());
+
+    $importer = new IpuzImporter(new GridNumberer);
+    $result = $importer->import($json);
+
+    // Custom number should survive the round-trip
+    expect($result['styles']['0,0']['number'])->toBe(42);
+
+    // Auto-numbering should be correct in the grid
+    expect($result['grid'][0][0])->toBe(1);
+});
+
+it('preserves arbitrary numbering from imported ipuz as custom numbers', function () {
+    $ipuz = json_encode([
+        'version' => 'https://ipuz.org/v2',
+        'kind' => ['http://ipuz.org/crossword#1'],
+        'dimensions' => ['width' => 3, 'height' => 3],
+        'puzzle' => [
+            [42, 2, '#'],
+            [99, 0, 4],
+            ['#', 5, 0],
+        ],
+        'solution' => [
+            ['C', 'A', '#'],
+            ['B', 'O', 'T'],
+            ['#', 'L', 'O'],
+        ],
+        'clues' => [
+            'Across' => [[1, 'CA'], [3, 'BOT'], [5, 'LO']],
+            'Down' => [[1, 'CB'], [2, 'AOL'], [4, 'TO']],
+        ],
+    ]);
+
+    $importer = new IpuzImporter(new GridNumberer);
+    $result = $importer->import($ipuz);
+
+    // Grid should have auto-computed numbers
+    expect($result['grid'][0][0])->toBe(1)
+        ->and($result['grid'][1][0])->toBe(3);
+
+    // Original arbitrary numbers preserved as custom numbers in styles
+    expect($result['styles']['0,0']['number'])->toBe(42)
+        ->and($result['styles']['1,0']['number'])->toBe(99);
+
+    // Cells with matching numbers should not get custom numbers
+    expect($result['styles'])->not->toHaveKey('0,1');
+});
+
 it('does not throw for crosswords with bars, void cells, and non-ASCII', function () {
     $crossword = Crossword::factory()->make([
         'width' => 3,

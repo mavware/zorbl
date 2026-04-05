@@ -71,11 +71,24 @@ export function crosswordSolver({ width, height, grid, solution, progress, style
             return `${minutes}:${String(secs).padStart(2, '0')}`;
         },
 
+        // --- Custom numbers ---
+        getCustomNumber(row, col) {
+            return this.styles[row + ',' + col]?.number ?? null;
+        },
+
+        getDisplayNumber(row, col) {
+            const custom = this.getCustomNumber(row, col);
+            if (custom !== null) return custom;
+            const cell = this.grid[row]?.[col];
+            return typeof cell === 'number' && cell > 0 ? cell : null;
+        },
+
         // --- Computed clue lists with lengths ---
         get computedCluesAcross() {
             return this.cluesAcross.map(clue => {
                 const slot = this.findSlot('across', clue.number);
                 clue.length = slot ? slot.length : 0;
+                clue.displayNumber = slot ? (this.getCustomNumber(slot.row, slot.col) ?? clue.number) : clue.number;
                 return clue;
             });
         },
@@ -84,6 +97,7 @@ export function crosswordSolver({ width, height, grid, solution, progress, style
             return this.cluesDown.map(clue => {
                 const slot = this.findSlot('down', clue.number);
                 clue.length = slot ? slot.length : 0;
+                clue.displayNumber = slot ? (this.getCustomNumber(slot.row, slot.col) ?? clue.number) : clue.number;
                 return clue;
             });
         },

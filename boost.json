@@ -1,7 +1,6 @@
 {
     "agents": [
         "junie",
-        "cursor",
         "claude_code"
     ],
     "guidelines": true,
@@ -10,7 +9,8 @@
     "packages": [
         "laravel/fortify",
         "filament/filament",
-        "spatie/laravel-permission"
+        "spatie/laravel-permission",
+        "spatie/laravel-query-builder"
     ],
     "sail": false,
     "skills": [
@@ -22,6 +22,7 @@
         "pest-testing",
         "tailwindcss-development",
         "fortify-development",
-        "laravel-permission-development"
+        "laravel-permission-development",
+        "laravel-query-builder"
     ]
 }

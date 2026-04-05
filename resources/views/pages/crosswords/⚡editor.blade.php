@@ -658,7 +658,7 @@ class extends Component {
                         :id="'clue-across-' + clue.number"
                     >
                         <div class="flex items-start gap-1.5">
-                            <span class="mt-px text-xs font-bold text-zinc-500" x-text="clue.number"></span>
+                            <span class="mt-px text-xs font-bold text-zinc-500" x-text="clue.displayNumber"></span>
                             <div class="clue-content flex-1">
                                 <input
                                     type="text"
@@ -784,11 +784,11 @@ class extends Component {
                                 role="gridcell"
                             >
                                 {{-- Clue number --}}
-                                <template x-if="typeof cell === 'number' && cell > 0">
+                                <template x-if="getDisplayNumber(rowIdx, colIdx) !== null">
                                         <span
-                                            class="absolute top-0 left-0.5 text-zinc-700 dark:text-zinc-400 leading-none"
+                                            :class="getCustomNumber(rowIdx, colIdx) !== null ? 'absolute top-0 left-0.5 text-blue-600 dark:text-blue-400 leading-none' : 'absolute top-0 left-0.5 text-zinc-700 dark:text-zinc-400 leading-none'"
                                             :style="'font-size: ' + Math.max(8, Math.min(11, 600 / width * 0.22)) + 'px'"
-                                            x-text="cell"
+                                            x-text="getDisplayNumber(rowIdx, colIdx)"
                                         ></span>
                                 </template>
 
@@ -865,6 +865,15 @@ class extends Component {
                         x-text="isPrefilled(contextMenu.row, contextMenu.col) ? '{{ __('Edit pre-filled value...') }}' : '{{ __('Pre-fill cell...') }}'"></span>
                 </button>
 
+                <button
+                    x-show="!isBlock(contextMenu.row, contextMenu.col)"
+                    x-on:click="contextSetCustomNumber()"
+                    class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                >
+                    <span
+                        x-text="getCustomNumber(contextMenu.row, contextMenu.col) !== null ? '{{ __('Edit custom number...') }}' : '{{ __('Set custom number...') }}'"></span>
+                </button>
+
                 <div x-show="!isBlock(contextMenu.row, contextMenu.col)">
                     <div class="my-1 border-t border-zinc-200 dark:border-zinc-700"></div>
                     <div class="px-3 py-1 text-xs font-medium text-zinc-400">{{ __('Bars') }}</div>
@@ -926,6 +935,48 @@ class extends Component {
                     </div>
                 </div>
             </div>
+
+            {{-- Custom number input overlay --}}
+            <div
+                x-show="showCustomNumberInput"
+                x-cloak
+                x-transition
+                class="absolute inset-x-0 top-0 z-40 flex items-start justify-center pt-4"
+            >
+                <div
+                    class="w-56 rounded-lg border border-zinc-200 bg-white p-3 shadow-lg dark:border-zinc-700 dark:bg-zinc-800"
+                    x-on:keydown.escape.stop="cancelCustomNumber()"
+                    x-on:keydown.enter.stop="applyCustomNumber()"
+                    x-on:click.stop
+                >
+                    <div class="mb-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                        {{ __('Custom number') }}
+                    </div>
+                    <p class="mb-3 text-xs text-zinc-500 dark:text-zinc-400">
+                        {{ __('Enter a number to display on this cell instead of the auto-generated clue number.') }}
+                    </p>
+                    <input
+                        type="number"
+                        x-ref="customNumberInput"
+                        x-model="customNumberInputValue"
+                        class="w-full rounded border border-zinc-300 px-2 py-1 text-center text-sm dark:border-zinc-600 dark:bg-zinc-700 dark:text-zinc-200"
+                        min="0"
+                    >
+                    <div class="mt-3 flex items-center justify-between">
+                        <button
+                            x-show="customNumberCells.length > 0 && getCustomNumber(customNumberCells[0][0], customNumberCells[0][1]) !== null"
+                            type="button"
+                            x-on:click="removeCustomNumber()"
+                            class="text-xs text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300"
+                        >{{ __('Remove') }}</button>
+                        <span x-show="customNumberCells.length === 0 || getCustomNumber(customNumberCells[0][0], customNumberCells[0][1]) === null"></span>
+                        <div class="flex gap-2">
+                            <flux:button size="xs" x-on:click="cancelCustomNumber()">{{ __('Cancel') }}</flux:button>
+                            <flux:button size="xs" variant="primary" x-on:click="applyCustomNumber()">{{ __('Apply') }}</flux:button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         {{-- Down clues panel (desktop) --}}
@@ -946,7 +997,7 @@ class extends Component {
                         :id="'clue-down-' + clue.number"
                     >
                         <div class="flex items-start gap-1.5">
-                            <span class="mt-px text-xs font-bold text-zinc-500" x-text="clue.number"></span>
+                            <span class="mt-px text-xs font-bold text-zinc-500" x-text="clue.displayNumber"></span>
                             <div class="clue-content flex-1">
                                 <input
                                     type="text"
@@ -1073,7 +1124,7 @@ class extends Component {
                                 class="cursor-pointer rounded px-2 py-1"
                             >
                                 <div class="flex items-start gap-1.5">
-                                    <span class="mt-px text-xs font-bold text-zinc-500" x-text="clue.number"></span>
+                                    <span class="mt-px text-xs font-bold text-zinc-500" x-text="clue.displayNumber"></span>
                                     <div class="flex-1">
                                         <input
                                             type="text"
@@ -1168,7 +1219,7 @@ class extends Component {
                                 class="cursor-pointer rounded px-2 py-1"
                             >
                                 <div class="flex items-start gap-1.5">
-                                    <span class="mt-px text-xs font-bold text-zinc-500" x-text="clue.number"></span>
+                                    <span class="mt-px text-xs font-bold text-zinc-500" x-text="clue.displayNumber"></span>
                                     <div class="flex-1">
                                         <input
                                             type="text"

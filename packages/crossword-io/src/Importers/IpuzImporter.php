@@ -36,7 +36,11 @@ class IpuzImporter
         $solution = $this->parseSolution($data['solution'] ?? null, $grid, $width, $height);
         [$cluesAcross, $cluesDown] = $this->parseClues($data['clues'] ?? []);
 
+        $originalGrid = $grid;
         $result = $this->renumber($grid, $width, $height, $cluesAcross, $cluesDown, $styles ?? []);
+
+        // Preserve arbitrary numbering from iPuz as custom numbers in styles
+        $styles = $this->preserveCustomNumbers($originalGrid, $result['grid'], $width, $height, $styles ?? []);
 
         $metadata = $this->extractMetadata($data);
 
@@ -286,6 +290,36 @@ class IpuzImporter
         }
 
         return $final;
+    }
+
+    /**
+     * Detect cells where the original iPuz number differs from the auto-computed number
+     * and store the original as a custom number in styles.
+     *
+     * @param  array<int, array<int, mixed>>  $originalGrid
+     * @param  array<int, array<int, mixed>>  $numberedGrid
+     * @param  array<string, array<string, mixed>>  $styles
+     * @return array<string, array<string, mixed>>
+     */
+    private function preserveCustomNumbers(array $originalGrid, array $numberedGrid, int $width, int $height, array $styles): array
+    {
+        for ($row = 0; $row < $height; $row++) {
+            for ($col = 0; $col < $width; $col++) {
+                $original = $originalGrid[$row][$col];
+                $computed = $numberedGrid[$row][$col];
+
+                if ($original === '#' || $original === null || $original === $computed) {
+                    continue;
+                }
+
+                if (is_int($original) && $original > 0) {
+                    $key = "{$row},{$col}";
+                    $styles[$key] = array_merge($styles[$key] ?? [], ['number' => $original]);
+                }
+            }
+        }
+
+        return $styles;
     }
 
     /**
