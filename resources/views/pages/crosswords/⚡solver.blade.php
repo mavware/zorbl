@@ -519,7 +519,7 @@ new #[Title('Solve Crossword')] class extends Component {
             >
                 <div
                     class="grid border border-zinc-800 dark:border-zinc-300 [--bar-color:var(--color-zinc-800)] dark:[--bar-color:var(--color-zinc-300)]"
-                    :style="'grid-template-columns: repeat(' + width + ', 1fr);'"
+                    :style="'grid-template-columns: repeat(' + width + ', minmax(0, 1fr));'"
                 >
                     <template x-for="(row, rowIdx) in grid" :key="'row-' + rowIdx">
                         <template x-for="(cell, colIdx) in row" :key="'cell-' + rowIdx + '-' + colIdx">
@@ -527,7 +527,7 @@ new #[Title('Solve Crossword')] class extends Component {
                                 x-on:click="selectCell(rowIdx, colIdx)"
                                 :class="[cellClasses(rowIdx, colIdx), isVoid(rowIdx, colIdx) ? '' : 'border border-zinc-300 dark:border-zinc-600']"
                                 :style="cellBarStyles(rowIdx, colIdx)"
-                                class="relative box-border flex aspect-square items-center justify-center select-none"
+                                class="relative box-border flex aspect-square items-center justify-center overflow-hidden select-none"
                                 role="gridcell"
                                 :aria-selected="rowIdx === selectedRow && colIdx === selectedCol ? 'true' : 'false'"
                                 :aria-label="isBlock(rowIdx, colIdx) ? 'Black cell' : (getDisplayNumber(rowIdx, colIdx) !== null ? getDisplayNumber(rowIdx, colIdx) + ' ' : '') + (progress[rowIdx]?.[colIdx] || 'empty') + (isPencil(rowIdx, colIdx) ? ' pencil' : '')"
@@ -777,6 +777,67 @@ new #[Title('Solve Crossword')] class extends Component {
                 </div>
             </div>
         </template>
+    </div>
+
+    {{-- Celebration Modal --}}
+    <div
+        x-show="showCelebration"
+        x-transition:enter="transition ease-out duration-300"
+        x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100"
+        x-transition:leave="transition ease-in duration-200"
+        x-transition:leave-start="opacity-100"
+        x-transition:leave-end="opacity-0"
+        x-on:keydown.escape.window="showCelebration = false"
+        class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm"
+        style="display: none;"
+    >
+        <div
+            x-show="showCelebration"
+            x-transition:enter="transition ease-out duration-300 delay-100"
+            x-transition:enter-start="scale-90 opacity-0"
+            x-transition:enter-end="scale-100 opacity-100"
+            x-transition:leave="transition ease-in duration-200"
+            x-transition:leave-start="scale-100 opacity-100"
+            x-transition:leave-end="scale-90 opacity-0"
+            x-on:click.outside="showCelebration = false"
+            class="relative mx-4 w-full max-w-sm overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-zinc-800"
+        >
+            {{-- Decorative header --}}
+            <div class="bg-gradient-to-br from-emerald-400 to-teal-500 px-6 pt-8 pb-6 text-center dark:from-emerald-600 dark:to-teal-700">
+                <div class="mb-3 text-6xl">🎉</div>
+                <h2 class="text-2xl font-bold text-white">{{ __('Puzzle Complete!') }}</h2>
+                <p class="mt-1 text-sm text-emerald-50">{{ $title }}</p>
+            </div>
+
+            {{-- Content --}}
+            <div class="space-y-4 px-6 pt-5 pb-6">
+                {{-- Solve time --}}
+                <div class="flex items-center justify-center gap-2 rounded-xl bg-zinc-50 px-4 py-3 dark:bg-zinc-700/50">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="size-5 text-emerald-500" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 000-1.5h-3.25V5z" clip-rule="evenodd" />
+                    </svg>
+                    <span class="text-lg font-semibold tabular-nums text-zinc-900 dark:text-zinc-100" x-text="celebrationTime"></span>
+                </div>
+
+                {{-- Buttons --}}
+                <div class="flex flex-col gap-2">
+                    <a
+                        href="{{ route('crosswords.solving') }}"
+                        wire:navigate
+                        class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:bg-emerald-600 dark:hover:bg-emerald-500 dark:focus:ring-offset-zinc-800"
+                    >
+                        {{ __('Browse More Puzzles') }}
+                    </a>
+                    <button
+                        x-on:click="showCelebration = false"
+                        class="inline-flex w-full items-center justify-center rounded-lg px-4 py-2.5 text-sm font-medium text-zinc-600 transition hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:ring-offset-2 dark:text-zinc-400 dark:hover:bg-zinc-700 dark:focus:ring-offset-zinc-800"
+                    >
+                        {{ __('Keep Looking') }}
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
     {{-- Export Warning Modal --}}

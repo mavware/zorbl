@@ -13,7 +13,7 @@ test('template picker appears in new puzzle modal for standard sizes', function 
         ->set('newWidth', 15)
         ->set('newHeight', 15)
         ->assertSee('Grid Template')
-        ->assertSee('Wide Open')
+        ->assertSee('Open')
         ->assertSee('Classic');
 });
 
@@ -23,8 +23,8 @@ test('template picker does not appear for non-standard sizes', function () {
 
     Livewire\Livewire::test('pages::crosswords.index')
         ->set('showNewModal', true)
-        ->set('newWidth', 7)
-        ->set('newHeight', 7)
+        ->set('newWidth', 2)
+        ->set('newHeight', 2)
         ->assertDontSee('Grid Template');
 });
 

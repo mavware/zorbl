@@ -27,6 +27,8 @@ export function crosswordSolver({ width, height, grid, solution, progress, style
         pencilMode: false,
         pencilCells: initialPencilCells || {},
         achievementToasts: [],
+        showCelebration: false,
+        celebrationTime: '',
         persistence: persistence || null,
 
         init() {
@@ -579,6 +581,10 @@ export function crosswordSolver({ width, height, grid, solution, progress, style
             }
             this.isDirty = false;
             this.saving = false;
+            setTimeout(() => {
+                this.celebrationTime = this.formattedTime();
+                this.showCelebration = true;
+            }, 500);
         },
 
         // --- Persistence ---

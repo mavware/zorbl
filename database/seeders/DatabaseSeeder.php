@@ -39,6 +39,7 @@ class DatabaseSeeder extends Seeder
 
         $this->call([
             WordListSeeder::class,
+            ClueEntrySeeder::class,
         ]);
     }
 }

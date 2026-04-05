@@ -758,7 +758,7 @@ class extends Component {
         {{-- Grid --}}
         <div class="flex min-w-0 flex-1 items-start justify-center overflow-hidden">
             <div
-                class="relative"
+                class="relative max-h-full max-w-full"
                 :style="'width: ' + Math.min(600, width * 40) + 'px;'"
                 x-on:keydown="handleKeydown($event)"
                 tabindex="0"
@@ -768,7 +768,7 @@ class extends Component {
             >
                 <div
                     class="grid border border-zinc-800 dark:border-zinc-300 [--bar-color:var(--color-zinc-800)] dark:[--bar-color:var(--color-zinc-300)]"
-                    :style="'grid-template-columns: repeat(' + width + ', 1fr);'"
+                    :style="'grid-template-columns: repeat(' + width + ', minmax(0, 1fr));'"
                 >
                     <template x-for="(row, rowIdx) in grid" :key="'row-' + rowIdx">
                         <template x-for="(cell, colIdx) in row" :key="'cell-' + rowIdx + '-' + colIdx">
@@ -780,7 +780,7 @@ class extends Component {
                                 x-on:touchmove="cancelLongPress()"
                                 :class="[cellClasses(rowIdx, colIdx), isVoid(rowIdx, colIdx) ? '' : 'border border-zinc-300 dark:border-zinc-600']"
                                 :style="cellBarStyles(rowIdx, colIdx)"
-                                class="relative box-border flex aspect-square items-center justify-center select-none"
+                                class="relative box-border flex aspect-square items-center justify-center overflow-hidden select-none"
                                 role="gridcell"
                             >
                                 {{-- Clue number --}}

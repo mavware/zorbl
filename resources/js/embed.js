@@ -115,7 +115,7 @@ function buildTemplate(data) {
                 >
                     <div
                         class="grid border border-zinc-800 [--bar-color:var(--color-zinc-800)]"
-                        :style="'grid-template-columns: repeat(' + width + ', 1fr);'"
+                        :style="'grid-template-columns: repeat(' + width + ', minmax(0, 1fr));'"
                     >
                         <template x-for="(row, rowIdx) in grid" :key="'row-' + rowIdx">
                             <template x-for="(cell, colIdx) in row" :key="'cell-' + rowIdx + '-' + colIdx">
@@ -123,7 +123,7 @@ function buildTemplate(data) {
                                     x-on:click="selectCell(rowIdx, colIdx)"
                                     :class="[cellClasses(rowIdx, colIdx), isVoid(rowIdx, colIdx) ? '' : 'border border-zinc-300']"
                                     :style="cellBarStyles(rowIdx, colIdx)"
-                                    class="relative box-border flex aspect-square items-center justify-center select-none"
+                                    class="relative box-border flex aspect-square items-center justify-center overflow-hidden select-none"
                                     role="gridcell"
                                 >
                                     <!-- Clue number -->

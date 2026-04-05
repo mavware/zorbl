@@ -2,34 +2,46 @@
 
 use App\Services\GridTemplateProvider;
 
-test('returns templates for standard sizes', function () {
+test('returns templates for all supported sizes', function () {
     $provider = app(GridTemplateProvider::class);
 
-    expect($provider->getTemplates(5, 5))->toHaveCount(2)
-        ->and($provider->getTemplates(11, 11))->toHaveCount(2)
-        ->and($provider->getTemplates(13, 13))->toHaveCount(2)
-        ->and($provider->getTemplates(15, 15))->toHaveCount(5)
-        ->and($provider->getTemplates(21, 21))->toHaveCount(3);
+    $expectedCounts = [
+        2 => 0,
+        3 => 1,
+        4 => 3,
+        5 => 4,
+        6 => 4,
+    ];
+
+    foreach ($expectedCounts as $size => $count) {
+        expect($provider->getTemplates($size, $size))
+            ->toHaveCount($count, "Expected $count templates for {$size}x{$size}");
+    }
+
+    // All sizes 7-27 should have 5 templates
+    for ($size = 7; $size <= 27; $size++) {
+        expect($provider->getTemplates($size, $size))
+            ->toHaveCount(5, "Expected 5 templates for {$size}x{$size}");
+    }
 });
 
 test('returns empty array for non-standard sizes', function () {
     $provider = app(GridTemplateProvider::class);
 
-    expect($provider->getTemplates(7, 7))->toBe([])
-        ->and($provider->getTemplates(9, 9))->toBe([])
+    expect($provider->getTemplates(2, 2))->toBe([])
+        ->and($provider->getTemplates(28, 28))->toBe([])
         ->and($provider->getTemplates(15, 21))->toBe([]);
 });
 
 test('each template has correct dimensions', function () {
     $provider = app(GridTemplateProvider::class);
-    $sizes = [[5, 5], [11, 11], [13, 13], [15, 15], [21, 21]];
 
-    foreach ($sizes as [$w, $h]) {
-        foreach ($provider->getTemplates($w, $h) as $template) {
-            expect($template['grid'])->toHaveCount($h, "Template '{$template['name']}' has wrong height for {$w}x{$h}");
+    for ($n = 3; $n <= 27; $n++) {
+        foreach ($provider->getTemplates($n, $n) as $template) {
+            expect($template['grid'])->toHaveCount($n, "Template '{$template['name']}' has wrong height for {$n}x{$n}");
 
             foreach ($template['grid'] as $row) {
-                expect($row)->toHaveCount($w, "Template '{$template['name']}' has wrong width for {$w}x{$h}");
+                expect($row)->toHaveCount($n, "Template '{$template['name']}' has wrong width for {$n}x{$n}");
             }
         }
     }
@@ -37,20 +49,19 @@ test('each template has correct dimensions', function () {
 
 test('each template has 180-degree rotational symmetry', function () {
     $provider = app(GridTemplateProvider::class);
-    $sizes = [[5, 5], [11, 11], [13, 13], [15, 15], [21, 21]];
 
-    foreach ($sizes as [$w, $h]) {
-        foreach ($provider->getTemplates($w, $h) as $template) {
+    for ($n = 3; $n <= 27; $n++) {
+        foreach ($provider->getTemplates($n, $n) as $template) {
             $grid = $template['grid'];
 
-            for ($r = 0; $r < $h; $r++) {
-                for ($c = 0; $c < $w; $c++) {
-                    $mr = $h - 1 - $r;
-                    $mc = $w - 1 - $c;
+            for ($r = 0; $r < $n; $r++) {
+                for ($c = 0; $c < $n; $c++) {
+                    $mr = $n - 1 - $r;
+                    $mc = $n - 1 - $c;
                     $isBlock = $grid[$r][$c] === '#';
                     $mirrorBlock = $grid[$mr][$mc] === '#';
 
-                    expect($isBlock)->toBe($mirrorBlock, "Template '{$template['name']}' symmetry fails at ($r,$c) vs ($mr,$mc)");
+                    expect($isBlock)->toBe($mirrorBlock, "Template '{$template['name']}' ({$n}x{$n}) symmetry fails at ($r,$c) vs ($mr,$mc)");
                 }
             }
         }
@@ -59,36 +70,35 @@ test('each template has 180-degree rotational symmetry', function () {
 
 test('all words are at least 3 letters long', function () {
     $provider = app(GridTemplateProvider::class);
-    $sizes = [[5, 5], [11, 11], [13, 13], [15, 15], [21, 21]];
 
-    foreach ($sizes as [$w, $h]) {
-        foreach ($provider->getTemplates($w, $h) as $template) {
+    for ($n = 3; $n <= 27; $n++) {
+        foreach ($provider->getTemplates($n, $n) as $template) {
             $grid = $template['grid'];
             $name = $template['name'];
 
             // Check across words
-            for ($r = 0; $r < $h; $r++) {
+            for ($r = 0; $r < $n; $r++) {
                 $len = 0;
 
-                for ($c = 0; $c <= $w; $c++) {
-                    if ($c < $w && $grid[$r][$c] !== '#') {
+                for ($c = 0; $c <= $n; $c++) {
+                    if ($c < $n && $grid[$r][$c] !== '#') {
                         $len++;
                     } else {
-                        expect($len === 0 || $len >= 3)->toBeTrue("Template '$name' has across word of length $len at row $r");
+                        expect($len === 0 || $len >= 3)->toBeTrue("Template '$name' ({$n}x{$n}) has across word of length $len at row $r");
                         $len = 0;
                     }
                 }
             }
 
             // Check down words
-            for ($c = 0; $c < $w; $c++) {
+            for ($c = 0; $c < $n; $c++) {
                 $len = 0;
 
-                for ($r = 0; $r <= $h; $r++) {
-                    if ($r < $h && $grid[$r][$c] !== '#') {
+                for ($r = 0; $r <= $n; $r++) {
+                    if ($r < $n && $grid[$r][$c] !== '#') {
                         $len++;
                     } else {
-                        expect($len === 0 || $len >= 3)->toBeTrue("Template '$name' has down word of length $len at col $c");
+                        expect($len === 0 || $len >= 3)->toBeTrue("Template '$name' ({$n}x{$n}) has down word of length $len at col $c");
                         $len = 0;
                     }
                 }
@@ -99,10 +109,9 @@ test('all words are at least 3 letters long', function () {
 
 test('each template has a name', function () {
     $provider = app(GridTemplateProvider::class);
-    $sizes = [[5, 5], [11, 11], [13, 13], [15, 15], [21, 21]];
 
-    foreach ($sizes as [$w, $h]) {
-        foreach ($provider->getTemplates($w, $h) as $template) {
+    for ($n = 3; $n <= 27; $n++) {
+        foreach ($provider->getTemplates($n, $n) as $template) {
             expect($template)->toHaveKey('name')
                 ->and($template['name'])->toBeString()->not->toBeEmpty();
         }
