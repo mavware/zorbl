@@ -62,7 +62,10 @@
       "Bash(PATH=\"/opt/homebrew/bin:$PATH\" npm run build)",
       "Bash(PATH=\"/opt/homebrew/bin:$PATH\" php artisan test --compact)",
       "Bash(ls -t /Users/michael/Herd/zorbl/database/migrations/*.php)",
-      "Bash(find /Users/michael/Herd/zorbl/app/Policies -type f -name *.php)"
+      "Bash(find /Users/michael/Herd/zorbl/app/Policies -type f -name *.php)",
+      "Bash(python3 packages/crossword-io/scripts/pdf_extract.py examples/march_lp-std_crossword.pdf)",
+      "Bash(python3 -m json.tool)",
+      "Bash(python3:*)"
     ]
   }
 }

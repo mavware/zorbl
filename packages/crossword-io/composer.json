@@ -1,9 +1,9 @@
 {
     "name": "zorbl/crossword-io",
-    "description": "Import and export crossword puzzles in iPUZ, PUZ, and JPZ formats.",
+    "description": "Import and export crossword puzzles in iPUZ, PUZ, JPZ, and PDF formats.",
     "type": "library",
     "license": "MIT",
-    "keywords": ["crossword", "puzzle", "ipuz", "puz", "jpz", "import", "export"],
+    "keywords": ["crossword", "puzzle", "ipuz", "puz", "jpz", "pdf", "import", "export"],
     "require": {
         "php": "^8.3",
         "ext-dom": "*",
@@ -11,7 +11,8 @@
         "ext-libxml": "*",
         "ext-mbstring": "*",
         "ext-simplexml": "*",
-        "ext-zlib": "*"
+        "ext-zlib": "*",
+        "spatie/pdf-to-text": "^1.55"
     },
     "require-dev": {
         "pestphp/pest": "^3.0 || ^4.0"

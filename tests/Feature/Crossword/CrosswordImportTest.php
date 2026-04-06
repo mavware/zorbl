@@ -181,6 +181,31 @@ XML;
         ->and($crossword->solution[0][0])->toBe('C');
 });
 
+test('users can import a valid pdf file', function () {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    $pdfContents = file_get_contents(base_path('packages/crossword-io/tests/fixtures/march.pdf'));
+    $file = UploadedFile::fake()->createWithContent('puzzle.pdf', $pdfContents);
+
+    Livewire::test('pages::crosswords.index')
+        ->set('importFile', $file)
+        ->call('importPuzzle')
+        ->assertRedirect();
+
+    expect($user->crosswords()->count())->toBe(1);
+
+    $crossword = $user->crosswords()->first();
+    expect($crossword->title)->toBe('MARCH')
+        ->and($crossword->author)->toBe('Jimmy and Evelyn Johnson')
+        ->and($crossword->width)->toBe(15)
+        ->and($crossword->height)->toBe(15)
+        ->and($crossword->solution[0][0])->toBe('A')
+        ->and($crossword->solution[0][4])->toBe('#')
+        ->and($crossword->clues_across)->not->toBeEmpty()
+        ->and($crossword->clues_down)->not->toBeEmpty();
+});
+
 test('invalid ipuz file shows error', function () {
     $user = User::factory()->create();
     $this->actingAs($user);

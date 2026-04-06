@@ -2,6 +2,7 @@
 
 use Zorbl\CrosswordIO\Exceptions\IpuzImportException;
 use Zorbl\CrosswordIO\Exceptions\JpzImportException;
+use Zorbl\CrosswordIO\Exceptions\PdfImportException;
 use Zorbl\CrosswordIO\Exceptions\PuzImportException;
 use App\Models\Crossword;
 use App\Services\GridTemplateProvider;
@@ -105,7 +106,7 @@ new #[Title('My Puzzles')] class extends Component {
             $crossword = Auth::user()->crosswords()->create($data);
 
             $this->redirect(route('crosswords.editor', $crossword), navigate: true);
-        } catch (IpuzImportException|PuzImportException|JpzImportException $e) {
+        } catch (IpuzImportException|PuzImportException|JpzImportException|PdfImportException $e) {
             $this->importError = $e->getMessage();
         }
     }
@@ -286,8 +287,8 @@ new #[Title('My Puzzles')] class extends Component {
 
             <flux:field>
                 <flux:label>{{ __('Select file') }}</flux:label>
-                <flux:text size="sm" class="mb-2">{{ __('Supported formats: ipuz, json, puz, jpz') }}</flux:text>
-                <flux:input type="file" wire:model="importFile" accept=".ipuz,.json,.puz,.jpz" />
+                <flux:text size="sm" class="mb-2">{{ __('Supported formats: ipuz, json, puz, jpz, pdf') }}</flux:text>
+                <flux:input type="file" wire:model="importFile" accept=".ipuz,.json,.puz,.jpz,.pdf" />
                 <flux:error name="importFile" />
             </flux:field>
 

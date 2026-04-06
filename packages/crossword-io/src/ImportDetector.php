@@ -4,9 +4,11 @@ namespace Zorbl\CrosswordIO;
 
 use Zorbl\CrosswordIO\Exceptions\IpuzImportException;
 use Zorbl\CrosswordIO\Exceptions\JpzImportException;
+use Zorbl\CrosswordIO\Exceptions\PdfImportException;
 use Zorbl\CrosswordIO\Exceptions\PuzImportException;
 use Zorbl\CrosswordIO\Importers\IpuzImporter;
 use Zorbl\CrosswordIO\Importers\JpzImporter;
+use Zorbl\CrosswordIO\Importers\PdfImporter;
 use Zorbl\CrosswordIO\Importers\PuzImporter;
 
 readonly class ImportDetector
@@ -15,6 +17,7 @@ readonly class ImportDetector
         private IpuzImporter $ipuzImporter,
         private PuzImporter $puzImporter,
         private JpzImporter $jpzImporter,
+        private PdfImporter $pdfImporter,
     ) {}
 
     /**
@@ -26,7 +29,7 @@ readonly class ImportDetector
      *
      * @return array<string, mixed>
      *
-     * @throws IpuzImportException|PuzImportException|JpzImportException
+     * @throws IpuzImportException|PuzImportException|JpzImportException|PdfImportException
      */
     public function import(string $contents, string $extension = ''): array
     {
@@ -38,7 +41,7 @@ readonly class ImportDetector
         if ($importer !== null) {
             try {
                 return $importer->import($contents);
-            } catch (IpuzImportException|PuzImportException|JpzImportException $extensionError) {
+            } catch (IpuzImportException|PuzImportException|JpzImportException|PdfImportException $extensionError) {
                 // If the extension was explicit and known, try content-sniffing
                 // but if content-sniffing also fails, re-throw the original error
             }
@@ -49,7 +52,7 @@ readonly class ImportDetector
         if ($sniffedImporter !== null && $sniffedImporter !== ($importer ?? null)) {
             try {
                 return $sniffedImporter->import($contents);
-            } catch (IpuzImportException|PuzImportException|JpzImportException) {
+            } catch (IpuzImportException|PuzImportException|JpzImportException|PdfImportException) {
                 // Content sniffing also failed
             }
         }
@@ -66,11 +69,12 @@ readonly class ImportDetector
     /**
      * Detect importer based on file extension.
      */
-    private function detectByExtension(string $extension): IpuzImporter|PuzImporter|JpzImporter|null
+    private function detectByExtension(string $extension): IpuzImporter|PuzImporter|JpzImporter|PdfImporter|null
     {
         return match ($extension) {
             'puz' => $this->puzImporter,
             'jpz' => $this->jpzImporter,
+            'pdf' => $this->pdfImporter,
             'ipuz', 'json' => $this->ipuzImporter,
             default => null,
         };
@@ -79,7 +83,7 @@ readonly class ImportDetector
     /**
      * Detect importer based on content analysis.
      */
-    private function detectByContent(string $contents): IpuzImporter|PuzImporter|JpzImporter|null
+    private function detectByContent(string $contents): IpuzImporter|PuzImporter|JpzImporter|PdfImporter|null
     {
         // PUZ: Check for ACROSS&DOWN magic at offset 0x02
         if (strlen($contents) >= 14 && str_contains(substr($contents, 0, 14), 'ACROSS&DOWN')) {
@@ -96,6 +100,11 @@ readonly class ImportDetector
         if (str_starts_with($trimmed, '<?xml') || str_starts_with($trimmed, '<crossword-compiler')
             || str_starts_with($trimmed, '<rectangular-puzzle')) {
             return $this->jpzImporter;
+        }
+
+        // PDF: magic bytes
+        if (str_starts_with($contents, '%PDF-')) {
+            return $this->pdfImporter;
         }
 
         // iPUZ: JSON structure with ipuz-specific keys
@@ -115,10 +124,10 @@ readonly class ImportDetector
     {
         $lastException = null;
 
-        foreach ([$this->ipuzImporter, $this->puzImporter, $this->jpzImporter] as $importer) {
+        foreach ([$this->ipuzImporter, $this->puzImporter, $this->jpzImporter, $this->pdfImporter] as $importer) {
             try {
                 return $importer->import($contents);
-            } catch (IpuzImportException|PuzImportException|JpzImportException $e) {
+            } catch (IpuzImportException|PuzImportException|JpzImportException|PdfImportException $e) {
                 $lastException = $e;
             }
         }

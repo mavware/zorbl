@@ -4,6 +4,7 @@ use Zorbl\CrosswordIO\GridNumberer;
 use Zorbl\CrosswordIO\ImportDetector;
 use Zorbl\CrosswordIO\Importers\IpuzImporter;
 use Zorbl\CrosswordIO\Importers\JpzImporter;
+use Zorbl\CrosswordIO\Importers\PdfImporter;
 use Zorbl\CrosswordIO\Importers\PuzImporter;
 
 test('detects ipuz from extension', function () {
@@ -28,7 +29,7 @@ test('detects ipuz from extension', function () {
     ]);
 
     $numberer = new GridNumberer;
-    $detector = new ImportDetector(new IpuzImporter($numberer), new PuzImporter($numberer), new JpzImporter($numberer));
+    $detector = new ImportDetector(new IpuzImporter($numberer), new PuzImporter($numberer), new JpzImporter($numberer), new PdfImporter($numberer));
     $result = $detector->import($ipuzContent, 'ipuz');
 
     expect($result['width'])->toBe(3)
@@ -57,7 +58,7 @@ test('detects ipuz from content when no extension provided', function () {
     ]);
 
     $numberer = new GridNumberer;
-    $detector = new ImportDetector(new IpuzImporter($numberer), new PuzImporter($numberer), new JpzImporter($numberer));
+    $detector = new ImportDetector(new IpuzImporter($numberer), new PuzImporter($numberer), new JpzImporter($numberer), new PdfImporter($numberer));
     $result = $detector->import($ipuzContent, '');
 
     expect($result['width'])->toBe(3);
@@ -86,7 +87,7 @@ test('strips UTF-8 BOM from content', function () {
     ]);
 
     $numberer = new GridNumberer;
-    $detector = new ImportDetector(new IpuzImporter($numberer), new PuzImporter($numberer), new JpzImporter($numberer));
+    $detector = new ImportDetector(new IpuzImporter($numberer), new PuzImporter($numberer), new JpzImporter($numberer), new PdfImporter($numberer));
     $result = $detector->import($ipuzContent, 'json');
 
     expect($result['width'])->toBe(3);
@@ -115,7 +116,7 @@ test('falls back to content sniffing when extension is wrong', function () {
 
     // Pass wrong extension (.puz) but content is actually iPUZ JSON
     $numberer = new GridNumberer;
-    $detector = new ImportDetector(new IpuzImporter($numberer), new PuzImporter($numberer), new JpzImporter($numberer));
+    $detector = new ImportDetector(new IpuzImporter($numberer), new PuzImporter($numberer), new JpzImporter($numberer), new PdfImporter($numberer));
     $result = $detector->import($ipuzContent, 'puz');
 
     expect($result['width'])->toBe(3);
@@ -123,6 +124,6 @@ test('falls back to content sniffing when extension is wrong', function () {
 
 test('throws exception for completely invalid content', function () {
     $numberer = new GridNumberer;
-    $detector = new ImportDetector(new IpuzImporter($numberer), new PuzImporter($numberer), new JpzImporter($numberer));
+    $detector = new ImportDetector(new IpuzImporter($numberer), new PuzImporter($numberer), new JpzImporter($numberer), new PdfImporter($numberer));
     $detector->import('not a valid puzzle file at all', 'txt');
 })->throws(Exception::class);
