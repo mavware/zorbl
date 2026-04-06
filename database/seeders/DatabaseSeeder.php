@@ -22,7 +22,7 @@ class DatabaseSeeder extends Seeder
         $adminRole->givePermissionTo($adminPermission);
 
         $michael = User::firstOrCreate(
-            ['email' => 'michael@zorbol.com'],
+            ['email' => 'michael@zorbl.com'],
             [
                 'name' => 'Michael Greer',
                 'password' => Hash::make('Sunday#1'),
