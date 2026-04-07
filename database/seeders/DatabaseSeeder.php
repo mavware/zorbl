@@ -32,10 +32,7 @@ class DatabaseSeeder extends Seeder
         $michael->assignRole($adminRole);
 
         $this->call([
-            WordListSeeder::class,
-            ClueEntrySeeder::class,
             RoadmapSeeder::class,
         ]);
-        // On prod, run: php artisan setup:platform
     }
 }
