@@ -24,8 +24,6 @@ class ActivitySeeder extends Seeder
 
     private const PUZZLE_COUNT = 30;
 
-    private const CONSTRUCTOR_COUNT = 5;
-
     private const SOLVER_COUNT = 45;
 
     public function run(): void
@@ -56,17 +54,28 @@ class ActivitySeeder extends Seeder
 
         $this->command->info('Parsed '.count($puzzles).' puzzles.');
 
-        // Step 2: Create users
+        // Step 2: Create users (constructors from puzzle authors + solvers)
         $this->command->info('Creating users...');
-        $constructorEmails = [];
-        $solverEmails = [];
-        $userBatch = [];
 
-        for ($i = 1; $i <= self::CONSTRUCTOR_COUNT; $i++) {
-            $email = "constructor{$i}@example.com";
-            $constructorEmails[] = $email;
-            $userBatch[] = [
-                'name' => $faker->name(),
+        $seedPuzzles = array_slice($puzzles, 0, self::PUZZLE_COUNT);
+
+        // Collect unique author names from the puzzles we'll seed
+        $authorNameToEmail = [];
+
+        foreach ($seedPuzzles as $puzzle) {
+            $name = $this->cleanAuthorName($puzzle['author'] ?? '');
+
+            if ($name !== '' && ! isset($authorNameToEmail[$name])) {
+                $slug = preg_replace('/[^a-z0-9]+/', '.', strtolower($name));
+                $authorNameToEmail[$name] = "{$slug}@example.com";
+            }
+        }
+
+        $constructorBatch = [];
+
+        foreach ($authorNameToEmail as $name => $email) {
+            $constructorBatch[] = [
+                'name' => $name,
                 'email' => $email,
                 'password' => $hashedPassword,
                 'email_verified_at' => $now,
@@ -78,10 +87,26 @@ class ActivitySeeder extends Seeder
             ];
         }
 
+        // Insert constructors in chunks to handle large batches
+        foreach (array_chunk($constructorBatch, 500) as $chunk) {
+            User::insert($chunk);
+        }
+
+        $constructorEmails = array_values($authorNameToEmail);
+        $constructorUsers = User::whereIn('email', $constructorEmails)->get()->keyBy('name');
+        $constructorIds = $constructorUsers->pluck('id')->all();
+
+        // Fallback constructor for puzzles with no valid author
+        $fallbackConstructorId = $constructorIds[0] ?? null;
+
+        // Create solver users
+        $solverEmails = [];
+        $solverBatch = [];
+
         for ($i = 1; $i <= self::SOLVER_COUNT; $i++) {
             $email = "solver{$i}@example.com";
             $solverEmails[] = $email;
-            $userBatch[] = [
+            $solverBatch[] = [
                 'name' => $faker->name(),
                 'email' => $email,
                 'password' => $hashedPassword,
@@ -94,26 +119,27 @@ class ActivitySeeder extends Seeder
             ];
         }
 
-        User::insert($userBatch);
+        User::insert($solverBatch);
 
-        $constructorIds = User::whereIn('email', $constructorEmails)->pluck('id')->all();
         $solverIds = User::whereIn('email', $solverEmails)->pluck('id')->all();
         $allUserIds = array_merge($constructorIds, $solverIds);
 
-        $this->command->info('Created '.(self::CONSTRUCTOR_COUNT + self::SOLVER_COUNT).' users.');
+        $this->command->info('Created '.count($constructorBatch).' constructor(s) and '.self::SOLVER_COUNT.' solvers.');
 
-        // Step 3: Create crosswords
+        // Step 3: Create crosswords (matched to author users)
         $this->command->info('Creating crosswords...');
         $rater = new DifficultyRater;
         $crosswordIds = [];
 
-        $seedPuzzles = array_slice($puzzles, 0, self::PUZZLE_COUNT);
-
         foreach ($seedPuzzles as $puzzle) {
+            $authorName = $this->cleanAuthorName($puzzle['author'] ?? '');
+            $authorUser = $constructorUsers->get($authorName);
+            $userId = $authorUser?->id ?? $fallbackConstructorId;
+
             $crossword = Crossword::create([
-                'user_id' => $constructorIds[array_rand($constructorIds)],
+                'user_id' => $userId,
                 'title' => $puzzle['title'] ?? 'Untitled Puzzle',
-                'author' => $puzzle['author'] ?? null,
+                'author' => $authorName ?: null,
                 'copyright' => $puzzle['copyright'] ?? null,
                 'width' => $puzzle['width'],
                 'height' => $puzzle['height'],
@@ -437,7 +463,7 @@ class ActivitySeeder extends Seeder
 
             $parsed = $this->parseXdFile($content, $numberer);
 
-            if ($parsed !== null) {
+            if ($parsed !== null && $this->passesCopyrightFilter($parsed)) {
                 $puzzles[] = $parsed;
             }
         }
@@ -449,6 +475,46 @@ class ActivitySeeder extends Seeder
         file_put_contents($cachePath, json_encode($puzzles));
 
         return $puzzles;
+    }
+
+    /** Publication names to exclude from titles. */
+    private const EXCLUDED_PUBLICATIONS = [
+        'new york times',
+        'ny times',
+        'nyt',
+        'la times',
+        'l. a. times',
+        'l.a. times',
+        'los angeles times',
+        'usa today',
+        'washington post',
+        'post puzzler',
+        'newsday',
+        'wall street journal',
+        'wsj',
+        'boston globe',
+        'chicago tribune',
+        'slate ',
+    ];
+
+    /**
+     * Check if a parsed puzzle passes filters.
+     * Rejects puzzles with a publication name in the title.
+     *
+     * @param  array<string, mixed>  $puzzle
+     */
+    private function passesCopyrightFilter(array $puzzle): bool
+    {
+        $title = $puzzle['title'] ?? '';
+        $titleLower = strtolower($title);
+
+        foreach (self::EXCLUDED_PUBLICATIONS as $pub) {
+            if (str_contains($titleLower, $pub)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -563,6 +629,7 @@ class ActivitySeeder extends Seeder
             'title' => $metadata['title'] ?? null,
             'author' => $metadata['author'] ?? $metadata['editor'] ?? null,
             'copyright' => $metadata['copyright'] ?? null,
+            'date' => $metadata['date'] ?? null,
             'width' => $width,
             'height' => $height,
             'grid' => $result['grid'],
@@ -570,5 +637,58 @@ class ActivitySeeder extends Seeder
             'clues_across' => $cluesAcross,
             'clues_down' => $cluesDown,
         ];
+    }
+
+    /**
+     * Clean a raw xd author string into a human name.
+     * Strips "By"/"by" prefixes, editor attributions, co-author separators, and junk.
+     */
+    private function cleanAuthorName(string $raw): string
+    {
+        $name = trim($raw);
+
+        if ($name === '' || $name === 'Unknown' || $name === 'S.N.') {
+            return '';
+        }
+
+        // Strip numeric-only values (date codes like "000103")
+        if (preg_match('/^\d+$/', $name)) {
+            return '';
+        }
+
+        // Remove "By " / "by " prefix
+        $name = preg_replace('/^[Bb]y\s+/', '', $name);
+
+        // Remove everything after editor attributions
+        $name = preg_replace('/\s*[,\/]\s*(edited by|ed\.|Edited by|Ed\.).*$/i', '', $name);
+        $name = preg_replace('/\s*--.*$/', '', $name);
+
+        // Remove "(puzzleeditor@...)" and similar parenthetical
+        $name = preg_replace('/\s*\(.*\)/', '', $name);
+
+        // If there's a " / " separator, take the first author
+        if (str_contains($name, ' / ')) {
+            $name = trim(explode(' / ', $name)[0]);
+        }
+
+        // If there's a " & ", take the first author
+        if (str_contains($name, ' & ')) {
+            $name = trim(explode(' & ', $name)[0]);
+        }
+
+        // Strip "by " again in case it was nested (e.g., "by by Fred Piscop")
+        $name = preg_replace('/^[Bb]y\s+/', '', $name);
+
+        // Remove leading "??" patterns
+        $name = preg_replace('/^\?\?\s*\/?\s*/', '', $name);
+
+        $name = trim($name);
+
+        // Reject if too short or still looks like junk
+        if (mb_strlen($name) < 3 || ! preg_match('/[a-zA-Z]/', $name)) {
+            return '';
+        }
+
+        return $name;
     }
 }

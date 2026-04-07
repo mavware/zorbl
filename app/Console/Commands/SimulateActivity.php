@@ -103,22 +103,42 @@ class SimulateActivity extends Command
             return;
         }
 
-        $constructorIds = User::where('email', 'like', 'constructor%@example.com')->pluck('id')->all();
-
-        if (empty($constructorIds)) {
-            return;
-        }
-
+        $hashedPassword = Hash::make('password');
         $count = random_int(1, 2);
         $rater = new DifficultyRater;
         $created = 0;
 
         for ($i = 0; $i < $count && $i < count($available); $i++) {
             $puzzle = $available[array_rand($available)];
+            $authorName = $this->cleanAuthorName($puzzle['author'] ?? '');
+
+            $userId = null;
+
+            if ($authorName !== '') {
+                $slug = preg_replace('/[^a-z0-9]+/', '.', strtolower($authorName));
+                $user = User::firstOrCreate(
+                    ['email' => "{$slug}@example.com"],
+                    [
+                        'name' => $authorName,
+                        'password' => $hashedPassword,
+                        'email_verified_at' => $now,
+                    ]
+                );
+                $userId = $user->id;
+            }
+
+            if ($userId === null) {
+                $userId = Crossword::where('is_published', true)->inRandomOrder()->value('user_id');
+            }
+
+            if ($userId === null) {
+                continue;
+            }
+
             $crossword = Crossword::create([
-                'user_id' => $constructorIds[array_rand($constructorIds)],
+                'user_id' => $userId,
                 'title' => $puzzle['title'] ?? 'Untitled Puzzle',
-                'author' => $puzzle['author'] ?? null,
+                'author' => $authorName ?: null,
                 'copyright' => $puzzle['copyright'] ?? null,
                 'width' => $puzzle['width'],
                 'height' => $puzzle['height'],
@@ -281,7 +301,7 @@ class SimulateActivity extends Command
             $created = 0;
 
             $solverIds = User::where('email', 'like', 'solver%@example.com')->pluck('id')->all();
-            $constructorIds = User::where('email', 'like', 'constructor%@example.com')->pluck('id')->all();
+            $constructorIds = Crossword::where('is_published', true)->distinct()->pluck('user_id')->all();
             $allUserIds = array_merge($solverIds, $constructorIds);
 
             for ($i = 0; $i < $count; $i++) {
@@ -470,5 +490,44 @@ class SimulateActivity extends Command
         ]);
 
         $this->info('Added a contest entry.');
+    }
+
+    /**
+     * Clean a raw xd author string into a human name.
+     */
+    private function cleanAuthorName(string $raw): string
+    {
+        $name = trim($raw);
+
+        if ($name === '' || $name === 'Unknown' || $name === 'S.N.') {
+            return '';
+        }
+
+        if (preg_match('/^\d+$/', $name)) {
+            return '';
+        }
+
+        $name = preg_replace('/^[Bb]y\s+/', '', $name);
+        $name = preg_replace('/\s*[,\/]\s*(edited by|ed\.|Edited by|Ed\.).*$/i', '', $name);
+        $name = preg_replace('/\s*--.*$/', '', $name);
+        $name = preg_replace('/\s*\(.*\)/', '', $name);
+
+        if (str_contains($name, ' / ')) {
+            $name = trim(explode(' / ', $name)[0]);
+        }
+
+        if (str_contains($name, ' & ')) {
+            $name = trim(explode(' & ', $name)[0]);
+        }
+
+        $name = preg_replace('/^[Bb]y\s+/', '', $name);
+        $name = preg_replace('/^\?\?\s*\/?\s*/', '', $name);
+        $name = trim($name);
+
+        if (mb_strlen($name) < 3 || ! preg_match('/[a-zA-Z]/', $name)) {
+            return '';
+        }
+
+        return $name;
     }
 }
