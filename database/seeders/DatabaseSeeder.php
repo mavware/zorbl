@@ -31,16 +31,11 @@ class DatabaseSeeder extends Seeder
         );
         $michael->assignRole($adminRole);
 
-        if (App()->environment('local')) {
-            $this->call([
-                RoadmapSeeder::class,
-                ActivitySeeder::class,
-            ]);
-        }
-
         $this->call([
             WordListSeeder::class,
             ClueEntrySeeder::class,
+            RoadmapSeeder::class,
         ]);
+        // On prod, run: php artisan setup:platform
     }
 }

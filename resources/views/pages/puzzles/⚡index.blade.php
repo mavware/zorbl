@@ -49,17 +49,17 @@ class extends Component {
         if ($this->search !== '') {
             $term = $this->search;
             $query->where(function ($q) use ($term) {
-                $q->where('title', 'like', "%{$term}%")
-                    ->orWhere('author', 'like', "%{$term}%")
-                    ->orWhereHas('user', fn ($u) => $u->where('name', 'like', "%{$term}%"));
+                $q->whereLike('title', "%{$term}%")
+                    ->orWhereLike('author', "%{$term}%")
+                    ->orWhereHas('user', fn ($u) => $u->whereLike('name', "%{$term}%"));
             });
         }
 
         if ($this->constructor !== '') {
             $term = $this->constructor;
             $query->where(function ($q) use ($term) {
-                $q->where('author', 'like', "%{$term}%")
-                    ->orWhereHas('user', fn ($q) => $q->where('name', 'like', "%{$term}%"));
+                $q->whereLike('author', "%{$term}%")
+                    ->orWhereHas('user', fn ($q) => $q->whereLike('name', "%{$term}%"));
             });
         }
 

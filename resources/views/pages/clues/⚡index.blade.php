@@ -42,8 +42,8 @@ new #[Title('Clue Library')] class extends Component {
         if ($this->search !== '') {
             $term = $this->search;
             $query->where(function ($q) use ($term) {
-                $q->where('answer', 'like', '%'.mb_strtoupper($term).'%')
-                    ->orWhere('clue', 'like', '%'.$term.'%');
+                $q->whereLike('answer', '%'.mb_strtoupper($term).'%')
+                    ->orWhereLike('clue', '%'.$term.'%');
             });
         }
 
