@@ -27,6 +27,9 @@
                     <flux:sidebar.item icon="book-open" :href="route('clues.index')" :current="request()->routeIs('clues.index')" wire:navigate>
                         {{ __('Clue Library') }}
                     </flux:sidebar.item>
+                    <flux:sidebar.item icon="language" :href="route('words.index')" :current="request()->routeIs('words.*')" wire:navigate>
+                        {{ __('Word Catalog') }}
+                    </flux:sidebar.item>
                 </flux:sidebar.group>
 
                 @if (auth()->user()->hasRole('Admin'))

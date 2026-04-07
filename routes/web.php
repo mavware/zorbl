@@ -31,6 +31,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::livewire('clues', 'pages::clues.index')->name('clues.index');
 
+    Route::livewire('words', 'pages::words.index')->name('words.index');
+    Route::livewire('words/{word:word}', 'pages::words.show')->name('words.show');
+
     Route::livewire('favorites', 'pages::favorites.index')->name('favorites.index');
 
     Route::livewire('constructors/{constructor}', 'pages::constructors.show')->name('constructors.show');
