@@ -22,7 +22,7 @@ class ClueEntrySeeder extends Seeder
      */
     public function run(): void
     {
-        $admin = User::where('email', 'michael@zorbol.com')->first();
+        $admin = User::where('email', 'michael@zorbl.com')->first();
 
         if (! $admin) {
             $this->command->error('Admin user not found. Run DatabaseSeeder first.');

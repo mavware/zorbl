@@ -7,8 +7,8 @@ use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 
-#[Signature('crossword:generate-wordlist {--source=/usr/share/dict/words : Path to source dictionary file}')]
-#[Description('Generate a curated crossword word list from a system dictionary')]
+#[Signature('crossword:generate-wordlist {--source= : Path to source dictionary file (optional, falls back to clue entries)}')]
+#[Description('Generate a curated crossword word list from a system dictionary or clue entries')]
 class GenerateWordList extends Command
 {
     /**
@@ -29,12 +29,45 @@ class GenerateWordList extends Command
     {
         $source = $this->option('source');
 
-        if (! file_exists($source)) {
+        // Auto-detect: use source file if provided/exists, otherwise fall back to clue entries
+        if ($source !== null && ! file_exists($source)) {
             $this->error("Source dictionary not found: {$source}");
 
             return self::FAILURE;
         }
 
+        if ($source === null) {
+            $defaultPath = '/usr/share/dict/words';
+
+            if (file_exists($defaultPath)) {
+                $source = $defaultPath;
+            }
+        }
+
+        if ($source !== null) {
+            $words = $this->generateFromDictionary($source);
+        } else {
+            $words = $this->generateFromClueEntries();
+        }
+
+        if (empty($words)) {
+            $this->error('No words generated. Ensure clue entries have been seeded or provide a dictionary file.');
+
+            return self::FAILURE;
+        }
+
+        $this->writeWordList($words);
+
+        return self::SUCCESS;
+    }
+
+    /**
+     * Generate word list from a system dictionary file, boosted by known clue entries.
+     *
+     * @return array<string, float>
+     */
+    private function generateFromDictionary(string $source): array
+    {
         $this->info("Reading dictionary from {$source}...");
 
         $knownWords = ClueEntry::query()
@@ -78,9 +111,70 @@ class GenerateWordList extends Command
             $words[$upper] = round($score, 2);
         }
 
-        $this->info('Filtered to '.count($words).' words.');
+        $this->info('Filtered to '.count($words).' words from dictionary.');
 
-        // Write to output file
+        return $words;
+    }
+
+    /**
+     * Generate word list purely from clue entry answers in the database.
+     *
+     * @return array<string, float>
+     */
+    private function generateFromClueEntries(): array
+    {
+        $this->info('No dictionary file found. Generating word list from clue entries...');
+
+        $count = ClueEntry::count();
+
+        if ($count === 0) {
+            return [];
+        }
+
+        $this->info("Processing {$count} clue entries...");
+
+        $words = [];
+
+        ClueEntry::select('answer')
+            ->selectRaw('count(*) as frequency')
+            ->groupBy('answer')
+            ->orderByDesc('frequency')
+            ->chunk(5000, function ($rows) use (&$words) {
+                foreach ($rows as $row) {
+                    $upper = mb_strtoupper($row->answer);
+                    $length = mb_strlen($upper);
+
+                    if ($length < 3 || $length > 21) {
+                        continue;
+                    }
+
+                    // Only alpha characters
+                    if (! ctype_alpha($upper)) {
+                        continue;
+                    }
+
+                    $score = self::calculateScore($upper);
+
+                    // Frequency bonus: more appearances = more crossword-worthy
+                    $freqBonus = min(5.0, log1p($row->frequency) * 1.5);
+                    $score += $freqBonus;
+
+                    $words[$upper] = round($score, 2);
+                }
+            });
+
+        $this->info('Generated '.count($words).' words from clue entries.');
+
+        return $words;
+    }
+
+    /**
+     * Write the word list to the output file.
+     *
+     * @param  array<string, float>  $words
+     */
+    private function writeWordList(array $words): void
+    {
         $outputPath = database_path('data/wordlist.txt');
 
         if (! is_dir(dirname($outputPath))) {
@@ -96,8 +190,6 @@ class GenerateWordList extends Command
         fclose($handle);
 
         $this->info("Word list written to {$outputPath}");
-
-        return self::SUCCESS;
     }
 
     /**
