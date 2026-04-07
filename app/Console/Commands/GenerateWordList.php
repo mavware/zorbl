@@ -7,7 +7,7 @@ use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 
-#[Signature('crossword:generate-wordlist {--source= : Path to source dictionary file (optional, falls back to clue entries)}')]
+#[Signature('crossword:generate-wordlist {--source= : Path to source dictionary file (optional, falls back to clue entries)} {--force : Regenerate even if word list already exists}')]
 #[Description('Generate a curated crossword word list from a system dictionary or clue entries')]
 class GenerateWordList extends Command
 {
@@ -27,6 +27,14 @@ class GenerateWordList extends Command
 
     public function handle(): int
     {
+        $outputPath = database_path('data/wordlist.txt');
+
+        if (! $this->option('force') && file_exists($outputPath)) {
+            $this->info("Word list already exists at {$outputPath}. Use --force to regenerate.");
+
+            return self::SUCCESS;
+        }
+
         $source = $this->option('source');
 
         // Auto-detect: use source file if provided/exists, otherwise fall back to clue entries

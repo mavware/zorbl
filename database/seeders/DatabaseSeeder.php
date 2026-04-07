@@ -34,5 +34,6 @@ class DatabaseSeeder extends Seeder
         $this->call([
             RoadmapSeeder::class,
         ]);
+        // Call php artisan setup:platform to seed the rest of the data
     }
 }
