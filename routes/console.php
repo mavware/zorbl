@@ -8,4 +8,4 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-Schedule::command('simulate:activity')->everyTenMinutes()->environments(['local']);
+Schedule::command('simulate:activity')->everyTenMinutes();

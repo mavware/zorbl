@@ -35,8 +35,6 @@ class ActivitySeeder extends Seeder
         }
 
         DB::disableQueryLog();
-        DB::statement('PRAGMA journal_mode=WAL');
-        DB::statement('PRAGMA synchronous=OFF');
 
         $now = now();
         $hashedPassword = Hash::make('password');
