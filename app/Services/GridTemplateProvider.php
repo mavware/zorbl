@@ -2,6 +2,9 @@
 
 namespace App\Services;
 
+use App\Models\Crossword;
+use Illuminate\Support\Facades\Cache;
+
 class GridTemplateProvider
 {
     /**
@@ -11,18 +14,226 @@ class GridTemplateProvider
      */
     public function getTemplates(int $width, int $height): array
     {
-        $key = "{$width}x{$height}";
+        // Only support square grids from 3x3 to 27x27
+        if ($width !== $height || $width < 3 || $width > 27) {
+            return [];
+        }
 
-        return match ($key) {
-            '2x2' => [],
-            '5x5' => $this->templates5x5(),
-            '11x11' => $this->templates11x11(),
-            '13x13' => $this->templates13x13(),
-            '15x15' => $this->templates15x15(),
-            '17x17' => $this->templates17x17(),
-            '21x21' => $this->templates21x21(),
-            default => $this->generateTemplates($width, $height),
-        };
+        $fromDb = $this->templatesFromDatabase($width, $height);
+
+        if (count($fromDb) >= 5) {
+            return array_slice($fromDb, 0, 5);
+        }
+
+        // Fill remaining slots with generated templates
+        $generated = $this->generateTemplates($width, $height);
+        $existingNames = array_flip(array_column($fromDb, 'name'));
+        $merged = $fromDb;
+
+        foreach ($generated as $template) {
+            if (count($merged) >= 5) {
+                break;
+            }
+
+            if (! isset($existingNames[$template['name']])) {
+                $merged[] = $template;
+            }
+        }
+
+        return $merged;
+    }
+
+    /**
+     * Extract unique grid layouts from published crosswords in the database.
+     *
+     * @return array<int, array{name: string, grid: array<int, array<int, int|string>>}>
+     */
+    private function templatesFromDatabase(int $width, int $height): array
+    {
+        $cacheKey = "grid_templates_{$width}x{$height}";
+
+        return Cache::remember($cacheKey, now()->addHour(), function () use ($width, $height) {
+            $crosswords = Crossword::where('is_published', true)
+                ->where('width', $width)
+                ->where('height', $height)
+                ->whereNotNull('grid')
+                ->get(['id', 'title', 'grid']);
+
+            if ($crosswords->isEmpty()) {
+                return [];
+            }
+
+            $templates = [];
+            $seen = [];
+
+            foreach ($crosswords as $crossword) {
+                $grid = $crossword->grid;
+
+                if (! is_array($grid) || count($grid) !== $height) {
+                    continue;
+                }
+
+                // Convert solution grid to template grid (# stays, letters become 0)
+                $templateGrid = [];
+
+                foreach ($grid as $row) {
+                    if (! is_array($row) || count($row) !== $width) {
+                        continue 2;
+                    }
+
+                    $templateRow = [];
+
+                    foreach ($row as $cell) {
+                        $templateRow[] = ($cell === '#' || $cell === null) ? '#' : 0;
+                    }
+
+                    $templateGrid[] = $templateRow;
+                }
+
+                // Deduplicate by block pattern fingerprint
+                $fingerprint = $this->gridFingerprint($templateGrid);
+
+                if (isset($seen[$fingerprint])) {
+                    continue;
+                }
+
+                $seen[$fingerprint] = true;
+
+                // Validate symmetry and minimum word length
+                if (! $this->hasRotationalSymmetry($templateGrid, $width, $height)) {
+                    continue;
+                }
+
+                if (! $this->validateMinWordLength($templateGrid, $width, $height)) {
+                    continue;
+                }
+
+                $blockCount = $this->countBlocks($templateGrid);
+                $name = $this->nameForLayout($templateGrid, $width, $height, $blockCount);
+
+                $templates[] = [
+                    'name' => $name,
+                    'grid' => $templateGrid,
+                    'block_count' => $blockCount,
+                ];
+
+                if (count($templates) >= 10) {
+                    break;
+                }
+            }
+
+            // Sort by block count to give variety (sparse to dense)
+            usort($templates, fn ($a, $b) => $a['block_count'] <=> $b['block_count']);
+
+            // Deduplicate names by appending numbers
+            $nameCounts = [];
+            $result = [];
+
+            foreach ($templates as $t) {
+                $baseName = $t['name'];
+
+                if (isset($nameCounts[$baseName])) {
+                    $nameCounts[$baseName]++;
+                    $t['name'] = $baseName.' '.$nameCounts[$baseName];
+                } else {
+                    $nameCounts[$baseName] = 1;
+                }
+
+                $result[] = ['name' => $t['name'], 'grid' => $t['grid']];
+            }
+
+            return $result;
+        });
+    }
+
+    /**
+     * Generate a fingerprint for a grid layout based on block positions.
+     *
+     * @param  array<int, array<int, int|string>>  $grid
+     */
+    private function gridFingerprint(array $grid): string
+    {
+        $blocks = [];
+
+        foreach ($grid as $r => $row) {
+            foreach ($row as $c => $cell) {
+                if ($cell === '#') {
+                    $blocks[] = "{$r},{$c}";
+                }
+            }
+        }
+
+        return implode('|', $blocks);
+    }
+
+    /**
+     * Count the number of block cells in a grid.
+     *
+     * @param  array<int, array<int, int|string>>  $grid
+     */
+    private function countBlocks(array $grid): int
+    {
+        $count = 0;
+
+        foreach ($grid as $row) {
+            foreach ($row as $cell) {
+                if ($cell === '#') {
+                    $count++;
+                }
+            }
+        }
+
+        return $count;
+    }
+
+    /**
+     * Assign a descriptive name based on block density and pattern.
+     *
+     * @param  array<int, array<int, int|string>>  $grid
+     */
+    private function nameForLayout(array $grid, int $width, int $height, int $blockCount): string
+    {
+        $totalCells = $width * $height;
+        $density = $blockCount / $totalCells;
+
+        if ($blockCount === 0) {
+            return 'Open';
+        }
+
+        if ($density < 0.08) {
+            return 'Sparse';
+        }
+
+        if ($density < 0.14) {
+            return 'Classic';
+        }
+
+        if ($density < 0.20) {
+            return 'Standard';
+        }
+
+        return 'Dense';
+    }
+
+    /**
+     * Check for 180-degree rotational symmetry.
+     *
+     * @param  array<int, array<int, int|string>>  $grid
+     */
+    private function hasRotationalSymmetry(array $grid, int $width, int $height): bool
+    {
+        for ($r = 0; $r < $height; $r++) {
+            for ($c = 0; $c < $width; $c++) {
+                $mr = $height - 1 - $r;
+                $mc = $width - 1 - $c;
+
+                if (($grid[$r][$c] === '#') !== ($grid[$mr][$mc] === '#')) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -64,299 +275,6 @@ class GridTemplateProvider
         }
 
         return $all;
-    }
-
-    /**
-     * 5x5 grids are highly constrained (min 3-letter words + symmetry).
-     * Only corner positions produce valid block placements.
-     *
-     * @return array<int, array{name: string, grid: array}>
-     */
-    private function templates5x5(): array
-    {
-        return [
-            ['name' => 'Open', 'grid' => $this->buildGrid(5, 5, [])],
-            ['name' => 'Right Corner', 'grid' => $this->buildGrid(5, 5, $this->symmetricBlocks(5, 5, [[0, 4]]))],
-            ['name' => 'Left Corner', 'grid' => $this->buildGrid(5, 5, $this->symmetricBlocks(5, 5, [[0, 0]]))],
-            ['name' => 'Frame', 'grid' => $this->buildGrid(5, 5, $this->symmetricBlocks(5, 5, [[0, 0], [0, 4]]))],
-        ];
-    }
-
-    /**
-     * @return array<int, array{name: string, grid: array}>
-     */
-    private function templates11x11(): array
-    {
-        // "Open" - minimal blocks (6 blocks)
-        $open = $this->symmetricBlocks(11, 11, [
-            [0, 5], [4, 0], [5, 3],
-        ]);
-
-        // "Cross" - center cross pattern (10 blocks)
-        $cross = $this->symmetricBlocks(11, 11, [
-            [0, 5], [3, 0], [3, 10], [5, 3], [5, 7],
-        ]);
-
-        // "Classic" - balanced themed layout (10 blocks)
-        $classic = $this->symmetricBlocks(11, 11, [
-            [0, 4], [0, 10], [3, 5], [4, 3], [5, 0],
-        ]);
-
-        // "Staircase" - diagonal stepping pattern (7 blocks)
-        $staircase = $this->symmetricBlocks(11, 11, [
-            [0, 3], [3, 0], [4, 7], [5, 5],
-        ]);
-
-        // "Diamond" - diamond-shaped block arrangement (9 blocks)
-        $diamond = $this->symmetricBlocks(11, 11, [
-            [0, 3], [0, 7], [3, 0], [3, 10], [5, 5],
-        ]);
-
-        return [
-            ['name' => 'Open', 'grid' => $this->buildGrid(11, 11, $open)],
-            ['name' => 'Cross', 'grid' => $this->buildGrid(11, 11, $cross)],
-            ['name' => 'Classic', 'grid' => $this->buildGrid(11, 11, $classic)],
-            ['name' => 'Staircase', 'grid' => $this->buildGrid(11, 11, $staircase)],
-            ['name' => 'Diamond', 'grid' => $this->buildGrid(11, 11, $diamond)],
-        ];
-    }
-
-    /**
-     * Based on chaim.ipuz example pattern.
-     *
-     * @return array<int, array{name: string, grid: array}>
-     */
-    private function templates13x13(): array
-    {
-        // From chaim.ipuz - 36 blocks, dense themed layout
-        $dense = $this->symmetricBlocks(13, 13, [
-            [0, 5], [0, 9], [1, 5], [1, 9], [2, 9],
-            [3, 0], [3, 1], [3, 2], [3, 6], [3, 7], [3, 8],
-            [4, 4], [5, 3], [5, 4], [5, 5], [5, 10], [5, 11], [5, 12],
-        ]);
-
-        // "Open" - minimal blocks (6 blocks)
-        $open = $this->symmetricBlocks(13, 13, [
-            [0, 6], [5, 0], [6, 4],
-        ]);
-
-        // "Classic" - balanced themed layout (10 blocks)
-        $classic = $this->symmetricBlocks(13, 13, [
-            [0, 4], [0, 9], [4, 0], [4, 6], [6, 4],
-        ]);
-
-        // "Lattice" - regular grid-like pattern (9 blocks)
-        $lattice = $this->symmetricBlocks(13, 13, [
-            [0, 4], [0, 8], [4, 0], [4, 12], [6, 6],
-        ]);
-
-        // "Diamond" - diamond-shaped arrangement (8 blocks)
-        $diamond = $this->symmetricBlocks(13, 13, [
-            [0, 6], [3, 3], [3, 9], [6, 0],
-        ]);
-
-        return [
-            ['name' => 'Dense', 'grid' => $this->buildGrid(13, 13, $dense)],
-            ['name' => 'Open', 'grid' => $this->buildGrid(13, 13, $open)],
-            ['name' => 'Classic', 'grid' => $this->buildGrid(13, 13, $classic)],
-            ['name' => 'Lattice', 'grid' => $this->buildGrid(13, 13, $lattice)],
-            ['name' => 'Diamond', 'grid' => $this->buildGrid(13, 13, $diamond)],
-        ];
-    }
-
-    /**
-     * Based on real crossword puzzle layouts from examples.
-     *
-     * @return array<int, array{name: string, grid: array}>
-     */
-    private function templates15x15(): array
-    {
-        // From Diehl_So_Shy.ipuz - 27 blocks, open layout
-        $open = $this->symmetricBlocks(15, 15, [
-            [0, 10], [1, 10], [2, 10],
-            [3, 6],
-            [4, 0], [4, 1], [4, 2], [4, 8],
-            [5, 0], [5, 5], [5, 9],
-            [6, 4], [6, 11],
-            [7, 7],
-        ]);
-
-        // From twittercharges.ipuz - 36 blocks, standard themed
-        $classic = $this->symmetricBlocks(15, 15, [
-            [0, 3], [0, 8],
-            [1, 3], [1, 8],
-            [2, 3], [2, 8],
-            [3, 6], [3, 10], [3, 14],
-            [4, 5], [4, 13], [4, 14],
-            [5, 0], [5, 1], [5, 7], [5, 11],
-            [6, 8],
-            [7, 4],
-        ]);
-
-        // From luckyguy.ipuz - 38 blocks, column stacks
-        $columns = $this->symmetricBlocks(15, 15, [
-            [0, 4], [0, 10],
-            [1, 4], [1, 10],
-            [2, 4], [2, 10],
-            [3, 12], [3, 13], [3, 14],
-            [4, 0], [4, 1], [4, 2], [4, 7], [4, 8],
-            [5, 6], [5, 11],
-            [6, 11],
-            [7, 4], [7, 5],
-        ]);
-
-        // From purplereign.ipuz - 38 blocks, pinwheel style
-        $pinwheel = $this->symmetricBlocks(15, 15, [
-            [0, 5], [0, 6], [0, 11],
-            [1, 5], [1, 11],
-            [2, 11],
-            [3, 4], [3, 10],
-            [4, 0], [4, 1], [4, 6], [4, 7],
-            [5, 12], [5, 13], [5, 14],
-            [6, 3], [6, 8], [6, 9],
-            [7, 4],
-        ]);
-
-        // From piece.ipuz - 41 blocks, dense pattern
-        $dense = $this->symmetricBlocks(15, 15, [
-            [0, 3], [0, 7], [0, 11],
-            [1, 3], [1, 7], [1, 11],
-            [2, 3], [2, 11],
-            [3, 13], [3, 14],
-            [4, 5], [4, 6], [4, 10], [4, 14],
-            [5, 4],
-            [6, 0], [6, 1], [6, 2], [6, 8], [6, 9],
-            [7, 7],
-        ]);
-
-        return [
-            ['name' => 'Open', 'grid' => $this->buildGrid(15, 15, $open)],
-            ['name' => 'Classic', 'grid' => $this->buildGrid(15, 15, $classic)],
-            ['name' => 'Columns', 'grid' => $this->buildGrid(15, 15, $columns)],
-            ['name' => 'Pinwheel', 'grid' => $this->buildGrid(15, 15, $pinwheel)],
-            ['name' => 'Dense', 'grid' => $this->buildGrid(15, 15, $dense)],
-        ];
-    }
-
-    /**
-     * Based on real 17x17 crossword puzzle layouts from examples.
-     *
-     * @return array<int, array{name: string, grid: array}>
-     */
-    private function templates17x17(): array
-    {
-        // From Zodiac.ipuz - 44 blocks
-        $zodiac = $this->symmetricBlocks(17, 17, [
-            [0, 5], [0, 12], [1, 5], [1, 12],
-            [3, 3], [3, 7], [3, 8], [3, 13],
-            [4, 0], [4, 1], [4, 2], [4, 7], [4, 11],
-            [6, 5], [6, 6], [6, 10], [6, 14], [6, 15], [6, 16],
-            [7, 4], [7, 9], [7, 13],
-        ]);
-
-        // From fab15.ipuz - 53 blocks, dense layout
-        $dense = $this->symmetricBlocks(17, 17, [
-            [0, 3], [0, 7], [0, 12], [0, 13],
-            [1, 3], [1, 7], [1, 13],
-            [2, 13],
-            [3, 0], [3, 8], [3, 13],
-            [4, 0], [4, 1], [4, 2], [4, 8],
-            [5, 6], [5, 11], [5, 16],
-            [6, 5], [6, 10], [6, 14], [6, 15], [6, 16],
-            [7, 4], [7, 9],
-            [8, 3], [8, 8],
-        ]);
-
-        // From nifty90.ipuz - 47 blocks
-        $classic = $this->symmetricBlocks(17, 17, [
-            [0, 3], [0, 7], [0, 12],
-            [1, 3], [1, 12],
-            [3, 8], [3, 9], [3, 13],
-            [4, 7],
-            [5, 0], [5, 1], [5, 5], [5, 6], [5, 10], [5, 14], [5, 15], [5, 16],
-            [6, 0], [6, 4], [6, 12],
-            [7, 11],
-            [8, 3], [8, 7], [8, 8],
-        ]);
-
-        // "Open" - sparse layout (6 blocks)
-        $open = $this->symmetricBlocks(17, 17, [
-            [0, 8], [5, 0], [8, 5],
-        ]);
-
-        // "Staircase" - diagonal stepping (10 blocks)
-        $staircase = $this->symmetricBlocks(17, 17, [
-            [0, 4], [3, 0], [4, 8], [6, 4], [8, 8],
-        ]);
-
-        return [
-            ['name' => 'Zodiac', 'grid' => $this->buildGrid(17, 17, $zodiac)],
-            ['name' => 'Dense', 'grid' => $this->buildGrid(17, 17, $dense)],
-            ['name' => 'Classic', 'grid' => $this->buildGrid(17, 17, $classic)],
-            ['name' => 'Open', 'grid' => $this->buildGrid(17, 17, $open)],
-            ['name' => 'Staircase', 'grid' => $this->buildGrid(17, 17, $staircase)],
-        ];
-    }
-
-    /**
-     * Based on real Sunday crossword puzzle layouts from examples.
-     *
-     * @return array<int, array{name: string, grid: array}>
-     */
-    private function templates21x21(): array
-    {
-        // From Duluth.ipuz - 80 blocks, dense Sunday layout
-        $dense = $this->symmetricBlocks(21, 21, [
-            [0, 6], [0, 7], [0, 11], [0, 17],
-            [1, 6], [1, 11], [1, 17],
-            [2, 17],
-            [3, 4], [3, 5], [3, 10], [3, 16],
-            [4, 12],
-            [5, 0], [5, 1], [5, 2], [5, 7], [5, 13], [5, 14], [5, 18], [5, 19], [5, 20],
-            [6, 0], [6, 8], [6, 15],
-            [7, 9],
-            [8, 3], [8, 4], [8, 5], [8, 10], [8, 11], [8, 12], [8, 16], [8, 17],
-            [9, 6], [9, 7], [9, 12], [9, 18], [9, 19], [9, 20],
-        ]);
-
-        // From rockclock.ipuz - 64 blocks, classic Sunday layout
-        $classic = $this->symmetricBlocks(21, 21, [
-            [0, 4], [0, 10], [0, 17],
-            [1, 4], [1, 10], [1, 17],
-            [2, 17],
-            [3, 5], [3, 12],
-            [4, 0], [4, 7], [4, 11], [4, 16],
-            [5, 6],
-            [6, 3], [6, 4], [6, 9], [6, 13], [6, 18], [6, 19], [6, 20],
-            [7, 10], [7, 14],
-            [8, 0], [8, 1], [8, 2], [8, 8], [8, 15],
-            [9, 7], [9, 11], [9, 16],
-            [10, 3],
-        ]);
-
-        // "Open" - wide-open Sunday grid (8 blocks)
-        $open = $this->symmetricBlocks(21, 21, [
-            [0, 7], [0, 13], [7, 0], [10, 7],
-        ]);
-
-        // "Staircase" - diagonal stepping pattern (12 blocks)
-        $staircase = $this->symmetricBlocks(21, 21, [
-            [0, 4], [3, 0], [4, 8], [6, 4], [8, 10], [10, 7],
-        ]);
-
-        // "Lattice" - regular grid pattern (20 blocks)
-        $lattice = $this->symmetricBlocks(21, 21, [
-            [0, 5], [0, 10], [0, 15], [4, 0], [4, 7],
-            [4, 13], [7, 4], [7, 10], [10, 0], [10, 7],
-        ]);
-
-        return [
-            ['name' => 'Dense', 'grid' => $this->buildGrid(21, 21, $dense)],
-            ['name' => 'Classic', 'grid' => $this->buildGrid(21, 21, $classic)],
-            ['name' => 'Open', 'grid' => $this->buildGrid(21, 21, $open)],
-            ['name' => 'Staircase', 'grid' => $this->buildGrid(21, 21, $staircase)],
-            ['name' => 'Lattice', 'grid' => $this->buildGrid(21, 21, $lattice)],
-        ];
     }
 
     /**
@@ -402,7 +320,7 @@ class GridTemplateProvider
     }
 
     /**
-     * Generate templates parametrically for sizes without hand-crafted examples.
+     * Generate templates parametrically for sizes without enough database examples.
      *
      * @return array<int, array{name: string, grid: array<int, array<int, int|string>>}>
      */

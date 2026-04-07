@@ -8,13 +8,15 @@ test('template picker appears in new puzzle modal for standard sizes', function 
     $user = User::factory()->create();
     $this->actingAs($user);
 
+    $templates = app(GridTemplateProvider::class)->getTemplates(15, 15);
+    $firstTemplateName = $templates[0]['name'];
+
     Livewire\Livewire::test('pages::crosswords.index')
         ->set('showNewModal', true)
         ->set('newWidth', 15)
         ->set('newHeight', 15)
         ->assertSee('Grid Template')
-        ->assertSee('Open')
-        ->assertSee('Classic');
+        ->assertSee($firstTemplateName);
 });
 
 test('template picker does not appear for non-standard sizes', function () {
