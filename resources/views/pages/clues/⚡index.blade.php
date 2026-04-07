@@ -3,6 +3,7 @@
 use App\Models\ClueEntry;
 use App\Models\ClueReport;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
@@ -36,34 +37,46 @@ new #[Title('Clue Library')] class extends Component {
     #[Computed]
     public function clues()
     {
-        $query = ClueEntry::with(['user:id,name', 'crossword:id,title'])
-            ->withCount('reports');
+        $query = ClueEntry::with(['user:id,name', 'crossword:id,title']);
+
+        // Only count reports when needed (flagged filter or to show badges)
+        if ($this->filter === 'flagged') {
+            $query->has('reports')->withCount('reports');
+        } else {
+            $query->withCount('reports');
+        }
 
         if ($this->search !== '') {
             $term = $this->search;
-            $query->where(function ($q) use ($term) {
-                $q->whereLike('answer', '%'.mb_strtoupper($term).'%')
-                    ->orWhereLike('clue', '%'.$term.'%');
-            });
+
+            if (in_array(DB::getDriverName(), ['pgsql', 'mysql', 'mariadb'])) {
+                $query->whereFullText(['clue', 'answer'], $term);
+            } else {
+                $query->where(function ($q) use ($term) {
+                    $q->whereLike('answer', '%'.mb_strtoupper($term).'%')
+                        ->orWhereLike('clue', '%'.$term.'%');
+                });
+            }
         }
 
         if ($this->filter === 'mine') {
             $query->where('user_id', Auth::id());
         } elseif ($this->filter === 'standalone') {
             $query->whereNull('crossword_id');
-        } elseif ($this->filter === 'flagged') {
-            $query->has('reports');
         } elseif ($this->filter === 'duplicates') {
-            $query->whereExists(function ($sub) {
-                $sub->selectRaw('1')
-                    ->from('clue_entries as ce2')
-                    ->whereColumn('ce2.answer', 'clue_entries.answer')
-                    ->whereColumn('ce2.clue', 'clue_entries.clue')
-                    ->whereColumn('ce2.id', '!=', 'clue_entries.id');
-            });
+            // Find answer+clue combos that appear more than once, then filter to those
+            $query->whereIn(
+                DB::raw('(answer, clue)'),
+                function ($sub) {
+                    $sub->select('answer', 'clue')
+                        ->from('clue_entries')
+                        ->groupBy('answer', 'clue')
+                        ->havingRaw('count(*) > 1');
+                }
+            );
         }
 
-        return $query->latest()->paginate(25);
+        return $query->latest('id')->paginate(25);
     }
 
     public function updatedSearch(): void
