@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use Database\Seeders\ClueEntrySeeder;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
@@ -13,6 +14,11 @@ class SetupPlatform extends Command
     public function handle(): int
     {
         $this->info('Setting up platform data...');
+
+        $this->call('db:seed', [
+            '--class' => ClueEntrySeeder::class,
+            '--no-interaction' => true,
+        ]);
 
         $this->call('seed:activity');
         $this->call('crossword:generate-wordlist');
