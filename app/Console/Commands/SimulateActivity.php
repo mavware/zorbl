@@ -14,6 +14,8 @@ use App\Models\PuzzleComment;
 use App\Models\User;
 use App\Services\DifficultyRater;
 use Carbon\CarbonInterface;
+use Faker\Factory as Faker;
+use Faker\Generator;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
@@ -23,8 +25,11 @@ use Illuminate\Support\Facades\Hash;
 #[Description('Simulate a small burst of realistic user activity')]
 class SimulateActivity extends Command
 {
+    private Generator $faker;
+
     public function handle(): int
     {
+        $this->faker = Faker::create();
         $solverCount = User::where('email', 'like', 'solver%@example.com')->count();
         $crosswordCount = Crossword::where('is_published', true)->count();
 
@@ -65,7 +70,7 @@ class SimulateActivity extends Command
         for ($i = 1; $i <= $count; $i++) {
             $num = $maxSolver + $i;
             $batch[] = [
-                'name' => fake()->name(),
+                'name' => $this->faker->name(),
                 'email' => "solver{$num}@example.com",
                 'password' => $hashedPassword,
                 'email_verified_at' => $now,
@@ -283,8 +288,8 @@ class SimulateActivity extends Command
                     PuzzleComment::create([
                         'user_id' => $completedAttempt->user_id,
                         'crossword_id' => $completedAttempt->crossword_id,
-                        'body' => fake()->sentence(),
-                        'rating' => fake()->randomElement([3, 4, 4, 5, 5, 5]),
+                        'body' => $this->faker->sentence(),
+                        'rating' => $this->faker->randomElement([3, 4, 4, 5, 5, 5]),
                     ]);
                     $created++;
                 }
@@ -340,7 +345,7 @@ class SimulateActivity extends Command
 
             if ($user) {
                 $list = FavoriteList::firstOrCreate(
-                    ['user_id' => $user->id, 'name' => fake()->randomElement(['Best Puzzles', 'Favorites', 'To Revisit', 'Fun Ones', 'Tricky'])],
+                    ['user_id' => $user->id, 'name' => $this->faker->randomElement(['Best Puzzles', 'Favorites', 'To Revisit', 'Fun Ones', 'Tricky'])],
                 );
 
                 $completedIds = PuzzleAttempt::where('user_id', $user->id)

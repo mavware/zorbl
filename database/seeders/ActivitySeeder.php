@@ -12,6 +12,7 @@ use App\Models\PuzzleAttempt;
 use App\Models\PuzzleComment;
 use App\Models\User;
 use App\Services\DifficultyRater;
+use Faker\Factory as Faker;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -38,7 +39,7 @@ class ActivitySeeder extends Seeder
 
         $now = now();
         $hashedPassword = Hash::make('password');
-        $faker = fake();
+        $faker = Faker::create();
 
         // Step 1: Download and parse puzzles
         $this->command->info('Downloading and parsing crossword puzzles...');
