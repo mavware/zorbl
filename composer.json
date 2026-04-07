@@ -13,6 +13,7 @@
         "ext-zlib": "*",
         "barryvdh/laravel-dompdf": "^3.1",
         "dedoc/scramble": "^0.13.17",
+        "fakerphp/faker": "^1.24",
         "filament/filament": "^5.0",
         "laravel/cashier": "^16.5",
         "laravel/fortify": "^1.34",
@@ -25,12 +26,10 @@
         "spatie/laravel-permission": "^7.2",
         "spatie/laravel-query-builder": "^7.1",
         "spatie/pdf-to-text": "^1.55",
-        "fakerphp/faker": "^1.24",
         "zorbl/crossword-io": "@dev"
     },
     "require-dev": {
         "barryvdh/laravel-ide-helper": "^3.7",
-
         "larastan/larastan": "^3.0",
         "laravel/boost": "^2.0",
         "laravel/pail": "^1.2.5",
