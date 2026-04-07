@@ -16,15 +16,21 @@ class SeedClues extends Command
     {
         $before = ClueEntry::count();
 
-        $this->call('db:seed', [
-            '--class' => ClueEntrySeeder::class,
-            '--no-interaction' => true,
-        ]);
+        try {
+            $this->call('db:seed', [
+                '--class' => ClueEntrySeeder::class,
+                '--no-interaction' => true,
+            ]);
+        } catch (\Throwable $e) {
+            $this->error($e->getMessage());
+
+            return self::FAILURE;
+        }
 
         $after = ClueEntry::count();
 
         if ($after === 0) {
-            $this->error('No clue entries were seeded. Check the output above for errors.');
+            $this->error('No clue entries were seeded.');
 
             return self::FAILURE;
         }

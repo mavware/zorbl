@@ -6,6 +6,7 @@ use App\Models\ClueEntry;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 use ZipArchive;
 
 class ClueEntrySeeder extends Seeder
@@ -26,16 +27,14 @@ class ClueEntrySeeder extends Seeder
             ?? User::where('email', 'michael@zorbl.com')->first();
 
         if (! $admin) {
-            $this->command->error('Admin user not found. Run DatabaseSeeder first.');
-
-            return;
+            throw new RuntimeException('Admin user not found. Run DatabaseSeeder first.');
         }
 
         $zipPath = storage_path('app/private/xd-clues.zip');
         $tsvPath = storage_path('app/private/xd-clues.tsv');
 
         if (! $this->ensureDataFile($zipPath, $tsvPath)) {
-            return;
+            throw new RuntimeException('Failed to download or extract clues data file.');
         }
 
         $this->command->info('Removing existing standalone clue entries...');
@@ -44,8 +43,6 @@ class ClueEntrySeeder extends Seeder
         $this->command->info('Importing clues from xd corpus...');
         ini_set('memory_limit', '2G');
         DB::disableQueryLog();
-        DB::statement('PRAGMA journal_mode=WAL');
-        DB::statement('PRAGMA synchronous=OFF');
 
         $handle = fopen($tsvPath, 'r');
         $batch = [];
