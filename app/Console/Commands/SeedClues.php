@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\ClueEntry;
 use Database\Seeders\ClueEntrySeeder;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
@@ -13,10 +14,22 @@ class SeedClues extends Command
 {
     public function handle(): int
     {
+        $before = ClueEntry::count();
+
         $this->call('db:seed', [
             '--class' => ClueEntrySeeder::class,
             '--no-interaction' => true,
         ]);
+
+        $after = ClueEntry::count();
+
+        if ($after === 0) {
+            $this->error('No clue entries were seeded. Check the output above for errors.');
+
+            return self::FAILURE;
+        }
+
+        $this->info("Clue entries: {$before} → {$after}");
 
         return self::SUCCESS;
     }
