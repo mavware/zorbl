@@ -10,8 +10,8 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use ZipArchive;
 
-#[Signature('seed:clues')]
-#[Description('Download and seed the crossword clue library')]
+#[Signature('seed:clues {--fresh : Delete existing standalone clue entries before importing}')]
+#[Description('Download and seed the crossword clue library (safe to re-run)')]
 class SeedClues extends Command
 {
     private const DOWNLOAD_URL = 'https://xd.saul.pw/xd-clues.zip';
@@ -50,8 +50,13 @@ class SeedClues extends Command
             return self::FAILURE;
         }
 
-        $this->info('Removing existing standalone clue entries...');
-        ClueEntry::whereNull('crossword_id')->delete();
+        if ($this->option('fresh')) {
+            $this->info('Removing existing standalone clue entries...');
+            ClueEntry::whereNull('crossword_id')->delete();
+        }
+
+        $existing = ClueEntry::whereNull('crossword_id')->count();
+        $this->info("Existing standalone clue entries: {$existing}");
 
         $this->info('Importing clues from xd corpus...');
         ini_set('memory_limit', '2G');
@@ -59,14 +64,13 @@ class SeedClues extends Command
 
         $handle = fopen($tsvPath, 'r');
         $batch = [];
-        $count = 0;
+        $inserted = 0;
         $skipped = 0;
         $now = now();
         $seen = [];
 
         // Skip header line
-        $header = fgets($handle);
-        $this->line("Header: {$header}");
+        fgets($handle);
 
         while (($line = fgets($handle)) !== false) {
             $line = rtrim($line, "\r\n");
@@ -101,7 +105,7 @@ class SeedClues extends Command
                 continue;
             }
 
-            // Deduplicate by answer+clue
+            // Deduplicate within this file
             $key = $answer.'|'.$clue;
 
             if (isset($seen[$key])) {
@@ -124,33 +128,45 @@ class SeedClues extends Command
             ];
 
             if (count($batch) >= self::BATCH_SIZE) {
-                ClueEntry::insert($batch);
-                $count += count($batch);
+                $this->insertBatch($batch);
+                $inserted += count($batch);
                 $batch = [];
 
-                if ($count % 100_000 === 0) {
-                    $this->info("  Imported {$count} clues...");
+                if ($inserted % 100_000 === 0) {
+                    $this->info("  Processed {$inserted} clues...");
                 }
             }
         }
 
         if (! empty($batch)) {
-            ClueEntry::insert($batch);
-            $count += count($batch);
+            $this->insertBatch($batch);
+            $inserted += count($batch);
         }
 
         fclose($handle);
         $seen = [];
 
-        if ($count === 0) {
+        $total = ClueEntry::whereNull('crossword_id')->count();
+
+        if ($total === 0) {
             $this->error("No clues imported ({$skipped} skipped). TSV may be corrupt — delete {$tsvPath} and retry.");
 
             return self::FAILURE;
         }
 
-        $this->info("Imported {$count} unique clue entries ({$skipped} skipped).");
+        $this->info("Processed {$inserted} clue entries ({$skipped} skipped). Total in database: {$total}");
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Insert batch, silently skipping rows that violate the unique index.
+     *
+     * @param  array<int, array<string, mixed>>  $batch
+     */
+    private function insertBatch(array $batch): void
+    {
+        ClueEntry::insertOrIgnore($batch);
     }
 
     private function ensureDataFile(string $zipPath, string $tsvPath): bool
