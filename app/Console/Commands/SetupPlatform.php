@@ -2,7 +2,6 @@
 
 namespace App\Console\Commands;
 
-use Database\Seeders\ClueEntrySeeder;
 use Database\Seeders\WordListSeeder;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
@@ -16,23 +15,22 @@ class SetupPlatform extends Command
     {
         $this->info('Setting up platform data...');
 
-        $this->info('Step 1/4: Seeding clue library...');
-        $this->call('db:seed', [
-            '--class' => ClueEntrySeeder::class,
-            '--no-interaction' => true,
-        ]);
+        $steps = [
+            ['Step 1/4: Seeding clue library...', 'seed:clues', []],
+            ['Step 2/4: Generating word list...', 'crossword:generate-wordlist', []],
+            ['Step 3/4: Seeding words table...', 'db:seed', ['--class' => WordListSeeder::class, '--no-interaction' => true]],
+            ['Step 4/4: Seeding activity data...', 'seed:activity', []],
+        ];
 
-        $this->info('Step 2/4: Generating word list...');
-        $this->call('crossword:generate-wordlist');
+        foreach ($steps as [$message, $command, $args]) {
+            $this->info($message);
 
-        $this->info('Step 3/4: Seeding words table...');
-        $this->call('db:seed', [
-            '--class' => WordListSeeder::class,
-            '--no-interaction' => true,
-        ]);
+            if ($this->call($command, $args) !== self::SUCCESS) {
+                $this->error("Failed at: {$command}");
 
-        $this->info('Step 4/4: Seeding activity data...');
-        $this->call('seed:activity');
+                return self::FAILURE;
+            }
+        }
 
         $this->info('Platform setup complete.');
 
