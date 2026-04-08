@@ -2,6 +2,7 @@
 
 use App\Models\Crossword;
 use App\Models\CrosswordLike;
+use App\Models\FavoriteList;
 use App\Models\PuzzleAttempt;
 use App\Models\PuzzleComment;
 use App\Services\AchievementService;
@@ -62,6 +63,10 @@ new #[Title('Solve Crossword')] class extends Component {
     public int $elapsedSeconds = 0;
 
     public bool $isSolved = false;
+
+    public bool $showAddToListModal = false;
+
+    public string $newListName = '';
 
     public string $commentBody = '';
 
@@ -212,6 +217,59 @@ new #[Title('Solve Crossword')] class extends Component {
         unset($this->isLiked, $this->likesCount);
     }
 
+    #[Computed]
+    public function favoriteLists()
+    {
+        return Auth::user()
+            ->favoriteLists()
+            ->withCount('crosswords')
+            ->orderBy('name')
+            ->get();
+    }
+
+    public function addToList(int $listId): void
+    {
+        $list = Auth::user()->favoriteLists()->findOrFail($listId);
+
+        if (! $list->crosswords()->where('crossword_id', $this->crosswordId)->exists()) {
+            $list->crosswords()->attach($this->crosswordId);
+        }
+
+        $this->showAddToListModal = false;
+        unset($this->favoriteLists);
+    }
+
+    public function createListAndAdd(): void
+    {
+        $this->validate([
+            'newListName' => ['required', 'string', 'min:1', 'max:100'],
+        ]);
+
+        $user = Auth::user();
+        $limits = $user->planLimits();
+
+        if ($user->favoriteLists()->count() >= $limits->maxFavoriteLists()) {
+            $this->addError('newListName', __('You have reached the maximum number of favorite lists. Upgrade to Pro for unlimited.'));
+
+            return;
+        }
+
+        $name = trim($this->newListName);
+
+        if ($user->favoriteLists()->where('name', $name)->exists()) {
+            $this->addError('newListName', __('You already have a list with this name.'));
+
+            return;
+        }
+
+        $list = $user->favoriteLists()->create(['name' => $name]);
+        $list->crosswords()->attach($this->crosswordId);
+
+        $this->newListName = '';
+        $this->showAddToListModal = false;
+        unset($this->favoriteLists);
+    }
+
     public function saveProgress(array $progress, bool $isCompleted = false, int $elapsedSeconds = 0, array $pencilCells = []): void
     {
         $attempt = PuzzleAttempt::findOrFail($this->attemptId);
@@ -310,6 +368,16 @@ new #[Title('Solve Crossword')] class extends Component {
                 </svg>
                 <span>{{ $this->likesCount }}</span>
             </button>
+            @if(!$isOwner)
+                <flux:tooltip content="{{ __('Add to favorites list') }}">
+                    <button
+                        wire:click="$set('showAddToListModal', true)"
+                        class="rounded-lg p-1.5 text-zinc-400 transition-colors hover:text-zinc-800 dark:hover:text-zinc-200"
+                    >
+                        <flux:icon name="bookmark" class="size-5" />
+                    </button>
+                </flux:tooltip>
+            @endif
         </div>
 
         <div class="flex items-center gap-1">
@@ -863,6 +931,42 @@ new #[Title('Solve Crossword')] class extends Component {
             <div class="flex justify-end gap-2">
                 <flux:button wire:click="cancelExport">{{ __('Cancel') }}</flux:button>
                 <flux:button variant="primary" wire:click="confirmExport">{{ __('Export Anyway') }}</flux:button>
+            </div>
+        </div>
+    </flux:modal>
+
+    {{-- Add to Favorites List Modal --}}
+    <flux:modal wire:model="showAddToListModal">
+        <div class="space-y-6">
+            <flux:heading size="lg">{{ __('Add to Favorites List') }}</flux:heading>
+
+            @if($this->favoriteLists->isNotEmpty())
+                <div class="space-y-2">
+                    @foreach($this->favoriteLists as $favoriteList)
+                        <button
+                            wire:click="addToList({{ $favoriteList->id }})"
+                            class="flex w-full items-center gap-3 rounded-lg border border-zinc-200 px-4 py-3 text-left transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+                        >
+                            <flux:icon name="folder" class="size-5 text-zinc-400" />
+                            <span class="flex-1 text-sm font-medium text-zinc-700 dark:text-zinc-300">{{ $favoriteList->name }}</span>
+                            <flux:badge size="sm">{{ $favoriteList->crosswords_count }}</flux:badge>
+                        </button>
+                    @endforeach
+                </div>
+
+                <flux:separator text="{{ __('or create a new list') }}" />
+            @endif
+
+            <div class="flex gap-2">
+                <div class="flex-1">
+                    <flux:input wire:model="newListName" placeholder="{{ __('New list name...') }}" wire:keydown.enter="createListAndAdd" />
+                </div>
+                <flux:button variant="primary" wire:click="createListAndAdd">{{ __('Create & Add') }}</flux:button>
+            </div>
+            <flux:error name="newListName" />
+
+            <div class="flex justify-end">
+                <flux:button wire:click="$set('showAddToListModal', false)">{{ __('Cancel') }}</flux:button>
             </div>
         </div>
     </flux:modal>

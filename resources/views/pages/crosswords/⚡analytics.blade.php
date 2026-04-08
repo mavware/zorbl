@@ -6,13 +6,20 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 
 new #[Title('Constructor Analytics')] class extends Component {
+    #[Url]
+    public string $sortField = '';
+
+    #[Url]
+    public string $sortDirection = 'asc';
+
     #[Computed]
     public function publishedPuzzles()
     {
-        return Auth::user()
+        $query = Auth::user()
             ->crosswords()
             ->where('is_published', true)
             ->withCount([
@@ -20,9 +27,27 @@ new #[Title('Constructor Analytics')] class extends Component {
                 'attempts as completed_attempts_count' => fn ($q) => $q->where('is_completed', true),
                 'likes',
             ])
-            ->withAvg('attempts as avg_solve_time', 'solve_time_seconds')
-            ->latest()
-            ->get();
+            ->withAvg('attempts as avg_solve_time', 'solve_time_seconds');
+
+        $allowed = ['title', 'attempts_count', 'completed_attempts_count', 'avg_solve_time', 'likes_count'];
+        if ($this->sortField !== '' && in_array($this->sortField, $allowed)) {
+            $direction = $this->sortDirection === 'desc' ? 'desc' : 'asc';
+            $query->orderBy($this->sortField, $direction);
+        } else {
+            $query->latest();
+        }
+
+        return $query->get();
+    }
+
+    public function sortBy(string $field): void
+    {
+        if ($this->sortField === $field) {
+            $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            $this->sortField = $field;
+            $this->sortDirection = 'asc';
+        }
     }
 
     #[Computed]
@@ -254,49 +279,46 @@ new #[Title('Constructor Analytics')] class extends Component {
                 <flux:text size="sm" class="text-zinc-400">{{ __('Publish puzzles to see analytics here.') }}</flux:text>
             </div>
         @else
-            <div class="overflow-x-auto">
-                <table class="w-full text-sm">
-                    <thead>
-                        <tr class="border-b border-zinc-200 dark:border-zinc-700">
-                            <th class="pb-2 text-left font-medium text-zinc-500">{{ __('Puzzle') }}</th>
-                            <th class="pb-2 text-center font-medium text-zinc-500">{{ __('Attempts') }}</th>
-                            <th class="pb-2 text-center font-medium text-zinc-500">{{ __('Completed') }}</th>
-                            <th class="pb-2 text-center font-medium text-zinc-500">{{ __('Completion Rate') }}</th>
-                            <th class="pb-2 text-center font-medium text-zinc-500">{{ __('Avg Time') }}</th>
-                            <th class="pb-2 text-center font-medium text-zinc-500">{{ __('Likes') }}</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-zinc-100 dark:divide-zinc-800">
-                        @foreach($this->publishedPuzzles as $puzzle)
-                            <tr>
-                                <td class="py-2.5">
-                                    <a href="{{ route('crosswords.editor', $puzzle) }}" wire:navigate class="font-medium text-zinc-900 hover:text-blue-600 dark:text-zinc-100 dark:hover:text-blue-400">
-                                        {{ $puzzle->title ?: __('Untitled Puzzle') }}
-                                    </a>
-                                    <div class="text-xs text-zinc-400">{{ $puzzle->width }}&times;{{ $puzzle->height }}</div>
-                                </td>
-                                <td class="py-2.5 text-center text-zinc-700 dark:text-zinc-300">{{ $puzzle->attempts_count }}</td>
-                                <td class="py-2.5 text-center text-zinc-700 dark:text-zinc-300">{{ $puzzle->completed_attempts_count }}</td>
-                                <td class="py-2.5 text-center">
-                                    @php($rate = $puzzle->attempts_count > 0 ? round(($puzzle->completed_attempts_count / $puzzle->attempts_count) * 100) : 0)
-                                    <span class="{{ $rate >= 75 ? 'text-emerald-600 dark:text-emerald-400' : ($rate >= 40 ? 'text-amber-600 dark:text-amber-400' : 'text-zinc-500') }}">
-                                        {{ $rate }}%
-                                    </span>
-                                </td>
-                                <td class="py-2.5 text-center font-mono text-zinc-700 dark:text-zinc-300">
-                                    {{ $this->formatTime($puzzle->avg_solve_time ? (int) round($puzzle->avg_solve_time) : null) }}
-                                </td>
-                                <td class="py-2.5 text-center text-zinc-700 dark:text-zinc-300">
-                                    <span class="flex items-center justify-center gap-1">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="size-3.5 text-red-400" viewBox="0 0 24 24" fill="currentColor"><path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 01-.383-.218 25.18 25.18 0 01-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0112 5.052 5.5 5.5 0 0116.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 01-4.244 3.17 15.247 15.247 0 01-.383.219l-.022.012-.007.004-.003.001a.752.752 0 01-.704 0l-.003-.001z"/></svg>
-                                        {{ $puzzle->likes_count }}
-                                    </span>
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
+            <flux:table>
+                <flux:table.columns>
+                    <flux:table.column sortable :sorted="$sortField === 'title'" :direction="$sortDirection" wire:click="sortBy('title')">{{ __('Puzzle') }}</flux:table.column>
+                    <flux:table.column sortable :sorted="$sortField === 'attempts_count'" :direction="$sortDirection" wire:click="sortBy('attempts_count')" align="center">{{ __('Attempts') }}</flux:table.column>
+                    <flux:table.column sortable :sorted="$sortField === 'completed_attempts_count'" :direction="$sortDirection" wire:click="sortBy('completed_attempts_count')" align="center">{{ __('Completed') }}</flux:table.column>
+                    <flux:table.column align="center">{{ __('Completion Rate') }}</flux:table.column>
+                    <flux:table.column sortable :sorted="$sortField === 'avg_solve_time'" :direction="$sortDirection" wire:click="sortBy('avg_solve_time')" align="center">{{ __('Avg Time') }}</flux:table.column>
+                    <flux:table.column sortable :sorted="$sortField === 'likes_count'" :direction="$sortDirection" wire:click="sortBy('likes_count')" align="center">{{ __('Likes') }}</flux:table.column>
+                </flux:table.columns>
+
+                <flux:table.rows>
+                    @foreach($this->publishedPuzzles as $puzzle)
+                        <flux:table.row :key="$puzzle->id">
+                            <flux:table.cell variant="strong">
+                                <a href="{{ route('crosswords.editor', $puzzle) }}" wire:navigate class="hover:text-blue-600 dark:hover:text-blue-400">
+                                    {{ $puzzle->title ?: __('Untitled Puzzle') }}
+                                </a>
+                                <div class="text-xs text-zinc-400">{{ $puzzle->width }}&times;{{ $puzzle->height }}</div>
+                            </flux:table.cell>
+                            <flux:table.cell align="center">{{ $puzzle->attempts_count }}</flux:table.cell>
+                            <flux:table.cell align="center">{{ $puzzle->completed_attempts_count }}</flux:table.cell>
+                            <flux:table.cell align="center">
+                                @php($rate = $puzzle->attempts_count > 0 ? round(($puzzle->completed_attempts_count / $puzzle->attempts_count) * 100) : 0)
+                                <span class="{{ $rate >= 75 ? 'text-emerald-600 dark:text-emerald-400' : ($rate >= 40 ? 'text-amber-600 dark:text-amber-400' : 'text-zinc-500') }}">
+                                    {{ $rate }}%
+                                </span>
+                            </flux:table.cell>
+                            <flux:table.cell align="center" class="font-mono">
+                                {{ $this->formatTime($puzzle->avg_solve_time ? (int) round($puzzle->avg_solve_time) : null) }}
+                            </flux:table.cell>
+                            <flux:table.cell align="center">
+                                <span class="inline-flex items-center gap-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="size-3.5 text-red-400" viewBox="0 0 24 24" fill="currentColor"><path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 01-.383-.218 25.18 25.18 0 01-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0112 5.052 5.5 5.5 0 0116.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 01-4.244 3.17 15.247 15.247 0 01-.383.219l-.022.012-.007.004-.003.001a.752.752 0 01-.704 0l-.003-.001z"/></svg>
+                                    {{ $puzzle->likes_count }}
+                                </span>
+                            </flux:table.cell>
+                        </flux:table.row>
+                    @endforeach
+                </flux:table.rows>
+            </flux:table>
         @endif
     </div>
 

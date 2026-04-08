@@ -4,19 +4,40 @@ use App\Models\PuzzleAttempt;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 
 new #[Title('Solve Statistics')] class extends Component {
+    #[Url]
+    public string $sortField = 'completed_at';
+
+    #[Url]
+    public string $sortDirection = 'desc';
+
     #[Computed]
     public function completedAttempts()
     {
-        return Auth::user()
+        $query = Auth::user()
             ->puzzleAttempts()
             ->where('is_completed', true)
             ->whereNotNull('solve_time_seconds')
-            ->with('crossword:id,title,width,height,author')
-            ->orderBy('completed_at', 'desc')
-            ->get();
+            ->with('crossword:id,title,width,height,author');
+
+        $allowed = ['solve_time_seconds', 'completed_at'];
+        $field = in_array($this->sortField, $allowed) ? $this->sortField : 'completed_at';
+        $direction = $this->sortDirection === 'desc' ? 'desc' : 'asc';
+
+        return $query->orderBy($field, $direction)->get();
+    }
+
+    public function sortBy(string $field): void
+    {
+        if ($this->sortField === $field) {
+            $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            $this->sortField = $field;
+            $this->sortDirection = 'asc';
+        }
     }
 
     #[Computed]
@@ -216,38 +237,29 @@ new #[Title('Solve Statistics')] class extends Component {
                 <flux:text size="sm" class="text-zinc-400">{{ __('Complete puzzles to see your solve history here.') }}</flux:text>
             </div>
         @else
-            <div class="overflow-x-auto">
-                <table class="w-full text-sm">
-                    <thead>
-                        <tr class="border-b border-zinc-200 dark:border-zinc-700">
-                            <th class="pb-2 text-left font-medium text-zinc-500">{{ __('Puzzle') }}</th>
-                            <th class="pb-2 text-left font-medium text-zinc-500">{{ __('Size') }}</th>
-                            <th class="pb-2 text-right font-medium text-zinc-500">{{ __('Solve Time') }}</th>
-                            <th class="pb-2 text-right font-medium text-zinc-500">{{ __('Completed') }}</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-zinc-100 dark:divide-zinc-800">
-                        @foreach($this->completedAttempts as $attempt)
-                            <tr>
-                                <td class="py-2.5">
-                                    <a href="{{ route('crosswords.solver', $attempt->crossword_id) }}" wire:navigate class="font-medium text-zinc-900 hover:text-blue-600 dark:text-zinc-100 dark:hover:text-blue-400">
-                                        {{ $attempt->crossword->title ?: __('Untitled Puzzle') }}
-                                    </a>
-                                </td>
-                                <td class="py-2.5 text-zinc-500">
-                                    {{ $attempt->crossword->width }}&times;{{ $attempt->crossword->height }}
-                                </td>
-                                <td class="py-2.5 text-right font-mono text-zinc-900 dark:text-zinc-100">
-                                    {{ $this->formatTime($attempt->solve_time_seconds) }}
-                                </td>
-                                <td class="py-2.5 text-right text-zinc-400">
-                                    {{ $attempt->completed_at?->diffForHumans() ?? '—' }}
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
+            <flux:table>
+                <flux:table.columns>
+                    <flux:table.column>{{ __('Puzzle') }}</flux:table.column>
+                    <flux:table.column>{{ __('Size') }}</flux:table.column>
+                    <flux:table.column sortable :sorted="$sortField === 'solve_time_seconds'" :direction="$sortDirection" wire:click="sortBy('solve_time_seconds')" align="end">{{ __('Solve Time') }}</flux:table.column>
+                    <flux:table.column sortable :sorted="$sortField === 'completed_at'" :direction="$sortDirection" wire:click="sortBy('completed_at')" align="end">{{ __('Completed') }}</flux:table.column>
+                </flux:table.columns>
+
+                <flux:table.rows>
+                    @foreach($this->completedAttempts as $attempt)
+                        <flux:table.row :key="$attempt->id">
+                            <flux:table.cell variant="strong">
+                                <a href="{{ route('crosswords.solver', $attempt->crossword_id) }}" wire:navigate class="hover:text-blue-600 dark:hover:text-blue-400">
+                                    {{ $attempt->crossword->title ?: __('Untitled Puzzle') }}
+                                </a>
+                            </flux:table.cell>
+                            <flux:table.cell>{{ $attempt->crossword->width }}&times;{{ $attempt->crossword->height }}</flux:table.cell>
+                            <flux:table.cell align="end" class="font-mono">{{ $this->formatTime($attempt->solve_time_seconds) }}</flux:table.cell>
+                            <flux:table.cell align="end">{{ $attempt->completed_at?->diffForHumans() ?? '—' }}</flux:table.cell>
+                        </flux:table.row>
+                    @endforeach
+                </flux:table.rows>
+            </flux:table>
         @endif
     </div>
 </div>

@@ -55,15 +55,31 @@ test('length filter shows only matching words', function () {
         ->assertDontSee('RIVIERA');
 });
 
-test('sort by score orders correctly', function () {
+test('clicking column header sorts by that field', function () {
     $user = User::factory()->create();
-    Word::factory()->word('LOW')->create(['score' => 10.0]);
-    Word::factory()->word('HIGH')->create(['score' => 90.0]);
+    Word::factory()->word('ALPHA')->create(['score' => 10.0]);
+    Word::factory()->word('ZEBRA')->create(['score' => 90.0]);
 
     Livewire::actingAs($user)
         ->test('pages::words.index')
-        ->set('sort', 'score')
-        ->assertSeeInOrder(['HIGH', 'LOW']);
+        ->call('sortBy', 'score')
+        ->assertSet('sortField', 'score')
+        ->assertSet('sortDirection', 'asc')
+        ->assertSeeInOrder(['ALPHA', 'ZEBRA']);
+});
+
+test('clicking same column header toggles direction', function () {
+    $user = User::factory()->create();
+    Word::factory()->word('ALPHA')->create(['score' => 10.0]);
+    Word::factory()->word('ZEBRA')->create(['score' => 90.0]);
+
+    Livewire::actingAs($user)
+        ->test('pages::words.index')
+        ->call('sortBy', 'score')
+        ->assertSet('sortDirection', 'asc')
+        ->call('sortBy', 'score')
+        ->assertSet('sortDirection', 'desc')
+        ->assertSeeInOrder(['ZEBRA', 'ALPHA']);
 });
 
 test('sort by length orders correctly', function () {
@@ -73,13 +89,13 @@ test('sort by length orders correctly', function () {
 
     Livewire::actingAs($user)
         ->test('pages::words.index')
-        ->set('sort', 'length')
+        ->call('sortBy', 'length')
         ->assertSeeInOrder(['ZEN', 'AARDVARK']);
 });
 
 test('word clue count is displayed', function () {
     $user = User::factory()->create();
-    $word = Word::factory()->word('OCEAN')->create();
+    Word::factory()->word('OCEAN')->create();
 
     ClueEntry::create(['answer' => 'OCEAN', 'clue' => 'Large body of water', 'user_id' => $user->id]);
     ClueEntry::create(['answer' => 'OCEAN', 'clue' => 'Pacific, for one', 'user_id' => $user->id]);

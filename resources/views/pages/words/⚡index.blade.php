@@ -17,7 +17,10 @@ new #[Title('Word Catalog')] class extends Component {
     public string $length = '';
 
     #[Url]
-    public string $sort = 'alpha';
+    public string $sortField = 'word';
+
+    #[Url]
+    public string $sortDirection = 'asc';
 
     #[Computed]
     public function words()
@@ -32,13 +35,30 @@ new #[Title('Word Catalog')] class extends Component {
             $query->where('length', (int) $this->length);
         }
 
-        $query = match ($this->sort) {
-            'score' => $query->orderByDesc('score'),
-            'length' => $query->orderBy('length')->orderBy('word'),
-            default => $query->orderBy('word'),
-        };
+        $allowed = ['word', 'length', 'score', 'clue_count'];
+        $field = in_array($this->sortField, $allowed) ? $this->sortField : 'word';
+        $direction = $this->sortDirection === 'desc' ? 'desc' : 'asc';
+
+        // clue_count is an aggregate alias — needs special handling
+        if ($field === 'clue_count') {
+            $query->orderBy('clue_entries_count', $direction);
+        } else {
+            $query->orderBy($field, $direction);
+        }
 
         return $query->paginate(50);
+    }
+
+    public function sortBy(string $field): void
+    {
+        if ($this->sortField === $field) {
+            $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            $this->sortField = $field;
+            $this->sortDirection = 'asc';
+        }
+
+        $this->resetPage();
     }
 
     public function updatedSearch(): void
@@ -47,11 +67,6 @@ new #[Title('Word Catalog')] class extends Component {
     }
 
     public function updatedLength(): void
-    {
-        $this->resetPage();
-    }
-
-    public function updatedSort(): void
     {
         $this->resetPage();
     }
@@ -66,19 +81,7 @@ new #[Title('Word Catalog')] class extends Component {
         <div class="flex-1">
             <flux:input icon="magnifying-glass" wire:model.live.debounce.300ms="search" placeholder="{{ __('Search words (prefix match)...') }}" />
         </div>
-        <div class="flex gap-2">
-            <flux:select wire:model.live="length" class="w-36">
-                <flux:select.option value="">{{ __('All Lengths') }}</flux:select.option>
-                @for ($i = 3; $i <= 21; $i++)
-                    <flux:select.option value="{{ $i }}">{{ $i }} {{ __('letters') }}</flux:select.option>
-                @endfor
-            </flux:select>
-            <flux:select wire:model.live="sort" class="w-40">
-                <flux:select.option value="alpha">{{ __('Alphabetical') }}</flux:select.option>
-                <flux:select.option value="score">{{ __('By Score') }}</flux:select.option>
-                <flux:select.option value="length">{{ __('By Length') }}</flux:select.option>
-            </flux:select>
-        </div>
+        <flux:input wire:model.live.debounce.300ms="length" type="number" min="2" max="30" placeholder="{{ __('Length') }}" class="w-28" />
     </div>
 
     {{-- Word Table --}}
@@ -95,35 +98,28 @@ new #[Title('Word Catalog')] class extends Component {
             </flux:text>
         </div>
     @else
-        <div class="overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-700">
-            <table class="w-full text-left text-sm">
-                <thead class="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800/50">
-                    <tr>
-                        <th class="px-4 py-3 font-medium text-zinc-600 dark:text-zinc-300">{{ __('Word') }}</th>
-                        <th class="px-4 py-3 font-medium text-zinc-600 dark:text-zinc-300">{{ __('Length') }}</th>
-                        <th class="px-4 py-3 font-medium text-zinc-600 dark:text-zinc-300">{{ __('Score') }}</th>
-                        <th class="px-4 py-3 font-medium text-zinc-600 dark:text-zinc-300">{{ __('Clues') }}</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-zinc-200 dark:divide-zinc-700">
-                    @foreach($this->words as $word)
-                        <tr wire:key="word-{{ $word->id }}">
-                            <td class="px-4 py-3">
-                                <a href="{{ route('words.show', $word) }}" wire:navigate class="font-mono font-semibold tracking-wide text-zinc-900 hover:text-blue-600 dark:text-zinc-100 dark:hover:text-blue-400">
-                                    {{ $word->word }}
-                                </a>
-                            </td>
-                            <td class="px-4 py-3 text-zinc-500 dark:text-zinc-400">{{ $word->length }}</td>
-                            <td class="px-4 py-3 text-zinc-500 dark:text-zinc-400">{{ number_format($word->score, 1) }}</td>
-                            <td class="px-4 py-3 text-zinc-500 dark:text-zinc-400">{{ number_format($word->clue_count) }}</td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
+        <flux:table :paginate="$this->words">
+            <flux:table.columns>
+                <flux:table.column sortable :sorted="$sortField === 'word'" :direction="$sortDirection" wire:click="sortBy('word')">{{ __('Word') }}</flux:table.column>
+                <flux:table.column sortable :sorted="$sortField === 'length'" :direction="$sortDirection" wire:click="sortBy('length')">{{ __('Length') }}</flux:table.column>
+                <flux:table.column sortable :sorted="$sortField === 'score'" :direction="$sortDirection" wire:click="sortBy('score')">{{ __('Score') }}</flux:table.column>
+                <flux:table.column sortable :sorted="$sortField === 'clue_count'" :direction="$sortDirection" wire:click="sortBy('clue_count')">{{ __('Clues') }}</flux:table.column>
+            </flux:table.columns>
 
-        <div class="mt-4">
-            {{ $this->words->links() }}
-        </div>
+            <flux:table.rows>
+                @foreach($this->words as $word)
+                    <flux:table.row :key="$word->id">
+                        <flux:table.cell variant="strong">
+                            <a href="{{ route('words.show', $word) }}" wire:navigate class="font-mono font-semibold tracking-wide hover:text-blue-600 dark:hover:text-blue-400">
+                                {{ $word->word }}
+                            </a>
+                        </flux:table.cell>
+                        <flux:table.cell>{{ $word->length }}</flux:table.cell>
+                        <flux:table.cell>{{ number_format($word->score, 1) }}</flux:table.cell>
+                        <flux:table.cell>{{ number_format($word->clue_count) }}</flux:table.cell>
+                    </flux:table.row>
+                @endforeach
+            </flux:table.rows>
+        </flux:table>
     @endif
 </div>

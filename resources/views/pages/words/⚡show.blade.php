@@ -5,6 +5,7 @@ use App\Models\Word;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Title;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -15,6 +16,12 @@ new #[Title('Word Details')] class extends Component {
     public int $wordId;
 
     public string $wordText = '';
+
+    #[Url]
+    public string $sortField = '';
+
+    #[Url]
+    public string $sortDirection = 'asc';
 
     public function mount(Word $word): void
     {
@@ -31,10 +38,30 @@ new #[Title('Word Details')] class extends Component {
     #[Computed]
     public function clues()
     {
-        return ClueEntry::where('answer', $this->wordText)
-            ->with(['user:id,name', 'crossword:id,title'])
-            ->latest('id')
-            ->paginate(25);
+        $query = ClueEntry::where('answer', $this->wordText)
+            ->with(['user:id,name', 'crossword:id,title']);
+
+        $allowed = ['clue'];
+        if ($this->sortField !== '' && in_array($this->sortField, $allowed)) {
+            $direction = $this->sortDirection === 'desc' ? 'desc' : 'asc';
+            $query->orderBy($this->sortField, $direction);
+        } else {
+            $query->latest('id');
+        }
+
+        return $query->paginate(25);
+    }
+
+    public function sortBy(string $field): void
+    {
+        if ($this->sortField === $field) {
+            $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            $this->sortField = $field;
+            $this->sortDirection = 'asc';
+        }
+
+        $this->resetPage();
     }
 }
 ?>
@@ -65,37 +92,28 @@ new #[Title('Word Details')] class extends Component {
             <flux:text>{{ __('No clues have been recorded for this word yet.') }}</flux:text>
         </div>
     @else
-        <div class="overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-700">
-            <table class="w-full text-left text-sm">
-                <thead class="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800/50">
-                    <tr>
-                        <th class="px-4 py-3 font-medium text-zinc-600 dark:text-zinc-300">{{ __('Clue') }}</th>
-                        <th class="hidden px-4 py-3 font-medium text-zinc-600 dark:text-zinc-300 sm:table-cell">{{ __('Source') }}</th>
-                        <th class="hidden px-4 py-3 font-medium text-zinc-600 dark:text-zinc-300 md:table-cell">{{ __('Author') }}</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-zinc-200 dark:divide-zinc-700">
-                    @foreach($this->clues as $entry)
-                        <tr wire:key="clue-{{ $entry->id }}">
-                            <td class="px-4 py-3 text-zinc-700 dark:text-zinc-300">{{ $entry->clue }}</td>
-                            <td class="hidden px-4 py-3 sm:table-cell">
-                                @if($entry->crossword)
-                                    <flux:badge size="sm">{{ Str::limit($entry->crossword->title, 20) }}</flux:badge>
-                                @else
-                                    <flux:badge variant="outline" size="sm" color="lime">{{ __('Standalone') }}</flux:badge>
-                                @endif
-                            </td>
-                            <td class="hidden px-4 py-3 text-zinc-500 dark:text-zinc-400 md:table-cell">
-                                {{ $entry->user->name ?? __('Unknown') }}
-                            </td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
+        <flux:table :paginate="$this->clues">
+            <flux:table.columns>
+                <flux:table.column sortable :sorted="$sortField === 'clue'" :direction="$sortDirection" wire:click="sortBy('clue')">{{ __('Clue') }}</flux:table.column>
+                <flux:table.column class="hidden sm:table-cell">{{ __('Source') }}</flux:table.column>
+                <flux:table.column class="hidden md:table-cell">{{ __('Author') }}</flux:table.column>
+            </flux:table.columns>
 
-        <div class="mt-4">
-            {{ $this->clues->links() }}
-        </div>
+            <flux:table.rows>
+                @foreach($this->clues as $entry)
+                    <flux:table.row :key="$entry->id">
+                        <flux:table.cell>{{ $entry->clue }}</flux:table.cell>
+                        <flux:table.cell class="hidden sm:table-cell">
+                            @if($entry->crossword)
+                                <flux:badge size="sm">{{ Str::limit($entry->crossword->title, 20) }}</flux:badge>
+                            @else
+                                <flux:badge variant="outline" size="sm" color="lime">{{ __('Standalone') }}</flux:badge>
+                            @endif
+                        </flux:table.cell>
+                        <flux:table.cell class="hidden md:table-cell">{{ $entry->user->name ?? __('Unknown') }}</flux:table.cell>
+                    </flux:table.row>
+                @endforeach
+            </flux:table.rows>
+        </flux:table>
     @endif
 </div>
