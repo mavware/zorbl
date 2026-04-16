@@ -255,7 +255,7 @@ class extends Component {
         <flux:text class="mt-1 text-zinc-500">{{ __('Discover and solve crosswords from the community.') }}</flux:text>
     </div>
 
-    {{-- Search Bar & Filter Toggle --}}
+    {{-- Search Bar --}}
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div class="flex-1">
             <flux:input
@@ -265,62 +265,72 @@ class extends Component {
             />
         </div>
         <div class="flex items-center gap-2">
+            <flux:select wire:model.live="sortBy" size="sm" class="w-40">
+                <flux:select.option value="newest">{{ __('Newest') }}</flux:select.option>
+                <flux:select.option value="oldest">{{ __('Oldest') }}</flux:select.option>
+                <flux:select.option value="most_liked">{{ __('Most Liked') }}</flux:select.option>
+                <flux:select.option value="largest">{{ __('Largest') }}</flux:select.option>
+                <flux:select.option value="smallest">{{ __('Smallest') }}</flux:select.option>
+            </flux:select>
+        </div>
+    </div>
+
+    {{-- Primary Filters (always visible) --}}
+    <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:gap-4">
+        <flux:field>
+            <flux:label size="sm">{{ __('Difficulty') }}</flux:label>
+            <flux:radio.group wire:model.live="difficulty" variant="segmented" size="sm">
+                <flux:radio value="" label="{{ __('All') }}" />
+                <flux:radio value="Easy" label="{{ __('Easy') }}" />
+                <flux:radio value="Medium" label="{{ __('Medium') }}" />
+                <flux:radio value="Hard" label="{{ __('Hard') }}" />
+                <flux:radio value="Expert" label="{{ __('Expert') }}" />
+            </flux:radio.group>
+        </flux:field>
+
+        <flux:field>
+            <flux:label size="sm">{{ __('Size') }}</flux:label>
+            <flux:radio.group wire:model.live="gridSize" variant="segmented" size="sm">
+                <flux:radio value="" label="{{ __('All') }}" />
+                <flux:radio value="small" label="{{ __('Small') }}" />
+                <flux:radio value="medium" label="{{ __('Medium') }}" />
+                <flux:radio value="large" label="{{ __('Large') }}" />
+            </flux:radio.group>
+        </flux:field>
+
+        <flux:field>
+            <flux:label size="sm">{{ __('Type') }}</flux:label>
+            <flux:radio.group wire:model.live="puzzleType" variant="segmented" size="sm">
+                <flux:radio value="" label="{{ __('All') }}" />
+                <flux:radio value="standard" label="{{ __('Standard') }}" />
+                <flux:radio value="barred" label="{{ __('Barred') }}" />
+                <flux:radio value="shaped" label="{{ __('Shaped') }}" />
+            </flux:radio.group>
+        </flux:field>
+
+        <div class="flex items-center gap-2 sm:ml-auto">
             <flux:button
                 size="sm"
                 :variant="$showFilters ? 'primary' : 'ghost'"
                 icon="adjustments-horizontal"
                 wire:click="$toggle('showFilters')"
             >
-                {{ __('Filters') }}
-                @if($this->hasActiveFilters())
-                    <flux:badge size="sm" color="amber" class="ml-1">!</flux:badge>
-                @endif
+                {{ __('More') }}
             </flux:button>
             @if($this->hasActiveFilters())
                 <flux:button size="sm" variant="ghost" wire:click="clearFilters">
-                    {{ __('Clear') }}
+                    {{ __('Clear All') }}
                 </flux:button>
             @endif
         </div>
     </div>
 
-    {{-- Filters Panel --}}
+    {{-- Secondary Filters (collapsible) --}}
     @if($showFilters)
-        <div class="grid gap-3 rounded-xl border border-zinc-200 p-4 sm:grid-cols-2 lg:grid-cols-5 dark:border-zinc-700">
-            <flux:field>
-                <flux:label>{{ __('Grid Size') }}</flux:label>
-                <flux:select wire:model.live="gridSize" size="sm">
-                    <flux:select.option value="">{{ __('Any Size') }}</flux:select.option>
-                    <flux:select.option value="small">{{ __('Small (≤10×10)') }}</flux:select.option>
-                    <flux:select.option value="medium">{{ __('Medium (11–17)') }}</flux:select.option>
-                    <flux:select.option value="large">{{ __('Large (18+)') }}</flux:select.option>
-                </flux:select>
-            </flux:field>
-
-            <flux:field>
-                <flux:label>{{ __('Puzzle Type') }}</flux:label>
-                <flux:select wire:model.live="puzzleType" size="sm">
-                    <flux:select.option value="">{{ __('All Types') }}</flux:select.option>
-                    <flux:select.option value="standard">{{ __('Standard') }}</flux:select.option>
-                    <flux:select.option value="barred">{{ __('Barred / Cryptic') }}</flux:select.option>
-                    <flux:select.option value="shaped">{{ __('Shaped / Diamond') }}</flux:select.option>
-                </flux:select>
-            </flux:field>
-
+        <div class="grid gap-3 rounded-xl border border-zinc-200 p-4 sm:grid-cols-2 lg:grid-cols-3 dark:border-zinc-700">
             <flux:field>
                 <flux:label>{{ __('Constructor') }}</flux:label>
                 <flux:input wire:model.live.debounce.300ms="constructor" size="sm" placeholder="{{ __('Name...') }}" />
-            </flux:field>
-
-            <flux:field>
-                <flux:label>{{ __('Difficulty') }}</flux:label>
-                <flux:select wire:model.live="difficulty" size="sm">
-                    <flux:select.option value="">{{ __('Any Difficulty') }}</flux:select.option>
-                    <flux:select.option value="Easy">{{ __('Easy') }}</flux:select.option>
-                    <flux:select.option value="Medium">{{ __('Medium') }}</flux:select.option>
-                    <flux:select.option value="Hard">{{ __('Hard') }}</flux:select.option>
-                    <flux:select.option value="Expert">{{ __('Expert') }}</flux:select.option>
-                </flux:select>
             </flux:field>
 
             <flux:field>
@@ -333,18 +343,6 @@ class extends Component {
                     <flux:select.option value="year">{{ __('This Year') }}</flux:select.option>
                 </flux:select>
             </flux:field>
-        </div>
-
-        {{-- Sort --}}
-        <div class="flex items-center gap-2">
-            <flux:text size="sm" class="text-zinc-500">{{ __('Sort by:') }}</flux:text>
-            <flux:select wire:model.live="sortBy" size="sm" class="w-40">
-                <flux:select.option value="newest">{{ __('Newest') }}</flux:select.option>
-                <flux:select.option value="oldest">{{ __('Oldest') }}</flux:select.option>
-                <flux:select.option value="most_liked">{{ __('Most Liked') }}</flux:select.option>
-                <flux:select.option value="largest">{{ __('Largest') }}</flux:select.option>
-                <flux:select.option value="smallest">{{ __('Smallest') }}</flux:select.option>
-            </flux:select>
         </div>
     @endif
 
