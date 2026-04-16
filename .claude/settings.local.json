@@ -66,7 +66,16 @@
       "Bash(python3 packages/crossword-io/scripts/pdf_extract.py examples/march_lp-std_crossword.pdf)",
       "Bash(python3 -m json.tool)",
       "Bash(python3:*)",
-      "Bash(export PATH=\"$HOME/Library/Application Support/Herd/bin:$PATH\")"
+      "Bash(export PATH=\"$HOME/Library/Application Support/Herd/bin:$PATH\")",
+      "Bash(grep -r \"store\\\\|create\\\\|import\" /Users/michael/Herd/zorbl/app/Http/Controllers/Api/V1/*.php)",
+      "Bash(npx --yes svg2ico --help)",
+      "Bash(npx --yes sharp-cli --help)",
+      "Bash(npx:*)",
+      "Skill(schedule)"
     ]
-  }
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "laravel-boost"
+  ]
 }

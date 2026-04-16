@@ -81,7 +81,9 @@ new #[Title('Word Catalog')] class extends Component {
         <div class="flex-1">
             <flux:input icon="magnifying-glass" wire:model.live.debounce.300ms="search" placeholder="{{ __('Search words (prefix match)...') }}" />
         </div>
-        <flux:input wire:model.live.debounce.300ms="length" type="number" min="2" max="30" placeholder="{{ __('Length') }}" class="w-28" />
+        <div class="w-28">
+            <flux:input wire:model.live.debounce.300ms="length" type="number" min="2" max="30" placeholder="{{ __('Length') }}" />
+        </div>
     </div>
 
     {{-- Word Table --}}
@@ -108,11 +110,9 @@ new #[Title('Word Catalog')] class extends Component {
 
             <flux:table.rows>
                 @foreach($this->words as $word)
-                    <flux:table.row :key="$word->id">
+                    <flux:table.row :key="$word->id" x-on:click="window.location.href = '{{ route('words.show', $word) }}'" class="cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-700">
                         <flux:table.cell variant="strong">
-                            <a href="{{ route('words.show', $word) }}" wire:navigate class="font-mono font-semibold tracking-wide hover:text-blue-600 dark:hover:text-blue-400">
                                 {{ $word->word }}
-                            </a>
                         </flux:table.cell>
                         <flux:table.cell>{{ $word->length }}</flux:table.cell>
                         <flux:table.cell>{{ number_format($word->score, 1) }}</flux:table.cell>

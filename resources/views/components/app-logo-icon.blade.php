@@ -1,12 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" {{ $attributes }}>
-    {{-- 3x3 crossword grid with classic pattern --}}
-    {{-- Grid lines --}}
-    <rect x="1" y="1" width="38" height="38" rx="3" fill="none" stroke="currentColor" stroke-width="2"/>
-    <line x1="13.67" y1="1" x2="13.67" y2="39" stroke="currentColor" stroke-width="1.5"/>
-    <line x1="26.33" y1="1" x2="26.33" y2="39" stroke="currentColor" stroke-width="1.5"/>
-    <line x1="1" y1="13.67" x2="39" y2="13.67" stroke="currentColor" stroke-width="1.5"/>
-    <line x1="1" y1="26.33" x2="39" y2="26.33" stroke="currentColor" stroke-width="1.5"/>
-    {{-- Black squares (classic crossword pattern) --}}
-    <rect x="1" y="1" width="12.67" height="12.67" rx="2" fill="currentColor"/>
-    <rect x="26.33" y="26.33" width="12.67" height="12.67" rx="1" fill="currentColor"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" {{ $attributes }}>
+    {{-- Zorbl Z mark --}}
+    <polygon points="52,20 82,20 48,80 18,80" fill="#34A853"/>
+    <rect x="18" y="2" width="30" height="18" rx="3" fill="#4285F4"/>
+    <rect x="52" y="2" width="30" height="18" rx="3" fill="#FBBC05"/>
+    <rect x="18" y="80" width="30" height="18" rx="3" fill="#F4852A"/>
+    <rect x="52" y="80" width="30" height="18" rx="3" fill="#8B5CF6"/>
 </svg>

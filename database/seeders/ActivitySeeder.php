@@ -585,8 +585,9 @@ class ActivitySeeder extends Seeder
 
         $result = $numberer->number($plainGrid, $width, $height);
 
-        // Clues
-        $clueLines = explode("\n", $sections[2]);
+        // Clues — across and down may be in separate sections (split by blank lines)
+        $clueSections = array_slice($sections, 2);
+        $clueLines = explode("\n", implode("\n", $clueSections));
         $parsedClues = ['across' => [], 'down' => []];
 
         foreach ($clueLines as $line) {
