@@ -14,8 +14,66 @@ on:
       - master
       - workos
 
+concurrency:
+  group: tests-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  ci:
+  pest:
+    name: pest (shard ${{ matrix.shard }}/3)
+    runs-on: ubuntu-latest
+    environment: Testing
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Install poppler-utils
+        run: sudo apt-get update && sudo apt-get install -y poppler-utils
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          tools: composer:v2
+          coverage: none
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ runner.os }}-php8.5-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-php8.5-
+
+      - name: Add Flux Credentials
+        run: composer config http-basic.composer.fluxui.dev "${{ secrets.FLUX_USERNAME }}" "${{ secrets.FLUX_LICENSE_KEY }}"
+
+      - name: Install PHP Dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Install Node Dependencies
+        run: npm ci
+
+      - name: Copy Environment File
+        run: cp .env.example .env
+
+      - name: Generate Application Key
+        run: php artisan key:generate
+
+      - name: Run Pest (Unit + Feature)
+        run: ./vendor/bin/pest --parallel --shard=${{ matrix.shard }}/3 --testsuite=Unit,Feature
+
+  browser:
+    name: pest (browser)
     runs-on: ubuntu-latest
     environment: Testing
     steps:
@@ -30,21 +88,48 @@ jobs:
         with:
           php-version: '8.5'
           tools: composer:v2
-          coverage: xdebug
+          coverage: none
 
       - name: Setup Node
         uses: actions/setup-node@v6
         with:
           node-version: '22'
+          cache: 'npm'
 
-      - name: Install Node Dependencies
-        run: npm i
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ runner.os }}-php8.5-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-php8.5-
 
-      - name: Add Flux Credentials Loaded From ENV
+      - name: Add Flux Credentials
         run: composer config http-basic.composer.fluxui.dev "${{ secrets.FLUX_USERNAME }}" "${{ secrets.FLUX_LICENSE_KEY }}"
 
-      - name: Install Dependencies
-        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+      - name: Install PHP Dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Install Node Dependencies
+        run: npm ci
+
+      - name: Resolve Playwright version
+        id: pw-version
+        run: echo "version=$(node -p "require('./node_modules/playwright/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.pw-version.outputs.version }}
+
+      - name: Install Playwright browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+
+      - name: Install Playwright system deps (cache hit)
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
 
       - name: Copy Environment File
         run: cp .env.example .env
@@ -55,5 +140,5 @@ jobs:
       - name: Build Assets
         run: npm run build
 
-      - name: Run Tests
-        run: ./vendor/bin/pest
+      - name: Run Pest (Browser)
+        run: ./vendor/bin/pest --testsuite=Browser
