@@ -82,7 +82,10 @@
       "Bash(tmutil localsnapshots *)",
       "Bash(tmutil listlocalsnapshots *)",
       "Bash(composer require *)",
-      "Bash(npm install *)"
+      "Bash(npm install *)",
+      "Bash(./vendor/bin/pest --version)",
+      "Bash(./vendor/bin/pest --parallel --shard=1/3 --testsuite=Unit)",
+      "Bash(./vendor/bin/pest --parallel --shard=1/3 --testsuite=Unit,Feature)"
     ]
   },
   "enableAllProjectMcpServers": true,
