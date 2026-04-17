@@ -142,6 +142,17 @@ test('dashboard shows trending puzzles based on recent likes', function () {
         ->assertSee('Hot Puzzle');
 });
 
+test('dashboard shows liked count for authenticated user', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->published()->create();
+
+    CrosswordLike::create(['user_id' => $user->id, 'crossword_id' => $crossword->id]);
+
+    $component = Livewire::actingAs($user)->test('pages::dashboard');
+
+    expect($component->get('likedCount'))->toBe(1);
+});
+
 test('dashboard shows empty states when user has no activity', function () {
     Livewire::actingAs(User::factory()->create())
         ->test('pages::dashboard')
