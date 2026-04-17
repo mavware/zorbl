@@ -71,7 +71,8 @@
       "Bash(npx --yes svg2ico --help)",
       "Bash(npx --yes sharp-cli --help)",
       "Bash(npx:*)",
-      "Skill(schedule)"
+      "Skill(schedule)",
+      "Bash(gh run *)"
     ]
   },
   "enableAllProjectMcpServers": true,
