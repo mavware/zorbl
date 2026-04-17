@@ -13,7 +13,7 @@ class UsersTable
     public static function configure(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn ($query) => $query->with('roles'))
+            ->modifyQueryUsing(fn ($query) => $query->with(['roles', 'subscriptions']))
             ->columns([
                 TextColumn::make('name')
                     ->searchable(),
