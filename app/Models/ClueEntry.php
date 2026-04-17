@@ -3,8 +3,10 @@
 namespace App\Models;
 
 use Carbon\CarbonImmutable;
+use Database\Factories\ClueEntryFactory;
 use Eloquent;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -24,10 +26,15 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read int|null $reports_count
  * @property-read User $user
  *
+ * @method static ClueEntryFactory factory($count = null, $state = [])
+ *
  * @mixin Eloquent
  */
 class ClueEntry extends Model
 {
+    /** @use HasFactory<ClueEntryFactory> */
+    use HasFactory;
+
     /** @var list<string> */
     protected $fillable = [
         'answer',

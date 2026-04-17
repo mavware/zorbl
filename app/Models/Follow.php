@@ -3,7 +3,9 @@
 namespace App\Models;
 
 use Carbon\CarbonImmutable;
+use Database\Factories\FollowFactory;
 use Eloquent;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -16,10 +18,15 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read User $follower
  * @property-read User $following
  *
+ * @method static FollowFactory factory($count = null, $state = [])
+ *
  * @mixin Eloquent
  */
 class Follow extends Model
 {
+    /** @use HasFactory<FollowFactory> */
+    use HasFactory;
+
     /** @var list<string> */
     protected $fillable = [
         'follower_id',

@@ -3,7 +3,9 @@
 namespace App\Models;
 
 use Carbon\CarbonImmutable;
+use Database\Factories\ClueReportFactory;
 use Eloquent;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -18,10 +20,15 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read ClueEntry $clueEntry
  * @property-read User $user
  *
+ * @method static ClueReportFactory factory($count = null, $state = [])
+ *
  * @mixin Eloquent
  */
 class ClueReport extends Model
 {
+    /** @use HasFactory<ClueReportFactory> */
+    use HasFactory;
+
     /** @var list<string> */
     protected $fillable = [
         'clue_entry_id',
