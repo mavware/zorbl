@@ -23,7 +23,8 @@ class UserForm
                 DateTimePicker::make('email_verified_at'),
                 TextInput::make('password')
                     ->password()
-                    ->required(),
+                    ->required(fn (string $operation): bool => $operation === 'create')
+                    ->dehydrated(fn (?string $state): bool => filled($state)),
                 TextInput::make('copyright_name'),
                 CheckboxList::make('roles')
                     ->relationship('roles', 'name')

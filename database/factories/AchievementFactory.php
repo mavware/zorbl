@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Models\Achievement;
 use App\Models\User;
+use App\Services\AchievementService;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -16,13 +17,28 @@ class AchievementFactory extends Factory
      */
     public function definition(): array
     {
+        $type = fake()->randomElement(array_keys(AchievementService::DEFINITIONS));
+        $def = AchievementService::DEFINITIONS[$type];
+
         return [
             'user_id' => User::factory(),
-            'type' => fake()->randomElement(['first_solve', 'speed_demon', 'streak_7', 'streak_30', 'puzzles_10', 'puzzles_50']),
-            'label' => fake()->words(2, true),
-            'description' => fake()->sentence(),
-            'icon' => 'trophy',
+            'type' => $type,
+            'label' => $def['label'],
+            'description' => $def['description'],
+            'icon' => $def['icon'],
             'earned_at' => now(),
         ];
+    }
+
+    public function type(string $type): static
+    {
+        $def = AchievementService::DEFINITIONS[$type];
+
+        return $this->state(fn (array $attributes) => [
+            'type' => $type,
+            'label' => $def['label'],
+            'description' => $def['description'],
+            'icon' => $def['icon'],
+        ]);
     }
 }

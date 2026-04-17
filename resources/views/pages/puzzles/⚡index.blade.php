@@ -221,7 +221,7 @@ class extends Component {
 
     public function puzzleTypeLabel(Crossword $crossword): string
     {
-        if ($crossword->grid && collect($crossword->grid)->flatten()->contains(null)) {
+        if ($crossword->grid && collect($crossword->grid)->flatten()->contains(fn ($v) => $v === null)) {
             return __('Shaped');
         }
 

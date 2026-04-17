@@ -106,6 +106,12 @@ new #[Title('Dashboard')] class extends Component {
     {
         return Cache::remember('stats:total_likes', 300, fn () => CrosswordLike::count());
     }
+
+    #[Computed]
+    public function likedCount(): int
+    {
+        return Auth::user()->crosswordLikes()->count();
+    }
 }
 ?>
 
@@ -378,7 +384,7 @@ new #[Title('Dashboard')] class extends Component {
                 </div>
                 <div>
                     <flux:text size="sm" class="text-zinc-500">{{ __('Liked') }}</flux:text>
-                    <div class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{{ Auth::user()->crosswordLikes()->count() }}</div>
+                    <div class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{{ $this->likedCount }}</div>
                 </div>
             </div>
         </div>
