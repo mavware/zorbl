@@ -45,6 +45,7 @@ Sized to finish in this session. Good categories:
 
 - No destructive changes: no dropping tables, deleting migrations, force-pushing, or rewriting history.
 - Flag any new major dependency in your summary instead of quietly adding it.
+- Prefer changes that improve how the user uses the app or improve the developer experience.
 - Prefer small, focused changes. If the work grows beyond one session, commit what's stable and note what remains.
 - Don't touch `.env`, secrets, or production config.
 

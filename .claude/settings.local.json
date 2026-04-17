@@ -80,7 +80,9 @@
       "Bash(pkill -f \"stripe listen\")",
       "Bash(pkill -f \"queue:work\")",
       "Bash(tmutil localsnapshots *)",
-      "Bash(tmutil listlocalsnapshots *)"
+      "Bash(tmutil listlocalsnapshots *)",
+      "Bash(composer require *)",
+      "Bash(npm install *)"
     ]
   },
   "enableAllProjectMcpServers": true,
