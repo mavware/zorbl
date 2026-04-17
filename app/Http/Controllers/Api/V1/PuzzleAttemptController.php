@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\UpsertAttemptRequest;
 use App\Http\Resources\Api\V1\PuzzleAttemptResource;
 use App\Models\Crossword;
+use App\Services\AchievementService;
+use App\Services\ContestService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -68,10 +70,20 @@ class PuzzleAttemptController extends Controller
             }
         }
 
+        $isNewCompletion = ($data['is_completed'] ?? false) && (! $existing || ! $existing->is_completed);
+
         $attempt = $user->puzzleAttempts()->updateOrCreate(
             ['user_id' => $user->id, 'crossword_id' => $crossword->id],
             $attributes,
         );
+
+        if ($isNewCompletion) {
+            app(AchievementService::class)->processSolve($user, $data['solve_time_seconds'] ?? null);
+
+            if ($crossword->contests()->exists()) {
+                app(ContestService::class)->processContestSolve($user, $crossword);
+            }
+        }
 
         $resource = new PuzzleAttemptResource($attempt);
 
