@@ -72,7 +72,15 @@
       "Bash(npx --yes sharp-cli --help)",
       "Bash(npx:*)",
       "Skill(schedule)",
-      "Bash(gh run *)"
+      "Bash(gh run *)",
+      "Bash(stripe --version)",
+      "Bash(stripe listen *)",
+      "Bash(stripe trigger *)",
+      "mcp__laravel-boost__read-log-entries",
+      "Bash(pkill -f \"stripe listen\")",
+      "Bash(pkill -f \"queue:work\")",
+      "Bash(tmutil localsnapshots *)",
+      "Bash(tmutil listlocalsnapshots *)"
     ]
   },
   "enableAllProjectMcpServers": true,
