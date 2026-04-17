@@ -26,10 +26,12 @@
         "spatie/laravel-permission": "^7.2",
         "spatie/laravel-query-builder": "^7.1",
         "spatie/pdf-to-text": "^1.55",
+        "stripe/stripe-php": "^17.6",
         "zorbl/crossword-io": "@dev"
     },
     "require-dev": {
         "barryvdh/laravel-ide-helper": "^3.7",
+        "brianium/paratest": "^7.20",
         "larastan/larastan": "^3.0",
         "laravel/boost": "^2.0",
         "laravel/pail": "^1.2.5",
