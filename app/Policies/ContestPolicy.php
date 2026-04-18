@@ -20,7 +20,7 @@ class ContestPolicy
      */
     public function view(?User $user, Contest $contest): bool
     {
-        return ! in_array($contest->status, ['draft', 'archived']);
+        return $contest->isPublished();
     }
 
     /**

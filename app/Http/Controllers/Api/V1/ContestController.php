@@ -17,7 +17,7 @@ class ContestController extends Controller
 {
     public function index(Request $request): AnonymousResourceCollection
     {
-        $contests = QueryBuilder::for(Contest::public())
+        $contests = QueryBuilder::for(Contest::published())
             ->allowedFilters('status', 'is_featured')
             ->allowedSorts('starts_at', 'ends_at', 'created_at')
             ->withCount(['entries', 'crosswords'])

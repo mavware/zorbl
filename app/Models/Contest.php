@@ -40,7 +40,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @method static Builder<static> active()
  * @method static Builder<static> upcoming()
  * @method static Builder<static> ended()
- * @method static Builder<static> public()
+ * @method static Builder<static> published()
  *
  * @mixin Eloquent
  */
@@ -123,6 +123,14 @@ class Contest extends Model
     }
 
     /**
+     * Check if the contest is published (visible to the public).
+     */
+    public function isPublished(): bool
+    {
+        return ! in_array($this->status, ['draft', 'archived'], true);
+    }
+
+    /**
      * Normalize and compare a submitted answer against the meta answer.
      */
     public function checkMetaAnswer(string $answer): bool
@@ -174,12 +182,12 @@ class Contest extends Model
     }
 
     /**
-     * Scope to publicly visible contests (excludes draft and archived).
+     * Scope to published contests (excludes draft and archived).
      *
      * @param  Builder<static>  $query
      * @return Builder<static>
      */
-    public function scopePublic(Builder $query): Builder
+    public function scopePublished(Builder $query): Builder
     {
         return $query->whereNotIn('status', ['draft', 'archived']);
     }

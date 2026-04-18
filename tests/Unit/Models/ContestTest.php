@@ -81,3 +81,14 @@ test('checkMetaAnswer strips non-alpha characters', function () {
     expect($contest->checkMetaAnswer('test'))->toBeTrue()
         ->and($contest->checkMetaAnswer('TEST 123'))->toBeTrue();
 });
+
+test('isPublished returns true for non-draft, non-archived statuses', function () {
+    expect((new Contest(['status' => 'active']))->isPublished())->toBeTrue()
+        ->and((new Contest(['status' => 'upcoming']))->isPublished())->toBeTrue()
+        ->and((new Contest(['status' => 'ended']))->isPublished())->toBeTrue();
+});
+
+test('isPublished returns false for draft and archived', function () {
+    expect((new Contest(['status' => 'draft']))->isPublished())->toBeFalse()
+        ->and((new Contest(['status' => 'archived']))->isPublished())->toBeFalse();
+});
