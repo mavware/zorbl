@@ -2,6 +2,7 @@
 
 use App\Models\Crossword;
 use App\Models\Follow;
+use App\Models\PuzzleAttempt;
 use App\Models\User;
 use App\Notifications\NewFollower;
 use Illuminate\Support\Facades\Notification;
@@ -134,4 +135,70 @@ test('unauthenticated user cannot access constructor profile', function () {
 
     $this->get(route('constructors.show', $constructor))
         ->assertRedirect();
+});
+
+test('constructor profile shows attempt count per puzzle', function () {
+    $constructor = User::factory()->create();
+    $viewer = User::factory()->create();
+    $crossword = Crossword::factory()->published()->for($constructor)->create(['title' => 'Popular Puzzle']);
+
+    PuzzleAttempt::factory()->count(5)->create(['crossword_id' => $crossword->id]);
+
+    $component = Livewire\Livewire::actingAs($viewer)
+        ->test('pages::constructors.show', ['constructor' => $constructor]);
+
+    $puzzles = $component->get('publishedPuzzles');
+    expect($puzzles->first()->attempts_count)->toBe(5);
+});
+
+test('constructor profile shows completion rate per puzzle', function () {
+    $constructor = User::factory()->create();
+    $viewer = User::factory()->create();
+    $crossword = Crossword::factory()->published()->for($constructor)->create(['title' => 'Solvable Puzzle']);
+
+    PuzzleAttempt::factory()->count(2)->completed()->create(['crossword_id' => $crossword->id]);
+    PuzzleAttempt::factory()->count(3)->create(['crossword_id' => $crossword->id]);
+
+    $component = Livewire\Livewire::actingAs($viewer)
+        ->test('pages::constructors.show', ['constructor' => $constructor]);
+
+    $puzzles = $component->get('publishedPuzzles');
+    expect($puzzles->first()->attempts_count)->toBe(5)
+        ->and($puzzles->first()->completed_attempts_count)->toBe(2);
+});
+
+test('constructor profile displays solved percentage text', function () {
+    $constructor = User::factory()->create();
+    $viewer = User::factory()->create();
+    $crossword = Crossword::factory()->published()->for($constructor)->create();
+
+    PuzzleAttempt::factory()->count(3)->completed()->create(['crossword_id' => $crossword->id]);
+    PuzzleAttempt::factory()->count(1)->create(['crossword_id' => $crossword->id]);
+
+    Livewire\Livewire::actingAs($viewer)
+        ->test('pages::constructors.show', ['constructor' => $constructor])
+        ->assertSee('75%')
+        ->assertSee('solved');
+});
+
+test('constructor profile hides completion rate when no attempts', function () {
+    $constructor = User::factory()->create();
+    $viewer = User::factory()->create();
+    Crossword::factory()->published()->for($constructor)->create();
+
+    Livewire\Livewire::actingAs($viewer)
+        ->test('pages::constructors.show', ['constructor' => $constructor])
+        ->assertDontSee('solved');
+});
+
+test('constructor profile only shows published puzzles in puzzle cards', function () {
+    $constructor = User::factory()->create();
+    $viewer = User::factory()->create();
+    Crossword::factory()->published()->for($constructor)->create(['title' => 'Public Puzzle']);
+    Crossword::factory()->for($constructor)->create(['title' => 'Secret Draft']);
+
+    Livewire\Livewire::actingAs($viewer)
+        ->test('pages::constructors.show', ['constructor' => $constructor])
+        ->assertSee('Public Puzzle')
+        ->assertDontSee('Secret Draft');
 });

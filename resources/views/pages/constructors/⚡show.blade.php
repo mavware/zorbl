@@ -34,7 +34,11 @@ new #[Title('Constructor Profile')] class extends Component {
     {
         return Crossword::where('user_id', $this->constructorId)
             ->where('is_published', true)
-            ->withCount('likes')
+            ->withCount([
+                'likes',
+                'attempts',
+                'attempts as completed_attempts_count' => fn ($q) => $q->where('is_completed', true),
+            ])
             ->latest()
             ->get();
     }
@@ -160,6 +164,9 @@ new #[Title('Constructor Profile')] class extends Component {
                         wire:navigate
                         class="group rounded-xl border border-zinc-200 p-4 transition-colors hover:border-zinc-300 dark:border-zinc-700 dark:hover:border-zinc-600"
                     >
+                        <div class="mb-3 flex justify-center">
+                            <x-grid-thumbnail :grid="$puzzle->grid" :width="$puzzle->width" :height="$puzzle->height" />
+                        </div>
                         <div class="mb-2 flex items-start justify-between">
                             <flux:heading size="sm" class="group-hover:text-blue-600 dark:group-hover:text-blue-400">
                                 {{ $puzzle->title ?: __('Untitled Puzzle') }}
@@ -180,8 +187,22 @@ new #[Title('Constructor Profile')] class extends Component {
                                 <svg xmlns="http://www.w3.org/2000/svg" class="size-3.5" viewBox="0 0 24 24" fill="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" /></svg>
                                 {{ $puzzle->likes_count }}
                             </span>
-                            <span>{{ $puzzle->created_at->diffForHumans() }}</span>
+                            <span class="flex items-center gap-0.5">
+                                <flux:icon name="play" class="size-3.5" />
+                                {{ $puzzle->attempts_count }}
+                            </span>
+                            @if($puzzle->attempts_count > 0)
+                                @php($completionRate = round(($puzzle->completed_attempts_count / $puzzle->attempts_count) * 100))
+                                <span @class([
+                                    'text-emerald-600 dark:text-emerald-400' => $completionRate >= 75,
+                                    'text-amber-600 dark:text-amber-400' => $completionRate >= 40 && $completionRate < 75,
+                                    'text-zinc-500' => $completionRate < 40,
+                                ])>{{ $completionRate }}% {{ __('solved') }}</span>
+                            @endif
                         </div>
+                        <flux:text size="sm" class="mt-1 text-zinc-400">
+                            {{ $puzzle->created_at->diffForHumans() }}
+                        </flux:text>
                     </a>
                 @endforeach
             </div>
