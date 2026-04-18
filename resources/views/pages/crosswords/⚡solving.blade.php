@@ -55,18 +55,8 @@ new #[Title('Solving')] class extends Component {
                         class="group relative rounded-xl border border-zinc-200 p-4 transition-colors hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-500"
                     >
                         <a href="{{ route('crosswords.solver', $attempt->crossword) }}" wire:navigate class="block">
-                            {{-- Mini grid thumbnail --}}
                             <div class="mb-3 flex justify-center">
-                                <div
-                                    class="inline-grid gap-px rounded border border-zinc-200 bg-zinc-200 p-px dark:border-zinc-600 dark:bg-zinc-600"
-                                    style="grid-template-columns: repeat({{ $attempt->crossword->width }}, minmax(0, 1fr)); width: {{ min($attempt->crossword->width * 8, 120) }}px;"
-                                >
-                                    @for($row = 0; $row < $attempt->crossword->height; $row++)
-                                        @for($col = 0; $col < $attempt->crossword->width; $col++)
-                                            <div class="{{ $attempt->crossword->grid[$row][$col] === null ? 'invisible' : (($attempt->crossword->grid[$row][$col] ?? 0) === '#' ? 'bg-zinc-800 dark:bg-zinc-300' : 'bg-white dark:bg-zinc-800') }}" style="aspect-ratio: 1;"></div>
-                                        @endfor
-                                    @endfor
-                                </div>
+                                <x-grid-thumbnail :grid="$attempt->crossword->grid" :width="$attempt->crossword->width" :height="$attempt->crossword->height" />
                             </div>
 
                             <flux:heading size="sm" class="truncate">{{ $attempt->crossword->title ?: __('Untitled Puzzle') }}</flux:heading>

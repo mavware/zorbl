@@ -160,18 +160,8 @@ new #[Title('My Puzzles')] class extends Component {
                     >
                         @php($completeness = $crossword->completeness())
                         <a href="{{ route('crosswords.editor', $crossword) }}" wire:navigate class="block">
-                            {{-- Mini grid thumbnail --}}
                             <div class="mb-3 flex justify-center">
-                                <div
-                                    class="inline-grid gap-px rounded border border-zinc-200 bg-zinc-200 p-px dark:border-zinc-600 dark:bg-zinc-600"
-                                    style="grid-template-columns: repeat({{ $crossword->width }}, minmax(0, 1fr)); width: {{ min($crossword->width * 8, 120) }}px;"
-                                >
-                                    @for($row = 0; $row < $crossword->height; $row++)
-                                        @for($col = 0; $col < $crossword->width; $col++)
-                                            <div class="{{ $crossword->grid[$row][$col] === null ? 'invisible' : (($crossword->grid[$row][$col] ?? 0) === '#' ? 'bg-zinc-800 dark:bg-zinc-300' : 'bg-white dark:bg-zinc-800') }}" style="aspect-ratio: 1;"></div>
-                                        @endfor
-                                    @endfor
-                                </div>
+                                <x-grid-thumbnail :grid="$crossword->grid" :width="$crossword->width" :height="$crossword->height" />
                             </div>
 
                             <flux:heading size="sm" class="truncate">{{ $crossword->title ?: __('Untitled Puzzle') }}</flux:heading>
@@ -237,16 +227,7 @@ new #[Title('My Puzzles')] class extends Component {
                         wire:click="$set('selectedTemplate', null)"
                         class="flex shrink-0 flex-col items-center gap-1.5 rounded-lg border-2 p-2 transition-colors {{ $selectedTemplate === null ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' : 'border-zinc-200 hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-500' }}"
                     >
-                        <div
-                            class="inline-grid gap-px rounded border border-zinc-200 bg-zinc-200 p-px dark:border-zinc-600 dark:bg-zinc-600"
-                            style="grid-template-columns: repeat({{ $newWidth }}, minmax(0, 1fr)); width: {{ min($newWidth * 6, 80) }}px;"
-                        >
-                            @for($r = 0; $r < $newHeight; $r++)
-                                @for($c = 0; $c < $newWidth; $c++)
-                                    <div class="bg-white dark:bg-zinc-800" style="aspect-ratio: 1;"></div>
-                                @endfor
-                            @endfor
-                        </div>
+                        <x-grid-thumbnail :grid="Crossword::emptyGrid($newWidth, $newHeight)" :width="$newWidth" :height="$newHeight" :cell-size="6" :max-width="80" />
                         <span class="whitespace-nowrap text-xs text-zinc-600 dark:text-zinc-400">{{ __('Blank') }}</span>
                     </button>
 
@@ -256,16 +237,7 @@ new #[Title('My Puzzles')] class extends Component {
                                 wire:click="$set('selectedTemplate', {{ $index }})"
                                 class="flex shrink-0 flex-col items-center gap-1.5 rounded-lg border-2 p-2 transition-colors {{ $selectedTemplate === $index ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' : 'border-zinc-200 hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-500' }}"
                             >
-                                <div
-                                    class="inline-grid gap-px rounded border border-zinc-200 bg-zinc-200 p-px dark:border-zinc-600 dark:bg-zinc-600"
-                                    style="grid-template-columns: repeat({{ $newWidth }}, minmax(0, 1fr)); width: {{ min($newWidth * 6, 80) }}px;"
-                                >
-                                    @foreach($template['grid'] as $row)
-                                        @foreach($row as $cell)
-                                            <div class="{{ $cell === '#' ? 'bg-zinc-800 dark:bg-zinc-300' : 'bg-white dark:bg-zinc-800' }}" style="aspect-ratio: 1;"></div>
-                                        @endforeach
-                                    @endforeach
-                                </div>
+                                <x-grid-thumbnail :grid="$template['grid']" :width="$newWidth" :height="$newHeight" :cell-size="6" :max-width="80" />
                                 <span class="whitespace-nowrap text-xs text-zinc-600 dark:text-zinc-400">{{ $template['name'] }}</span>
                             </button>
                     @endforeach

@@ -388,18 +388,8 @@ new class extends Component {
                     wire:click="startSolving({{ $crossword->id }})"
                     class="group rounded-xl border border-zinc-200 p-4 transition-colors hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-500 cursor-pointer"
                 >
-                    {{-- Mini grid thumbnail --}}
                     <div class="mb-3 flex justify-center">
-                        <div
-                            class="inline-grid gap-px rounded border border-zinc-200 bg-zinc-200 p-px dark:border-zinc-600 dark:bg-zinc-600"
-                            style="grid-template-columns: repeat({{ $crossword->width }}, minmax(0, 1fr)); width: {{ min($crossword->width * 8, 120) }}px;"
-                        >
-                            @for($row = 0; $row < $crossword->height; $row++)
-                                @for($col = 0; $col < $crossword->width; $col++)
-                                    <div class="{{ $crossword->grid[$row][$col] === null ? 'invisible' : (($crossword->grid[$row][$col] ?? 0) === '#' ? 'bg-zinc-800 dark:bg-zinc-300' : 'bg-white dark:bg-zinc-800') }}" style="aspect-ratio: 1;"></div>
-                                @endfor
-                            @endfor
-                        </div>
+                        <x-grid-thumbnail :grid="$crossword->grid" :width="$crossword->width" :height="$crossword->height" />
                     </div>
 
                     <flux:heading size="sm" class="truncate">{{ $crossword->title ?: __('Untitled Puzzle') }}</flux:heading>

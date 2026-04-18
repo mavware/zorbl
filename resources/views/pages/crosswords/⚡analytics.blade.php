@@ -336,17 +336,7 @@ new #[Title('Constructor Analytics')] class extends Component {
                             <flux:text size="sm" class="text-zinc-400">{{ $puzzle['attempt_count'] }} {{ __('solves') }}</flux:text>
                         </div>
                         <div class="mb-3 flex justify-center">
-                            <div
-                                class="inline-grid gap-px rounded border border-zinc-200 bg-zinc-200 p-px dark:border-zinc-600 dark:bg-zinc-600"
-                                style="grid-template-columns: repeat({{ $puzzle['width'] }}, minmax(0, 1fr)); width: {{ min($puzzle['width'] * 10, 150) }}px;"
-                            >
-                                @for($row = 0; $row < $puzzle['height']; $row++)
-                                    @for($col = 0; $col < $puzzle['width']; $col++)
-                                        @php($cell = $puzzle['grid'][$row][$col] ?? 0)
-                                        <div class="{{ $cell === null ? 'invisible' : ($cell === '#' ? 'bg-zinc-800 dark:bg-zinc-300' : 'bg-white dark:bg-zinc-800') }}" style="aspect-ratio: 1;"></div>
-                                    @endfor
-                                @endfor
-                            </div>
+                            <x-grid-thumbnail :grid="$puzzle['grid']" :width="$puzzle['width']" :height="$puzzle['height']" :cell-size="10" :max-width="150" />
                         </div>
                         <div class="flex justify-between text-xs text-zinc-500">
                             <span>{{ __('Avg time:') }} {{ $this->formatTime($puzzle['avg_time']) }}</span>

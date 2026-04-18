@@ -144,17 +144,7 @@ new #[Title('Dashboard')] class extends Component {
                             wire:navigate
                             class="flex items-center gap-3 rounded-lg p-2 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800"
                         >
-                            {{-- Mini grid --}}
-                            <div
-                                class="inline-grid shrink-0 gap-px rounded border border-zinc-200 bg-zinc-200 p-px dark:border-zinc-600 dark:bg-zinc-600"
-                                style="grid-template-columns: repeat({{ $attempt->crossword->width }}, minmax(0, 1fr)); width: {{ min($attempt->crossword->width * 5, 48) }}px;"
-                            >
-                                @for($row = 0; $row < $attempt->crossword->height; $row++)
-                                    @for($col = 0; $col < $attempt->crossword->width; $col++)
-                                        <div class="{{ $attempt->crossword->grid[$row][$col] === null ? 'invisible' : (($attempt->crossword->grid[$row][$col] ?? 0) === '#' ? 'bg-zinc-800 dark:bg-zinc-300' : 'bg-white dark:bg-zinc-800') }}" style="aspect-ratio: 1;"></div>
-                                    @endfor
-                                @endfor
-                            </div>
+                            <x-grid-thumbnail class="shrink-0" :grid="$attempt->crossword->grid" :width="$attempt->crossword->width" :height="$attempt->crossword->height" :cell-size="5" :max-width="48" />
                             <div class="min-w-0 flex-1">
                                 <div class="truncate text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ $attempt->crossword->title ?: __('Untitled Puzzle') }}</div>
                                 <flux:text size="sm" class="text-zinc-400">
@@ -195,17 +185,7 @@ new #[Title('Dashboard')] class extends Component {
                             wire:navigate
                             class="flex items-center gap-3 rounded-lg p-2 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800"
                         >
-                            {{-- Mini grid --}}
-                            <div
-                                class="inline-grid shrink-0 gap-px rounded border border-zinc-200 bg-zinc-200 p-px dark:border-zinc-600 dark:bg-zinc-600"
-                                style="grid-template-columns: repeat({{ $crossword->width }}, minmax(0, 1fr)); width: {{ min($crossword->width * 5, 48) }}px;"
-                            >
-                                @for($row = 0; $row < $crossword->height; $row++)
-                                    @for($col = 0; $col < $crossword->width; $col++)
-                                        <div class="{{ $crossword->grid[$row][$col] === null ? 'invisible' : (($crossword->grid[$row][$col] ?? 0) === '#' ? 'bg-zinc-800 dark:bg-zinc-300' : 'bg-white dark:bg-zinc-800') }}" style="aspect-ratio: 1;"></div>
-                                    @endfor
-                                @endfor
-                            </div>
+                            <x-grid-thumbnail class="shrink-0" :grid="$crossword->grid" :width="$crossword->width" :height="$crossword->height" :cell-size="5" :max-width="48" />
                             <div class="min-w-0 flex-1">
                                 <div class="truncate text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ $crossword->title ?: __('Untitled Puzzle') }}</div>
                                 <flux:text size="sm" class="text-zinc-400">
@@ -247,16 +227,7 @@ new #[Title('Dashboard')] class extends Component {
                             wire:navigate
                             class="flex items-center gap-3 rounded-lg p-2 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800"
                         >
-                            <div
-                                class="inline-grid shrink-0 gap-px rounded border border-zinc-200 bg-zinc-200 p-px dark:border-zinc-600 dark:bg-zinc-600"
-                                style="grid-template-columns: repeat({{ $crossword->width }}, minmax(0, 1fr)); width: {{ min($crossword->width * 5, 48) }}px;"
-                            >
-                                @for($row = 0; $row < $crossword->height; $row++)
-                                    @for($col = 0; $col < $crossword->width; $col++)
-                                        <div class="{{ $crossword->grid[$row][$col] === null ? 'invisible' : (($crossword->grid[$row][$col] ?? 0) === '#' ? 'bg-zinc-800 dark:bg-zinc-300' : 'bg-white dark:bg-zinc-800') }}" style="aspect-ratio: 1;"></div>
-                                    @endfor
-                                @endfor
-                            </div>
+                            <x-grid-thumbnail class="shrink-0" :grid="$crossword->grid" :width="$crossword->width" :height="$crossword->height" :cell-size="5" :max-width="48" />
                             <div class="min-w-0 flex-1">
                                 <div class="truncate text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ $crossword->title ?: __('Untitled Puzzle') }}</div>
                                 <flux:text size="sm" class="text-zinc-400">
@@ -297,16 +268,7 @@ new #[Title('Dashboard')] class extends Component {
                             wire:navigate
                             class="flex items-center gap-3 rounded-lg p-2 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800"
                         >
-                            <div
-                                class="inline-grid shrink-0 gap-px rounded border border-zinc-200 bg-zinc-200 p-px dark:border-zinc-600 dark:bg-zinc-600"
-                                style="grid-template-columns: repeat({{ $crossword->width }}, minmax(0, 1fr)); width: {{ min($crossword->width * 5, 48) }}px;"
-                            >
-                                @for($row = 0; $row < $crossword->height; $row++)
-                                    @for($col = 0; $col < $crossword->width; $col++)
-                                        <div class="{{ $crossword->grid[$row][$col] === null ? 'invisible' : (($crossword->grid[$row][$col] ?? 0) === '#' ? 'bg-zinc-800 dark:bg-zinc-300' : 'bg-white dark:bg-zinc-800') }}" style="aspect-ratio: 1;"></div>
-                                    @endfor
-                                @endfor
-                            </div>
+                            <x-grid-thumbnail class="shrink-0" :grid="$crossword->grid" :width="$crossword->width" :height="$crossword->height" :cell-size="5" :max-width="48" />
                             <div class="min-w-0 flex-1">
                                 <div class="truncate text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ $crossword->title ?: __('Untitled Puzzle') }}</div>
                                 <flux:text size="sm" class="text-zinc-400">
