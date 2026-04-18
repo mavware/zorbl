@@ -61,6 +61,6 @@ Sized to finish in this session. Good categories:
 
 - Branch name
 - What changed (2–4 sentences) and why you picked it
-- Test results (before/after)
+- Test results (before and after)
 - Any new dependencies
 - Suggested follow-ups for future runs
