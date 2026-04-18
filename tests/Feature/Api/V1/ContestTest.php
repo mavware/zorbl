@@ -5,15 +5,26 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-it('lists public contests', function () {
+it('lists published contests', function () {
     Contest::factory()->active()->count(2)->create();
     Contest::factory()->upcoming()->create();
     Contest::factory()->draft()->create();
+    Contest::factory()->create(['status' => 'archived']);
 
     $response = $this->getJson('/api/v1/contests');
 
     $response->assertSuccessful()
         ->assertJsonCount(3, 'data');
+});
+
+it('published scope excludes draft and archived', function () {
+    Contest::factory()->active()->create();
+    Contest::factory()->upcoming()->create();
+    Contest::factory()->ended()->create();
+    Contest::factory()->draft()->create();
+    Contest::factory()->create(['status' => 'archived']);
+
+    expect(Contest::published()->count())->toBe(3);
 });
 
 it('shows a contest', function () {
