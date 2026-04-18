@@ -4,6 +4,7 @@ use App\Models\Crossword;
 use App\Models\Follow;
 use App\Models\PuzzleAttempt;
 use App\Models\User;
+use App\Notifications\NewFollower;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
@@ -90,6 +91,12 @@ new #[Title('Constructor Profile')] class extends Component {
                 'follower_id' => $user->id,
                 'following_id' => $this->constructorId,
             ]);
+
+            $followedUser = User::find($this->constructorId);
+
+            if ($followedUser) {
+                $followedUser->notify(new NewFollower($user));
+            }
         }
 
         unset($this->isFollowing, $this->followersCount);

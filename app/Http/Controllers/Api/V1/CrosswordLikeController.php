@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\Crossword;
+use App\Notifications\CrosswordLiked;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -14,10 +15,18 @@ class CrosswordLikeController extends Controller
 {
     public function store(Request $request, Crossword $crossword): JsonResponse
     {
-        $request->user()->crosswordLikes()->firstOrCreate([
+        $wasCreated = $request->user()->crosswordLikes()->firstOrCreate([
             'user_id' => $request->user()->id,
             'crossword_id' => $crossword->id,
-        ]);
+        ])->wasRecentlyCreated;
+
+        if ($wasCreated) {
+            $crosswordOwner = $crossword->user;
+
+            if ($crosswordOwner && $crosswordOwner->id !== $request->user()->id) {
+                $crosswordOwner->notify(new CrosswordLiked($crossword, $request->user()));
+            }
+        }
 
         return response()->json(null, 201);
     }

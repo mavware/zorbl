@@ -7,6 +7,7 @@ use App\Http\Requests\Api\V1\StorePuzzleCommentRequest;
 use App\Http\Resources\Api\V1\PuzzleCommentResource;
 use App\Models\Crossword;
 use App\Models\PuzzleComment;
+use App\Notifications\NewPuzzleComment;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -32,6 +33,12 @@ class PuzzleCommentController extends Controller
             'user_id' => $request->user()->id,
             ...$request->validated(),
         ]);
+
+        $crosswordOwner = $crossword->user;
+
+        if ($crosswordOwner && $crosswordOwner->id !== $request->user()->id) {
+            $crosswordOwner->notify(new NewPuzzleComment($comment, $request->user()));
+        }
 
         return (new PuzzleCommentResource($comment->load('user:id,name')))
             ->response()

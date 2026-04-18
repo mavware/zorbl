@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\V1\CrosswordController;
 use App\Http\Controllers\Api\V1\CrosswordLikeController;
 use App\Http\Controllers\Api\V1\FavoriteListController;
 use App\Http\Controllers\Api\V1\MeController;
+use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\PuzzleAttemptController;
 use App\Http\Controllers\Api\V1\PuzzleCommentController;
 use Illuminate\Support\Facades\Route;
@@ -64,6 +65,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/contests/{contest:slug}/register', [ContestEntryController::class, 'store']);
     Route::get('/contests/{contest:slug}/entry', [ContestEntryController::class, 'show']);
     Route::post('/contests/{contest:slug}/meta', [ContestEntryController::class, 'submitMeta']);
+
+    // Notifications
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
+    Route::patch('/notifications/{notification}/read', [NotificationController::class, 'markAsRead']);
+    Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead']);
 
     // Favorites
     Route::get('/favorites', [FavoriteListController::class, 'index']);

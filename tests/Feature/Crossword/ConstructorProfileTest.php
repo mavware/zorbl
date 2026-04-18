@@ -3,6 +3,8 @@
 use App\Models\Crossword;
 use App\Models\Follow;
 use App\Models\User;
+use App\Notifications\NewFollower;
+use Illuminate\Support\Facades\Notification;
 
 test('constructor profile page displays user info and puzzles', function () {
     $constructor = User::factory()->create(['name' => 'Jane Constructor']);
@@ -95,6 +97,36 @@ test('solver page links to constructor profile', function () {
         ->get(route('crosswords.solver', $crossword))
         ->assertOk()
         ->assertSee('Puzzle Master');
+});
+
+test('following a constructor sends a notification', function () {
+    Notification::fake();
+
+    $constructor = User::factory()->create();
+    $follower = User::factory()->create();
+
+    $this->actingAs($follower);
+
+    Livewire\Livewire::test('pages::constructors.show', ['constructor' => $constructor])
+        ->call('toggleFollow');
+
+    Notification::assertSentTo($constructor, NewFollower::class);
+});
+
+test('unfollowing does not send a notification', function () {
+    Notification::fake();
+
+    $constructor = User::factory()->create();
+    $follower = User::factory()->create();
+
+    Follow::create(['follower_id' => $follower->id, 'following_id' => $constructor->id]);
+
+    $this->actingAs($follower);
+
+    Livewire\Livewire::test('pages::constructors.show', ['constructor' => $constructor])
+        ->call('toggleFollow');
+
+    Notification::assertNotSentTo($constructor, NewFollower::class);
 });
 
 test('unauthenticated user cannot access constructor profile', function () {
