@@ -22,7 +22,7 @@ class PuzzleAttemptController extends Controller
     public function index(Request $request): AnonymousResourceCollection
     {
         $attempts = QueryBuilder::for(
-            $request->user()->puzzleAttempts()
+            $request->user()->puzzleAttempts()->with('crossword:id,width,height,grid')
         )
             ->allowedFilters('is_completed')
             ->allowedSorts('updated_at', 'created_at')
@@ -36,6 +36,7 @@ class PuzzleAttemptController extends Controller
     {
         $attempt = $request->user()
             ->puzzleAttempts()
+            ->with('crossword:id,width,height,grid')
             ->where('crossword_id', $crossword->id)
             ->firstOrFail();
 
@@ -76,6 +77,8 @@ class PuzzleAttemptController extends Controller
             ['user_id' => $user->id, 'crossword_id' => $crossword->id],
             $attributes,
         );
+
+        $attempt->setRelation('crossword', $crossword);
 
         if ($isNewCompletion) {
             app(AchievementService::class)->processSolve($user, $data['solve_time_seconds'] ?? null);

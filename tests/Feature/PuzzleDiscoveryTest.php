@@ -412,6 +412,94 @@ test('discovery shows own attempted puzzles when constructor filter is set', fun
         ->assertSee('Some Untitled Puzzle');
 });
 
+test('discovery filters by difficulty label', function () {
+    $user = User::factory()->create();
+    $creator = User::factory()->create();
+
+    Crossword::factory()->published()->for($creator)->create([
+        'title' => 'Easy Puzzle',
+        'difficulty_label' => 'Easy',
+        'difficulty_score' => 1.5,
+    ]);
+    Crossword::factory()->published()->for($creator)->create([
+        'title' => 'Hard Puzzle',
+        'difficulty_label' => 'Hard',
+        'difficulty_score' => 3.5,
+    ]);
+
+    Livewire::actingAs($user)
+        ->test('puzzle-discovery', ['excludeAttempted' => true])
+        ->set('difficulty', 'Easy')
+        ->assertSee('Easy Puzzle')
+        ->assertDontSee('Hard Puzzle');
+});
+
+test('discovery filters by each difficulty level', function (string $label) {
+    $user = User::factory()->create();
+    $creator = User::factory()->create();
+
+    Crossword::factory()->published()->for($creator)->create([
+        'title' => "{$label} Puzzle",
+        'difficulty_label' => $label,
+    ]);
+    Crossword::factory()->published()->for($creator)->create([
+        'title' => 'Other Puzzle',
+        'difficulty_label' => $label === 'Easy' ? 'Hard' : 'Easy',
+    ]);
+
+    Livewire::actingAs($user)
+        ->test('puzzle-discovery', ['excludeAttempted' => true])
+        ->set('difficulty', $label)
+        ->assertSee("{$label} Puzzle")
+        ->assertDontSee('Other Puzzle');
+})->with(['Easy', 'Medium', 'Hard', 'Expert']);
+
+test('discovery shows all puzzles when difficulty filter is empty', function () {
+    $user = User::factory()->create();
+    $creator = User::factory()->create();
+
+    Crossword::factory()->published()->for($creator)->create([
+        'title' => 'Easy One',
+        'difficulty_label' => 'Easy',
+    ]);
+    Crossword::factory()->published()->for($creator)->create([
+        'title' => 'Hard One',
+        'difficulty_label' => 'Hard',
+    ]);
+
+    Livewire::actingAs($user)
+        ->test('puzzle-discovery', ['excludeAttempted' => true])
+        ->set('difficulty', '')
+        ->assertSee('Easy One')
+        ->assertSee('Hard One');
+});
+
+test('discovery clear filters resets difficulty', function () {
+    $user = User::factory()->create();
+    $creator = User::factory()->create();
+    Crossword::factory()->published()->for($creator)->create();
+
+    Livewire::actingAs($user)
+        ->test('puzzle-discovery', ['excludeAttempted' => true])
+        ->set('difficulty', 'Hard')
+        ->call('clearFilters')
+        ->assertSet('difficulty', '');
+});
+
+test('discovery shows filter indicator when difficulty is active', function () {
+    $user = User::factory()->create();
+    $creator = User::factory()->create();
+    Crossword::factory()->published()->for($creator)->create([
+        'difficulty_label' => 'Hard',
+    ]);
+
+    Livewire::actingAs($user)
+        ->test('puzzle-discovery')
+        ->assertDontSee('Clear')
+        ->set('difficulty', 'Hard')
+        ->assertSee('Clear');
+});
+
 test('discovery shows filter indicator when filters are active', function () {
     $user = User::factory()->create();
     $creator = User::factory()->create();

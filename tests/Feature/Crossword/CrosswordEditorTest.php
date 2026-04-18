@@ -250,3 +250,45 @@ test('users can toggle puzzle published state', function () {
     $crossword->refresh();
     expect($crossword->is_published)->toBeFalse();
 });
+
+test('publishing a puzzle auto-calculates difficulty rating', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create([
+        'width' => 15,
+        'height' => 15,
+    ]);
+
+    $this->actingAs($user);
+
+    expect($crossword->difficulty_score)->toBeNull()
+        ->and($crossword->difficulty_label)->toBeNull();
+
+    Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->call('togglePublished')
+        ->assertSet('isPublished', true);
+
+    $crossword->refresh();
+    expect($crossword->difficulty_score)->not->toBeNull()
+        ->and($crossword->difficulty_label)->toBeIn(['Easy', 'Medium', 'Hard', 'Expert']);
+});
+
+test('unpublishing a puzzle does not clear difficulty rating', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->published()->for($user)->create([
+        'width' => 15,
+        'height' => 15,
+        'difficulty_score' => 2.5,
+        'difficulty_label' => 'Medium',
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->call('togglePublished')
+        ->assertSet('isPublished', false);
+
+    $crossword->refresh();
+    expect($crossword->is_published)->toBeFalse()
+        ->and($crossword->difficulty_score)->toBe(2.5)
+        ->and($crossword->difficulty_label)->toBe('Medium');
+});
