@@ -57,24 +57,27 @@ new #[Title('Billing')] class extends Component {
         return app(AiUsageTracker::class)->remaining($this->user, 'clue_generation');
     }
 
-    public function subscribe(): \Symfony\Component\HttpFoundation\Response
+    public function subscribe()
     {
         $priceId = $this->billingInterval === 'yearly'
             ? config('services.stripe.pro_yearly_price')
             : config('services.stripe.pro_monthly_price');
 
-        return $this->user
+        $checkout = $this->user
             ->newSubscription('default', $priceId)
             ->checkout([
                 'success_url' => route('billing.index') . '?checkout=success',
                 'cancel_url' => route('billing.index') . '?checkout=cancelled',
-            ])
-            ->toResponse(request());
+            ]);
+
+        return $this->redirect($checkout->asStripeCheckoutSession()->url);
     }
 
-    public function manageBilling(): \Symfony\Component\HttpFoundation\Response
+    public function manageBilling()
     {
-        return $this->user->redirectToBillingPortal(route('billing.index'));
+        $url = $this->user->billingPortalUrl(route('billing.index'));
+
+        return $this->redirect($url);
     }
 }; ?>
 
