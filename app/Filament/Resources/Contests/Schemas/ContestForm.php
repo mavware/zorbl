@@ -8,6 +8,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Str;
 
@@ -67,9 +68,14 @@ class ContestForm
                                 'archived' => 'Archived',
                             ])
                             ->default('draft')
-                            ->required(),
+                            ->required()
+                            ->live(),
                         Toggle::make('is_featured')
                             ->label('Featured Contest'),
+                        DateTimePicker::make('publish_at')
+                            ->label('Scheduled Publish Date')
+                            ->helperText('Leave empty to publish immediately when status changes. When set on a draft, the contest auto-transitions to upcoming at this time.')
+                            ->visible(fn (Get $get): bool => $get('status') === 'draft'),
                         DateTimePicker::make('starts_at')
                             ->required(),
                         DateTimePicker::make('ends_at')

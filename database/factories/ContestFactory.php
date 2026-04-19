@@ -31,8 +31,20 @@ class ContestFactory extends Factory
             'starts_at' => now()->addDay(),
             'ends_at' => now()->addDays(8),
             'max_meta_attempts' => 0,
+            'publish_at' => null,
             'is_featured' => false,
         ];
+    }
+
+    /**
+     * Contest with a scheduled publish date.
+     */
+    public function scheduledPublish(?\DateTimeInterface $publishAt = null): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => 'draft',
+            'publish_at' => $publishAt ?? now()->addDay(),
+        ]);
     }
 
     /**

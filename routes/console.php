@@ -9,3 +9,5 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('simulate:activity')->everyTenMinutes();
+Schedule::command('contests:publish-scheduled')->everyMinute();
+Schedule::command('contests:process-ended')->everyMinute();
