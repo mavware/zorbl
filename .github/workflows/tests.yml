@@ -69,9 +69,6 @@ jobs:
       - name: Generate Application Key
         run: php artisan key:generate
 
-      - name: Patch pest to print PHPUnit warning details (debug)
-        run: php .github/scripts/debug-pest-warnings.php
-
       - name: Run Pest (Unit + Feature)
         run: ./vendor/bin/pest --parallel --shard=${{ matrix.shard }}/3 --testsuite=Unit,Feature
 
