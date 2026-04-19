@@ -3,6 +3,7 @@
 use App\Models\SupportTicket;
 use App\Models\TicketResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Title;
@@ -15,7 +16,7 @@ new #[Title('Ticket Detail')] class extends Component {
 
     public function mount(): void
     {
-        abort_unless($this->ticket->user_id === Auth::id(), 403);
+        Gate::authorize('view', $this->ticket);
     }
 
     #[Computed]
@@ -26,7 +27,7 @@ new #[Title('Ticket Detail')] class extends Component {
 
     public function addResponse(): void
     {
-        abort_unless($this->ticket->status !== 'closed', 403);
+        Gate::authorize('respond', $this->ticket);
 
         $this->validate([
             'responseBody' => ['required', 'string', 'min:5', 'max:5000'],
