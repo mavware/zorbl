@@ -15,6 +15,9 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [ ] Ability to sign in with a passkey
 - [ ] Ability to sign in with google
 - [ ] Brainstorm ways to generate engaging puzzles with AI
+- [ ] Add SupportTicketPolicy (users should only view/update their own tickets, admins can see assigned)
+- [ ] Add PuzzleAttemptPolicy (users should only access their own attempts)
+- [ ] Audit Livewire page components for authorization — ensure they use policies instead of inline ownership checks
 
 ## Done
 
