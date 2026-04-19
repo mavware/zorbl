@@ -34,6 +34,26 @@ fwrite(STDERR, "\n=== PEST DEBUG (wrapper) ===\n");
         fwrite(STDERR, "hasSkippedTests: ".var_export($testResultSum->hasSkippedTests(), true)."\n");
         fwrite(STDERR, "testRunnerWarnings: ".count($testResultSum->testRunnerTriggeredWarningEvents())."\n");
         fwrite(STDERR, "testTriggeredWarnings: ".count($testResultSum->testTriggeredPhpunitWarningEvents())."\n");
+        $__pcfg = $this->options->configuration;
+        fwrite(STDERR, "cfg.failOnAllIssues: ".var_export($__pcfg->failOnAllIssues(), true)."\n");
+        fwrite(STDERR, "cfg.failOnEmptyTestSuite: ".var_export($__pcfg->failOnEmptyTestSuite(), true)."\n");
+        fwrite(STDERR, "cfg.failOnPhpunitWarning: ".var_export($__pcfg->failOnPhpunitWarning(), true)."\n");
+        fwrite(STDERR, "cfg.failOnWarning: ".var_export($__pcfg->failOnWarning(), true)."\n");
+        fwrite(STDERR, "cfg.failOnRisky: ".var_export($__pcfg->failOnRisky(), true)."\n");
+        fwrite(STDERR, "cfg.failOnSkipped: ".var_export($__pcfg->failOnSkipped(), true)."\n");
+        fwrite(STDERR, "cfg.failOnIncomplete: ".var_export($__pcfg->failOnIncomplete(), true)."\n");
+        fwrite(STDERR, "cfg.failOnDeprecation: ".var_export($__pcfg->failOnDeprecation(), true)."\n");
+        fwrite(STDERR, "cfg.failOnPhpunitDeprecation: ".var_export($__pcfg->failOnPhpunitDeprecation(), true)."\n");
+        fwrite(STDERR, "cfg.failOnPhpunitNotice: ".var_export($__pcfg->failOnPhpunitNotice(), true)."\n");
+        fwrite(STDERR, "cfg.failOnNotice: ".var_export($__pcfg->failOnNotice(), true)."\n");
+        fwrite(STDERR, "numberOfTestsRun: ".$testResultSum->numberOfTestsRun()."\n");
+        fwrite(STDERR, "numberOfAssertions: ".$testResultSum->numberOfAssertions()."\n");
+        fwrite(STDERR, "hasErrors: ".var_export($testResultSum->hasErrors(), true)."\n");
+        $__listedFiles = [];
+        foreach ($this->testResultFiles as $__f) {
+            $__listedFiles[] = $__f->getPathname().'('.(file_exists($__f->getPathname()) ? filesize($__f->getPathname()) : 'missing').')';
+        }
+        fwrite(STDERR, "testResultFiles: ".implode(', ', $__listedFiles)."\n");
 
 CODE;
 
