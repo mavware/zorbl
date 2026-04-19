@@ -10,6 +10,9 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [ ] Tagging system for puzzles
 - [ ] Ability to search for a puzzle by tag
 - [ ] Ability to select tags that you never want to see puzzles associated with
+- [ ] Ability to sign in with a passkey
+- [ ] Ability to sign in with google
+- [ ] Brainstorm ways to generate engaging puzzles with AI
 
 ## Done
 
