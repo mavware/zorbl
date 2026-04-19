@@ -37,9 +37,7 @@ class FavoriteListController extends Controller
 
     public function destroy(Request $request, FavoriteList $favoriteList): JsonResponse
     {
-        if ($favoriteList->user_id !== $request->user()->id) {
-            abort(403, 'You can only delete your own favorite lists.');
-        }
+        $this->authorize('delete', $favoriteList);
 
         $favoriteList->delete();
 
@@ -48,9 +46,7 @@ class FavoriteListController extends Controller
 
     public function addCrossword(Request $request, FavoriteList $favoriteList): JsonResponse
     {
-        if ($favoriteList->user_id !== $request->user()->id) {
-            abort(403, 'You can only modify your own favorite lists.');
-        }
+        $this->authorize('update', $favoriteList);
 
         $request->validate(['crossword' => ['required', 'exists:crosswords,id']]);
 
@@ -61,9 +57,7 @@ class FavoriteListController extends Controller
 
     public function removeCrossword(Request $request, FavoriteList $favoriteList, Crossword $crossword): JsonResponse
     {
-        if ($favoriteList->user_id !== $request->user()->id) {
-            abort(403, 'You can only modify your own favorite lists.');
-        }
+        $this->authorize('update', $favoriteList);
 
         $favoriteList->crosswords()->detach($crossword->id);
 
