@@ -54,6 +54,26 @@ fwrite(STDERR, "\n=== PEST DEBUG (wrapper) ===\n");
             $__listedFiles[] = $__f->getPathname().'('.(file_exists($__f->getPathname()) ? filesize($__f->getPathname()) : 'missing').')';
         }
         fwrite(STDERR, "testResultFiles: ".implode(', ', $__listedFiles)."\n");
+        fwrite(STDERR, "-- per-worker test results --\n");
+        foreach ($this->testResultFiles as $__f) {
+            if (! $__f->isFile()) {
+                fwrite(STDERR, "  ".$__f->getPathname().": MISSING\n");
+                continue;
+            }
+            $__raw = file_get_contents($__f->getPathname());
+            $__prev = set_error_handler(function () { return true; });
+            try {
+                $__tr = unserialize($__raw);
+            } catch (\Throwable $__e) {
+                $__tr = null;
+            }
+            restore_error_handler();
+            if (! ($__tr instanceof \PHPUnit\TestRunner\TestResult\TestResult)) {
+                fwrite(STDERR, "  ".$__f->getPathname().": UNSERIALIZE FAILED (type=".gettype($__tr).")\n");
+                continue;
+            }
+            fwrite(STDERR, "  ".basename($__f->getPathname()).": hasTests=".var_export($__tr->hasTests(), true).", numberOfTestsRun=".$__tr->numberOfTestsRun().", assertions=".$__tr->numberOfAssertions()."\n");
+        }
 
 CODE;
 
