@@ -79,6 +79,7 @@ test('admin can edit ticket and see form populated', function () {
         'subject' => 'Something broke',
         'category' => 'bug_report',
         'priority' => 'high',
+        'assigned_to' => $this->admin->id,
     ]);
 
     Livewire::test(EditSupportTicket::class, ['record' => $ticket->id])
@@ -91,7 +92,7 @@ test('admin can edit ticket and see form populated', function () {
 });
 
 test('closing a ticket stamps closed_at', function () {
-    $ticket = SupportTicket::factory()->open()->create();
+    $ticket = SupportTicket::factory()->open()->create(['assigned_to' => $this->admin->id]);
 
     Livewire::test(EditSupportTicket::class, ['record' => $ticket->id])
         ->fillForm(['status' => 'closed'])
@@ -102,7 +103,7 @@ test('closing a ticket stamps closed_at', function () {
 });
 
 test('reopening a closed ticket clears closed_at', function () {
-    $ticket = SupportTicket::factory()->closed()->create();
+    $ticket = SupportTicket::factory()->closed()->create(['assigned_to' => $this->admin->id]);
     expect($ticket->closed_at)->not->toBeNull();
 
     Livewire::test(EditSupportTicket::class, ['record' => $ticket->id])
@@ -116,7 +117,7 @@ test('reopening a closed ticket clears closed_at', function () {
 });
 
 test('resolving a ticket does not set closed_at', function () {
-    $ticket = SupportTicket::factory()->open()->create();
+    $ticket = SupportTicket::factory()->open()->create(['assigned_to' => $this->admin->id]);
 
     Livewire::test(EditSupportTicket::class, ['record' => $ticket->id])
         ->fillForm(['status' => 'resolved'])
@@ -129,7 +130,7 @@ test('resolving a ticket does not set closed_at', function () {
 });
 
 test('edit form requires status', function () {
-    $ticket = SupportTicket::factory()->create();
+    $ticket = SupportTicket::factory()->create(['assigned_to' => $this->admin->id]);
 
     Livewire::test(EditSupportTicket::class, ['record' => $ticket->id])
         ->fillForm(['status' => null])
@@ -138,7 +139,7 @@ test('edit form requires status', function () {
 });
 
 test('edit form requires category', function () {
-    $ticket = SupportTicket::factory()->create();
+    $ticket = SupportTicket::factory()->create(['assigned_to' => $this->admin->id]);
 
     Livewire::test(EditSupportTicket::class, ['record' => $ticket->id])
         ->fillForm(['category' => null])
@@ -147,7 +148,7 @@ test('edit form requires category', function () {
 });
 
 test('edit form requires priority', function () {
-    $ticket = SupportTicket::factory()->create();
+    $ticket = SupportTicket::factory()->create(['assigned_to' => $this->admin->id]);
 
     Livewire::test(EditSupportTicket::class, ['record' => $ticket->id])
         ->fillForm(['priority' => null])
@@ -156,7 +157,7 @@ test('edit form requires priority', function () {
 });
 
 test('admin can delete a ticket', function () {
-    $ticket = SupportTicket::factory()->create();
+    $ticket = SupportTicket::factory()->create(['assigned_to' => $this->admin->id]);
 
     Livewire::test(EditSupportTicket::class, ['record' => $ticket->id])
         ->callAction(DeleteAction::class)
