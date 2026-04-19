@@ -17,6 +17,9 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [ ] Brainstorm ways to generate engaging puzzles with AI
 - [ ] Add Livewire component tests for settings, favorites, roadmap, and support pages
 - [ ] Enable Model::preventLazyLoading() in AppServiceProvider for non-production environments
+- [ ] Add SupportTicketPolicy (users should only view/update their own tickets, admins can see assigned)
+- [ ] Add PuzzleAttemptPolicy (users should only access their own attempts)
+- [ ] Audit Livewire page components for authorization — ensure they use policies instead of inline ownership checks
 
 ## Done
 
