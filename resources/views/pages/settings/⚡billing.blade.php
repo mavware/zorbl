@@ -186,8 +186,8 @@ new #[Title('Billing')] class extends Component {
 
                     <div class="mb-4 flex items-center gap-3">
                         <flux:radio.group wire:model="billingInterval" variant="segmented">
-                            <flux:radio value="monthly" label="{{ __('Monthly — $8/mo') }}" />
-                            <flux:radio value="yearly" label="{{ __('Yearly — $6/mo') }}" />
+                            <flux:radio value="monthly" label="{{ __('Monthly — $5/mo') }}" />
+                            <flux:radio value="yearly" label="{{ __('Yearly — $2/mo') }}" />
                         </flux:radio.group>
                     </div>
 

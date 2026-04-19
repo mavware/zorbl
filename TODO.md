@@ -20,6 +20,8 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [ ] Add SupportTicketPolicy (users should only view/update their own tickets, admins can see assigned)
 - [ ] Add PuzzleAttemptPolicy (users should only access their own attempts)
 - [ ] Audit Livewire page components for authorization — ensure they use policies instead of inline ownership checks
+- [ ] Let users set up webhooks for their puzzles for common events like puzzle completion or puzzle attempt submission, etc...
+- [ ] If the user is not a paid user, the AI fill and AI clue generation should prompt them to upgrade to a paid account
 
 ## Done
 

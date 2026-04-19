@@ -22,9 +22,11 @@
             <flux:menu.item :href="route('profile.edit')" icon="cog" wire:navigate>
                 {{ __('Settings') }}
             </flux:menu.item>
+            @if (auth()->user()->hasRole('Admin'))
             <flux:menu.item :href="route('filament.admin.pages.dashboard')" icon="star" wire:navigate>
                 {{ __('Admin') }}
             </flux:menu.item>
+            @endif
             <form method="POST" action="{{ route('logout') }}" class="w-full">
                 @csrf
                 <flux:menu.item

@@ -551,7 +551,7 @@ class extends Component {
                             </svg>
                             {{ __('Quick Fill') }}
                         </div>
-                        <span class="text-xs text-zinc-400">{{ __('Dictionary-based') }}</span>
+                        <span class="text-xs text-zinc-400 mx-3">{{ __('Dictionary-based') }}</span>
                     </flux:menu.item>
                     <flux:menu.item x-on:click="aiFill()" x-bind:disabled="fillInProgress" :class="! Auth::user()->isPro() ? 'opacity-60' : ''">
                         <div class="flex items-center gap-2">
@@ -563,7 +563,7 @@ class extends Component {
                                 <flux:badge color="purple" size="sm">{{ __('Pro') }}</flux:badge>
                             @endunless
                         </div>
-                        <span class="text-xs text-zinc-400">{{ __('Thematic, Claude-powered') }}</span>
+                        <span class="text-xs text-zinc-400 mx-3">{{ __('Thematic, Claude-powered') }}</span>
                     </flux:menu.item>
                     <flux:separator />
                     <flux:menu.item x-on:click="aiGenerateClues()" x-bind:disabled="fillInProgress || hasUnfilledSlots" :class="! Auth::user()->isPro() ? 'opacity-60' : ''">
@@ -576,7 +576,7 @@ class extends Component {
                                 <flux:badge color="blue" size="sm">{{ __('Pro') }}</flux:badge>
                             @endunless
                         </div>
-                        <span class="text-xs text-zinc-400">{{ __('Write clues with AI') }}</span>
+                        <div class="text-xs text-zinc-400 mx-3">{{ __('Write clues with AI') }}</div>
                     </flux:menu.item>
                 </flux:menu>
             </flux:dropdown>
