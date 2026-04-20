@@ -405,3 +405,72 @@ test('every CrosswordLayout case has a renderable partial', function (CrosswordL
     Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
         ->assertSet('layout', $case);
 })->with(CrosswordLayout::cases());
+
+test('layout picker renders exactly one SVG preview card per CrosswordLayout case', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create(['layout' => null]);
+
+    $this->actingAs($user);
+
+    $html = Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])->html();
+
+    $expected = count(CrosswordLayout::cases());
+    expect(substr_count($html, '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 24"'))->toBe($expected);
+
+    foreach (CrosswordLayout::cases() as $case) {
+        expect($html)->toContain($case->label());
+    }
+
+    // No "Auto" card anymore — the width-based default is the selected case.
+    expect($html)->not->toContain('>Auto<');
+});
+
+test('when no layout is set, the width-based auto default card is marked pressed', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create([
+        'width' => 15,
+        'height' => 15,
+        'layout' => null,
+    ]);
+
+    $this->actingAs($user);
+
+    $html = Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])->html();
+
+    // Exactly one card is pressed, and it's the auto-resolved default for this grid width.
+    expect(substr_count($html, 'aria-pressed="true"'))->toBe(1)
+        ->and(CrosswordLayout::auto(15))->toBe(CrosswordLayout::AcrossLeftDownRight)
+        ->and($html)->toContain(sprintf(
+            'wire:click="$set(\'layout\', %d)"',
+            CrosswordLayout::AcrossLeftDownRight->value,
+        ));
+});
+
+test('wide grids with no layout set mark the stacked default card pressed', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create([
+        'width' => 21,
+        'height' => 21,
+        'layout' => null,
+    ]);
+
+    $this->actingAs($user);
+
+    $html = Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])->html();
+
+    expect(substr_count($html, 'aria-pressed="true"'))->toBe(1)
+        ->and(CrosswordLayout::auto(21))->toBe(CrosswordLayout::CluesRight);
+});
+
+test('the selected layout card is marked pressed and the others are not', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create([
+        'layout' => CrosswordLayout::CluesBottom,
+    ]);
+
+    $this->actingAs($user);
+
+    $html = Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])->html();
+
+    expect(substr_count($html, 'aria-pressed="true"'))->toBe(1);
+});
