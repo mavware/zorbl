@@ -17,7 +17,6 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
         isDirty: false,
         saving: false,
         showSaved: false,
-        mobileClueTab: 'across',
         clueSuggestions: [],
         clueSuggestionsLoading: false,
         clueSuggestionsWord: '',
@@ -1418,6 +1417,9 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
                     message: result.message,
                     type: result.success ? 'success' : 'warning',
                 });
+                if (result.needs_theme) {
+                    this.$wire.set('showSettingsModal', true);
+                }
             } catch (e) {
                 this.$dispatch('notify', {
                     message: 'AI fill failed: ' + (e.message || 'Unknown error'),

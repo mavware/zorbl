@@ -10,6 +10,27 @@ use Illuminate\Support\Facades\Http;
 use Laravel\Cashier\Subscription;
 use Zorbl\CrosswordIO\GridNumberer;
 
+function seedExtraThreeLetterWords(): void
+{
+    $words = [
+        'BAT', 'RAT', 'HAT', 'MAT', 'FAT', 'SAT',
+        'OAR', 'EAR', 'ERA', 'ARE', 'BAR', 'CAR',
+        'BEE', 'RED', 'ODE', 'BOA', 'ERE', 'ORE',
+        'ABC', 'ETA', 'ACT', 'OPT', 'APT', 'OUT',
+    ];
+    $rows = [];
+    foreach ($words as $i => $w) {
+        $rows[] = [
+            'word' => $w,
+            'length' => 3,
+            'score' => 60 - $i,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ];
+    }
+    Word::insert($rows);
+}
+
 function createProUserForAutofill(): User
 {
     $user = User::factory()->create(['stripe_id' => 'cus_test_'.uniqid()]);
@@ -23,6 +44,7 @@ function createProUserForAutofill(): User
 
     return $user;
 }
+use App\Services\WordSuggester;
 use Livewire\Livewire;
 
 beforeEach(function () {
@@ -109,17 +131,19 @@ test('non-owner cannot use heuristic fill', function () {
         ->assertForbidden();
 });
 
-test('ai fill calls anthropic api', function () {
+test('ai fill generates heuristic candidates and asks AI to pick one', function () {
+    // Extra words so seeded heuristic runs produce distinct fills, triggering the AI picker.
+    seedExtraThreeLetterWords();
     config(['services.anthropic.key' => 'test-key']);
 
     Http::fake([
         'api.anthropic.com/*' => Http::response([
-            'content' => [
-                [
-                    'type' => 'text',
-                    'text' => '[{"direction":"across","number":1,"word":"CAT"},{"direction":"down","number":1,"word":"COT"}]',
-                ],
-            ],
+            'content' => [[
+                'type' => 'tool_use',
+                'id' => 'toolu_pick',
+                'name' => 'submit_choice',
+                'input' => ['choice' => 1, 'reasoning' => 'Most cluable words.'],
+            ]],
         ]),
     ]);
 
@@ -134,7 +158,10 @@ test('ai fill calls anthropic api', function () {
         ->assertNoRedirect();
 
     Http::assertSent(function ($request) {
-        return str_contains($request->url(), 'api.anthropic.com');
+        $tool = $request['tools'][0] ?? null;
+
+        return str_contains($request->url(), 'api.anthropic.com')
+            && ($tool['name'] ?? '') === 'submit_choice';
     });
 });
 
@@ -273,22 +300,138 @@ test('computeIntersections finds crossings in a 3x3 open grid', function () {
         ->and($hasFourAcrossAtTwoDown)->toBeTrue();
 });
 
-test('ai fill sends candidates and intersections in the request body', function () {
+test('ai fill tool schema uses per-slot enums from candidate lists', function () {
     config(['services.anthropic.key' => 'test-key']);
 
     Http::fake([
         'api.anthropic.com/*' => Http::response([
             'content' => [[
                 'type' => 'tool_use',
-                'id' => 'toolu_x',
+                'id' => 'toolu_e',
                 'name' => 'submit_fills',
-                'input' => ['fills' => []],
+                'input' => ['across_1' => 'CAT'],
+            ]],
+        ]),
+    ]);
+
+    $filler = app(AiGridFiller::class);
+    $result = $filler->fill(
+        [[
+            'direction' => 'across',
+            'number' => 1,
+            'length' => 3,
+            'pattern' => '___',
+            'candidates' => ['CAT', 'COT', 'CUT'],
+        ]],
+        [],
+    );
+
+    expect($result['success'])->toBeTrue()
+        ->and($result['fills'][0]['word'])->toBe('CAT');
+
+    Http::assertSent(function ($request) {
+        $tool = $request['tools'][0] ?? null;
+        $props = $tool['input_schema']['properties'] ?? [];
+        $enum = $props['across_1']['enum'] ?? null;
+
+        return $tool['name'] === 'submit_fills'
+            && $enum === ['CAT', 'COT', 'CUT']
+            && in_array('across_1', $tool['input_schema']['required'] ?? [], true);
+    });
+});
+
+test('ai fill rejects a word that duplicates one already in the grid', function () {
+    config(['services.anthropic.key' => 'test-key']);
+
+    Http::fake([
+        'api.anthropic.com/*' => Http::response([
+            'content' => [[
+                'type' => 'tool_use',
+                'id' => 'toolu_dup',
+                'name' => 'submit_fills',
+                'input' => ['across_1' => 'CAT'],
+            ]],
+        ]),
+    ]);
+
+    $filler = app(AiGridFiller::class);
+    $result = $filler->fill(
+        [['direction' => 'across', 'number' => 1, 'length' => 3, 'pattern' => '___', 'candidates' => ['CAT']]],
+        [['direction' => 'down', 'number' => 2, 'word' => 'CAT']],
+    );
+
+    expect($result['fills'])->toBeEmpty()
+        ->and($result['success'])->toBeFalse();
+});
+
+test('ai fill rejects a word duplicated across AI-generated slots', function () {
+    config(['services.anthropic.key' => 'test-key']);
+
+    Http::fake([
+        'api.anthropic.com/*' => Http::response([
+            'content' => [[
+                'type' => 'tool_use',
+                'id' => 'toolu_dup2',
+                'name' => 'submit_fills',
+                'input' => [
+                    'across_1' => 'SET',
+                    'across_2' => 'SET',
+                ],
+            ]],
+        ]),
+    ]);
+
+    Word::insert([
+        ['word' => 'SET', 'length' => 3, 'score' => 73.0, 'created_at' => now(), 'updated_at' => now()],
+    ]);
+
+    $filler = app(AiGridFiller::class);
+    $result = $filler->fill(
+        [
+            ['direction' => 'across', 'number' => 1, 'length' => 3, 'pattern' => '___', 'candidates' => ['SET']],
+            ['direction' => 'across', 'number' => 2, 'length' => 3, 'pattern' => '___', 'candidates' => ['SET']],
+        ],
+        [],
+    );
+
+    expect($result['fills'])->toHaveCount(1)
+        ->and($result['fills'][0]['word'])->toBe('SET');
+});
+
+test('WordSuggester minScore filters out low-scoring candidates', function () {
+    Word::insert([
+        ['word' => 'LOW', 'length' => 3, 'score' => 10.0, 'created_at' => now(), 'updated_at' => now()],
+        ['word' => 'MID', 'length' => 3, 'score' => 50.0, 'created_at' => now(), 'updated_at' => now()],
+    ]);
+
+    $suggester = app(WordSuggester::class);
+
+    $unfiltered = array_column($suggester->suggest('___', 3, 100), 'word');
+    $filtered = array_column($suggester->suggest('___', 3, 100, minScore: 25), 'word');
+
+    expect($unfiltered)->toContain('LOW')
+        ->and($filtered)->not->toContain('LOW')
+        ->and($filtered)->toContain('MID');
+});
+
+test('ai fill picker receives numbered candidate fills and theme', function () {
+    seedExtraThreeLetterWords();
+    config(['services.anthropic.key' => 'test-key']);
+
+    Http::fake([
+        'api.anthropic.com/*' => Http::response([
+            'content' => [[
+                'type' => 'tool_use',
+                'id' => 'toolu_pick2',
+                'name' => 'submit_choice',
+                'input' => ['choice' => 1, 'reasoning' => 'Best on theme.'],
             ]],
         ]),
     ]);
 
     $user = createProUserForAutofill();
     $crossword = makeSmallCrossword($user);
+    $crossword->update(['title' => 'Feline Friends', 'notes' => 'Words related to cats']);
 
     $solution = [['', '', ''], ['', '', ''], ['', '', '']];
 
@@ -297,15 +440,90 @@ test('ai fill sends candidates and intersections in the request body', function 
         ->call('aiFill', $solution);
 
     Http::assertSent(function ($request) {
-        $body = $request->body();
         $userContent = $request['messages'][0]['content'] ?? '';
+        $tool = $request['tools'][0] ?? null;
 
-        return str_contains($userContent, 'Intersections')
-            && str_contains($userContent, 'position')
-            && str_contains($userContent, 'choose one of [')
-            && isset($request['tools'])
-            && isset($request['tool_choice']);
+        return str_contains($userContent, 'Puzzle title: Feline Friends')
+            && str_contains($userContent, 'Candidate #1:')
+            && str_contains($userContent, 'Candidate #2:')
+            && ($tool['name'] ?? '') === 'submit_choice'
+            && ($tool['input_schema']['properties']['choice']['type'] ?? '') === 'integer';
     });
+});
+
+test('ai fill refuses to run when title and secret theme are both empty', function () {
+    Http::fake();
+    config(['services.anthropic.key' => 'test-key']);
+
+    $user = createProUserForAutofill();
+    $crossword = makeSmallCrossword($user);
+    $crossword->update(['title' => '', 'notes' => 'some notes', 'secret_theme' => null]);
+
+    $solution = [['', '', ''], ['', '', ''], ['', '', '']];
+
+    Livewire::actingAs($user)
+        ->test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->call('aiFill', $solution);
+
+    Http::assertNothingSent();
+});
+
+test('ai fill forwards the secret theme to the picker', function () {
+    seedExtraThreeLetterWords();
+    config(['services.anthropic.key' => 'test-key']);
+
+    Http::fake([
+        'api.anthropic.com/*' => Http::response([
+            'content' => [[
+                'type' => 'tool_use',
+                'id' => 'toolu_secret',
+                'name' => 'submit_choice',
+                'input' => ['choice' => 1, 'reasoning' => 'Best fit.'],
+            ]],
+        ]),
+    ]);
+
+    $user = createProUserForAutofill();
+    $crossword = makeSmallCrossword($user);
+    $crossword->update([
+        'title' => 'Public Title',
+        'notes' => 'Public notes',
+        'secret_theme' => 'Hidden: words about cats',
+    ]);
+
+    $solution = [['', '', ''], ['', '', ''], ['', '', '']];
+
+    Livewire::actingAs($user)
+        ->test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->call('aiFill', $solution);
+
+    Http::assertSent(function ($request) {
+        $content = $request['messages'][0]['content'] ?? '';
+
+        return str_contains($content, 'Secret theme (highest priority): Hidden: words about cats')
+            && str_contains($content, 'Puzzle title: Public Title')
+            && str_contains($content, 'Puzzle notes: Public notes');
+    });
+});
+
+test('saveMetadata persists and clears the secret theme', function () {
+    $user = User::factory()->create();
+    $crossword = makeSmallCrossword($user);
+
+    $component = Livewire::actingAs($user)
+        ->test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->set('secretTheme', 'Secret Beatles references')
+        ->call('saveMetadata');
+
+    $component->assertSet('secretTheme', 'Secret Beatles references');
+    expect($crossword->fresh()->secret_theme)->toBe('Secret Beatles references');
+
+    Livewire::actingAs($user)
+        ->test('pages::crosswords.editor', ['crossword' => $crossword->fresh()])
+        ->set('secretTheme', '')
+        ->call('saveMetadata');
+
+    expect($crossword->fresh()->secret_theme)->toBeNull();
 });
 
 test('ai generate clues calls anthropic api', function () {
