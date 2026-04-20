@@ -90,7 +90,8 @@
       "Bash(awk '/Grid --\\\\}\\\\}/,/Mobile clue panels --\\\\}\\\\}/' resources/views/pages/crosswords/*editor.blade.php)",
       "Bash(sed -n '747,969p' \"resources/views/pages/crosswords/⚡editor.blade.php\")",
       "Read(//tmp/**)",
-      "Bash(awk 'NR==770,/^        {{-- Clues panel/' \"resources/views/pages/crosswords/⚡editor.blade.php\")"
+      "Bash(awk 'NR==770,/^        {{-- Clues panel/' \"resources/views/pages/crosswords/⚡editor.blade.php\")",
+      "Bash(composer show *)"
     ]
   },
   "enableAllProjectMcpServers": true,

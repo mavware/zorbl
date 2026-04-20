@@ -35,3 +35,13 @@ test('layout accepts the raw enum integer value via mass assignment', function (
 
     expect($crossword->fresh()->layout)->toBe(CrosswordLayout::CluesRight);
 });
+
+test('ordered() contains every CrosswordLayout case exactly once', function () {
+    $orderedValues = array_map(fn ($c) => $c->value, CrosswordLayout::ordered());
+    $caseValues = array_map(fn ($c) => $c->value, CrosswordLayout::cases());
+
+    sort($orderedValues);
+    sort($caseValues);
+
+    expect($orderedValues)->toBe($caseValues);
+});

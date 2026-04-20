@@ -2,18 +2,18 @@
         <div class="lg:hidden">
             <div class="flex border-b border-zinc-200 dark:border-zinc-700">
                 <button
-                    x-on:click="mobileClueTab = 'across'"
-                    :class="mobileClueTab === 'across' ? 'border-zinc-800 text-zinc-900 dark:border-zinc-200 dark:text-zinc-100' : 'border-transparent text-zinc-500'"
+                    x-on:click="direction = 'across'"
+                    :class="direction === 'across' ? 'border-zinc-800 text-zinc-900 dark:border-zinc-200 dark:text-zinc-100' : 'border-transparent text-zinc-500'"
                     class="border-b-2 px-4 py-2 text-sm font-medium"
                 >{{ __('Across') }}</button>
                 <button
-                    x-on:click="mobileClueTab = 'down'"
-                    :class="mobileClueTab === 'down' ? 'border-zinc-800 text-zinc-900 dark:border-zinc-200 dark:text-zinc-100' : 'border-transparent text-zinc-500'"
+                    x-on:click="direction = 'down'"
+                    :class="direction === 'down' ? 'border-zinc-800 text-zinc-900 dark:border-zinc-200 dark:text-zinc-100' : 'border-transparent text-zinc-500'"
                     class="border-b-2 px-4 py-2 text-sm font-medium"
                 >{{ __('Down') }}</button>
             </div>
             <div class="max-h-48 space-y-0.5 overflow-y-auto py-2">
-                <template x-if="mobileClueTab === 'across'">
+                <template x-if="direction === 'across'">
                     <div>
                         <template x-for="clue in computedCluesAcross" :key="'m-across-' + clue.number">
                             <div
@@ -108,7 +108,7 @@
                         </template>
                     </div>
                 </template>
-                <template x-if="mobileClueTab === 'down'">
+                <template x-if="direction === 'down'">
                     <div>
                         <template x-for="clue in computedCluesDown" :key="'m-down-' + clue.number">
                             <div
