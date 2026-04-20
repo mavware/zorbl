@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\UpsertAttemptRequest;
 use App\Http\Resources\Api\V1\PuzzleAttemptResource;
 use App\Models\Crossword;
+use App\Models\PuzzleAttempt;
 use App\Services\AchievementService;
 use App\Services\ContestService;
 use Illuminate\Http\JsonResponse;
@@ -21,6 +22,8 @@ class PuzzleAttemptController extends Controller
 {
     public function index(Request $request): AnonymousResourceCollection
     {
+        Gate::authorize('viewAny', PuzzleAttempt::class);
+
         $attempts = QueryBuilder::for(
             $request->user()->puzzleAttempts()->with('crossword:id,width,height,grid')
         )
@@ -39,6 +42,8 @@ class PuzzleAttemptController extends Controller
             ->with('crossword:id,width,height,grid')
             ->where('crossword_id', $crossword->id)
             ->firstOrFail();
+
+        Gate::authorize('view', $attempt);
 
         return new PuzzleAttemptResource($attempt);
     }
