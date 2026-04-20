@@ -721,8 +721,10 @@ class extends Component {
         </div>
     </div>
 
-    {{-- Each layout partial is chosen by the enum itself; unmapped cases fall through to `auto`. --}}
-    @include($this->layout?->partial() ?? 'partials.layouts.auto')
+    {{-- The enum owns both the explicit mapping and the fallback. If no
+         layout is picked, CrosswordLayout::auto() picks the best-fit case for
+         the current grid width. --}}
+    @include(($this->layout ?? CrosswordLayout::auto($this->width))->partial())
 
     {{-- Publish Warning Modal --}}
     <flux:modal wire:model="showPublishWarning">

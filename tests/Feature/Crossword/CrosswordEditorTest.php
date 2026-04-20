@@ -387,3 +387,21 @@ test('CluesBottom layout renders both clue panels side-by-side beneath the grid'
     // Both directions still present via the shared clue-panel partial.
     expect(strpos($html, '>Across<'))->toBeLessThan(strpos($html, '>Down<'));
 });
+
+test('every CrosswordLayout case has a renderable partial', function (CrosswordLayout $case) {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create([
+        'width' => 15,
+        'height' => 15,
+        'layout' => $case,
+    ]);
+
+    $this->actingAs($user);
+
+    // Resolving the partial name and rendering the editor must not throw.
+    expect($case->partial())->toStartWith('partials.layouts.')
+        ->and(view()->exists($case->partial()))->toBeTrue();
+
+    Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->assertSet('layout', $case);
+})->with(CrosswordLayout::cases());

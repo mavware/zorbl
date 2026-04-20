@@ -35,14 +35,51 @@ enum CrosswordLayout: int
     case SplitGridTopAcrossBottomDown = 61;
 
     /**
-     * The Blade partial that renders this layout. Cases without a dedicated
-     * view fall back to the automatic layout.
+     * The case used when the user hasn't picked a layout. Side-by-side
+     * Across|Grid|Down works well for standard grids; once the grid gets too
+     * wide to afford both 256 px side panels comfortably, we stack the clues
+     * in a single column on the right instead.
+     */
+    public static function auto(int $width): self
+    {
+        return $width > 17 ? self::CluesRight : self::AcrossLeftDownRight;
+    }
+
+    /**
+     * The Blade partial that renders this layout.
      */
     public function partial(): string
     {
         return match ($this) {
+            self::GridCenterCluesStacked => 'partials.layouts.grid-center-clues-stacked',
+            self::GridCenterCluesSideBySide => 'partials.layouts.grid-center-clues-side-by-side',
+
+            self::CluesTop => 'partials.layouts.clues-top',
             self::CluesBottom => 'partials.layouts.clues-bottom',
-            default => 'partials.layouts.auto',
+            self::CluesLeft => 'partials.layouts.clues-left',
+            self::CluesRight => 'partials.layouts.clues-right',
+
+            self::TabbedCluesTop => 'partials.layouts.tabbed-clues-top',
+            self::TabbedCluesBottom => 'partials.layouts.tabbed-clues-bottom',
+            self::TabbedCluesLeft => 'partials.layouts.tabbed-clues-left',
+            self::TabbedCluesRight => 'partials.layouts.tabbed-clues-right',
+
+            self::GridLeftCluesRight => 'partials.layouts.grid-left-clues-right',
+            self::GridRightCluesLeft => 'partials.layouts.grid-right-clues-left',
+            self::GridTopCluesBottom => 'partials.layouts.grid-top-clues-bottom',
+            self::GridBottomCluesTop => 'partials.layouts.grid-bottom-clues-top',
+
+            self::AcrossLeftDownRight => 'partials.layouts.across-left-down-right',
+            self::AcrossRightDownLeft => 'partials.layouts.across-right-down-left',
+            self::AcrossTopDownBottom => 'partials.layouts.across-top-down-bottom',
+
+            self::CluesOverlay => 'partials.layouts.clues-overlay',
+            self::CluesDrawerLeft => 'partials.layouts.clues-drawer-left',
+            self::CluesDrawerRight => 'partials.layouts.clues-drawer-right',
+            self::CluesDrawerBottom => 'partials.layouts.clues-drawer-bottom',
+
+            self::SplitGridLeftAcrossRightDown => 'partials.layouts.split-grid-left-across-right-down',
+            self::SplitGridTopAcrossBottomDown => 'partials.layouts.split-grid-top-across-bottom-down',
         };
     }
 
