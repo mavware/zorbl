@@ -1,8 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" {{ $attributes }}>
-    {{-- Zorbl Z mark --}}
-    <polygon points="52,20 82,20 48,80 18,80" fill="#34A853"/>
-    <rect x="18" y="2" width="30" height="18" rx="3" fill="#4285F4"/>
-    <rect x="52" y="2" width="30" height="18" rx="3" fill="#FBBC05"/>
-    <rect x="18" y="80" width="30" height="18" rx="3" fill="#F4852A"/>
-    <rect x="52" y="80" width="30" height="18" rx="3" fill="#8B5CF6"/>
-</svg>
+<img src="{{ asset('logo.png') }}" alt="{{ config('app.name') }}" {{ $attributes }}>
