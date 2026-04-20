@@ -17,7 +17,6 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
         isDirty: false,
         saving: false,
         showSaved: false,
-        mobileClueTab: 'across',
         clueSuggestions: [],
         clueSuggestionsLoading: false,
         clueSuggestionsWord: '',
