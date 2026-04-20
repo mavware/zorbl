@@ -164,6 +164,18 @@ it('does not re-trigger achievements for already completed puzzles', function ()
         ->and($user->refresh()->current_streak)->toBe(0);
 });
 
+it('returns 404 when viewing another users attempt via show endpoint', function () {
+    $user = User::factory()->create();
+    $other = User::factory()->create();
+    $crossword = Crossword::factory()->published()->create();
+    PuzzleAttempt::factory()->for($other)->for($crossword)->create();
+
+    Sanctum::actingAs($user);
+
+    $this->getJson("/api/v1/crosswords/{$crossword->id}/attempt")
+        ->assertNotFound();
+});
+
 it('syncs contest progress when completing a contest puzzle via API', function () {
     $user = User::factory()->create();
     $crossword = Crossword::factory()->published()->create();
