@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Contests\Tables;
 
+use Filament\Actions\BulkAction;
 use App\Models\Contest;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkAction;
@@ -56,6 +57,11 @@ class ContestsTable
                     ->counts('crosswords')
                     ->label('Puzzles')
                     ->sortable(),
+                TextColumn::make('publish_at')
+                    ->dateTime()
+                    ->sortable()
+                    ->placeholder('—')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 IconColumn::make('is_featured')
                     ->boolean()
                     ->label('Featured'),
@@ -113,6 +119,47 @@ class ContestsTable
                                 ->success()
                                 ->title('Publish date scheduled')
                                 ->body("Scheduled {$drafts->count()} contest(s) for publishing.")
+                                ->send();
+                        })
+                        ->deselectRecordsAfterCompletion(),
+                    BulkAction::make('schedule_publish')
+                        ->label('Schedule Publish')
+                        ->icon('heroicon-o-clock')
+                        ->schema([
+                            DateTimePicker::make('publish_at')
+                                ->label('Scheduled Publish Date')
+                                ->required()
+                                ->minDate(now())
+                                ->helperText('Draft contests will auto-transition to upcoming at this time.'),
+                        ])
+                        ->action(function (Collection $records, array $data): void {
+                            $drafts = $records->where('status', 'draft');
+
+                            if ($drafts->isEmpty()) {
+                                Notification::make()
+                                    ->title('No draft contests selected')
+                                    ->body('Only draft contests can be scheduled for publishing.')
+                                    ->warning()
+                                    ->send();
+
+                                return;
+                            }
+
+                            $drafts->each(fn ($contest) => $contest->update([
+                                'publish_at' => $data['publish_at'],
+                            ]));
+
+                            $count = $drafts->count();
+                            $skipped = $records->count() - $count;
+
+                            $body = $skipped > 0
+                                ? "{$count} draft contest(s) scheduled. {$skipped} non-draft contest(s) skipped."
+                                : "{$count} contest(s) scheduled for publishing.";
+
+                            Notification::make()
+                                ->title('Publish dates scheduled')
+                                ->body($body)
+                                ->success()
                                 ->send();
                         })
                         ->deselectRecordsAfterCompletion(),

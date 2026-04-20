@@ -32,6 +32,8 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [ ] If the user is not a paid user, the AI fill and AI clue generation should prompt them to upgrade to a paid account
 - [ ] Add a "clear publish date" bulk action to complement the schedule publish bulk action
 - [ ] Add Filament tests for ContestResource CRUD operations (currently in tests/Feature/Admin but could be expanded)
+- [ ] Add Livewire component tests for settings/appearance page (theme picker)
+- [ ] Fix Dusk browser tests (PuzzleSolverTest) — all 3 tests fail with "Call to a member function sendText() on null"
 
 ## Done
 
