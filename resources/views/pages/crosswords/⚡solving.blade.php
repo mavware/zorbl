@@ -2,6 +2,7 @@
 
 use App\Models\PuzzleAttempt;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -21,9 +22,7 @@ new #[Title('Solving')] class extends Component {
     {
         $attempt = PuzzleAttempt::findOrFail($attemptId);
 
-        if ($attempt->user_id !== Auth::id()) {
-            abort(403);
-        }
+        Gate::authorize('delete', $attempt);
 
         $attempt->delete();
         unset($this->attempts);

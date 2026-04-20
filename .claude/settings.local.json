@@ -85,7 +85,13 @@
       "Bash(npm install *)",
       "Bash(./vendor/bin/pest --version)",
       "Bash(./vendor/bin/pest --parallel --shard=1/3 --testsuite=Unit)",
-      "Bash(./vendor/bin/pest --parallel --shard=1/3 --testsuite=Unit,Feature)"
+      "Bash(./vendor/bin/pest --parallel --shard=1/3 --testsuite=Unit,Feature)",
+      "Bash(git diff *)",
+      "Bash(awk '/Grid --\\\\}\\\\}/,/Mobile clue panels --\\\\}\\\\}/' resources/views/pages/crosswords/*editor.blade.php)",
+      "Bash(sed -n '747,969p' \"resources/views/pages/crosswords/⚡editor.blade.php\")",
+      "Read(//tmp/**)",
+      "Bash(awk 'NR==770,/^        {{-- Clues panel/' \"resources/views/pages/crosswords/⚡editor.blade.php\")",
+      "Bash(composer show *)"
     ]
   },
   "enableAllProjectMcpServers": true,
