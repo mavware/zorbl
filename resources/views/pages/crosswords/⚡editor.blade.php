@@ -301,13 +301,29 @@ class extends Component {
         $numberer = app(GridNumberer::class);
         $numbered = $numberer->number($this->grid, $this->width, $this->height, $this->styles ?? [], $this->minAnswerLength);
 
+        $suggester = app(WordSuggester::class);
+
         $slots = [];
         $filledWords = [];
+        $geometrySlots = [];
 
         foreach (['across', 'down'] as $dir) {
             foreach ($numbered[$dir] as $slot) {
                 $pattern = GridFiller::getPattern($solution, $slot, $dir);
+                $geometrySlots[] = [
+                    'direction' => $dir,
+                    'number' => $slot['number'],
+                    'row' => $slot['row'],
+                    'col' => $slot['col'],
+                    'length' => $slot['length'],
+                ];
+
                 if (str_contains($pattern, '_')) {
+                    $candidates = array_map(
+                        fn (array $s) => $s['word'],
+                        $suggester->suggest($pattern, $slot['length'], 40),
+                    );
+
                     $slots[] = [
                         'direction' => $dir,
                         'number' => $slot['number'],
@@ -315,6 +331,7 @@ class extends Component {
                         'pattern' => $pattern,
                         'row' => $slot['row'],
                         'col' => $slot['col'],
+                        'candidates' => $candidates,
                     ];
                 } else {
                     $filledWords[] = [
@@ -326,7 +343,9 @@ class extends Component {
             }
         }
 
-        $result = app(AiGridFiller::class)->fill($slots, $filledWords, $this->title, $this->notes);
+        $intersections = AiGridFiller::computeIntersections($geometrySlots);
+
+        $result = app(AiGridFiller::class)->fill($slots, $filledWords, $intersections, $this->title, $this->notes);
 
         if ($result['success'] || ! empty($result['fills'])) {
             $tracker->record($user, 'grid_fill');

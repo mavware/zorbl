@@ -179,6 +179,135 @@ test('ai fill service validates response against patterns', function () {
         ->and($result['fills'][0]['word'])->toBe('CAT');
 });
 
+test('ai fill service rejects words not in the dictionary', function () {
+    config(['services.anthropic.key' => 'test-key']);
+
+    // Mock a tool_use response containing a pattern-matching but nonexistent word.
+    Http::fake([
+        'api.anthropic.com/*' => Http::response([
+            'content' => [
+                [
+                    'type' => 'tool_use',
+                    'id' => 'toolu_test',
+                    'name' => 'submit_fills',
+                    'input' => [
+                        'fills' => [
+                            ['direction' => 'across', 'number' => 1, 'word' => 'RCLET'],
+                        ],
+                    ],
+                ],
+            ],
+        ]),
+    ]);
+
+    $filler = app(AiGridFiller::class);
+    $result = $filler->fill(
+        [['direction' => 'across', 'number' => 1, 'length' => 5, 'pattern' => '_____']],
+        [],
+    );
+
+    expect($result['fills'])->toBeEmpty()
+        ->and($result['success'])->toBeFalse();
+});
+
+test('ai fill service accepts a dictionary word via tool-use', function () {
+    config(['services.anthropic.key' => 'test-key']);
+
+    Http::fake([
+        'api.anthropic.com/*' => Http::response([
+            'content' => [
+                [
+                    'type' => 'tool_use',
+                    'id' => 'toolu_ok',
+                    'name' => 'submit_fills',
+                    'input' => [
+                        'fills' => [
+                            ['direction' => 'across', 'number' => 1, 'word' => 'CAT'],
+                        ],
+                    ],
+                ],
+            ],
+        ]),
+    ]);
+
+    $filler = app(AiGridFiller::class);
+    $result = $filler->fill(
+        [['direction' => 'across', 'number' => 1, 'length' => 3, 'pattern' => '___']],
+        [],
+    );
+
+    expect($result['success'])->toBeTrue()
+        ->and($result['fills'])->toHaveCount(1)
+        ->and($result['fills'][0]['word'])->toBe('CAT');
+});
+
+test('computeIntersections finds crossings in a 3x3 open grid', function () {
+    $slots = [
+        ['direction' => 'across', 'number' => 1, 'row' => 0, 'col' => 0, 'length' => 3],
+        ['direction' => 'across', 'number' => 4, 'row' => 1, 'col' => 0, 'length' => 3],
+        ['direction' => 'across', 'number' => 5, 'row' => 2, 'col' => 0, 'length' => 3],
+        ['direction' => 'down', 'number' => 1, 'row' => 0, 'col' => 0, 'length' => 3],
+        ['direction' => 'down', 'number' => 2, 'row' => 0, 'col' => 1, 'length' => 3],
+        ['direction' => 'down', 'number' => 3, 'row' => 0, 'col' => 2, 'length' => 3],
+    ];
+
+    $intersections = AiGridFiller::computeIntersections($slots);
+
+    expect($intersections)->toHaveCount(9);
+
+    $hasOneAcrossAtOneDown = collect($intersections)->contains(
+        fn ($ix) => $ix['across_number'] === 1
+            && $ix['down_number'] === 1
+            && $ix['across_pos'] === 1
+            && $ix['down_pos'] === 1,
+    );
+
+    $hasFourAcrossAtTwoDown = collect($intersections)->contains(
+        fn ($ix) => $ix['across_number'] === 4
+            && $ix['down_number'] === 2
+            && $ix['across_pos'] === 2
+            && $ix['down_pos'] === 2,
+    );
+
+    expect($hasOneAcrossAtOneDown)->toBeTrue()
+        ->and($hasFourAcrossAtTwoDown)->toBeTrue();
+});
+
+test('ai fill sends candidates and intersections in the request body', function () {
+    config(['services.anthropic.key' => 'test-key']);
+
+    Http::fake([
+        'api.anthropic.com/*' => Http::response([
+            'content' => [[
+                'type' => 'tool_use',
+                'id' => 'toolu_x',
+                'name' => 'submit_fills',
+                'input' => ['fills' => []],
+            ]],
+        ]),
+    ]);
+
+    $user = createProUserForAutofill();
+    $crossword = makeSmallCrossword($user);
+
+    $solution = [['', '', ''], ['', '', ''], ['', '', '']];
+
+    Livewire::actingAs($user)
+        ->test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->call('aiFill', $solution);
+
+    Http::assertSent(function ($request) {
+        $body = $request->body();
+        $userContent = $request['messages'][0]['content'] ?? '';
+
+        return str_contains($userContent, 'Intersections')
+            && str_contains($userContent, 'position')
+            && str_contains($userContent, 'choose one of [')
+            && isset($request['tools'])
+            && isset($request['tool_choice']);
+    });
+});
+
 test('ai generate clues calls anthropic api', function () {
     config(['services.anthropic.key' => 'test-key']);
 
