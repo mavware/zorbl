@@ -828,13 +828,28 @@ class extends Component {
 
             <flux:field>
                 <flux:label>{{ __('Layout') }}</flux:label>
-                <flux:select wire:model="layout">
-                    <flux:select.option value="">{{ __('Auto (based on grid size)') }}</flux:select.option>
-                    @foreach (CrosswordLayout::cases() as $case)
-                        <flux:select.option :value="$case->value">{{ $case->label() }}</flux:select.option>
-                    @endforeach
-                </flux:select>
                 <flux:description>{{ __('How the grid and clues are arranged on screen.') }}</flux:description>
+                @php $selectedLayout = $this->layout ?? CrosswordLayout::auto($this->width); @endphp
+                <div class="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-5">
+                    @foreach (CrosswordLayout::ordered() as $case)
+                        <button
+                            type="button"
+                            wire:click="$set('layout', {{ $case->value }})"
+                            @class([
+                                'group flex flex-col items-center gap-1.5 rounded-lg border p-2 text-left transition-colors',
+                                'border-blue-500 bg-blue-50 ring-1 ring-blue-500 dark:border-blue-400 dark:bg-blue-950/40 dark:ring-blue-400' => $selectedLayout === $case,
+                                'border-zinc-200 hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:border-zinc-500 dark:hover:bg-zinc-800' => $selectedLayout !== $case,
+                            ])
+                            aria-pressed="{{ $selectedLayout === $case ? 'true' : 'false' }}"
+                            title="{{ $case->label() }}"
+                        >
+                            <div class="w-full overflow-hidden rounded">
+                                @include('partials.layout-icon', ['case' => $case])
+                            </div>
+                            <span class="line-clamp-2 text-center text-[10px] leading-tight text-zinc-600 dark:text-zinc-400">{{ $case->label() }}</span>
+                        </button>
+                    @endforeach
+                </div>
                 <flux:error name="layout"/>
             </flux:field>
 

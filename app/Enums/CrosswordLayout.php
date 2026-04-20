@@ -2,25 +2,24 @@
 
 namespace App\Enums;
 
+use Illuminate\Contracts\View\View;
+
 enum CrosswordLayout: int
 {
-    case GridCenterCluesStacked = 1;
-    case GridCenterCluesSideBySide = 2;
-
     case CluesTop = 10;
     case CluesBottom = 11;
     case CluesLeft = 12;
     case CluesRight = 13;
+
+    case CluesLeftSideBySide = 14;
+    case CluesRightSideBySide = 15;
 
     case TabbedCluesTop = 20;
     case TabbedCluesBottom = 21;
     case TabbedCluesLeft = 22;
     case TabbedCluesRight = 23;
 
-    case GridLeftCluesRight = 30;
-    case GridRightCluesLeft = 31;
-    case GridTopCluesBottom = 32;
-    case GridBottomCluesTop = 33;
+    case GridCenterCluesStacked = 24;
 
     case AcrossLeftDownRight = 40;
     case AcrossRightDownLeft = 41;
@@ -33,6 +32,55 @@ enum CrosswordLayout: int
 
     case SplitGridLeftAcrossRightDown = 60;
     case SplitGridTopAcrossBottomDown = 61;
+
+    /**
+     * Cases in the order they should appear in user-facing pickers. Edit this
+     * list to reorder or group layouts in the UI without touching the `case`
+     * declarations (which set the persisted integer values).
+     *
+     * Every case must be listed here exactly once; the order-completeness
+     * invariant is enforced by a test.
+     *
+     * @return list<self>
+     */
+    public static function ordered(): array
+    {
+        return [
+            self::AcrossLeftDownRight,
+            self::TabbedCluesRight,
+            self::TabbedCluesLeft,
+            self::CluesRight,
+            self::CluesLeft,
+            self::CluesRightSideBySide,
+            self::CluesLeftSideBySide,
+
+            self::AcrossRightDownLeft,
+            self::AcrossTopDownBottom,
+
+            self::CluesTop,
+            self::CluesBottom,
+            self::GridCenterCluesStacked,
+
+            self::TabbedCluesTop,
+            self::TabbedCluesBottom,
+
+            self::SplitGridLeftAcrossRightDown,
+            self::SplitGridTopAcrossBottomDown,
+
+            self::CluesOverlay,
+            self::CluesDrawerLeft,
+            self::CluesDrawerRight,
+            self::CluesDrawerBottom,
+        ];
+    }
+
+    /**
+     * Render the schematic SVG icon for this case as a Blade view.
+     */
+    public function icon(): View
+    {
+        return view('partials.layout-icon', ['case' => $this]);
+    }
 
     /**
      * The case used when the user hasn't picked a layout. Side-by-side
@@ -52,22 +100,18 @@ enum CrosswordLayout: int
     {
         return match ($this) {
             self::GridCenterCluesStacked => 'partials.layouts.grid-center-clues-stacked',
-            self::GridCenterCluesSideBySide => 'partials.layouts.grid-center-clues-side-by-side',
 
             self::CluesTop => 'partials.layouts.clues-top',
             self::CluesBottom => 'partials.layouts.clues-bottom',
             self::CluesLeft => 'partials.layouts.clues-left',
             self::CluesRight => 'partials.layouts.clues-right',
+            self::CluesLeftSideBySide => 'partials.layouts.clues-left-side-by-side',
+            self::CluesRightSideBySide => 'partials.layouts.clues-right-side-by-side',
 
             self::TabbedCluesTop => 'partials.layouts.tabbed-clues-top',
             self::TabbedCluesBottom => 'partials.layouts.tabbed-clues-bottom',
             self::TabbedCluesLeft => 'partials.layouts.tabbed-clues-left',
             self::TabbedCluesRight => 'partials.layouts.tabbed-clues-right',
-
-            self::GridLeftCluesRight => 'partials.layouts.grid-left-clues-right',
-            self::GridRightCluesLeft => 'partials.layouts.grid-right-clues-left',
-            self::GridTopCluesBottom => 'partials.layouts.grid-top-clues-bottom',
-            self::GridBottomCluesTop => 'partials.layouts.grid-bottom-clues-top',
 
             self::AcrossLeftDownRight => 'partials.layouts.across-left-down-right',
             self::AcrossRightDownLeft => 'partials.layouts.across-right-down-left',
@@ -87,22 +131,18 @@ enum CrosswordLayout: int
     {
         return match ($this) {
             self::GridCenterCluesStacked => 'Grid centered, clues stacked above and below',
-            self::GridCenterCluesSideBySide => 'Grid centered, clues on both sides',
 
             self::CluesTop => 'Clues above grid',
             self::CluesBottom => 'Clues below grid',
             self::CluesLeft => 'Clues left of grid',
             self::CluesRight => 'Clues right of grid',
+            self::CluesLeftSideBySide => 'Across and Down columns left of grid',
+            self::CluesRightSideBySide => 'Across and Down columns right of grid',
 
             self::TabbedCluesTop => 'Tabbed clues above grid',
             self::TabbedCluesBottom => 'Tabbed clues below grid',
             self::TabbedCluesLeft => 'Tabbed clues left of grid',
             self::TabbedCluesRight => 'Tabbed clues right of grid',
-
-            self::GridLeftCluesRight => 'Grid left, clues right',
-            self::GridRightCluesLeft => 'Grid right, clues left',
-            self::GridTopCluesBottom => 'Grid top, clues bottom',
-            self::GridBottomCluesTop => 'Grid bottom, clues top',
 
             self::AcrossLeftDownRight => 'Across clues left, down clues right',
             self::AcrossRightDownLeft => 'Across clues right, down clues left',
