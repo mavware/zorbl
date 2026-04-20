@@ -31,19 +31,6 @@ class extends Component {
         return Crossword::findOrFail($this->crosswordId);
     }
 
-    /**
-     * @return array<int, string>
-     */
-    #[Computed]
-    public function layoutOptions(): array
-    {
-        $options = [];
-        foreach (CrosswordLayout::cases() as $case) {
-            $options[$case->value] = $case->label();
-        }
-        return $options;
-    }
-
     public string $title = '';
     public string $author = '';
     public int $width;
@@ -57,7 +44,7 @@ class extends Component {
     public string $copyright = '';
     public string $notes = '';
     public string $secretTheme = '';
-    public ?int $layout = null;
+    public ?CrosswordLayout $layout = null;
     public int $minAnswerLength = 3;
 
     public bool $isPublished = false;
@@ -89,7 +76,7 @@ class extends Component {
         $this->copyright = $crossword->copyright ?? copyright(Auth::user()->copyright_name ?? Auth::user()->name ?? '');
         $this->notes = $crossword->notes ?? '';
         $this->secretTheme = $crossword->secret_theme ?? '';
-        $this->layout = $crossword->layout?->value;
+        $this->layout = $crossword->layout;
         $this->minAnswerLength = $crossword->metadata['min_answer_length'] ?? 3;
         $this->isPublished = $crossword->is_published;
         $this->resizeWidth = $crossword->width;
@@ -151,7 +138,6 @@ class extends Component {
             'copyright'       => ['nullable', 'string', 'max:255'],
             'notes'           => ['nullable', 'string', 'max:1000'],
             'secretTheme'     => ['nullable', 'string', 'max:500'],
-            'layout'          => ['nullable', Illuminate\Validation\Rule::enum(CrosswordLayout::class)],
             'minAnswerLength' => ['required', 'integer', 'min:1', 'max:15'],
         ]);
 
@@ -167,7 +153,7 @@ class extends Component {
             'copyright'    => $this->copyright,
             'notes'        => $this->notes,
             'secret_theme' => $this->secretTheme !== '' ? $this->secretTheme : null,
-            'layout'       => $this->layout !== null ? CrosswordLayout::from($this->layout) : null,
+            'layout'       => $this->layout,
             'metadata'     => $metadata,
         ]);
 
@@ -735,59 +721,8 @@ class extends Component {
         </div>
     </div>
 
-    @php
-        $userLayout = $this->layout !== null ? CrosswordLayout::tryFrom((int) $this->layout) : null;
-        $stackClues = $this->width > 17;
-        $cluesBottomLayout = $userLayout === CrosswordLayout::CluesBottom;
-    @endphp
-
-    {{-- Main editor layout: clues below the grid --}}
-    @if ($cluesBottomLayout)
-    <div class="flex flex-1 flex-col gap-4 overflow-hidden lg:max-h-[calc(100dvh-8rem)]">
-        @include('partials.editor-grid')
-
-        {{-- Both clue panels side-by-side below the grid (desktop) --}}
-        <div class="hidden min-h-0 flex-1 gap-4 overflow-hidden lg:flex">
-            <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
-                @include('partials.editor-clue-panel', ['direction' => 'across'])
-            </div>
-            <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
-                @include('partials.editor-clue-panel', ['direction' => 'down'])
-            </div>
-        </div>
-
-        @include('partials.editor-mobile-clues')
-    </div>
-    @else
-    {{-- Main editor layout: auto (side panels, stacks right when grid is wide) --}}
-    <div class="flex flex-1 gap-4 overflow-hidden max-lg:flex-col lg:max-h-[calc(100dvh-8rem)]">
-        {{-- Across clues panel (desktop, only when grid is narrow enough) --}}
-        @unless ($stackClues)
-        <div class="hidden w-64 flex-col overflow-hidden lg:flex">
-            @include('partials.editor-clue-panel', ['direction' => 'across'])
-        </div>
-        @endunless
-        @include('partials.editor-grid')
-
-        {{-- Clues panel (desktop): solo Down when grid is narrow, stacked Across+Down when wide --}}
-        @if ($stackClues)
-            <div class="hidden w-64 flex-col gap-4 overflow-hidden lg:flex">
-                <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
-                    @include('partials.editor-clue-panel', ['direction' => 'across'])
-                </div>
-                <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
-                    @include('partials.editor-clue-panel', ['direction' => 'down'])
-                </div>
-            </div>
-        @else
-            <div class="hidden w-64 flex-col overflow-hidden lg:flex">
-                @include('partials.editor-clue-panel', ['direction' => 'down'])
-            </div>
-        @endif
-
-        @include('partials.editor-mobile-clues')
-    </div>
-    @endif
+    {{-- Each layout partial is chosen by the enum itself; unmapped cases fall through to `auto`. --}}
+    @include($this->layout?->partial() ?? 'partials.layouts.auto')
 
     {{-- Publish Warning Modal --}}
     <flux:modal wire:model="showPublishWarning">
@@ -893,8 +828,8 @@ class extends Component {
                 <flux:label>{{ __('Layout') }}</flux:label>
                 <flux:select wire:model="layout">
                     <flux:select.option value="">{{ __('Auto (based on grid size)') }}</flux:select.option>
-                    @foreach ($this->layoutOptions as $value => $label)
-                        <flux:select.option :value="$value">{{ $label }}</flux:select.option>
+                    @foreach (CrosswordLayout::cases() as $case)
+                        <flux:select.option :value="$case->value">{{ $case->label() }}</flux:select.option>
                     @endforeach
                 </flux:select>
                 <flux:description>{{ __('How the grid and clues are arranged on screen.') }}</flux:description>

@@ -34,6 +34,18 @@ enum CrosswordLayout: int
     case SplitGridLeftAcrossRightDown = 60;
     case SplitGridTopAcrossBottomDown = 61;
 
+    /**
+     * The Blade partial that renders this layout. Cases without a dedicated
+     * view fall back to the automatic layout.
+     */
+    public function partial(): string
+    {
+        return match ($this) {
+            self::CluesBottom => 'partials.layouts.clues-bottom',
+            default => 'partials.layouts.auto',
+        };
+    }
+
     public function label(): string
     {
         return match ($this) {

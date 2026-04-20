@@ -328,7 +328,7 @@ test('clues stack in a single column when the grid is wider than 17 cells', func
     expect(strpos($html, '>Across<'))->toBeLessThan(strpos($html, '>Down<'));
 });
 
-test('layout loads from the model into the editor as an integer value', function () {
+test('layout loads from the model into the editor as the enum case', function () {
     $user = User::factory()->create();
     $crossword = Crossword::factory()->for($user)->create([
         'layout' => CrosswordLayout::CluesRight,
@@ -336,7 +336,7 @@ test('layout loads from the model into the editor as an integer value', function
 
     Livewire::actingAs($user)
         ->test('pages::crosswords.editor', ['crossword' => $crossword])
-        ->assertSet('layout', CrosswordLayout::CluesRight->value);
+        ->assertSet('layout', CrosswordLayout::CluesRight);
 });
 
 test('saveMetadata persists the selected layout enum', function () {
@@ -345,13 +345,13 @@ test('saveMetadata persists the selected layout enum', function () {
 
     Livewire::actingAs($user)
         ->test('pages::crosswords.editor', ['crossword' => $crossword])
-        ->set('layout', CrosswordLayout::GridCenterCluesStacked->value)
+        ->set('layout', CrosswordLayout::GridCenterCluesStacked)
         ->call('saveMetadata');
 
     expect($crossword->fresh()->layout)->toBe(CrosswordLayout::GridCenterCluesStacked);
 });
 
-test('saveMetadata clears the layout back to auto when set to an empty value', function () {
+test('saveMetadata clears the layout back to auto when set to null', function () {
     $user = User::factory()->create();
     $crossword = Crossword::factory()->for($user)->create([
         'layout' => CrosswordLayout::CluesLeft,
@@ -361,19 +361,6 @@ test('saveMetadata clears the layout back to auto when set to an empty value', f
         ->test('pages::crosswords.editor', ['crossword' => $crossword])
         ->set('layout', null)
         ->call('saveMetadata');
-
-    expect($crossword->fresh()->layout)->toBeNull();
-});
-
-test('saveMetadata rejects an invalid layout value', function () {
-    $user = User::factory()->create();
-    $crossword = Crossword::factory()->for($user)->create(['layout' => null]);
-
-    Livewire::actingAs($user)
-        ->test('pages::crosswords.editor', ['crossword' => $crossword])
-        ->set('layout', 9999)
-        ->call('saveMetadata')
-        ->assertHasErrors(['layout']);
 
     expect($crossword->fresh()->layout)->toBeNull();
 });
