@@ -15,7 +15,7 @@ beforeEach(function () {
 
 test('bulk schedule publish action exists on contest list', function () {
     Livewire::test(ListContests::class)
-        ->assertTableBulkActionExists('schedule_publish');
+        ->assertTableBulkActionExists('schedulePublish');
 });
 
 test('bulk schedule publish sets publish_at on draft contests', function () {
@@ -23,10 +23,10 @@ test('bulk schedule publish sets publish_at on draft contests', function () {
     $publishAt = now()->addDays(3)->startOfMinute();
 
     Livewire::test(ListContests::class)
-        ->callTableBulkAction('schedule_publish', $drafts, [
+        ->callTableBulkAction('schedulePublish', $drafts, [
             'publish_at' => $publishAt->toDateTimeString(),
         ])
-        ->assertNotified('Publish dates scheduled');
+        ->assertNotified('Scheduled 2 contest(s) for publishing');
 
     foreach ($drafts as $draft) {
         expect($draft->fresh()->publish_at->toDateTimeString())
@@ -41,10 +41,10 @@ test('bulk schedule publish skips non-draft contests', function () {
     $publishAt = now()->addDays(3)->startOfMinute();
 
     Livewire::test(ListContests::class)
-        ->callTableBulkAction('schedule_publish', [$draft, $active], [
+        ->callTableBulkAction('schedulePublish', [$draft, $active], [
             'publish_at' => $publishAt->toDateTimeString(),
         ])
-        ->assertNotified('Publish dates scheduled');
+        ->assertNotified('Scheduled 1 contest(s) for publishing');
 
     expect($draft->fresh()->publish_at->toDateTimeString())
         ->toBe($publishAt->toDateTimeString())
@@ -56,7 +56,7 @@ test('bulk schedule publish warns when no drafts selected', function () {
     $publishAt = now()->addDays(3)->startOfMinute();
 
     Livewire::test(ListContests::class)
-        ->callTableBulkAction('schedule_publish', [$active], [
+        ->callTableBulkAction('schedulePublish', [$active], [
             'publish_at' => $publishAt->toDateTimeString(),
         ])
         ->assertNotified('No draft contests selected');
@@ -68,7 +68,7 @@ test('bulk schedule publish requires publish_at date', function () {
     $draft = Contest::factory()->draft()->create();
 
     Livewire::test(ListContests::class)
-        ->mountTableBulkAction('schedule_publish', [$draft])
+        ->mountTableBulkAction('schedulePublish', [$draft])
         ->setTableBulkActionData(['publish_at' => null])
         ->callMountedTableBulkAction()
         ->assertHasActionErrors(['publish_at' => 'required']);
@@ -79,10 +79,10 @@ test('bulk schedule publish handles single draft contest', function () {
     $publishAt = now()->addWeek()->startOfMinute();
 
     Livewire::test(ListContests::class)
-        ->callTableBulkAction('schedule_publish', [$draft], [
+        ->callTableBulkAction('schedulePublish', [$draft], [
             'publish_at' => $publishAt->toDateTimeString(),
         ])
-        ->assertNotified('Publish dates scheduled');
+        ->assertNotified('Scheduled 1 contest(s) for publishing');
 
     expect($draft->fresh()->publish_at->toDateTimeString())
         ->toBe($publishAt->toDateTimeString());
@@ -93,10 +93,10 @@ test('bulk schedule publish overwrites existing publish_at', function () {
     $newPublishAt = now()->addDays(5)->startOfMinute();
 
     Livewire::test(ListContests::class)
-        ->callTableBulkAction('schedule_publish', [$draft], [
+        ->callTableBulkAction('schedulePublish', [$draft], [
             'publish_at' => $newPublishAt->toDateTimeString(),
         ])
-        ->assertNotified('Publish dates scheduled');
+        ->assertNotified('Scheduled 1 contest(s) for publishing');
 
     expect($draft->fresh()->publish_at->toDateTimeString())
         ->toBe($newPublishAt->toDateTimeString());
@@ -107,7 +107,7 @@ test('bulk schedule publish does not change contest status', function () {
     $publishAt = now()->addDays(3)->startOfMinute();
 
     Livewire::test(ListContests::class)
-        ->callTableBulkAction('schedule_publish', [$draft], [
+        ->callTableBulkAction('schedulePublish', [$draft], [
             'publish_at' => $publishAt->toDateTimeString(),
         ]);
 

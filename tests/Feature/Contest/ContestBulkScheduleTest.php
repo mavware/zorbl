@@ -3,6 +3,7 @@
 use App\Filament\Resources\Contests\Pages\ListContests;
 use App\Models\Contest;
 use App\Models\User;
+use Filament\Actions\Testing\TestAction;
 use Livewire\Livewire;
 use Spatie\Permission\Models\Role;
 
@@ -18,10 +19,11 @@ test('admin can bulk-schedule publish date on draft contests', function () {
     $publishAt = now()->addDays(5)->startOfMinute();
 
     Livewire::test(ListContests::class)
-        ->callTableBulkAction('schedule_publish', $contests, data: [
+        ->selectTableRecords($contests->pluck('id')->all())
+        ->callAction(TestAction::make('schedulePublish')->bulk()->table(), [
             'publish_at' => $publishAt->toDateTimeString(),
         ])
-        ->assertNotified('Publish date scheduled');
+        ->assertNotified('Scheduled 3 contest(s) for publishing');
 
     foreach ($contests as $contest) {
         expect($contest->fresh()->publish_at->toDateTimeString())
@@ -36,10 +38,11 @@ test('bulk-schedule only updates draft contests', function () {
     $publishAt = now()->addDays(3)->startOfMinute();
 
     Livewire::test(ListContests::class)
-        ->callTableBulkAction('schedule_publish', [$draft, $active, $ended], data: [
+        ->selectTableRecords([$draft->id, $active->id, $ended->id])
+        ->callAction(TestAction::make('schedulePublish')->bulk()->table(), [
             'publish_at' => $publishAt->toDateTimeString(),
         ])
-        ->assertNotified('Publish date scheduled');
+        ->assertNotified('Scheduled 1 contest(s) for publishing');
 
     expect($draft->fresh()->publish_at->toDateTimeString())
         ->toBe($publishAt->toDateTimeString())
@@ -51,7 +54,8 @@ test('bulk-schedule warns when no draft contests selected', function () {
     $active = Contest::factory()->active()->create();
 
     Livewire::test(ListContests::class)
-        ->callTableBulkAction('schedule_publish', [$active], data: [
+        ->selectTableRecords([$active->id])
+        ->callAction(TestAction::make('schedulePublish')->bulk()->table(), [
             'publish_at' => now()->addDays(3)->toDateTimeString(),
         ])
         ->assertNotified('No draft contests selected');
@@ -63,10 +67,11 @@ test('bulk-schedule requires a publish date', function () {
     $contest = Contest::factory()->draft()->create();
 
     Livewire::test(ListContests::class)
-        ->callTableBulkAction('schedule_publish', [$contest], data: [
+        ->selectTableRecords([$contest->id])
+        ->callAction(TestAction::make('schedulePublish')->bulk()->table(), [
             'publish_at' => null,
         ])
-        ->assertHasTableBulkActionErrors(['publish_at' => 'required']);
+        ->assertHasActionErrors(['publish_at' => 'required']);
 
     expect($contest->fresh()->publish_at)->toBeNull();
 });
