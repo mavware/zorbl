@@ -22,6 +22,9 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [ ] Add feature tests for admin-assigned-ticket access via SupportTicketPolicy
 - [ ] Let users set up webhooks for their puzzles for common events like puzzle completion or puzzle attempt submission, etc...
 - [ ] If the user is not a paid user, the AI fill and AI clue generation should prompt them to upgrade to a paid account
+- [ ] AI fill should promt user if there is no title or secret
+- [ ] Add all missing crossword layouts
+- [ ] Add icons to the crossword layout selector so people know what the layouts look like
 
 ## Done
 

@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Models\Word;
+use Random\Engine\Mt19937;
+use Random\Randomizer;
 use Zorbl\CrosswordIO\GridNumberer;
 
 class GridFiller
@@ -15,6 +17,8 @@ class GridFiller
 
     private float $deadline;
 
+    private ?Randomizer $randomizer = null;
+
     public function __construct(
         private GridNumberer $numberer,
     ) {}
@@ -25,6 +29,7 @@ class GridFiller
      * @param  array<int, array<int, mixed>>  $grid  Numbered grid
      * @param  array<int, array<int, string>>  $solution  Current solution letters
      * @param  array<string, array{bars?: list<string>}>  $styles
+     * @param  int|null  $seed  When non-null, randomizes candidate order and slot tie-breaks for this run. Different seeds produce different valid fills; null keeps the deterministic "highest score first" behavior.
      * @return array{success: bool, fills: list<array{direction: string, number: int, word: string}>, message: string}
      */
     public function fill(
@@ -35,10 +40,12 @@ class GridFiller
         array $styles = [],
         int $minLength = 3,
         int $timeout = 10,
+        ?int $seed = null,
     ): array {
         $this->deadline = microtime(true) + $timeout;
         $this->candidateCache = [];
         $this->usedWords = [];
+        $this->randomizer = $seed !== null ? new Randomizer(new Mt19937($seed)) : null;
 
         $numbered = $this->numberer->number($grid, $width, $height, $styles, $minLength);
 
@@ -143,8 +150,16 @@ class GridFiller
             if (empty($candidates)) {
                 return false; // Dead end — no candidates for this slot
             }
+            if ($this->randomizer !== null && count($candidates) > 1) {
+                $candidates = $this->randomizer->shuffleArray($candidates);
+            }
             $slot['candidates'] = $candidates;
             $withCandidates[] = $slot;
+        }
+
+        // Pre-shuffle so the stable usort below produces random tie-breaks between equally-constrained slots.
+        if ($this->randomizer !== null && count($withCandidates) > 1) {
+            $withCandidates = $this->randomizer->shuffleArray($withCandidates);
         }
 
         usort($withCandidates, fn ($a, $b) => count($a['candidates']) <=> count($b['candidates']));

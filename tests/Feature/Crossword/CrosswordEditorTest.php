@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\CrosswordLayout;
 use App\Models\Crossword;
 use App\Models\User;
 use Livewire\Livewire;
@@ -292,3 +293,115 @@ test('unpublishing a puzzle does not clear difficulty rating', function () {
         ->and($crossword->difficulty_score)->toBe(2.5)
         ->and($crossword->difficulty_label)->toBe('Medium');
 });
+
+test('clues render in two side panels when the grid is 17 or fewer cells wide', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create([
+        'width' => 15,
+        'height' => 15,
+    ]);
+
+    $this->actingAs($user);
+
+    $html = Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])->html();
+
+    // Exactly two w-64 desktop columns (across on the left, down on the right).
+    expect(substr_count($html, 'hidden w-64 flex-col overflow-hidden lg:flex'))->toBe(2);
+    expect($html)->not->toContain('hidden w-64 flex-col gap-4 overflow-hidden lg:flex');
+});
+
+test('clues stack in a single column when the grid is wider than 17 cells', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create([
+        'width' => 21,
+        'height' => 21,
+    ]);
+
+    $this->actingAs($user);
+
+    $html = Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])->html();
+
+    // Stacked column carries Across above Down; no separate w-64 solo columns.
+    expect($html)->toContain('hidden w-64 flex-col gap-4 overflow-hidden lg:flex');
+    expect(substr_count($html, 'hidden w-64 flex-col overflow-hidden lg:flex'))->toBe(0);
+    // Across heading appears before Down heading in the stacked layout.
+    expect(strpos($html, '>Across<'))->toBeLessThan(strpos($html, '>Down<'));
+});
+
+test('layout loads from the model into the editor as the enum case', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create([
+        'layout' => CrosswordLayout::CluesRight,
+    ]);
+
+    Livewire::actingAs($user)
+        ->test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->assertSet('layout', CrosswordLayout::CluesRight);
+});
+
+test('saveMetadata persists the selected layout enum', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create(['layout' => null]);
+
+    Livewire::actingAs($user)
+        ->test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->set('layout', CrosswordLayout::GridCenterCluesStacked)
+        ->call('saveMetadata');
+
+    expect($crossword->fresh()->layout)->toBe(CrosswordLayout::GridCenterCluesStacked);
+});
+
+test('saveMetadata clears the layout back to auto when set to null', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create([
+        'layout' => CrosswordLayout::CluesLeft,
+    ]);
+
+    Livewire::actingAs($user)
+        ->test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->set('layout', null)
+        ->call('saveMetadata');
+
+    expect($crossword->fresh()->layout)->toBeNull();
+});
+
+test('CluesBottom layout renders both clue panels side-by-side beneath the grid', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create([
+        'width' => 15,
+        'height' => 15,
+        'layout' => CrosswordLayout::CluesBottom,
+    ]);
+
+    $this->actingAs($user);
+
+    $html = Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])->html();
+
+    // Outer wrapper uses column direction (clues below grid) rather than the row-based auto layout.
+    expect($html)->toContain('flex flex-1 flex-col gap-4 overflow-hidden lg:max-h-[calc(100dvh-8rem)]');
+    // Clues row is a side-by-side flex container beneath the grid.
+    expect($html)->toContain('hidden min-h-0 flex-1 gap-4 overflow-hidden lg:flex');
+    // The auto layout's side panels are not used in this layout.
+    expect(substr_count($html, 'hidden w-64 flex-col overflow-hidden lg:flex'))->toBe(0);
+    expect($html)->not->toContain('hidden w-64 flex-col gap-4 overflow-hidden lg:flex');
+    // Both directions still present via the shared clue-panel partial.
+    expect(strpos($html, '>Across<'))->toBeLessThan(strpos($html, '>Down<'));
+});
+
+test('every CrosswordLayout case has a renderable partial', function (CrosswordLayout $case) {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create([
+        'width' => 15,
+        'height' => 15,
+        'layout' => $case,
+    ]);
+
+    $this->actingAs($user);
+
+    // Resolving the partial name and rendering the editor must not throw.
+    expect($case->partial())->toStartWith('partials.layouts.')
+        ->and(view()->exists($case->partial()))->toBeTrue();
+
+    Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->assertSet('layout', $case);
+})->with(CrosswordLayout::cases());
