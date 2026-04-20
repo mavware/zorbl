@@ -1418,6 +1418,9 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
                     message: result.message,
                     type: result.success ? 'success' : 'warning',
                 });
+                if (result.needs_theme) {
+                    this.$wire.set('showSettingsModal', true);
+                }
             } catch (e) {
                 this.$dispatch('notify', {
                     message: 'AI fill failed: ' + (e.message || 'Unknown error'),

@@ -200,3 +200,55 @@ it('handles grid with blocks', function () {
 
     expect($result)->toHaveKeys(['success', 'fills', 'message']);
 });
+
+it('produces varied fills for different seeds', function () {
+    // Add enough 3-letter words that distinct valid fillings exist.
+    Word::insert([
+        ['word' => 'BAT', 'length' => 3, 'score' => 60.0, 'created_at' => now(), 'updated_at' => now()],
+        ['word' => 'RAT', 'length' => 3, 'score' => 55.0, 'created_at' => now(), 'updated_at' => now()],
+        ['word' => 'EAR', 'length' => 3, 'score' => 58.0, 'created_at' => now(), 'updated_at' => now()],
+        ['word' => 'ARE', 'length' => 3, 'score' => 60.0, 'created_at' => now(), 'updated_at' => now()],
+        ['word' => 'BAR', 'length' => 3, 'score' => 58.0, 'created_at' => now(), 'updated_at' => now()],
+        ['word' => 'CAR', 'length' => 3, 'score' => 60.0, 'created_at' => now(), 'updated_at' => now()],
+        ['word' => 'ODE', 'length' => 3, 'score' => 48.0, 'created_at' => now(), 'updated_at' => now()],
+        ['word' => 'BOA', 'length' => 3, 'score' => 45.0, 'created_at' => now(), 'updated_at' => now()],
+        ['word' => 'RED', 'length' => 3, 'score' => 58.0, 'created_at' => now(), 'updated_at' => now()],
+    ]);
+
+    $filler = app(GridFiller::class);
+    $grid = [
+        [1, 2, 3],
+        [4, 0, 0],
+        [5, 0, 0],
+    ];
+    $empty = [['', '', ''], ['', '', ''], ['', '', '']];
+
+    $signatures = [];
+    foreach (range(1, 6) as $seed) {
+        $result = $filler->fill($grid, $empty, 3, 3, [], 3, seed: $seed);
+        if ($result['success']) {
+            $words = array_map(fn ($f) => $f['direction'].$f['number'].'='.$f['word'], $result['fills']);
+            sort($words);
+            $signatures[implode('|', $words)] = true;
+        }
+    }
+
+    expect(count($signatures))->toBeGreaterThan(1);
+});
+
+it('same seed produces the same fill', function () {
+    $filler = app(GridFiller::class);
+    $grid = [
+        [1, 2, 3],
+        [4, 0, 0],
+        [5, 0, 0],
+    ];
+    $empty = [['', '', ''], ['', '', ''], ['', '', '']];
+
+    $first = $filler->fill($grid, $empty, 3, 3, [], 3, seed: 42);
+    $second = $filler->fill($grid, $empty, 3, 3, [], 3, seed: 42);
+
+    expect($first['success'])->toBeTrue()
+        ->and($second['success'])->toBeTrue()
+        ->and($first['fills'])->toEqual($second['fills']);
+});

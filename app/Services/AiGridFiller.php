@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Log;
 
 class AiGridFiller
 {
-    private const TOOL_NAME = 'submit_fills';
+    private const string TOOL_NAME = 'submit_fills';
 
     public function __construct(private readonly AnthropicClient $client) {}
 
@@ -37,10 +37,10 @@ class AiGridFiller
         ];
 
         $options = [
-            'tools' => [$this->toolSchema()],
+            'tools' => [$this->toolSchema($slots)],
             'tool_choice' => ['type' => 'tool', 'name' => self::TOOL_NAME],
             'temperature' => 0.3,
-            'max_tokens' => 4096,
+            'max_tokens' => (4096 * 2),
         ];
 
         try {
@@ -50,10 +50,10 @@ class AiGridFiller
                 return $this->apiErrorResult($result);
             }
 
-            [$validFills, $rejected] = $this->validateFills($result['data'], $slots);
+            [$validFills, $rejected] = $this->validateFills($result['data'], $slots, $filledWords);
 
             if (! empty($rejected)) {
-                $retry = $this->retryWithFeedback($systemPrompt, $messages, $result['data'], $rejected, $slots, $options);
+                $retry = $this->retryWithFeedback($systemPrompt, $messages, $result['data'], $rejected, $slots, $filledWords, $options);
                 if ($retry !== null) {
                     $validFills = $this->mergeFills($validFills, $retry);
                 }
@@ -182,38 +182,62 @@ PROMPT;
     }
 
     /**
-     * Anthropic tool schema for structured fill submission.
+     * Anthropic tool schema — one enum-typed property per slot with a candidate list.
+     * Slots without candidates are omitted; they'll appear as "AI could not fill" in the result.
      *
+     * @param  list<array{direction: string, number: int, length: int, pattern: string, candidates?: list<string>}>  $slots
      * @return array<string, mixed>
      */
-    private function toolSchema(): array
+    private function toolSchema(array $slots): array
     {
+        $properties = [];
+        $required = [];
+
+        foreach ($slots as $slot) {
+            $candidates = array_values(array_unique(array_map(
+                'strtoupper',
+                array_filter($slot['candidates'] ?? [], fn ($w) => is_string($w) && $w !== ''),
+            )));
+
+            $key = $this->slotKey($slot['direction'], $slot['number']);
+
+            if (empty($candidates)) {
+                // No vetted choices — accept any string the model proposes; validation will catch gibberish.
+                $properties[$key] = [
+                    'type' => 'string',
+                    'description' => "A real English word of length {$slot['length']} matching pattern \"{$slot['pattern']}\".",
+                ];
+            } else {
+                $properties[$key] = [
+                    'type' => 'string',
+                    'enum' => $candidates,
+                    'description' => "Word for {$slot['number']} ".ucfirst($slot['direction']).' (length '.$slot['length'].').',
+                ];
+            }
+            $required[] = $key;
+        }
+
         return [
             'name' => self::TOOL_NAME,
             'description' => 'Submit the chosen word for every empty slot in the crossword.',
             'input_schema' => [
                 'type' => 'object',
-                'properties' => [
-                    'fills' => [
-                        'type' => 'array',
-                        'items' => [
-                            'type' => 'object',
-                            'properties' => [
-                                'direction' => ['type' => 'string', 'enum' => ['across', 'down']],
-                                'number' => ['type' => 'integer'],
-                                'word' => ['type' => 'string'],
-                            ],
-                            'required' => ['direction', 'number', 'word'],
-                        ],
-                    ],
-                ],
-                'required' => ['fills'],
+                'properties' => $properties,
+                'required' => $required,
             ],
         ];
     }
 
+    private function slotKey(string $direction, int $number): string
+    {
+        return strtolower($direction).'_'.$number;
+    }
+
     /**
-     * Extract raw fills from a response (prefer tool_use, fall back to text JSON).
+     * Extract raw fills from a response. Supports three shapes:
+     * - tool_use with per-slot keys:   {"across_1": "CAT", "down_2": "TEA"}
+     * - tool_use with legacy fills[]:  {"fills": [{"direction": ..., "number": ..., "word": ...}]}
+     * - text block with a JSON array:  "[{...}, {...}]"
      *
      * @param  array<string, mixed>  $data
      * @return list<array<string, mixed>>
@@ -221,8 +245,31 @@ PROMPT;
     private function extractFills(array $data): array
     {
         $toolInput = AnthropicClient::extractToolUse($data, self::TOOL_NAME);
-        if (is_array($toolInput) && isset($toolInput['fills']) && is_array($toolInput['fills'])) {
-            return array_values($toolInput['fills']);
+        if (is_array($toolInput)) {
+            $fills = [];
+
+            foreach ($toolInput as $key => $value) {
+                if (! is_string($value) || ! preg_match('/^(across|down)_(\d+)$/i', (string) $key, $m)) {
+                    continue;
+                }
+                $fills[] = [
+                    'direction' => strtolower($m[1]),
+                    'number' => (int) $m[2],
+                    'word' => $value,
+                ];
+            }
+
+            if (isset($toolInput['fills']) && is_array($toolInput['fills'])) {
+                foreach ($toolInput['fills'] as $fill) {
+                    if (is_array($fill)) {
+                        $fills[] = $fill;
+                    }
+                }
+            }
+
+            if (! empty($fills)) {
+                return $fills;
+            }
         }
 
         $text = AnthropicClient::extractText($data);
@@ -240,19 +287,27 @@ PROMPT;
     }
 
     /**
-     * Validate raw fills against slot constraints and dictionary.
+     * Validate raw fills against slot constraints, dictionary, and cross-slot uniqueness.
      *
      * @param  array<string, mixed>  $data
      * @param  list<array{direction: string, number: int, length: int, pattern: string, candidates?: list<string>}>  $slots
+     * @param  list<array{direction: string, number: int, word: string}>  $filledWords  Words already placed in the grid; the AI must not reuse any of these.
      * @return array{0: list<array{direction: string, number: int, word: string}>, 1: list<array{direction: string, number: int, word: string, reason: string}>}
      */
-    private function validateFills(array $data, array $slots): array
+    private function validateFills(array $data, array $slots, array $filledWords = []): array
     {
         $raw = $this->extractFills($data);
 
         $slotIndex = [];
         foreach ($slots as $slot) {
             $slotIndex[$slot['direction'].'-'.$slot['number']] = $slot;
+        }
+
+        $seen = [];
+        foreach ($filledWords as $fw) {
+            if (isset($fw['word'])) {
+                $seen[strtoupper((string) $fw['word'])] = true;
+            }
         }
 
         $candidates = [];
@@ -298,6 +353,14 @@ PROMPT;
                 continue;
             }
 
+            if (isset($seen[$fill['word']])) {
+                $rejected[] = $fill + ['reason' => 'duplicate — word already used elsewhere in the puzzle'];
+
+                continue;
+            }
+
+            $seen[$fill['word']] = true;
+
             $valid[] = [
                 'direction' => $fill['direction'],
                 'number' => $fill['number'],
@@ -315,10 +378,11 @@ PROMPT;
      * @param  array<string, mixed>  $firstResponse
      * @param  list<array{direction: string, number: int, word: string, reason: string}>  $rejected
      * @param  list<array{direction: string, number: int, length: int, pattern: string, candidates?: list<string>}>  $slots
+     * @param  list<array{direction: string, number: int, word: string}>  $filledWords
      * @param  array<string, mixed>  $options
      * @return list<array{direction: string, number: int, word: string}>|null
      */
-    private function retryWithFeedback(string $systemPrompt, array $messages, array $firstResponse, array $rejected, array $slots, array $options): ?array
+    private function retryWithFeedback(string $systemPrompt, array $messages, array $firstResponse, array $rejected, array $slots, array $filledWords, array $options): ?array
     {
         $toolUseId = AnthropicClient::extractToolUseId($firstResponse, self::TOOL_NAME);
         if ($toolUseId === null) {
@@ -350,7 +414,7 @@ PROMPT;
             return null;
         }
 
-        [$valid] = $this->validateFills($retry['data'], $slots);
+        [$valid] = $this->validateFills($retry['data'], $slots, $filledWords);
 
         return $valid;
     }
