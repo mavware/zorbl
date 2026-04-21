@@ -7,9 +7,9 @@
         "boost:mcp"
       ]
     },
-    "github-ro": {
+    "github": {
       "type": "http",
-      "url": "https://api.githubcopilot.com/mcp/readonly",
+      "url": "https://api.githubcopilot.com/mcp/",
       "headers": {
         "Authorization": "Bearer ${GITHUB_PAT}"
       }

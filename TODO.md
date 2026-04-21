@@ -19,7 +19,7 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [ ] Fix pre-existing CrosswordImportTest failure (redirect assertion in `users can import a crossword`)
 - [ ] Wire PuzzleAttemptPolicy `update` check into the solver page's `saveProgress` method for defense-in-depth
 - [ ] If the user is not a paid user, the AI fill and AI clue generation should prompt them to upgrade to a paid account
-- [ ] Add a "clear publish date" bulk action to complement the schedule publish bulk action
+- [x] Add a "clear publish date" bulk action to complement the schedule publish bulk action
 - [ ] Fix browser tests (PuzzleSolverTest) — all 3 tests fail with "Call to a member function sendText() on null"
 
 ## Done
