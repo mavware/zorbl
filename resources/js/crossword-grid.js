@@ -31,6 +31,7 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
 
         init() {
             document.addEventListener('click', () => this.closeContextMenu());
+            document.addEventListener('mousedown', (e) => this.handleClickOutside(e));
             this.$watch('isDirty', (val) => {
                 if (val) this.debouncedSave();
             });
@@ -342,6 +343,29 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
                 const [r, c] = key.split(',').map(Number);
                 return [r, c];
             });
+        },
+
+        handleClickOutside(event) {
+            if (this.selectedRow < 0 && this.selectedCol < 0 && Object.keys(this.multiSelectedCells).length === 0) {
+                return;
+            }
+
+            const target = event.target;
+            const grid = this.$refs.gridContainer;
+            const across = this.$refs.acrossPanel;
+            const down = this.$refs.downPanel;
+
+            if (grid?.contains(target) || across?.contains(target) || down?.contains(target)) {
+                return;
+            }
+
+            this.selectedRow = -1;
+            this.selectedCol = -1;
+            this.clearMultiSelection();
+
+            if (grid && document.activeElement && grid.contains(document.activeElement)) {
+                document.activeElement.blur();
+            }
         },
 
         // --- Selection ---
