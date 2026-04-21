@@ -7,6 +7,7 @@ use App\Http\Resources\Api\V1\CrosswordResource;
 use App\Models\Crossword;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
 
 /**
@@ -18,9 +19,14 @@ class CrosswordController extends Controller
     {
         $crosswords = QueryBuilder::for(
             Crossword::where('is_published', true)
-                ->with('user:id,name,copyright_name')
+                ->with(['user:id,name,copyright_name', 'tags:id,name,slug'])
         )
-            ->allowedFilters('difficulty_label', 'author', 'kind')
+            ->allowedFilters(
+                'difficulty_label',
+                'author',
+                'kind',
+                AllowedFilter::exact('tag', 'tags.slug'),
+            )
             ->allowedSorts('created_at', 'title', 'difficulty_score')
             ->allowedIncludes('user')
             ->withCount(['likes', 'attempts', 'comments'])
