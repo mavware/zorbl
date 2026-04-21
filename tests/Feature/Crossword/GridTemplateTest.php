@@ -1,8 +1,11 @@
 <?php
 
 use App\Models\Crossword;
+use App\Models\Template;
 use App\Models\User;
 use App\Services\GridTemplateProvider;
+use Database\Factories\TemplateFactory;
+use Illuminate\Support\Facades\Cache;
 
 test('template picker appears in new puzzle modal for standard sizes', function () {
     $user = User::factory()->create();
@@ -103,4 +106,53 @@ test('changing height resets template selection', function () {
         ->set('selectedTemplate', 1)
         ->set('newHeight', 11)
         ->assertSet('selectedTemplate', null);
+});
+
+test('active admin templates appear first in getTemplates', function () {
+    Cache::flush();
+
+    Template::factory()->square(15)->create([
+        'name' => 'Admin Curated',
+        'grid' => TemplateFactory::openGrid(15, 15),
+        'sort_order' => 0,
+    ]);
+
+    $templates = app(GridTemplateProvider::class)->getTemplates(15, 15);
+
+    expect($templates[0]['name'])->toBe('Admin Curated');
+});
+
+test('inactive admin templates are excluded from getTemplates', function () {
+    Cache::flush();
+
+    Template::factory()->square(15)->inactive()->create([
+        'name' => 'Hidden Template',
+        'grid' => TemplateFactory::openGrid(15, 15),
+    ]);
+
+    $templates = app(GridTemplateProvider::class)->getTemplates(15, 15);
+
+    expect(collect($templates)->pluck('name'))->not->toContain('Hidden Template');
+});
+
+test('admin templates respect sort_order', function () {
+    Cache::flush();
+
+    Template::factory()->square(15)->create([
+        'name' => 'Second',
+        'grid' => TemplateFactory::openGrid(15, 15),
+        'sort_order' => 10,
+    ]);
+    Template::factory()->square(15)->create([
+        'name' => 'First',
+        'grid' => TemplateFactory::openGrid(15, 15),
+        'sort_order' => 1,
+    ]);
+
+    $templates = app(GridTemplateProvider::class)->getTemplates(15, 15);
+    $names = array_column($templates, 'name');
+    $firstIndex = array_search('First', $names, true);
+    $secondIndex = array_search('Second', $names, true);
+
+    expect($firstIndex)->toBeLessThan($secondIndex);
 });
