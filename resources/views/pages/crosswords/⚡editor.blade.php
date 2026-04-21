@@ -3,6 +3,7 @@
 use App\Enums\CrosswordLayout;
 use App\Models\ClueEntry;
 use App\Models\Crossword;
+use App\Models\Tag;
 use App\Services\ClueHarvester;
 use App\Livewire\Concerns\ExportsCrossword;
 use Zorbl\CrosswordIO\GridNumberer;
@@ -58,6 +59,9 @@ class extends Component {
     public int $resizeWidth;
     public int $resizeHeight;
 
+    public array $tagIds = [];
+    public string $tagSearch = '';
+
     public function mount(Crossword $crossword): void
     {
         $this->authorize('update', $crossword);
@@ -81,6 +85,7 @@ class extends Component {
         $this->isPublished = $crossword->is_published;
         $this->resizeWidth = $crossword->width;
         $this->resizeHeight = $crossword->height;
+        $this->tagIds = $crossword->tags()->pluck('tags.id')->all();
     }
 
     public function save(array $grid, array $solution, ?array $styles, array $cluesAcross, array $cluesDown): void
@@ -157,9 +162,74 @@ class extends Component {
             'metadata'     => $metadata,
         ]);
 
+        $crossword->tags()->sync($this->tagIds);
+
         $this->showSettingsModal = false;
         $this->dispatch('settings-updated');
         $this->dispatch('saved');
+    }
+
+    /** @return array<int, array{id: int, name: string}> */
+    #[Computed]
+    public function availableTags(): array
+    {
+        $query = Tag::query()->orderBy('name');
+
+        if ($this->tagSearch !== '') {
+            $query->whereLike('name', "%{$this->tagSearch}%");
+        }
+
+        return $query->limit(30)->get(['id', 'name'])->toArray();
+    }
+
+    /** @return array<int, array{id: int, name: string}> */
+    #[Computed]
+    public function selectedTags(): array
+    {
+        if (empty($this->tagIds)) {
+            return [];
+        }
+
+        return Tag::whereIn('id', $this->tagIds)->orderBy('name')->get(['id', 'name'])->toArray();
+    }
+
+    public function addTag(int $tagId): void
+    {
+        if (! in_array($tagId, $this->tagIds)) {
+            $this->tagIds[] = $tagId;
+        }
+        $this->tagSearch = '';
+        unset($this->availableTags, $this->selectedTags);
+    }
+
+    public function removeTag(int $tagId): void
+    {
+        $this->tagIds = array_values(array_filter($this->tagIds, fn (int $id) => $id !== $tagId));
+        unset($this->availableTags, $this->selectedTags);
+    }
+
+    public function createTag(): void
+    {
+        $name = trim($this->tagSearch);
+        if ($name === '' || mb_strlen($name) > 50) {
+            return;
+        }
+
+        $tag = Tag::firstOrCreate(
+            ['slug' => \Illuminate\Support\Str::slug($name)],
+            ['name' => $name],
+        );
+
+        if (! in_array($tag->id, $this->tagIds)) {
+            $this->tagIds[] = $tag->id;
+        }
+        $this->tagSearch = '';
+        unset($this->availableTags, $this->selectedTags);
+    }
+
+    public function updatedTagSearch(): void
+    {
+        unset($this->availableTags);
     }
 
     public function attemptPublish(): void
@@ -858,6 +928,68 @@ class extends Component {
                 <flux:textarea wire:model="notes" placeholder="{{ __('Notes for solvers (shown before solving)') }}"
                                rows="3"/>
                 <flux:error name="notes"/>
+            </flux:field>
+
+            <flux:field>
+                <flux:label>{{ __('Tags') }}</flux:label>
+                <flux:description>{{ __('Categorize your puzzle so solvers can find it more easily.') }}</flux:description>
+
+                @if(count($this->selectedTags))
+                    <div class="mt-2 flex flex-wrap gap-1.5">
+                        @foreach($this->selectedTags as $tag)
+                            <span class="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
+                                {{ $tag['name'] }}
+                                <button type="button" wire:click="removeTag({{ $tag['id'] }})" class="ml-0.5 inline-flex items-center rounded-full p-0.5 text-blue-600 hover:bg-blue-200 hover:text-blue-800 dark:text-blue-400 dark:hover:bg-blue-800 dark:hover:text-blue-200">
+                                    <svg class="size-3" viewBox="0 0 20 20" fill="currentColor"><path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z"/></svg>
+                                </button>
+                            </span>
+                        @endforeach
+                    </div>
+                @endif
+
+                <div class="relative mt-2" x-data="{ open: false }" x-on:click.outside="open = false">
+                    <flux:input
+                        wire:model.live.debounce.300ms="tagSearch"
+                        placeholder="{{ __('Search or create tags...') }}"
+                        size="sm"
+                        x-on:focus="open = true"
+                        x-on:input="open = true"
+                    />
+                    <div
+                        x-show="open"
+                        x-cloak
+                        class="absolute z-10 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border border-zinc-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-800"
+                    >
+                        @php
+                            $available = collect($this->availableTags)->reject(fn ($t) => in_array($t['id'], $this->tagIds));
+                        @endphp
+
+                        @forelse($available as $tag)
+                            <button
+                                type="button"
+                                wire:click="addTag({{ $tag['id'] }})"
+                                x-on:click="open = false"
+                                class="flex w-full items-center px-3 py-2 text-left text-sm hover:bg-zinc-100 dark:hover:bg-zinc-700"
+                            >
+                                {{ $tag['name'] }}
+                            </button>
+                        @empty
+                            @if($this->tagSearch !== '')
+                                <button
+                                    type="button"
+                                    wire:click="createTag"
+                                    x-on:click="open = false"
+                                    class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-blue-600 hover:bg-zinc-100 dark:text-blue-400 dark:hover:bg-zinc-700"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="size-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z"/></svg>
+                                    {{ __('Create ":name"', ['name' => $this->tagSearch]) }}
+                                </button>
+                            @else
+                                <div class="px-3 py-2 text-sm text-zinc-400">{{ __('No tags found') }}</div>
+                            @endif
+                        @endforelse
+                    </div>
+                </div>
             </flux:field>
 
             <flux:field>
