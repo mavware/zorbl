@@ -18,7 +18,7 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [ ] Let users set up webhooks for their puzzles for common events like puzzle completion or puzzle attempt submission, etc...
 - [ ] Add Filament test coverage for ContestResource CRUD (create, edit, delete) — currently only basic tests exist in ContestAdminTest
 - [ ] Fix pre-existing CrosswordImportTest failure (redirect assertion in `users can import a crossword`)
-- [ ] Add authorization to roadmap page — currently any authenticated user can add/edit/delete items; consider restricting mutations to admins and making the page read-only for regular users
+- [x] Add authorization to roadmap page — currently any authenticated user can add/edit/delete items; consider restricting mutations to admins and making the page read-only for regular users
 - [ ] Wire PuzzleAttemptPolicy `update` check into the solver page's `saveProgress` method for defense-in-depth
 - [ ] If the user is not a paid user, the AI fill and AI clue generation should prompt them to upgrade to a paid account
 - [ ] Add a "clear publish date" bulk action to complement the schedule publish bulk action
