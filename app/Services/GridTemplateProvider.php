@@ -364,7 +364,7 @@ class GridTemplateProvider
      *
      * @return array<int, array{name: string, grid: array<int, array<int, int|string>>}>
      */
-    private function generateTemplates(int $width, int $height): array
+    public function generateTemplates(int $width, int $height): array
     {
         // Only support square grids from 3x3 to 27x27
         if ($width !== $height || $width < 3 || $width > 27) {

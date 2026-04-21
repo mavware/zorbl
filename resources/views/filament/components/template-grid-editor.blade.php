@@ -74,34 +74,31 @@
         }"
         wire:ignore.self
         data-testid="template-grid-editor"
-        class="space-y-3"
+        style="display: flex; flex-direction: column; gap: 0.75rem;"
     >
-        <div class="flex flex-wrap items-center gap-2 text-sm">
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; font-size: 0.875rem;">
             <button
                 type="button"
                 x-on:click="symmetry = !symmetry"
-                :class="symmetry
-                    ? 'border-emerald-500 text-emerald-600 dark:text-emerald-400'
-                    : 'border-zinc-300 text-zinc-500 dark:border-zinc-600 dark:text-zinc-400'"
-                class="rounded border px-2 py-1 transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                :style="`border: 1px solid ${symmetry ? 'rgb(16 185 129)' : 'rgb(161 161 170)'}; color: ${symmetry ? 'rgb(5 150 105)' : 'rgb(113 113 122)'}; background: transparent; padding: 0.25rem 0.5rem; border-radius: 0.25rem; cursor: pointer;`"
             >
                 <span x-text="symmetry ? '{{ __('Symmetry on') }}' : '{{ __('Symmetry off') }}'"></span>
             </button>
             <button
                 type="button"
                 x-on:click="clearAll()"
-                class="rounded border border-zinc-300 px-2 py-1 text-zinc-600 transition-colors hover:bg-zinc-100 dark:border-zinc-600 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                style="border: 1px solid rgb(161 161 170); color: rgb(82 82 91); background: transparent; padding: 0.25rem 0.5rem; border-radius: 0.25rem; cursor: pointer;"
             >
                 {{ __('Clear all') }}
             </button>
-            <span class="text-zinc-500 dark:text-zinc-400">
+            <span style="color: rgb(113 113 122);">
                 <span x-text="width"></span> &times; <span x-text="height"></span>
             </span>
         </div>
 
         <div
-            class="inline-grid gap-0 rounded border border-zinc-700 p-0 dark:border-zinc-300"
-            :style="`grid-template-columns: repeat(${Number(width)}, ${cellSizePx()}px);`"
+            data-grid-container
+            :style="`display: inline-grid; gap: 0; border: 1px solid rgb(63 63 70); border-radius: 0.25rem; grid-template-columns: repeat(${Number(width)}, ${cellSizePx()}px); width: ${Number(width) * cellSizePx() + 2}px;`"
         >
             <template x-for="(row, r) in grid" :key="`row-${r}`">
                 <template x-for="(cell, c) in row" :key="`cell-${r}-${c}`">
@@ -111,16 +108,13 @@
                         :data-row="r"
                         :data-col="c"
                         :data-block="cell === '#' ? 'true' : 'false'"
-                        :class="cell === '#'
-                            ? 'bg-zinc-800 dark:bg-zinc-200'
-                            : 'bg-white hover:bg-zinc-100 dark:bg-zinc-900 dark:hover:bg-zinc-700'"
-                        class="aspect-square border border-zinc-300 transition-colors dark:border-zinc-600"
+                        :style="`display: block; width: ${cellSizePx()}px; height: ${cellSizePx()}px; border: 1px solid rgb(212 212 216); padding: 0; cursor: pointer; background: ${cell === '#' ? 'rgb(39 39 42)' : 'rgb(255 255 255)'}; transition: background-color 0.15s;`"
                     ></button>
                 </template>
             </template>
         </div>
 
-        <p class="text-xs text-zinc-500 dark:text-zinc-400">
+        <p style="font-size: 0.75rem; color: rgb(113 113 122);">
             {{ __('Click any cell to toggle a block. Symmetry mirrors toggles through the grid center.') }}
         </p>
     </div>

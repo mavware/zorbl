@@ -34,7 +34,7 @@ new #[Title('My Puzzles')] class extends Component {
     #[Computed]
     public function templates(): array
     {
-        return app(GridTemplateProvider::class)->getTemplates($this->newWidth, $this->newHeight);
+        return app(GridTemplateProvider::class)->getTemplates($this->newWidth ?? 0, $this->newHeight ?? 0);
     }
 
     public function updatedNewWidth(): void
@@ -70,19 +70,19 @@ new #[Title('My Puzzles')] class extends Component {
         if ($this->selectedTemplate !== null && isset($this->templates[$this->selectedTemplate])) {
             $grid = $this->templates[$this->selectedTemplate]['grid'];
         } else {
-            $grid = Crossword::emptyGrid($this->newWidth, $this->newHeight);
+            $grid = Crossword::emptyGrid($this->newWidth ?? 0, $this->newHeight ?? 0);
         }
 
-        $result = app(GridNumberer::class)->number($grid, $this->newWidth, $this->newHeight);
+        $result = app(GridNumberer::class)->number($grid, $this->newWidth ?? 0, $this->newHeight ?? 0);
 
         $crossword = Auth::user()->crosswords()->create([
             'title' => 'Untitled Puzzle',
             'author' => Auth::user()->name,
             'copyright' => copyright(Auth::user()->copyright_name ?? Auth::user()->name ?? ''),
-            'width' => $this->newWidth,
-            'height' => $this->newHeight,
+            'width' => $this->newWidth ?? 0,
+            'height' => $this->newHeight ?? 0,
             'grid' => $result['grid'],
-            'solution' => Crossword::emptySolution($this->newWidth, $this->newHeight),
+            'solution' => Crossword::emptySolution($this->newWidth ?? 0, $this->newHeight ?? 0),
             'clues_across' => array_map(fn ($s) => ['number' => $s['number'], 'clue' => ''], $result['across']),
             'clues_down' => array_map(fn ($s) => ['number' => $s['number'], 'clue' => ''], $result['down']),
         ]);
@@ -216,9 +216,8 @@ new #[Title('My Puzzles')] class extends Component {
                     <flux:error name="newHeight" />
                 </flux:field>
             </div>
-
+            <div class="h-48">
             @if(count($this->templates) > 0)
-            <div>
                 <flux:label class="mb-2">{{ __('Grid Template') }} <span class="text-zinc-400 text-xs font-normal">{{ __('(optional)') }}</span></flux:label>
                 <div class="flex min-h-[6.5rem] gap-3 overflow-x-auto pb-2">
                     {{-- Blank grid option --}}
@@ -242,8 +241,9 @@ new #[Title('My Puzzles')] class extends Component {
                             </button>
                     @endforeach
                 </div>
-            </div>
+
             @endif
+            </div>
 
             <div class="flex justify-end gap-2">
                 <flux:button wire:click="$set('showNewModal', false)">{{ __('Cancel') }}</flux:button>

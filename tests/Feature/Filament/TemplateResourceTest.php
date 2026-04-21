@@ -78,7 +78,7 @@ test('creating a template fails without rotational symmetry', function () {
         ->assertHasFormErrors(['grid']);
 });
 
-test('creating a template fails when a word is shorter than 3 cells', function () {
+test('creating a template fails when a word is shorter than min_word_length', function () {
     $grid = TemplateFactory::openGrid(5, 5);
     $grid[0][1] = '#';
     $grid[4][3] = '#';
@@ -89,11 +89,47 @@ test('creating a template fails when a word is shorter than 3 cells', function (
             'width' => 5,
             'height' => 5,
             'grid' => $grid,
+            'min_word_length' => 3,
             'sort_order' => 0,
             'is_active' => true,
         ])
         ->call('create')
         ->assertHasFormErrors(['grid']);
+});
+
+test('lowering min_word_length allows grids previously rejected', function () {
+    $grid = TemplateFactory::openGrid(5, 5);
+    $grid[0][1] = '#';
+    $grid[4][3] = '#';
+
+    Livewire::test(CreateTemplate::class)
+        ->fillForm([
+            'name' => 'Mini-friendly',
+            'width' => 5,
+            'height' => 5,
+            'grid' => $grid,
+            'min_word_length' => 1,
+            'sort_order' => 0,
+            'is_active' => true,
+        ])
+        ->call('create')
+        ->assertHasNoFormErrors();
+
+    $this->assertDatabaseHas('templates', [
+        'name' => 'Mini-friendly',
+        'min_word_length' => 1,
+    ]);
+});
+
+test('admin can update min_word_length on an existing template', function () {
+    $template = Template::factory()->create(['min_word_length' => 3]);
+
+    Livewire::test(EditTemplate::class, ['record' => $template->id])
+        ->fillForm(['min_word_length' => 5])
+        ->call('save')
+        ->assertNotified();
+
+    expect($template->fresh()->min_word_length)->toBe(5);
 });
 
 test('admin can edit a template', function () {

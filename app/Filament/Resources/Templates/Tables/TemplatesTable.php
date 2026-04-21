@@ -16,7 +16,7 @@ class TemplatesTable
     public static function configure(Table $table): Table
     {
         return $table
-            ->defaultSort('sort_order')
+            ->defaultSort('width', 'desc')
             ->columns([
                 TextColumn::make('name')
                     ->searchable()
@@ -25,6 +25,10 @@ class TemplatesTable
                     ->numeric()
                     ->sortable(),
                 TextColumn::make('height')
+                    ->numeric()
+                    ->sortable(),
+                TextColumn::make('min_word_length')
+                    ->label(__('Min word'))
                     ->numeric()
                     ->sortable(),
                 TextColumn::make('sort_order')

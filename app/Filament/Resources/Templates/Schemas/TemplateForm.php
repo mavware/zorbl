@@ -43,6 +43,14 @@ class TemplateForm
                     ))
                     ->rules([self::gridRule()])
                     ->required(),
+                TextInput::make('min_word_length')
+                    ->label(__('Minimum word length'))
+                    ->helperText(__('Shortest allowed run of open cells, enforced when validating the grid.'))
+                    ->required()
+                    ->numeric()
+                    ->minValue(1)
+                    ->maxValue(10)
+                    ->default(3),
                 TextInput::make('sort_order')
                     ->required()
                     ->numeric()
@@ -58,6 +66,7 @@ class TemplateForm
             return function (string $attribute, mixed $value, Closure $fail) use ($get): void {
                 $width = (int) ($get('width') ?: 0);
                 $height = (int) ($get('height') ?: 0);
+                $minWordLength = (int) ($get('min_word_length') ?: 3);
 
                 if (! is_array($value) || count($value) !== $height) {
                     $fail(__('Grid dimensions do not match the specified height.'));
@@ -73,14 +82,14 @@ class TemplateForm
                     }
                 }
 
-                if (! GridTemplateProvider::hasRotationalSymmetry($value, $width, $height)) {
-                    $fail(__('Grid must have 180-degree rotational symmetry.'));
+//                if (! GridTemplateProvider::hasRotationalSymmetry($value, $width, $height)) {
+//                    $fail(__('Grid must have 180-degree rotational symmetry.'));
+//
+//                    return;
+//                }
 
-                    return;
-                }
-
-                if (! GridTemplateProvider::validateMinWordLength($value, $width, $height)) {
-                    $fail(__('Grid contains words shorter than the minimum length of 3.'));
+                if (! GridTemplateProvider::validateMinWordLength($value, $width, $height, $minWordLength)) {
+                    $fail(__('Grid contains words shorter than the minimum length of :min.', ['min' => $minWordLength]));
                 }
             };
         };

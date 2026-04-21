@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Cache;
  * @property int $width
  * @property int $height
  * @property array<int, array<int, int|string>> $grid
+ * @property int $min_word_length
  * @property int $sort_order
  * @property bool $is_active
  * @property CarbonImmutable|null $created_at
@@ -26,7 +27,7 @@ use Illuminate\Support\Facades\Cache;
  * @mixin Eloquent
  */
 #[Fillable([
-    'name', 'width', 'height', 'grid', 'sort_order', 'is_active',
+    'name', 'width', 'height', 'grid', 'min_word_length', 'sort_order', 'is_active',
 ])]
 class Template extends Model
 {
@@ -42,6 +43,7 @@ class Template extends Model
             'width' => 'integer',
             'height' => 'integer',
             'grid' => 'array',
+            'min_word_length' => 'integer',
             'sort_order' => 'integer',
             'is_active' => 'boolean',
         ];
