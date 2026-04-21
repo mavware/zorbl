@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Crossword;
+use App\Models\Tag;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
@@ -105,4 +106,39 @@ it('paginates results', function () {
             'data',
             'meta',
         ]);
+});
+
+it('filters by tag slug', function () {
+    $tag = Tag::factory()->create(['name' => 'Science']);
+    $tagged = Crossword::factory()->published()->create();
+    $tagged->tags()->attach($tag);
+    Crossword::factory()->published()->create();
+
+    $response = $this->getJson("/api/v1/crosswords?filter[tag]={$tag->slug}");
+
+    $response->assertSuccessful()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.id', (string) $tagged->id);
+});
+
+it('returns empty list when filtering by non-existent tag', function () {
+    Crossword::factory()->published()->create();
+
+    $this->getJson('/api/v1/crosswords?filter[tag]=non-existent')
+        ->assertSuccessful()
+        ->assertJsonCount(0, 'data');
+});
+
+it('includes tags in index response', function () {
+    $tag = Tag::factory()->create(['name' => 'History']);
+    $crossword = Crossword::factory()->published()->create();
+    $crossword->tags()->attach($tag);
+
+    $response = $this->getJson('/api/v1/crosswords');
+
+    $response->assertSuccessful();
+    $relationships = $response->json('data.0.relationships.tags');
+    expect($relationships)->toHaveCount(1)
+        ->and($relationships[0]['attributes']['name'])->toBe('History')
+        ->and($relationships[0]['attributes']['slug'])->toBe('history');
 });

@@ -22,8 +22,8 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [ ] Fix pre-existing CrosswordImportTest failure (redirect assertion in `users can import a crossword`)
 - [ ] Wire PuzzleAttemptPolicy `update` check into the solver page's `saveProgress` method for defense-in-depth
 - [ ] If the user is not a paid user, the AI fill and AI clue generation should prompt them to upgrade to a paid account
-- [ ] Add tag filtering to the crosswords API endpoint (query param `?tag=slug`)
-- [ ] Seed a default set of common crossword tags (e.g. Pop Culture, Sports, Science, History, Movies, Music, Geography, Food, Literature, Current Events)
+- [x] Add tag filtering to the crosswords API endpoint (query param `?tag=slug`)
+- [x] Seed a default set of common crossword tags (e.g. Pop Culture, Sports, Science, History, Movies, Music, Geography, Food, Literature, Current Events)
 
 ## Done
 
