@@ -45,6 +45,8 @@ use Zorbl\CrosswordIO\Crossword as CrosswordDTO;
  * @property-read int|null $clue_entries_count
  * @property-read Collection<int, CrosswordLike> $likes
  * @property-read int|null $likes_count
+ * @property-read Collection<int, Tag> $tags
+ * @property-read int|null $tags_count
  * @property-read User $user
  *
  * @mixin Eloquent
@@ -130,6 +132,14 @@ class Crossword extends Model
         return $this->belongsToMany(Contest::class)
             ->withPivot(['sort_order', 'extraction_hint'])
             ->withTimestamps();
+    }
+
+    /**
+     * @return BelongsToMany<Tag, $this>
+     */
+    public function tags(): BelongsToMany
+    {
+        return $this->belongsToMany(Tag::class)->withTimestamps();
     }
 
     /**
