@@ -33,17 +33,19 @@
         </div>
     </div>
 
-    <div class="shrink-0 opacity-0 transition-opacity group-hover:opacity-100">
-        <flux:dropdown position="bottom" align="end">
-            <flux:button variant="ghost" size="sm" icon="ellipsis-vertical" />
-            <flux:menu>
-                <flux:menu.item icon="pencil" wire:click="openEditModal({{ $item->id }})">
-                    {{ __('Edit') }}
-                </flux:menu.item>
-                <flux:menu.item icon="trash" variant="danger" wire:click="deleteItem({{ $item->id }})" wire:confirm="{{ __('Are you sure you want to delete this roadmap item?') }}">
-                    {{ __('Delete') }}
-                </flux:menu.item>
-            </flux:menu>
-        </flux:dropdown>
-    </div>
+    @if($canManage ?? false)
+        <div class="shrink-0 opacity-0 transition-opacity group-hover:opacity-100">
+            <flux:dropdown position="bottom" align="end">
+                <flux:button variant="ghost" size="sm" icon="ellipsis-vertical" />
+                <flux:menu>
+                    <flux:menu.item icon="pencil" wire:click="openEditModal({{ $item->id }})">
+                        {{ __('Edit') }}
+                    </flux:menu.item>
+                    <flux:menu.item icon="trash" variant="danger" wire:click="deleteItem({{ $item->id }})" wire:confirm="{{ __('Are you sure you want to delete this roadmap item?') }}">
+                        {{ __('Delete') }}
+                    </flux:menu.item>
+                </flux:menu>
+            </flux:dropdown>
+        </div>
+    @endif
 </div>

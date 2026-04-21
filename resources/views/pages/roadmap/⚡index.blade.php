@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\RoadmapItem;
+use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
@@ -24,6 +25,12 @@ new #[Title('Roadmap')] class extends Component {
     public string $editStatus = 'planned';
     public string $editTargetDate = '';
 
+    #[Computed]
+    public function canManage(): bool
+    {
+        return Gate::allows('create', RoadmapItem::class);
+    }
+
     /** @return array<string, \Illuminate\Support\Collection<int, RoadmapItem>> */
     #[Computed]
     public function groupedItems(): array
@@ -45,6 +52,8 @@ new #[Title('Roadmap')] class extends Component {
 
     public function addItem(): void
     {
+        Gate::authorize('create', RoadmapItem::class);
+
         $this->validate([
             'newTitle' => ['required', 'string', 'min:3', 'max:255'],
             'newDescription' => ['nullable', 'string', 'max:2000'],
@@ -69,6 +78,8 @@ new #[Title('Roadmap')] class extends Component {
     {
         $item = RoadmapItem::findOrFail($id);
 
+        Gate::authorize('update', $item);
+
         $this->editingItemId = $item->id;
         $this->editTitle = $item->title;
         $this->editDescription = $item->description ?? '';
@@ -80,6 +91,10 @@ new #[Title('Roadmap')] class extends Component {
 
     public function saveEdit(): void
     {
+        $item = RoadmapItem::findOrFail($this->editingItemId);
+
+        Gate::authorize('update', $item);
+
         $this->validate([
             'editTitle' => ['required', 'string', 'min:3', 'max:255'],
             'editDescription' => ['nullable', 'string', 'max:2000'],
@@ -87,8 +102,6 @@ new #[Title('Roadmap')] class extends Component {
             'editStatus' => ['required', 'in:planned,in_progress,completed'],
             'editTargetDate' => ['nullable', 'date'],
         ]);
-
-        $item = RoadmapItem::findOrFail($this->editingItemId);
 
         $item->update([
             'title' => trim($this->editTitle),
@@ -106,7 +119,11 @@ new #[Title('Roadmap')] class extends Component {
 
     public function deleteItem(int $id): void
     {
-        RoadmapItem::findOrFail($id)->delete();
+        $item = RoadmapItem::findOrFail($id);
+
+        Gate::authorize('delete', $item);
+
+        $item->delete();
         unset($this->groupedItems);
     }
 
@@ -149,9 +166,11 @@ new #[Title('Roadmap')] class extends Component {
             <flux:text class="mt-1">{{ __('Upcoming features, fixes, and improvements.') }}</flux:text>
         </div>
 
-        <flux:button variant="primary" icon="plus" wire:click="$set('showAddModal', true)">
-            {{ __('Add Item') }}
-        </flux:button>
+        @if($this->canManage)
+            <flux:button variant="primary" icon="plus" wire:click="$set('showAddModal', true)">
+                {{ __('Add Item') }}
+            </flux:button>
+        @endif
     </div>
 
     {{-- Type Filter --}}
@@ -174,7 +193,7 @@ new #[Title('Roadmap')] class extends Component {
             </div>
             <div class="grid gap-3">
                 @foreach($this->groupedItems['in_progress'] as $item)
-                    @include('pages.roadmap._item', ['item' => $item])
+                    @include('pages.roadmap._item', ['item' => $item, 'canManage' => $this->canManage])
                 @endforeach
             </div>
         </section>
@@ -190,7 +209,7 @@ new #[Title('Roadmap')] class extends Component {
             </div>
             <div class="grid gap-3">
                 @foreach($this->groupedItems['planned'] as $item)
-                    @include('pages.roadmap._item', ['item' => $item])
+                    @include('pages.roadmap._item', ['item' => $item, 'canManage' => $this->canManage])
                 @endforeach
             </div>
         </section>
@@ -206,7 +225,7 @@ new #[Title('Roadmap')] class extends Component {
             </div>
             <div class="grid gap-3">
                 @foreach($this->groupedItems['completed'] as $item)
-                    @include('pages.roadmap._item', ['item' => $item])
+                    @include('pages.roadmap._item', ['item' => $item, 'canManage' => $this->canManage])
                 @endforeach
             </div>
         </section>
