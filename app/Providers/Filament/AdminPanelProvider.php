@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use Filament\Actions\Action;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -36,7 +37,13 @@ class AdminPanelProvider extends PanelProvider
             ->navigationItems([
                 NavigationItem::make('Pulse')
                     ->icon('heroicon-o-chart-bar')
-                    ->url('/pulse'),
+                    ->url('/pulse')
+                    ->sort(1),
+            ])
+            ->usermenuitems([
+                Action::make('Dashboard')
+                    ->icon('heroicon-o-home')
+                    ->url('/dashboard'),
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
             ->widgets([

@@ -91,7 +91,8 @@
       "Bash(sed -n '747,969p' \"resources/views/pages/crosswords/⚡editor.blade.php\")",
       "Read(//tmp/**)",
       "Bash(awk 'NR==770,/^        {{-- Clues panel/' \"resources/views/pages/crosswords/⚡editor.blade.php\")",
-      "Bash(composer show *)"
+      "Bash(composer show *)",
+      "mcp__laravel-boost__browser-logs"
     ]
   },
   "enableAllProjectMcpServers": true,

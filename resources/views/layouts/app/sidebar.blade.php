@@ -107,7 +107,7 @@
                             {{ __('Settings') }}
                         </flux:menu.item>
                         @if (auth()->user()->hasRole('Admin'))
-                            <flux:menu.item :href="route('filament.admin.pages.dashboard')" icon="home" wire:navigate>
+                            <flux:menu.item :href="route('filament.admin.home')" icon="home">
                                 {{ __('Admin') }}
                             </flux:menu.item>
                         @endif
