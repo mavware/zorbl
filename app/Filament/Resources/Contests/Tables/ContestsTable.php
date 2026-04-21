@@ -55,11 +55,6 @@ class ContestsTable
                     ->counts('crosswords')
                     ->label('Puzzles')
                     ->sortable(),
-                TextColumn::make('publish_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->placeholder('—')
-                    ->toggleable(isToggledHiddenByDefault: true),
                 IconColumn::make('is_featured')
                     ->boolean()
                     ->label('Featured'),
@@ -85,6 +80,7 @@ class ContestsTable
             ->toolbarActions([
                 BulkActionGroup::make([
                     self::schedulePublishBulkAction(),
+                    self::clearPublishDateBulkAction(),
                     DeleteBulkAction::make(),
                 ]),
             ]);
@@ -133,5 +129,43 @@ class ContestsTable
             ->requiresConfirmation()
             ->modalHeading('Schedule Publish Date')
             ->modalDescription('Set a publish date for the selected draft contests. Non-draft contests will be skipped.');
+    }
+
+    private static function clearPublishDateBulkAction(): BulkAction
+    {
+        return BulkAction::make('clearPublishDate')
+            ->label('Clear Publish Date')
+            ->icon('heroicon-o-x-circle')
+            ->action(function (Collection $records): void {
+                $scheduled = $records->whereNotNull('publish_at');
+
+                if ($scheduled->isEmpty()) {
+                    Notification::make()
+                        ->warning()
+                        ->title('No scheduled contests selected')
+                        ->body('None of the selected contests have a publish date to clear.')
+                        ->send();
+
+                    return;
+                }
+
+                $scheduled->each(fn (Contest $contest) => $contest->update(['publish_at' => null]));
+
+                $skipped = $records->count() - $scheduled->count();
+
+                $notification = Notification::make()
+                    ->success()
+                    ->title("Cleared publish date on {$scheduled->count()} contest(s)");
+
+                if ($skipped > 0) {
+                    $notification->body("{$skipped} contest(s) without a publish date were skipped.");
+                }
+
+                $notification->send();
+            })
+            ->deselectRecordsAfterCompletion()
+            ->requiresConfirmation()
+            ->modalHeading('Clear Publish Date')
+            ->modalDescription('Remove the scheduled publish date from the selected contests. Contests without a publish date will be skipped.');
     }
 }
