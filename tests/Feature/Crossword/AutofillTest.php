@@ -598,3 +598,53 @@ test('ai clue generator parses valid response', function () {
         ->and($result['clues']['down'])->toHaveCount(2)
         ->and($result['clues']['across'][1])->toBe('Feline pet');
 });
+
+test('free user ai fill is blocked and does not call api', function () {
+    Http::fake();
+
+    $user = User::factory()->create();
+    $crossword = makeSmallCrossword($user);
+
+    $solution = [['', '', ''], ['', '', ''], ['', '', '']];
+
+    Livewire::actingAs($user)
+        ->test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->call('aiFill', $solution)
+        ->assertNoRedirect();
+
+    Http::assertNothingSent();
+});
+
+test('free user ai generate clues is blocked and does not call api', function () {
+    Http::fake();
+
+    $user = User::factory()->create();
+    $crossword = makeSmallCrossword($user);
+
+    $solution = [
+        ['C', 'A', 'T'],
+        ['O', 'T', 'E'],
+        ['T', 'E', 'A'],
+    ];
+
+    Livewire::actingAs($user)
+        ->test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->call('aiGenerateClues', $solution)
+        ->assertNoRedirect();
+
+    Http::assertNothingSent();
+});
+
+test('editor has upgrade modal properties', function () {
+    $user = User::factory()->create();
+    $crossword = makeSmallCrossword($user);
+
+    Livewire::actingAs($user)
+        ->test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->assertSet('showUpgradeModal', false)
+        ->assertSet('upgradeFeature', '')
+        ->set('upgradeFeature', 'grid_fill')
+        ->set('showUpgradeModal', true)
+        ->assertSet('showUpgradeModal', true)
+        ->assertSet('upgradeFeature', 'grid_fill');
+});

@@ -1434,15 +1434,20 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
                 const result = await this.$wire.aiFill(
                     JSON.parse(JSON.stringify(this.solution))
                 );
-                if (result.fills && result.fills.length) {
-                    this.applyFills(result.fills);
-                }
-                this.$dispatch('notify', {
-                    message: result.message,
-                    type: result.success ? 'success' : 'warning',
-                });
-                if (result.needs_theme) {
-                    this.$wire.set('showSettingsModal', true);
+                if (result.upgrade) {
+                    this.$wire.set('upgradeFeature', 'grid_fill');
+                    this.$wire.set('showUpgradeModal', true);
+                } else {
+                    if (result.fills && result.fills.length) {
+                        this.applyFills(result.fills);
+                    }
+                    this.$dispatch('notify', {
+                        message: result.message,
+                        type: result.success ? 'success' : 'warning',
+                    });
+                    if (result.needs_theme) {
+                        this.$wire.set('showSettingsModal', true);
+                    }
                 }
             } catch (e) {
                 this.$dispatch('notify', {
@@ -1461,13 +1466,18 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
                 const result = await this.$wire.aiGenerateClues(
                     JSON.parse(JSON.stringify(this.solution))
                 );
-                if (result.success && result.clues) {
-                    this.applyClues(result.clues);
+                if (result.upgrade) {
+                    this.$wire.set('upgradeFeature', 'clue_generation');
+                    this.$wire.set('showUpgradeModal', true);
+                } else {
+                    if (result.success && result.clues) {
+                        this.applyClues(result.clues);
+                    }
+                    this.$dispatch('notify', {
+                        message: result.message,
+                        type: result.success ? 'success' : 'warning',
+                    });
                 }
-                this.$dispatch('notify', {
-                    message: result.message,
-                    type: result.success ? 'success' : 'warning',
-                });
             } catch (e) {
                 this.$dispatch('notify', {
                     message: 'Clue generation failed: ' + (e.message || 'Unknown error'),
