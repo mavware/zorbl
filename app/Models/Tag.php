@@ -29,6 +29,21 @@ class Tag extends Model
     /** @use HasFactory<TagFactory> */
     use HasFactory;
 
+    /**
+     * Common crossword tag names offered as suggestions in the editor.
+     *
+     * @var list<string>
+     */
+    public const STANDARD = [
+        'Themed',
+        'Themeless',
+        'Cryptic',
+        'Grid Art',
+        'Mini',
+        'Meta',
+        'Logic',
+    ];
+
     protected static function booted(): void
     {
         static::creating(function (Tag $tag): void {
@@ -36,6 +51,27 @@ class Tag extends Model
                 $tag->slug = Str::slug($tag->name);
             }
         });
+    }
+
+    /**
+     * Standard tag names matching the given search term (case-insensitive).
+     *
+     * @return list<string>
+     */
+    public static function standardSuggestions(string $search = ''): array
+    {
+        $search = trim($search);
+
+        if ($search === '') {
+            return self::STANDARD;
+        }
+
+        $needle = mb_strtolower($search);
+
+        return array_values(array_filter(
+            self::STANDARD,
+            fn (string $name): bool => str_contains(mb_strtolower($name), $needle),
+        ));
     }
 
     /**

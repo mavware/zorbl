@@ -224,12 +224,56 @@ class extends Component {
             $this->tagIds[] = $tag->id;
         }
         $this->tagSearch = '';
-        unset($this->availableTags, $this->selectedTags);
+        unset($this->availableTags, $this->selectedTags, $this->suggestedStandardTags);
+    }
+
+    public function addStandardTag(string $name): void
+    {
+        if (! in_array($name, Tag::STANDARD, true)) {
+            return;
+        }
+
+        $tag = Tag::firstOrCreate(
+            ['slug' => \Illuminate\Support\Str::slug($name)],
+            ['name' => $name],
+        );
+
+        if (! in_array($tag->id, $this->tagIds)) {
+            $this->tagIds[] = $tag->id;
+        }
+        $this->tagSearch = '';
+        unset($this->availableTags, $this->selectedTags, $this->suggestedStandardTags);
+    }
+
+    /** @return array<int, string> */
+    #[Computed]
+    public function suggestedStandardTags(): array
+    {
+        $matching = Tag::standardSuggestions($this->tagSearch);
+
+        if ($matching === []) {
+            return [];
+        }
+
+        $availableSlugs = array_map(
+            fn (array $t): string => \Illuminate\Support\Str::slug($t['name']),
+            $this->availableTags,
+        );
+        $selectedSlugs = array_map(
+            fn (array $t): string => \Illuminate\Support\Str::slug($t['name']),
+            $this->selectedTags,
+        );
+        $taken = array_merge($availableSlugs, $selectedSlugs);
+
+        return array_values(array_filter(
+            $matching,
+            fn (string $name): bool => ! in_array(\Illuminate\Support\Str::slug($name), $taken, true),
+        ));
     }
 
     public function updatedTagSearch(): void
     {
-        unset($this->availableTags);
+        unset($this->availableTags, $this->suggestedStandardTags);
     }
 
     public function attemptPublish(): void
@@ -962,9 +1006,10 @@ class extends Component {
                     >
                         @php
                             $available = collect($this->availableTags)->reject(fn ($t) => in_array($t['id'], $this->tagIds));
+                            $suggestions = $this->suggestedStandardTags;
                         @endphp
 
-                        @forelse($available as $tag)
+                        @foreach($available as $tag)
                             <button
                                 type="button"
                                 wire:click="addTag({{ $tag['id'] }})"
@@ -973,7 +1018,25 @@ class extends Component {
                             >
                                 {{ $tag['name'] }}
                             </button>
-                        @empty
+                        @endforeach
+
+                        @if(count($suggestions))
+                            <div class="px-3 pt-2 pb-1 text-xs font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
+                                {{ __('Suggested') }}
+                            </div>
+                            @foreach($suggestions as $name)
+                                <button
+                                    type="button"
+                                    wire:click="addStandardTag(@js($name))"
+                                    x-on:click="open = false"
+                                    class="flex w-full items-center px-3 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-700"
+                                >
+                                    {{ $name }}
+                                </button>
+                            @endforeach
+                        @endif
+
+                        @if($available->isEmpty() && count($suggestions) === 0)
                             @if($this->tagSearch !== '')
                                 <button
                                     type="button"
@@ -987,7 +1050,7 @@ class extends Component {
                             @else
                                 <div class="px-3 py-2 text-sm text-zinc-400">{{ __('No tags found') }}</div>
                             @endif
-                        @endforelse
+                        @endif
                     </div>
                 </div>
             </flux:field>

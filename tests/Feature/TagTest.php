@@ -145,6 +145,104 @@ test('creating a duplicate tag name reuses the existing tag', function () {
         ->and($crossword->fresh()->tags->pluck('id')->all())->toBe([$existing->id]);
 });
 
+// --- Standard tag suggestions ---
+
+test('editor suggests standard tags when search is empty', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create();
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->assertSet('suggestedStandardTags', Tag::STANDARD);
+});
+
+test('editor filters standard suggestions by search term', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create();
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->set('tagSearch', 'theme')
+        ->assertSet('suggestedStandardTags', ['Themed', 'Themeless']);
+});
+
+test('editor hides standard suggestions that already exist in the database', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create();
+    Tag::create(['name' => 'Themed']);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->assertSet(
+            'suggestedStandardTags',
+            array_values(array_filter(Tag::STANDARD, fn ($n) => $n !== 'Themed'))
+        );
+});
+
+test('editor hides standard suggestions that are already selected', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create();
+    $tag = Tag::create(['name' => 'Cryptic']);
+    $crossword->tags()->attach($tag);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->assertSet(
+            'suggestedStandardTags',
+            array_values(array_filter(Tag::STANDARD, fn ($n) => $n !== 'Cryptic'))
+        );
+});
+
+test('editor adds a standard tag, creating it if missing', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create();
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->call('addStandardTag', 'Grid Art')
+        ->call('saveMetadata')
+        ->assertDispatched('saved');
+
+    $tag = Tag::where('slug', 'grid-art')->first();
+    expect($tag)->not->toBeNull()
+        ->and($tag->name)->toBe('Grid Art')
+        ->and($crossword->fresh()->tags->pluck('id')->all())->toBe([$tag->id]);
+});
+
+test('editor reuses an existing tag when adding a standard suggestion', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create();
+    $existing = Tag::create(['name' => 'Mini']);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->call('addStandardTag', 'Mini')
+        ->call('saveMetadata');
+
+    expect(Tag::where('slug', 'mini')->count())->toBe(1)
+        ->and($crossword->fresh()->tags->pluck('id')->all())->toBe([$existing->id]);
+});
+
+test('editor ignores attempts to add non-standard tags via addStandardTag', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create();
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->call('addStandardTag', 'Not A Standard Tag')
+        ->call('saveMetadata');
+
+    expect(Tag::where('name', 'Not A Standard Tag')->exists())->toBeFalse()
+        ->and($crossword->fresh()->tags)->toHaveCount(0);
+});
+
 // --- Browse page ---
 
 test('browse page shows tags on puzzle cards', function () {
