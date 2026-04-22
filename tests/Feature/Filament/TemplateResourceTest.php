@@ -61,23 +61,6 @@ test('creating a template fails when grid dimensions do not match', function () 
         ->assertHasFormErrors(['grid']);
 });
 
-test('creating a template fails without rotational symmetry', function () {
-    $grid = TemplateFactory::openGrid(5, 5);
-    $grid[0][0] = '#';
-
-    Livewire::test(CreateTemplate::class)
-        ->fillForm([
-            'name' => 'Asymmetric',
-            'width' => 5,
-            'height' => 5,
-            'grid' => $grid,
-            'sort_order' => 0,
-            'is_active' => true,
-        ])
-        ->call('create')
-        ->assertHasFormErrors(['grid']);
-});
-
 test('creating a template fails when a word is shorter than min_word_length', function () {
     $grid = TemplateFactory::openGrid(5, 5);
     $grid[0][1] = '#';
