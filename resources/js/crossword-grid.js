@@ -1434,6 +1434,13 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
                 const result = await this.$wire.aiFill(
                     JSON.parse(JSON.stringify(this.solution))
                 );
+                if (result.upgrade) {
+                    this.$wire.set('upgradeFeature', 'ai_fill');
+                    this.$wire.set('showUpgradeModal', true);
+                    this.fillInProgress = false;
+                    this.fillMode = null;
+                    return;
+                }
                 if (result.fills && result.fills.length) {
                     this.applyFills(result.fills);
                 }
@@ -1461,6 +1468,13 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
                 const result = await this.$wire.aiGenerateClues(
                     JSON.parse(JSON.stringify(this.solution))
                 );
+                if (result.upgrade) {
+                    this.$wire.set('upgradeFeature', 'ai_clues');
+                    this.$wire.set('showUpgradeModal', true);
+                    this.fillInProgress = false;
+                    this.fillMode = null;
+                    return;
+                }
                 if (result.success && result.clues) {
                     this.applyClues(result.clues);
                 }
