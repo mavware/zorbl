@@ -56,6 +56,8 @@ class extends Component {
     public ?array $prefilled = null;
 
     public bool $showSettingsModal = false;
+    public bool $showUpgradeModal = false;
+    public string $upgradeFeature = '';
     public int $resizeWidth;
     public int $resizeHeight;
 
@@ -906,6 +908,29 @@ class extends Component {
             <div class="flex justify-end gap-2">
                 <flux:button wire:click="cancelExport">{{ __('Cancel') }}</flux:button>
                 <flux:button variant="primary" wire:click="confirmExport">{{ __('Export Anyway') }}</flux:button>
+            </div>
+        </div>
+    </flux:modal>
+
+    {{-- Upgrade Prompt Modal --}}
+    <flux:modal wire:model="showUpgradeModal" class="w-full max-w-sm">
+        <div class="space-y-6 text-center">
+            <div class="mx-auto flex size-12 items-center justify-center rounded-full bg-purple-100 dark:bg-purple-900/30">
+                <svg xmlns="http://www.w3.org/2000/svg" class="size-6 text-purple-600 dark:text-purple-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M15.98 1.804a1 1 0 0 0-1.96 0l-.24 1.192a1 1 0 0 1-.784.785l-1.192.238a1 1 0 0 0 0 1.962l1.192.238a1 1 0 0 1 .785.785l.238 1.192a1 1 0 0 0 1.962 0l.238-1.192a1 1 0 0 1 .785-.785l1.192-.238a1 1 0 0 0 0-1.962l-1.192-.238a1 1 0 0 1-.785-.785l-.238-1.192ZM6.949 5.684a1 1 0 0 0-1.898 0l-.683 2.051a1 1 0 0 1-.633.633l-2.051.683a1 1 0 0 0 0 1.898l2.051.683a1 1 0 0 1 .633.633l.683 2.051a1 1 0 0 0 1.898 0l.683-2.051a1 1 0 0 1 .633-.633l2.051-.683a1 1 0 0 0 0-1.898l-2.051-.683a1 1 0 0 1-.633-.633l-.683-2.051ZM15.98 13.804a1 1 0 0 0-1.96 0l-.24 1.192a1 1 0 0 1-.784.785l-1.192.238a1 1 0 0 0 0 1.962l1.192.238a1 1 0 0 1 .785.785l.238 1.192a1 1 0 0 0 1.962 0l.238-1.192a1 1 0 0 1 .785-.785l1.192-.238a1 1 0 0 0 0-1.962l-1.192-.238a1 1 0 0 1-.785-.785l-.238-1.192Z" />
+                </svg>
+            </div>
+            <flux:heading size="lg">{{ __('Upgrade to Pro') }}</flux:heading>
+            <flux:text>
+                @if($upgradeFeature === 'clue_generation')
+                    {{ __('AI Clue Generation is a Pro feature. Upgrade to unlock 50 AI-powered clue generations per month.') }}
+                @else
+                    {{ __('AI Autofill is a Pro feature. Upgrade to unlock 50 AI-powered grid fills per month.') }}
+                @endif
+            </flux:text>
+            <div class="flex justify-center gap-2">
+                <flux:button wire:click="$set('showUpgradeModal', false)">{{ __('Maybe Later') }}</flux:button>
+                <flux:button variant="primary" :href="route('billing.index')" wire:navigate>{{ __('View Plans') }}</flux:button>
             </div>
         </div>
     </flux:modal>
