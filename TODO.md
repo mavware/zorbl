@@ -25,6 +25,8 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [ ] Add tag filtering to the crosswords API endpoint (query param `?tag=slug`)
 - [ ] Seed a default set of common crossword tags (e.g. Pop Culture, Sports, Science, History, Movies, Music, Geography, Food, Literature, Current Events)
 - [ ] ability to change color of cell background
+- [x] Add tag filtering to the crosswords API endpoint (query param `?tag=slug`)
+- [x] Seed a default set of common crossword tags (e.g. Pop Culture, Sports, Science, History, Movies, Music, Geography, Food, Literature, Current Events)
 
 ## Done
 
