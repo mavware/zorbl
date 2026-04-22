@@ -22,7 +22,7 @@ test('template picker appears in new puzzle modal for standard sizes', function 
         ->assertSee($firstTemplateName);
 });
 
-test('template picker does not appear for non-standard sizes', function () {
+test('template picker shows empty state for non-standard sizes', function () {
     $user = User::factory()->create();
     $this->actingAs($user);
 
@@ -30,7 +30,19 @@ test('template picker does not appear for non-standard sizes', function () {
         ->set('showNewModal', true)
         ->set('newWidth', 2)
         ->set('newHeight', 2)
-        ->assertDontSee('Grid Template');
+        ->assertSee('No templates available for this grid size');
+});
+
+test('template picker shows empty state for non-square grids', function () {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    Livewire\Livewire::test('pages::crosswords.index')
+        ->set('showNewModal', true)
+        ->set('newWidth', 15)
+        ->set('newHeight', 10)
+        ->assertSee('No templates available for this grid size')
+        ->assertDontSee('Blank');
 });
 
 test('creating puzzle with selected template uses that grid', function () {
