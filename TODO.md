@@ -15,12 +15,12 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [ ] Ability to sign in with google
 - [ ] Brainstorm ways to generate engaging puzzles with AI
 - [ ] Add Livewire component tests for settings, favorites, roadmap, and support pages
-- [ ] Audit Livewire page components for authorization — ensure they use policies instead of inline ownership checks
+- [x] Audit Livewire page components for authorization — ensure they use policies instead of inline ownership checks
 - [ ] Add feature tests for admin-assigned-ticket access via SupportTicketPolicy
 - [ ] Let users set up webhooks for their puzzles for common events like puzzle completion or puzzle attempt submission, etc...
 - [ ] Add Filament test coverage for ContestResource CRUD (create, edit, delete) — currently only basic tests exist in ContestAdminTest
 - [ ] Fix pre-existing CrosswordImportTest failure (redirect assertion in `users can import a crossword`)
-- [ ] Wire PuzzleAttemptPolicy `update` check into the solver page's `saveProgress` method for defense-in-depth
+- [x] Wire PuzzleAttemptPolicy `update` check into the solver page's `saveProgress` method for defense-in-depth
 - [ ] If the user is not a paid user, the AI fill and AI clue generation should prompt them to upgrade to a paid account
 - [ ] Add tag filtering to the crosswords API endpoint (query param `?tag=slug`)
 - [ ] Seed a default set of common crossword tags (e.g. Pop Culture, Sports, Science, History, Movies, Music, Geography, Food, Literature, Current Events)

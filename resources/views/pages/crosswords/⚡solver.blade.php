@@ -274,9 +274,7 @@ new #[Title('Solve Crossword')] class extends Component {
     {
         $attempt = PuzzleAttempt::findOrFail($this->attemptId);
 
-        if ($attempt->user_id !== Auth::id()) {
-            abort(403);
-        }
+        $this->authorize('update', $attempt);
 
         $this->progress = $progress;
         $this->pencilCells = $pencilCells;
