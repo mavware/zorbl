@@ -100,6 +100,14 @@ class extends Component {
             $query->whereHas('tags', fn ($q) => $q->where('slug', $this->tag));
         }
 
+        if (Auth::check()) {
+            $blockedTagIds = Auth::user()->blockedTags()->pluck('tags.id');
+
+            if ($blockedTagIds->isNotEmpty()) {
+                $query->whereDoesntHave('tags', fn ($q) => $q->whereIn('tags.id', $blockedTagIds));
+            }
+        }
+
         if ($this->dateRange !== '') {
             match ($this->dateRange) {
                 'today' => $query->whereDate('created_at', today()),

@@ -132,6 +132,8 @@ new #[Title('Profile settings')] class extends Component {
             </div>
         </form>
 
+        <livewire:pages::settings.blocked-tags />
+
         @if ($this->showDeleteUser)
             <livewire:pages::settings.delete-user-form />
         @endif

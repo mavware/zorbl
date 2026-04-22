@@ -17,10 +17,18 @@ class CrosswordController extends Controller
 {
     public function index(Request $request): AnonymousResourceCollection
     {
-        $crosswords = QueryBuilder::for(
-            Crossword::where('is_published', true)
-                ->with(['user:id,name,copyright_name', 'tags:id,name,slug'])
-        )
+        $query = Crossword::where('is_published', true)
+            ->with(['user:id,name,copyright_name', 'tags:id,name,slug']);
+
+        if ($request->user()) {
+            $blockedTagIds = $request->user()->blockedTags()->pluck('tags.id');
+
+            if ($blockedTagIds->isNotEmpty()) {
+                $query->whereDoesntHave('tags', fn ($q) => $q->whereIn('tags.id', $blockedTagIds));
+            }
+        }
+
+        $crosswords = QueryBuilder::for($query)
             ->allowedFilters(
                 'difficulty_label',
                 'author',
