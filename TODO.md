@@ -6,7 +6,7 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 ## Open
 
 - [x] Tagging system for puzzles
-- [ ] The template modal still jumps around when the user changes the width or height of the puzzle
+- [x] The template modal still jumps around when the user changes the width or height of the puzzle
 - [ ] Type of puzzle selection when creating a new puzzle (standard, diamond, freestyle)
 - [ ] Create a step-by-step marketing plan for the site
 - [x] Ability to search for a puzzle by tag

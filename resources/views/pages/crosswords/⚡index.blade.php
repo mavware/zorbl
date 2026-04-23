@@ -206,17 +206,20 @@ new #[Title('My Puzzles')] class extends Component {
             <div class="grid grid-cols-2 gap-4">
                 <flux:field>
                     <flux:label>{{ __('Width') }}</flux:label>
-                    <flux:input type="number" wire:model.live="newWidth" min="3" max="30" />
+                    <flux:input type="number" wire:model.live.debounce.300ms="newWidth" min="3" max="30" />
                     <flux:error name="newWidth" />
                 </flux:field>
 
                 <flux:field>
                     <flux:label>{{ __('Height') }}</flux:label>
-                    <flux:input type="number" wire:model.live="newHeight" min="3" max="30" />
+                    <flux:input type="number" wire:model.live.debounce.300ms="newHeight" min="3" max="30" />
                     <flux:error name="newHeight" />
                 </flux:field>
             </div>
-            <div class="h-48">
+            <div class="relative h-48" wire:key="template-section-{{ $newWidth }}x{{ $newHeight }}">
+                <div wire:loading.delay wire:target="newWidth, newHeight" class="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-white/60 dark:bg-zinc-900/60">
+                    <flux:icon.loading class="size-5 text-zinc-400" />
+                </div>
             @if(count($this->templates) > 0)
                 <flux:label class="mb-2">{{ __('Grid Template') }} <span class="text-zinc-400 text-xs font-normal">{{ __('(optional)') }}</span></flux:label>
                 <div class="flex min-h-[6.5rem] gap-3 overflow-x-auto pb-2">
@@ -241,7 +244,10 @@ new #[Title('My Puzzles')] class extends Component {
                             </button>
                     @endforeach
                 </div>
-
+            @else
+                <div class="flex h-full items-center justify-center">
+                    <flux:text size="sm" class="text-zinc-400">{{ __('Templates are available for square grids (3×3 to 27×27).') }}</flux:text>
+                </div>
             @endif
             </div>
 
