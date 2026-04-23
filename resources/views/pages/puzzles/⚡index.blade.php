@@ -81,11 +81,13 @@ class extends Component {
 
         if ($this->puzzleType !== '') {
             match ($this->puzzleType) {
-                'standard' => $query->where(function ($q) {
+                'standard' => $query->where('puzzle_type', 'standard')->where(function ($q) {
                     $q->whereNull('styles')
                         ->orWhere('styles', '[]')
                         ->orWhere('styles', '{}');
                 })->whereRaw("grid NOT LIKE '%null%'"),
+                'diamond' => $query->where('puzzle_type', 'diamond'),
+                'freestyle' => $query->where('puzzle_type', 'freestyle'),
                 'barred' => $query->where('styles', 'like', '%bars%'),
                 'shaped' => $query->where('grid', 'like', '%null%'),
                 default => null,
@@ -249,6 +251,10 @@ class extends Component {
 
     public function puzzleTypeLabel(Crossword $crossword): string
     {
+        if ($crossword->puzzle_type !== \App\Enums\PuzzleType::Standard) {
+            return __($crossword->puzzle_type->label());
+        }
+
         if ($crossword->grid && collect($crossword->grid)->flatten()->contains(fn ($v) => $v === null)) {
             return __('Shaped');
         }
@@ -332,6 +338,8 @@ class extends Component {
             <flux:radio.group wire:model.live="puzzleType" variant="segmented" size="sm">
                 <flux:radio value="" label="{{ __('All') }}" />
                 <flux:radio value="standard" label="{{ __('Standard') }}" />
+                <flux:radio value="diamond" label="{{ __('Diamond') }}" />
+                <flux:radio value="freestyle" label="{{ __('Freestyle') }}" />
                 <flux:radio value="barred" label="{{ __('Barred') }}" />
                 <flux:radio value="shaped" label="{{ __('Shaped') }}" />
             </flux:radio.group>

@@ -138,6 +138,7 @@ new #[Title('My Puzzles')] class extends Component {
             'copyright' => copyright(Auth::user()->copyright_name ?? Auth::user()->name ?? ''),
             'width' => $this->newWidth,
             'height' => $this->newHeight,
+            'puzzle_type' => $type,
             'grid' => $result['grid'],
             'solution' => Crossword::emptySolution($this->newWidth, $this->newHeight),
             'clues_across' => array_map(fn ($s) => ['number' => $s['number'], 'clue' => ''], $result['across']),
@@ -225,6 +226,13 @@ new #[Title('My Puzzles')] class extends Component {
                             <flux:heading size="sm" class="truncate">{{ $crossword->title ?: __('Untitled Puzzle') }}</flux:heading>
                             <flux:text size="sm" class="mt-1">
                                 {{ $crossword->width }}&times;{{ $crossword->height }}
+                                @if($crossword->puzzle_type !== App\Enums\PuzzleType::Standard)
+                                    &middot;
+                                    <span class="inline-flex items-center gap-0.5">
+                                        <flux:icon :name="$crossword->puzzle_type->icon()" class="size-3" />
+                                        {{ $crossword->puzzle_type->label() }}
+                                    </span>
+                                @endif
                                 &middot;
                                 {{ $crossword->updated_at->diffForHumans() }}
                             </flux:text>

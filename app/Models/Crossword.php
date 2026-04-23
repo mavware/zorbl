@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\CrosswordLayout;
+use App\Enums\PuzzleType;
 use Carbon\CarbonImmutable;
 use Database\Factories\CrosswordFactory;
 use Eloquent;
@@ -24,6 +25,7 @@ use Zorbl\CrosswordIO\Crossword as CrosswordDTO;
  * @property string|null $notes
  * @property string|null $secret_theme
  * @property CrosswordLayout|null $layout
+ * @property PuzzleType $puzzle_type
  * @property int $width
  * @property int $height
  * @property string $kind
@@ -53,7 +55,7 @@ use Zorbl\CrosswordIO\Crossword as CrosswordDTO;
  */
 #[Fillable([
     'title', 'author', 'copyright', 'notes', 'secret_theme', 'layout',
-    'width', 'height', 'kind',
+    'width', 'height', 'kind', 'puzzle_type',
     'grid', 'solution', 'prefilled', 'user_progress', 'clues_across', 'clues_down',
     'styles', 'metadata', 'is_published',
     'difficulty_score', 'difficulty_label',
@@ -81,6 +83,7 @@ class Crossword extends Model
             'metadata' => 'array',
             'is_published' => 'boolean',
             'layout' => CrosswordLayout::class,
+            'puzzle_type' => PuzzleType::class,
         ];
     }
 
