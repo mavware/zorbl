@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -11,6 +12,10 @@ return new class extends Migration
         Schema::table('crosswords', function (Blueprint $table) {
             $table->string('puzzle_type')->default('standard')->after('kind');
         });
+
+        DB::table('crosswords')
+            ->where('grid', 'like', '%null%')
+            ->update(['puzzle_type' => 'diamond']);
     }
 
     public function down(): void

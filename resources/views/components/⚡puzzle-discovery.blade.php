@@ -117,16 +117,7 @@ new class extends Component {
         }
 
         if ($this->puzzleType !== '') {
-            match ($this->puzzleType) {
-                'standard' => $query->where(function ($q) {
-                    $q->whereNull('styles')
-                        ->orWhere('styles', '[]')
-                        ->orWhere('styles', '{}');
-                })->whereRaw($this->noNullCellsCondition()),
-                'barred' => $query->where('styles', 'like', '%bars%'),
-                'shaped' => $query->where('grid', 'like', '%null%'),
-                default => null,
-            };
+            $query->where('puzzle_type', $this->puzzleType);
         }
 
         if ($this->difficulty !== '') {
@@ -241,15 +232,7 @@ new class extends Component {
 
     public function puzzleTypeLabel(Crossword $crossword): string
     {
-        if ($crossword->grid && collect($crossword->grid)->flatten()->contains(fn ($v) => $v === null)) {
-            return __('Shaped');
-        }
-
-        if ($crossword->styles && collect($crossword->styles)->contains(fn ($s) => ! empty($s['bars'] ?? []))) {
-            return __('Barred');
-        }
-
-        return __('Standard');
+        return __($crossword->puzzle_type->label());
     }
 
     public function hasActiveFilters(): bool
@@ -263,10 +246,6 @@ new class extends Component {
             || $this->sortBy !== 'newest';
     }
 
-    private function noNullCellsCondition(): string
-    {
-        return "grid NOT LIKE '%null%'";
-    }
 }
 ?>
 
@@ -319,8 +298,8 @@ new class extends Component {
             <flux:radio.group wire:model.live="puzzleType" variant="segmented" size="sm">
                 <flux:radio value="" label="{{ __('All') }}" />
                 <flux:radio value="standard" label="{{ __('Standard') }}" />
-                <flux:radio value="barred" label="{{ __('Barred') }}" />
-                <flux:radio value="shaped" label="{{ __('Shaped') }}" />
+                <flux:radio value="diamond" label="{{ __('Diamond') }}" />
+                <flux:radio value="freestyle" label="{{ __('Freestyle') }}" />
             </flux:radio.group>
         </flux:field>
 

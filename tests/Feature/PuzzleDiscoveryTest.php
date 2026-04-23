@@ -164,65 +164,61 @@ test('discovery filters by standard puzzle type', function () {
 
     Crossword::factory()->published()->for($creator)->create([
         'title' => 'Standard Puzzle',
-        'styles' => [],
+        'puzzle_type' => 'standard',
     ]);
 
-    $shapedGrid = Crossword::emptyGrid(15, 15);
-    $shapedGrid[0][0] = null;
     Crossword::factory()->published()->for($creator)->create([
-        'title' => 'Shaped Puzzle',
-        'grid' => $shapedGrid,
+        'title' => 'Diamond Puzzle',
+        'puzzle_type' => 'diamond',
     ]);
 
     Livewire::actingAs($user)
         ->test('puzzle-discovery', ['excludeAttempted' => true])
         ->set('puzzleType', 'standard')
         ->assertSee('Standard Puzzle')
-        ->assertDontSee('Shaped Puzzle');
+        ->assertDontSee('Diamond Puzzle');
 });
 
-test('discovery filters by shaped puzzle type', function () {
+test('discovery filters by diamond puzzle type', function () {
     $user = User::factory()->create();
     $creator = User::factory()->create();
 
     Crossword::factory()->published()->for($creator)->create([
         'title' => 'Normal Puzzle',
-        'styles' => [],
+        'puzzle_type' => 'standard',
     ]);
 
-    $shapedGrid = Crossword::emptyGrid(15, 15);
-    $shapedGrid[0][0] = null;
     Crossword::factory()->published()->for($creator)->create([
         'title' => 'Diamond Shaped',
-        'grid' => $shapedGrid,
+        'puzzle_type' => 'diamond',
     ]);
 
     Livewire::actingAs($user)
         ->test('puzzle-discovery', ['excludeAttempted' => true])
-        ->set('puzzleType', 'shaped')
+        ->set('puzzleType', 'diamond')
         ->assertSee('Diamond Shaped')
         ->assertDontSee('Normal Puzzle');
 });
 
-test('discovery filters by barred puzzle type', function () {
+test('discovery filters by freestyle puzzle type', function () {
     $user = User::factory()->create();
     $creator = User::factory()->create();
 
     Crossword::factory()->published()->for($creator)->create([
-        'title' => 'Plain Puzzle',
-        'styles' => [],
+        'title' => 'Standard Puzzle',
+        'puzzle_type' => 'standard',
     ]);
 
     Crossword::factory()->published()->for($creator)->create([
-        'title' => 'Barred Puzzle',
-        'styles' => [['bars' => ['bottom']]],
+        'title' => 'Freestyle Puzzle',
+        'puzzle_type' => 'freestyle',
     ]);
 
     Livewire::actingAs($user)
         ->test('puzzle-discovery', ['excludeAttempted' => true])
-        ->set('puzzleType', 'barred')
-        ->assertSee('Barred Puzzle')
-        ->assertDontSee('Plain Puzzle');
+        ->set('puzzleType', 'freestyle')
+        ->assertSee('Freestyle Puzzle')
+        ->assertDontSee('Standard Puzzle');
 });
 
 test('discovery filters by constructor user name', function () {
