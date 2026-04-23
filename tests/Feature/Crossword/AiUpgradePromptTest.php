@@ -3,22 +3,7 @@
 use App\Models\Crossword;
 use App\Models\User;
 use App\Support\AiUsageTracker;
-use Laravel\Cashier\Subscription;
 use Livewire\Livewire;
-
-function makeProUser(): User
-{
-    $user = User::factory()->create(['stripe_id' => 'cus_test_'.uniqid()]);
-    Subscription::create([
-        'user_id' => $user->id,
-        'type' => 'default',
-        'stripe_id' => 'sub_test_'.uniqid(),
-        'stripe_status' => 'active',
-        'stripe_price' => 'price_fake',
-    ]);
-
-    return $user;
-}
 
 function makeCrosswordForUser(User $user): Crossword
 {
