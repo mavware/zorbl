@@ -103,7 +103,7 @@ new #[Title('Ticket Detail')] class extends Component {
     </div>
 
     {{-- Description --}}
-    <div class="rounded-xl border border-zinc-300 p-4 dark:border-zinc-700">
+    <div class="border-line rounded-xl border p-4">
         <flux:text size="sm" class="mb-2 font-medium text-zinc-600">{{ __('Description') }}</flux:text>
         <flux:text class="whitespace-pre-wrap">{{ $ticket->description }}</flux:text>
     </div>
@@ -126,7 +126,7 @@ new #[Title('Ticket Detail')] class extends Component {
         @else
             <div class="space-y-3">
                 @foreach($this->responses as $response)
-                    <div class="rounded-xl border p-4 {{ $response->is_admin_response ? 'border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30' : 'border-zinc-300 dark:border-zinc-700' }}">
+                    <div class="rounded-xl border p-4 {{ $response->is_admin_response ? 'border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30' : 'border-line' }}">
                         <div class="mb-2 flex items-center gap-2">
                             <flux:text size="sm" class="font-medium">{{ $response->user->name }}</flux:text>
                             @if($response->is_admin_response)
@@ -143,7 +143,7 @@ new #[Title('Ticket Detail')] class extends Component {
 
     {{-- Add response form --}}
     @if($ticket->status !== 'closed')
-        <div class="space-y-4 rounded-xl border border-zinc-300 p-4 dark:border-zinc-700">
+        <div class="border-line space-y-4 rounded-xl border p-4">
             <flux:heading size="sm">{{ __('Add a Response') }}</flux:heading>
             <flux:field>
                 <flux:textarea wire:model="responseBody" rows="3" placeholder="{{ __('Type your response...') }}" />
@@ -154,7 +154,7 @@ new #[Title('Ticket Detail')] class extends Component {
             </div>
         </div>
     @else
-        <div class="rounded-xl border border-zinc-300 p-4 text-center dark:border-zinc-700">
+        <div class="border-line rounded-xl border p-4 text-center">
             <flux:text class="text-zinc-500">{{ __('This ticket has been closed.') }}</flux:text>
         </div>
     @endif

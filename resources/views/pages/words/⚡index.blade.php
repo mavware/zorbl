@@ -88,7 +88,7 @@ new #[Title('Word Catalog')] class extends Component {
 
     {{-- Word Table --}}
     @if($this->words->isEmpty())
-        <div class="flex flex-col items-center justify-center rounded-xl border border-dashed border-zinc-400 py-16 dark:border-zinc-600">
+        <div class="border-line-strong flex flex-col items-center justify-center rounded-xl border border-dashed py-16">
             <flux:icon name="language" class="mb-4 size-12 text-zinc-500" />
             <flux:heading size="lg" class="mb-2">{{ __('No words found') }}</flux:heading>
             <flux:text>

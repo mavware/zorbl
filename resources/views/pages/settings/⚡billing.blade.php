@@ -133,7 +133,7 @@ new #[Title('Billing')] class extends Component {
                                 <span>{{ __('AI Autofill') }}</span>
                                 <span class="text-zinc-600">{{ $this->aiFillsUsed }} / 50</span>
                             </div>
-                            <div class="mt-1 h-2 w-full overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
+                            <div class="mt-1 h-2 w-full overflow-hidden rounded-full bg-page">
                                 <div class="h-full rounded-full bg-blue-500 transition-all" style="width: {{ min(100, ($this->aiFillsUsed / 50) * 100) }}%"></div>
                             </div>
                         </div>
@@ -143,7 +143,7 @@ new #[Title('Billing')] class extends Component {
                                 <span>{{ __('AI Clue Generation') }}</span>
                                 <span class="text-zinc-600">{{ $this->aiCluesUsed }} / 50</span>
                             </div>
-                            <div class="mt-1 h-2 w-full overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
+                            <div class="mt-1 h-2 w-full overflow-hidden rounded-full bg-page">
                                 <div class="h-full rounded-full bg-purple-500 transition-all" style="width: {{ min(100, ($this->aiCluesUsed / 50) * 100) }}%"></div>
                             </div>
                         </div>

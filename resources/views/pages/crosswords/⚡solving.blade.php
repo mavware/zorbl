@@ -41,7 +41,7 @@ new #[Title('Solving')] class extends Component {
         </div>
 
         @if($this->attempts->isEmpty())
-            <div class="flex flex-col items-center justify-center rounded-xl border border-dashed border-zinc-400 py-12 dark:border-zinc-600">
+            <div class="border-line-strong flex flex-col items-center justify-center rounded-xl border border-dashed py-12">
                 <flux:icon name="puzzle-piece" class="mb-4 size-12 text-zinc-500" />
                 <flux:heading size="lg" class="mb-2">{{ __('No puzzles in progress') }}</flux:heading>
                 <flux:text>{{ __('Browse published puzzles below and start solving.') }}</flux:text>
@@ -51,7 +51,7 @@ new #[Title('Solving')] class extends Component {
                 @foreach($this->attempts as $attempt)
                     <div
                         wire:key="attempt-{{ $attempt->id }}"
-                        class="group relative rounded-xl border border-zinc-300 p-4 transition-colors hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-500"
+                        class="border-line group relative rounded-xl border p-4 transition-colors hover:border-zinc-400 dark:hover:border-zinc-500"
                     >
                         <a href="{{ route('crosswords.solver', $attempt->crossword) }}" wire:navigate class="block">
                             <div class="mb-3 flex justify-center">

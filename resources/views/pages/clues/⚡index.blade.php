@@ -270,7 +270,7 @@ new #[Title('Clue Library')] class extends Component {
 
     {{-- Clue Table --}}
     @if($this->clues->isEmpty())
-        <div class="flex flex-col items-center justify-center rounded-xl border border-dashed border-zinc-400 py-16 dark:border-zinc-600">
+        <div class="border-line-strong flex flex-col items-center justify-center rounded-xl border border-dashed py-16">
             <flux:icon name="book-open" class="mb-4 size-12 text-zinc-500" />
             <flux:heading size="lg" class="mb-2">{{ __('No clues found') }}</flux:heading>
             <flux:text class="mb-6">

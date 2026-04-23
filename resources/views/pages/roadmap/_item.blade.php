@@ -1,4 +1,4 @@
-<div class="group flex items-start gap-4 rounded-xl border border-zinc-300 p-4 dark:border-zinc-700">
+<div class="border-line group flex items-start gap-4 rounded-xl border p-4">
     <div class="mt-0.5">
         <flux:icon :name="$this->statusIcon($item->status)" class="{{ match($item->status) { 'in_progress' => 'text-blue-500', 'completed' => 'text-green-500', default => 'text-zinc-500' } }} size-5" />
     </div>

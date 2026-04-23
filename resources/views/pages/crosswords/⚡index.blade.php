@@ -138,7 +138,7 @@ new #[Title('My Puzzles')] class extends Component {
         </div>
 
         @if($this->crosswords->isEmpty())
-            <div class="flex flex-col items-center justify-center rounded-xl border border-dashed border-zinc-400 py-16 dark:border-zinc-600">
+            <div class="border-line-strong flex flex-col items-center justify-center rounded-xl border border-dashed py-16">
                 <flux:icon name="puzzle-piece" class="mb-4 size-12 text-zinc-500" />
                 <flux:heading size="lg" class="mb-2">{{ __('No puzzles yet') }}</flux:heading>
                 <flux:text class="mb-6">{{ __('Create a new crossword or import an existing puzzle file.') }}</flux:text>
@@ -156,7 +156,7 @@ new #[Title('My Puzzles')] class extends Component {
                 @foreach($this->crosswords as $crossword)
                     <div
                         wire:key="crossword-{{ $crossword->id }}"
-                        class="group relative rounded-xl border border-zinc-300 p-4 transition-colors hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-500"
+                        class="border-line group relative rounded-xl border p-4 transition-colors hover:border-zinc-400 dark:hover:border-zinc-500"
                     >
                         @php($completeness = $crossword->completeness())
                         <a href="{{ route('crosswords.editor', $crossword) }}" wire:navigate class="block">
@@ -217,7 +217,7 @@ new #[Title('My Puzzles')] class extends Component {
                 </flux:field>
             </div>
             <div class="relative h-48" wire:key="template-section-{{ $newWidth }}x{{ $newHeight }}">
-                <div wire:loading.delay wire:target="newWidth, newHeight" class="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-white/60 dark:bg-zinc-900/60">
+                <div wire:loading.delay wire:target="newWidth, newHeight" class="bg-surface absolute inset-0 z-10 flex items-center justify-center rounded-lg /60 /60">
                     <flux:icon.loading class="size-5 text-zinc-500" />
                 </div>
             @if(count($this->templates) > 0)
@@ -227,7 +227,7 @@ new #[Title('My Puzzles')] class extends Component {
                     <button
                         type="button"
                         wire:click="$set('selectedTemplate', null)"
-                        class="flex shrink-0 flex-col items-center gap-1.5 rounded-lg border-2 p-2 transition-colors {{ $selectedTemplate === null ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' : 'border-zinc-300 hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-500' }}"
+                        class="border-line flex shrink-0 flex-col items-center gap-1.5 rounded-lg border-2 p-2 transition-colors {{ $selectedTemplate === null ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' : ' hover:border-zinc-400 dark:hover:border-zinc-500' }}"
                     >
                         <x-grid-thumbnail :grid="Crossword::emptyGrid($newWidth, $newHeight)" :width="$newWidth" :height="$newHeight" :cell-size="6" :max-width="80" />
                         <span class="whitespace-nowrap text-xs text-zinc-700 dark:text-zinc-400">{{ __('Blank') }}</span>
@@ -237,7 +237,7 @@ new #[Title('My Puzzles')] class extends Component {
                             <button
                                 type="button"
                                 wire:click="$set('selectedTemplate', {{ $index }})"
-                                class="flex shrink-0 flex-col items-center gap-1.5 rounded-lg border-2 p-2 transition-colors {{ $selectedTemplate === $index ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' : 'border-zinc-300 hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-500' }}"
+                                class="border-line flex shrink-0 flex-col items-center gap-1.5 rounded-lg border-2 p-2 transition-colors {{ $selectedTemplate === $index ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' : ' hover:border-zinc-400 dark:hover:border-zinc-500' }}"
                             >
                                 <x-grid-thumbnail :grid="$template['grid']" :width="$newWidth" :height="$newHeight" :cell-size="6" :max-width="80" />
                                 <span class="whitespace-nowrap text-xs text-zinc-700 dark:text-zinc-400">{{ $template['name'] }}</span>

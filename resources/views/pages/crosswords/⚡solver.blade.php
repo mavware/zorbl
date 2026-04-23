@@ -383,7 +383,7 @@ new #[Title('Solve Crossword')] class extends Component {
             <flux:tooltip content="{{ __('Pencil mode (P)') }}">
                 <button
                     x-on:click="pencilMode = !pencilMode"
-                    :class="pencilMode ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' : 'text-zinc-600 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200'"
+                    :class="text-fg-muted pencilMode ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' : ' hover:text-zinc-800 dark:hover:text-zinc-200'"
                     class="rounded-lg p-1.5 transition-colors"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -394,7 +394,7 @@ new #[Title('Solve Crossword')] class extends Component {
             </flux:tooltip>
 
             {{-- Timer --}}
-            <div class="mr-2 flex items-center gap-1.5 rounded-lg bg-zinc-100 px-2.5 py-1 font-mono text-sm tabular-nums dark:bg-zinc-800">
+            <div class="bg-page mr-2 flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-mono text-sm tabular-nums">
                 <svg xmlns="http://www.w3.org/2000/svg" class="size-4 text-zinc-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
                 </svg>
@@ -403,7 +403,7 @@ new #[Title('Solve Crossword')] class extends Component {
 
             {{-- Mode toggle (only show Edit for owners) --}}
             @if($isOwner)
-                <div class="flex rounded-lg border border-zinc-300 dark:border-zinc-700">
+                <div class="flex rounded-lg border border-line">
                     <a
                         href="{{ route('crosswords.editor', $crosswordId) }}"
                         wire:navigate
@@ -417,7 +417,7 @@ new #[Title('Solve Crossword')] class extends Component {
             <flux:tooltip content="{{ __('Check answers') }}">
                 <button
                     x-on:click="checkAnswers()"
-                    class="rounded-lg p-1.5 text-zinc-600 transition-colors hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
+                    class="text-fg-muted rounded-lg p-1.5 transition-colors hover:text-zinc-800 dark:hover:text-zinc-200"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M20 6 9 17l-5-5"/>
@@ -429,7 +429,7 @@ new #[Title('Solve Crossword')] class extends Component {
             <flux:tooltip content="{{ __('Reveal letter') }}">
                 <button
                     x-on:click="revealLetter()"
-                    class="rounded-lg p-1.5 text-zinc-600 transition-colors hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
+                    class="text-fg-muted rounded-lg p-1.5 transition-colors hover:text-zinc-800 dark:hover:text-zinc-200"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/>
@@ -469,7 +469,7 @@ new #[Title('Solve Crossword')] class extends Component {
 
                     <template x-teleport="body">
                         <div x-show="showEmbed" x-cloak x-on:keydown.escape.window="showEmbed = false" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50" x-on:click.self="showEmbed = false">
-                            <div class="mx-4 w-full max-w-lg rounded-xl bg-white p-6 shadow-xl dark:bg-zinc-800" x-on:click.stop>
+                            <div class="bg-elevated mx-4 w-full max-w-lg rounded-xl p-6 shadow-xl" x-on:click.stop>
                                 <div class="mb-4 flex items-center justify-between">
                                     <h3 class="text-lg font-semibold">{{ __('Embed Puzzle') }}</h3>
                                     <button x-on:click="showEmbed = false" class="text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300">
@@ -484,7 +484,7 @@ new #[Title('Solve Crossword')] class extends Component {
                                         <textarea
                                             readonly
                                             rows="2"
-                                            class="w-full rounded-lg border border-zinc-400 bg-zinc-50 px-3 py-2 font-mono text-xs text-zinc-700 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-400"
+                                            class="border-line-strong w-full rounded-lg border bg-zinc-50 px-3 py-2 font-mono text-xs text-zinc-700 dark:bg-zinc-900 dark:text-zinc-400"
                                             x-ref="iframeCode"
                                         >&lt;iframe src="{{ route('embed.solver', $crosswordId) }}" width="100%" height="700" frameborder="0" style="border:none;"&gt;&lt;/iframe&gt;</textarea>
                                         <button
@@ -501,7 +501,7 @@ new #[Title('Solve Crossword')] class extends Component {
                                         <textarea
                                             readonly
                                             rows="3"
-                                            class="w-full rounded-lg border border-zinc-400 bg-zinc-50 px-3 py-2 font-mono text-xs text-zinc-700 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-400"
+                                            class="border-line-strong w-full rounded-lg border bg-zinc-50 px-3 py-2 font-mono text-xs text-zinc-700 dark:bg-zinc-900 dark:text-zinc-400"
                                             x-ref="scriptCode"
                                         >&lt;div data-zorbl-embed data-crossword-id="{{ $crosswordId }}" data-api-url="{{ url('/api/embed') }}/"&gt;&lt;/div&gt;
 &lt;link rel="stylesheet" href="{{ Vite::asset('resources/css/embed.css') }}"&gt;
@@ -591,7 +591,7 @@ new #[Title('Solve Crossword')] class extends Component {
                         <template x-for="(cell, colIdx) in row" :key="'cell-' + rowIdx + '-' + colIdx">
                             <div
                                 x-on:click="selectCell(rowIdx, colIdx)"
-                                :class="[cellClasses(rowIdx, colIdx), isVoid(rowIdx, colIdx) ? '' : 'border border-zinc-400 dark:border-zinc-600']"
+                                :class="[cellClasses(rowIdx, colIdx), isVoid(rowIdx, colIdx) ? '' : 'border border-line-strong']"
                                 :style="cellBarStyles(rowIdx, colIdx)"
                                 class="relative box-border flex aspect-square items-center justify-center overflow-hidden select-none"
                                 role="gridcell"
@@ -610,7 +610,7 @@ new #[Title('Solve Crossword')] class extends Component {
                                 {{-- Circle annotation --}}
                                 <template x-if="hasCircle(rowIdx, colIdx)">
                                     <svg class="pointer-events-none absolute inset-0.5 size-[calc(100%-4px)]" viewBox="0 0 100 100">
-                                        <circle cx="50" cy="50" r="46" fill="none" stroke="currentColor" stroke-width="2" class="text-zinc-500 dark:text-zinc-500" />
+                                        <circle cx="50" cy="50" r="46" fill="none" stroke="currentColor" stroke-width="2" class="text-fg-subtle" />
                                     </svg>
                                 </template>
 
@@ -672,15 +672,15 @@ new #[Title('Solve Crossword')] class extends Component {
 
         {{-- Mobile clue panels --}}
         <div class="lg:hidden">
-            <div class="flex border-b border-zinc-300 dark:border-zinc-700">
+            <div class="flex border-b border-line">
                 <button
                     x-on:click="mobileClueTab = 'across'"
-                    :class="mobileClueTab === 'across' ? 'border-zinc-800 text-zinc-900 dark:border-zinc-200 dark:text-zinc-100' : 'border-transparent text-zinc-600'"
+                    :class="text-fg mobileClueTab === 'across' ? 'border-zinc-800 dark:border-zinc-200 ' : 'border-transparent text-zinc-600'"
                     class="border-b-2 px-4 py-2 text-sm font-medium"
                 >{{ __('Across') }}</button>
                 <button
                     x-on:click="mobileClueTab = 'down'"
-                    :class="mobileClueTab === 'down' ? 'border-zinc-800 text-zinc-900 dark:border-zinc-200 dark:text-zinc-100' : 'border-transparent text-zinc-600'"
+                    :class="text-fg mobileClueTab === 'down' ? 'border-zinc-800 dark:border-zinc-200 ' : 'border-transparent text-zinc-600'"
                     class="border-b-2 px-4 py-2 text-sm font-medium"
                 >{{ __('Down') }}</button>
             </div>
@@ -737,7 +737,7 @@ new #[Title('Solve Crossword')] class extends Component {
 
     {{-- Comments & Ratings (visible when solved) --}}
     @if($isSolved)
-        <div class="mt-6 rounded-xl border border-zinc-300 p-5 dark:border-zinc-700" wire:key="comments-section">
+        <div class="border-line mt-6 rounded-xl border p-5" wire:key="comments-section">
             <div class="mb-4 flex items-center justify-between">
                 <flux:heading size="lg">{{ __('Comments & Ratings') }}</flux:heading>
                 @if($this->averageRating)
@@ -867,7 +867,7 @@ new #[Title('Solve Crossword')] class extends Component {
             x-transition:leave-start="scale-100 opacity-100"
             x-transition:leave-end="scale-90 opacity-0"
             x-on:click.outside="showCelebration = false"
-            class="relative mx-4 w-full max-w-sm overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-zinc-800"
+            class="bg-elevated relative mx-4 w-full max-w-sm overflow-hidden rounded-2xl shadow-2xl"
         >
             {{-- Decorative header --}}
             <div class="bg-gradient-to-br from-emerald-400 to-teal-500 px-6 pt-8 pb-6 text-center dark:from-emerald-600 dark:to-teal-700">
@@ -883,7 +883,7 @@ new #[Title('Solve Crossword')] class extends Component {
                     <svg xmlns="http://www.w3.org/2000/svg" class="size-5 text-emerald-500" viewBox="0 0 20 20" fill="currentColor">
                         <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 000-1.5h-3.25V5z" clip-rule="evenodd" />
                     </svg>
-                    <span class="text-lg font-semibold tabular-nums text-zinc-900 dark:text-zinc-100" x-text="celebrationTime"></span>
+                    <span class="text-lg font-semibold tabular-nums text-fg" x-text="celebrationTime"></span>
                 </div>
 
                 {{-- Buttons --}}
@@ -943,7 +943,7 @@ new #[Title('Solve Crossword')] class extends Component {
                     @foreach($this->favoriteLists as $favoriteList)
                         <button
                             wire:click="addToList({{ $favoriteList->id }})"
-                            class="flex w-full items-center gap-3 rounded-lg border border-zinc-300 px-4 py-3 text-left transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+                            class="border-line flex w-full items-center gap-3 rounded-lg border px-4 py-3 text-left transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800"
                         >
                             <flux:icon name="folder" class="size-5 text-zinc-500" />
                             <span class="flex-1 text-sm font-medium text-zinc-800 dark:text-zinc-300">{{ $favoriteList->name }}</span>

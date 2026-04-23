@@ -192,9 +192,9 @@ new #[Title('Constructor Analytics')] class extends Component {
             <div class="pointer-events-none select-none blur-sm">
                 <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     @for ($i = 0; $i < 4; $i++)
-                        <div class="rounded-xl border border-zinc-300 p-5 dark:border-zinc-700">
+                        <div class="border-line rounded-xl border p-5">
                             <div class="flex items-center gap-3">
-                                <div class="size-10 rounded-lg bg-zinc-100 dark:bg-zinc-800"></div>
+                                <div class="size-10 rounded-lg bg-page"></div>
                                 <div>
                                     <div class="h-3 w-16 rounded bg-zinc-200 dark:bg-zinc-700"></div>
                                     <div class="mt-1 h-6 w-10 rounded bg-zinc-200 dark:bg-zinc-700"></div>
@@ -207,7 +207,7 @@ new #[Title('Constructor Analytics')] class extends Component {
 
             {{-- Overlay CTA --}}
             <div class="absolute inset-0 flex items-center justify-center">
-                <div class="rounded-xl border border-zinc-300 bg-white/90 p-8 text-center shadow-lg dark:border-zinc-700 dark:bg-zinc-900/90">
+                <div class="bg-surface border-line rounded-xl border /90 p-8 text-center shadow-lg /90">
                     <flux:icon name="chart-bar" class="mx-auto mb-3 size-8 text-purple-500" />
                     <flux:heading size="lg">{{ __('Upgrade to Pro') }}</flux:heading>
                     <flux:subheading class="mb-4">{{ __('Get detailed analytics on how solvers interact with your puzzles.') }}</flux:subheading>
@@ -220,61 +220,61 @@ new #[Title('Constructor Analytics')] class extends Component {
     @else
     {{-- Overview Cards --}}
     <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div class="rounded-xl border border-zinc-300 p-5 dark:border-zinc-700">
+        <div class="border-line rounded-xl border p-5">
             <div class="flex items-center gap-3">
                 <div class="flex size-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/30">
                     <flux:icon name="eye" class="size-5 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div>
                     <flux:text size="sm" class="text-zinc-600">{{ __('Total Solves') }}</flux:text>
-                    <div class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{{ $this->totalSolves }}</div>
+                    <div class="text-2xl font-bold text-fg">{{ $this->totalSolves }}</div>
                 </div>
             </div>
         </div>
 
-        <div class="rounded-xl border border-zinc-300 p-5 dark:border-zinc-700">
+        <div class="border-line rounded-xl border p-5">
             <div class="flex items-center gap-3">
                 <div class="flex size-10 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/30">
                     <flux:icon name="check-circle" class="size-5 text-emerald-600 dark:text-emerald-400" />
                 </div>
                 <div>
                     <flux:text size="sm" class="text-zinc-600">{{ __('Completions') }}</flux:text>
-                    <div class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{{ $this->totalCompletions }}</div>
+                    <div class="text-2xl font-bold text-fg">{{ $this->totalCompletions }}</div>
                 </div>
             </div>
         </div>
 
-        <div class="rounded-xl border border-zinc-300 p-5 dark:border-zinc-700">
+        <div class="border-line rounded-xl border p-5">
             <div class="flex items-center gap-3">
                 <div class="flex size-10 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/30">
                     <svg xmlns="http://www.w3.org/2000/svg" class="size-5 text-amber-600 dark:text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                 </div>
                 <div>
                     <flux:text size="sm" class="text-zinc-600">{{ __('Avg Solve Time') }}</flux:text>
-                    <div class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{{ $this->formatTime($this->overallAvgSolveTime) }}</div>
+                    <div class="text-2xl font-bold text-fg">{{ $this->formatTime($this->overallAvgSolveTime) }}</div>
                 </div>
             </div>
         </div>
 
-        <div class="rounded-xl border border-zinc-300 p-5 dark:border-zinc-700">
+        <div class="border-line rounded-xl border p-5">
             <div class="flex items-center gap-3">
                 <div class="flex size-10 items-center justify-center rounded-lg bg-red-100 dark:bg-red-900/30">
                     <flux:icon name="heart" class="size-5 text-red-500 dark:text-red-400" />
                 </div>
                 <div>
                     <flux:text size="sm" class="text-zinc-600">{{ __('Total Likes') }}</flux:text>
-                    <div class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{{ $this->totalLikes }}</div>
+                    <div class="text-2xl font-bold text-fg">{{ $this->totalLikes }}</div>
                 </div>
             </div>
         </div>
     </div>
 
     {{-- Puzzle Performance Table --}}
-    <div class="rounded-xl border border-zinc-300 p-5 dark:border-zinc-700">
+    <div class="border-line rounded-xl border p-5">
         <flux:heading size="lg" class="mb-4">{{ __('Puzzle Performance') }}</flux:heading>
 
         @if($this->publishedPuzzles->isEmpty())
-            <div class="flex flex-col items-center justify-center rounded-lg border border-dashed border-zinc-400 py-8 dark:border-zinc-600">
+            <div class="border-line-strong flex flex-col items-center justify-center rounded-lg border border-dashed py-8">
                 <flux:icon name="chart-bar" class="mb-2 size-8 text-zinc-500" />
                 <flux:text size="sm" class="text-zinc-500">{{ __('Publish puzzles to see analytics here.') }}</flux:text>
             </div>
@@ -324,7 +324,7 @@ new #[Title('Constructor Analytics')] class extends Component {
 
     {{-- Difficulty Heatmaps --}}
     @if(count($this->cellDifficulty) > 0)
-        <div class="rounded-xl border border-zinc-300 p-5 dark:border-zinc-700">
+        <div class="border-line rounded-xl border p-5">
             <flux:heading size="lg" class="mb-1">{{ __('Puzzle Insights') }}</flux:heading>
             <flux:text size="sm" class="mb-4 text-zinc-500">{{ __('Solve time breakdown for your most-solved puzzles.') }}</flux:text>
 

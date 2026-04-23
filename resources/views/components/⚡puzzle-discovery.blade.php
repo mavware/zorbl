@@ -343,7 +343,7 @@ new class extends Component {
 
     {{-- Secondary Filters (collapsible) --}}
     @if($showFilters)
-        <div class="grid gap-3 rounded-xl border border-zinc-300 p-4 sm:grid-cols-2 lg:grid-cols-3 dark:border-zinc-700">
+        <div class="border-line grid gap-3 rounded-xl border p-4 sm:grid-cols-2 lg:grid-cols-3">
             <flux:field>
                 <flux:label>{{ __('Constructor') }}</flux:label>
                 <flux:input wire:model.live.debounce.300ms="constructor" size="sm" placeholder="{{ __('Name...') }}" />
@@ -369,7 +369,7 @@ new class extends Component {
     @endphp
 
     @if(count($items) === 0)
-        <div class="flex flex-col items-center justify-center rounded-xl border border-dashed border-zinc-400 py-12 dark:border-zinc-600">
+        <div class="border-line-strong flex flex-col items-center justify-center rounded-xl border border-dashed py-12">
             <flux:icon name="magnifying-glass" class="mb-4 size-12 text-zinc-500" />
             <flux:heading size="lg" class="mb-2">{{ __('No puzzles found') }}</flux:heading>
             <flux:text class="text-zinc-500">
@@ -386,7 +386,7 @@ new class extends Component {
                 <div
                     wire:key="discover-{{ $crossword->id }}"
                     wire:click="startSolving({{ $crossword->id }})"
-                    class="group rounded-xl border border-zinc-300 p-4 transition-colors hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-500 cursor-pointer"
+                    class="border-line group rounded-xl border p-4 transition-colors hover:border-zinc-400 dark:hover:border-zinc-500 cursor-pointer"
                 >
                     <div class="mb-3 flex justify-center">
                         <x-grid-thumbnail :grid="$crossword->grid" :width="$crossword->width" :height="$crossword->height" />

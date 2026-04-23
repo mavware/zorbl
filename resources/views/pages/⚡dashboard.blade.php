@@ -120,7 +120,7 @@ new #[Title('Dashboard')] class extends Component {
 
     <div class="grid gap-6 lg:grid-cols-2">
         {{-- In Progress --}}
-        <div class="rounded-xl border border-zinc-300 p-5 dark:border-zinc-700">
+        <div class="border-line rounded-xl border p-5">
             <div class="mb-4 flex items-center justify-between">
                 <flux:heading size="lg">{{ __('Continue Solving') }}</flux:heading>
                 <flux:button variant="ghost" size="sm" :href="route('crosswords.solving')" wire:navigate>
@@ -129,7 +129,7 @@ new #[Title('Dashboard')] class extends Component {
             </div>
 
             @if($this->inProgressAttempts->isEmpty())
-                <div class="flex flex-col items-center justify-center rounded-lg border border-dashed border-zinc-400 py-8 dark:border-zinc-600">
+                <div class="border-line-strong flex flex-col items-center justify-center rounded-lg border border-dashed py-8">
                     <flux:icon name="play" class="mb-2 size-8 text-zinc-500" />
                     <flux:text size="sm" class="text-zinc-500">{{ __('No puzzles in progress') }}</flux:text>
                     <flux:button variant="ghost" size="sm" class="mt-2" :href="route('crosswords.solving')" wire:navigate>
@@ -146,7 +146,7 @@ new #[Title('Dashboard')] class extends Component {
                         >
                             <x-grid-thumbnail class="shrink-0" :grid="$attempt->crossword->grid" :width="$attempt->crossword->width" :height="$attempt->crossword->height" :cell-size="5" :max-width="48" />
                             <div class="min-w-0 flex-1">
-                                <div class="truncate text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ $attempt->crossword->title ?: __('Untitled Puzzle') }}</div>
+                                <div class="truncate text-sm font-medium text-fg">{{ $attempt->crossword->title ?: __('Untitled Puzzle') }}</div>
                                 <flux:text size="sm" class="text-zinc-500">
                                     {{ __('by :author', ['author' => $attempt->crossword->user->name ?? __('Unknown')]) }}
                                     &middot;
@@ -161,7 +161,7 @@ new #[Title('Dashboard')] class extends Component {
         </div>
 
         {{-- Continue Constructing --}}
-        <div class="rounded-xl border border-zinc-300 p-5 dark:border-zinc-700">
+        <div class="border-line rounded-xl border p-5">
             <div class="mb-4 flex items-center justify-between">
                 <flux:heading size="lg">{{ __('Continue Constructing') }}</flux:heading>
                 <flux:button variant="ghost" size="sm" :href="route('crosswords.index')" wire:navigate>
@@ -170,7 +170,7 @@ new #[Title('Dashboard')] class extends Component {
             </div>
 
             @if($this->recentDrafts->isEmpty())
-                <div class="flex flex-col items-center justify-center rounded-lg border border-dashed border-zinc-400 py-8 dark:border-zinc-600">
+                <div class="border-line-strong flex flex-col items-center justify-center rounded-lg border border-dashed py-8">
                     <flux:icon name="pencil-square" class="mb-2 size-8 text-zinc-500" />
                     <flux:text size="sm" class="text-zinc-500">{{ __('No drafts in progress') }}</flux:text>
                     <flux:button variant="ghost" size="sm" class="mt-2" :href="route('crosswords.index')" wire:navigate>
@@ -187,7 +187,7 @@ new #[Title('Dashboard')] class extends Component {
                         >
                             <x-grid-thumbnail class="shrink-0" :grid="$crossword->grid" :width="$crossword->width" :height="$crossword->height" :cell-size="5" :max-width="48" />
                             <div class="min-w-0 flex-1">
-                                <div class="truncate text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ $crossword->title ?: __('Untitled Puzzle') }}</div>
+                                <div class="truncate text-sm font-medium text-fg">{{ $crossword->title ?: __('Untitled Puzzle') }}</div>
                                 <flux:text size="sm" class="text-zinc-500">
                                     {{ $crossword->width }}&times;{{ $crossword->height }}
                                     &middot;
@@ -206,7 +206,7 @@ new #[Title('Dashboard')] class extends Component {
     {{-- Trending & Newest --}}
     <div class="grid gap-6 lg:grid-cols-2">
         {{-- Trending --}}
-        <div class="rounded-xl border border-zinc-300 p-5 dark:border-zinc-700">
+        <div class="border-line rounded-xl border p-5">
             <div class="mb-4 flex items-center justify-between">
                 <flux:heading size="lg">{{ __('Trending') }}</flux:heading>
                 <flux:button variant="ghost" size="sm" :href="route('crosswords.solving')" wire:navigate>
@@ -215,7 +215,7 @@ new #[Title('Dashboard')] class extends Component {
             </div>
 
             @if($this->trendingPuzzles->isEmpty())
-                <div class="flex flex-col items-center justify-center rounded-lg border border-dashed border-zinc-400 py-8 dark:border-zinc-600">
+                <div class="border-line-strong flex flex-col items-center justify-center rounded-lg border border-dashed py-8">
                     <flux:icon name="fire" class="mb-2 size-8 text-zinc-500" />
                     <flux:text size="sm" class="text-zinc-500">{{ __('No trending puzzles this week') }}</flux:text>
                 </div>
@@ -229,7 +229,7 @@ new #[Title('Dashboard')] class extends Component {
                         >
                             <x-grid-thumbnail class="shrink-0" :grid="$crossword->grid" :width="$crossword->width" :height="$crossword->height" :cell-size="5" :max-width="48" />
                             <div class="min-w-0 flex-1">
-                                <div class="truncate text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ $crossword->title ?: __('Untitled Puzzle') }}</div>
+                                <div class="truncate text-sm font-medium text-fg">{{ $crossword->title ?: __('Untitled Puzzle') }}</div>
                                 <flux:text size="sm" class="text-zinc-500">
                                     {{ __('by :author', ['author' => $crossword->user->name ?? __('Unknown')]) }}
                                     &middot;
@@ -247,7 +247,7 @@ new #[Title('Dashboard')] class extends Component {
         </div>
 
         {{-- Newest --}}
-        <div class="rounded-xl border border-zinc-300 p-5 dark:border-zinc-700">
+        <div class="border-line rounded-xl border p-5">
             <div class="mb-4 flex items-center justify-between">
                 <flux:heading size="lg">{{ __('Newest') }}</flux:heading>
                 <flux:button variant="ghost" size="sm" :href="route('crosswords.solving')" wire:navigate>
@@ -256,7 +256,7 @@ new #[Title('Dashboard')] class extends Component {
             </div>
 
             @if($this->newestPuzzles->isEmpty())
-                <div class="flex flex-col items-center justify-center rounded-lg border border-dashed border-zinc-400 py-8 dark:border-zinc-600">
+                <div class="border-line-strong flex flex-col items-center justify-center rounded-lg border border-dashed py-8">
                     <flux:icon name="sparkles" class="mb-2 size-8 text-zinc-500" />
                     <flux:text size="sm" class="text-zinc-500">{{ __('No published puzzles yet') }}</flux:text>
                 </div>
@@ -270,7 +270,7 @@ new #[Title('Dashboard')] class extends Component {
                         >
                             <x-grid-thumbnail class="shrink-0" :grid="$crossword->grid" :width="$crossword->width" :height="$crossword->height" :cell-size="5" :max-width="48" />
                             <div class="min-w-0 flex-1">
-                                <div class="truncate text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ $crossword->title ?: __('Untitled Puzzle') }}</div>
+                                <div class="truncate text-sm font-medium text-fg">{{ $crossword->title ?: __('Untitled Puzzle') }}</div>
                                 <flux:text size="sm" class="text-zinc-500">
                                     {{ __('by :author', ['author' => $crossword->user->name ?? __('Unknown')]) }}
                                     &middot;
@@ -286,7 +286,7 @@ new #[Title('Dashboard')] class extends Component {
     </div>
 
     {{-- Discover Puzzles --}}
-    <div class="rounded-xl border border-zinc-300 p-5 dark:border-zinc-700">
+    <div class="border-line rounded-xl border p-5">
         <div class="mb-4 flex items-center justify-between">
             <flux:heading size="lg">{{ __('Discover Puzzles') }}</flux:heading>
             <flux:button variant="ghost" size="sm" :href="route('crosswords.solving')" wire:navigate>
@@ -300,72 +300,72 @@ new #[Title('Dashboard')] class extends Component {
     {{-- Stats Cards --}}
     <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {{-- Published Puzzles --}}
-        <div class="rounded-xl border border-zinc-300 p-5 dark:border-zinc-700">
+        <div class="border-line rounded-xl border p-5">
             <div class="flex items-center gap-3">
                 <div class="flex size-10 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/30">
                     <flux:icon name="puzzle-piece" class="size-5 text-amber-600 dark:text-amber-400" />
                 </div>
                 <div>
                     <flux:text size="sm" class="text-zinc-600">{{ __('Published') }}</flux:text>
-                    <div class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{{ $this->publishedCount }}</div>
+                    <div class="text-2xl font-bold text-fg">{{ $this->publishedCount }}</div>
                 </div>
             </div>
         </div>
 
         {{-- Draft Puzzles --}}
-        <div class="rounded-xl border border-zinc-300 p-5 dark:border-zinc-700">
+        <div class="border-line rounded-xl border p-5">
             <div class="flex items-center gap-3">
-                <div class="flex size-10 items-center justify-center rounded-lg bg-zinc-100 dark:bg-zinc-800">
+                <div class="flex size-10 items-center justify-center rounded-lg bg-page">
                     <flux:icon name="pencil" class="size-5 text-zinc-700 dark:text-zinc-400" />
                 </div>
                 <div>
                     <flux:text size="sm" class="text-zinc-600">{{ __('Drafts') }}</flux:text>
-                    <div class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{{ $this->draftCount }}</div>
+                    <div class="text-2xl font-bold text-fg">{{ $this->draftCount }}</div>
                 </div>
             </div>
         </div>
 
         {{-- Puzzles Solved --}}
-        <div class="rounded-xl border border-zinc-300 p-5 dark:border-zinc-700">
+        <div class="border-line rounded-xl border p-5">
             <div class="flex items-center gap-3">
                 <div class="flex size-10 items-center justify-center rounded-lg bg-green-100 dark:bg-green-900/30">
                     <flux:icon name="check-circle" class="size-5 text-green-600 dark:text-green-400" />
                 </div>
                 <div>
                     <flux:text size="sm" class="text-zinc-600">{{ __('Solved') }}</flux:text>
-                    <div class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{{ $this->solvedCount }}</div>
+                    <div class="text-2xl font-bold text-fg">{{ $this->solvedCount }}</div>
                 </div>
             </div>
         </div>
 
         {{-- Likes Given --}}
-        <div class="rounded-xl border border-zinc-300 p-5 dark:border-zinc-700">
+        <div class="border-line rounded-xl border p-5">
             <div class="flex items-center gap-3">
                 <div class="flex size-10 items-center justify-center rounded-lg bg-red-100 dark:bg-red-900/30">
                     <flux:icon name="heart" class="size-5 text-red-500 dark:text-red-400" />
                 </div>
                 <div>
                     <flux:text size="sm" class="text-zinc-600">{{ __('Liked') }}</flux:text>
-                    <div class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{{ $this->likedCount }}</div>
+                    <div class="text-2xl font-bold text-fg">{{ $this->likedCount }}</div>
                 </div>
             </div>
         </div>
     </div>
 
     {{-- Community Stats --}}
-    <div class="rounded-xl border border-zinc-300 p-5 dark:border-zinc-700">
+    <div class="border-line rounded-xl border p-5">
         <flux:heading size="lg" class="mb-4">{{ __('Community') }}</flux:heading>
         <div class="grid gap-4 sm:grid-cols-3">
             <div class="text-center">
-                <div class="text-3xl font-bold text-zinc-900 dark:text-zinc-100">{{ $this->totalPublishedPuzzles }}</div>
+                <div class="text-3xl font-bold text-fg">{{ $this->totalPublishedPuzzles }}</div>
                 <flux:text size="sm" class="text-zinc-600">{{ __('Published Puzzles') }}</flux:text>
             </div>
             <div class="text-center">
-                <div class="text-3xl font-bold text-zinc-900 dark:text-zinc-100">{{ $this->totalSolves }}</div>
+                <div class="text-3xl font-bold text-fg">{{ $this->totalSolves }}</div>
                 <flux:text size="sm" class="text-zinc-600">{{ __('Total Solves') }}</flux:text>
             </div>
             <div class="text-center">
-                <div class="text-3xl font-bold text-zinc-900 dark:text-zinc-100">{{ $this->totalLikes }}</div>
+                <div class="text-3xl font-bold text-fg">{{ $this->totalLikes }}</div>
                 <flux:text size="sm" class="text-zinc-600">{{ __('Total Likes') }}</flux:text>
             </div>
         </div>

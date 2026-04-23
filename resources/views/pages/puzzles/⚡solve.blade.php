@@ -151,7 +151,7 @@ class extends Component {
                 <flux:tooltip content="{{ __('Pencil mode (P)') }}">
                     <button
                         x-on:click="pencilMode = !pencilMode"
-                        :class="pencilMode ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' : 'text-zinc-600 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200'"
+                        :class="text-fg-muted pencilMode ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' : ' hover:text-zinc-800 dark:hover:text-zinc-200'"
                         class="rounded-lg p-1.5 transition-colors"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -162,7 +162,7 @@ class extends Component {
                 </flux:tooltip>
 
                 {{-- Timer --}}
-                <div class="mr-2 flex items-center gap-1.5 rounded-lg bg-zinc-100 px-2.5 py-1 font-mono text-sm tabular-nums dark:bg-zinc-800">
+                <div class="bg-page mr-2 flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-mono text-sm tabular-nums">
                     <svg xmlns="http://www.w3.org/2000/svg" class="size-4 text-zinc-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
                     </svg>
@@ -173,7 +173,7 @@ class extends Component {
                 <flux:tooltip content="{{ __('Check answers') }}">
                     <button
                         x-on:click="checkAnswers()"
-                        class="rounded-lg p-1.5 text-zinc-600 transition-colors hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
+                        class="text-fg-muted rounded-lg p-1.5 transition-colors hover:text-zinc-800 dark:hover:text-zinc-200"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M20 6 9 17l-5-5"/>
@@ -185,7 +185,7 @@ class extends Component {
                 <flux:tooltip content="{{ __('Reveal letter') }}">
                     <button
                         x-on:click="revealLetter()"
-                        class="rounded-lg p-1.5 text-zinc-600 transition-colors hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
+                        class="text-fg-muted rounded-lg p-1.5 transition-colors hover:text-zinc-800 dark:hover:text-zinc-200"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/>
@@ -267,7 +267,7 @@ class extends Component {
                             <template x-for="(cell, colIdx) in row" :key="'cell-' + rowIdx + '-' + colIdx">
                                 <div
                                     x-on:click="selectCell(rowIdx, colIdx)"
-                                    :class="[cellClasses(rowIdx, colIdx), isVoid(rowIdx, colIdx) ? '' : 'border border-zinc-400 dark:border-zinc-600']"
+                                    :class="[cellClasses(rowIdx, colIdx), isVoid(rowIdx, colIdx) ? '' : 'border border-line-strong']"
                                     :style="cellBarStyles(rowIdx, colIdx)"
                                     class="relative box-border flex aspect-square items-center justify-center select-none"
                                     role="gridcell"
@@ -286,7 +286,7 @@ class extends Component {
                                     {{-- Circle annotation --}}
                                     <template x-if="hasCircle(rowIdx, colIdx)">
                                         <svg class="pointer-events-none absolute inset-0.5 size-[calc(100%-4px)]" viewBox="0 0 100 100">
-                                            <circle cx="50" cy="50" r="46" fill="none" stroke="currentColor" stroke-width="2" class="text-zinc-500 dark:text-zinc-500" />
+                                            <circle cx="50" cy="50" r="46" fill="none" stroke="currentColor" stroke-width="2" class="text-fg-subtle" />
                                         </svg>
                                     </template>
 
@@ -348,15 +348,15 @@ class extends Component {
 
             {{-- Mobile clue panels --}}
             <div class="lg:hidden">
-                <div class="flex border-b border-zinc-300 dark:border-zinc-700">
+                <div class="flex border-b border-line">
                     <button
                         x-on:click="mobileClueTab = 'across'"
-                        :class="mobileClueTab === 'across' ? 'border-zinc-800 text-zinc-900 dark:border-zinc-200 dark:text-zinc-100' : 'border-transparent text-zinc-600'"
+                        :class="text-fg mobileClueTab === 'across' ? 'border-zinc-800 dark:border-zinc-200 ' : 'border-transparent text-zinc-600'"
                         class="border-b-2 px-4 py-2 text-sm font-medium"
                     >{{ __('Across') }}</button>
                     <button
                         x-on:click="mobileClueTab = 'down'"
-                        :class="mobileClueTab === 'down' ? 'border-zinc-800 text-zinc-900 dark:border-zinc-200 dark:text-zinc-100' : 'border-transparent text-zinc-600'"
+                        :class="text-fg mobileClueTab === 'down' ? 'border-zinc-800 dark:border-zinc-200 ' : 'border-transparent text-zinc-600'"
                         class="border-b-2 px-4 py-2 text-sm font-medium"
                     >{{ __('Down') }}</button>
                 </div>
@@ -437,21 +437,21 @@ class extends Component {
                 class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
                 x-on:click.self="showSignup = false"
             >
-                <div class="mx-4 w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-xl dark:bg-zinc-800" x-on:click.stop>
+                <div class="bg-elevated mx-4 w-full max-w-md rounded-2xl p-8 text-center shadow-xl" x-on:click.stop>
                     <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/30">
                         <svg xmlns="http://www.w3.org/2000/svg" class="size-8 text-emerald-600 dark:text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/>
                         </svg>
                     </div>
-                    <h3 class="text-xl font-bold text-zinc-900 dark:text-zinc-100">{{ __('Congratulations!') }}</h3>
-                    <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+                    <h3 class="text-xl font-bold text-fg">{{ __('Congratulations!') }}</h3>
+                    <p class="mt-2 text-sm text-fg-muted">
                         {{ __('Great solve! Create a free account to save your progress across devices, track your stats, and access unlimited puzzles.') }}
                     </p>
                     <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
                         <a href="{{ route('register') }}" class="rounded-xl bg-amber-500 px-6 py-2.5 text-sm font-semibold text-zinc-950 hover:bg-amber-400 transition">
                             {{ __('Create Free Account') }}
                         </a>
-                        <a href="{{ route('login') }}" class="rounded-xl border border-zinc-400 px-6 py-2.5 text-sm font-semibold text-zinc-800 hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-300 dark:hover:bg-zinc-700 transition">
+                        <a href="{{ route('login') }}" class="border-line-strong rounded-xl border px-6 py-2.5 text-sm font-semibold text-zinc-800 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-700 transition">
                             {{ __('Log In') }}
                         </a>
                     </div>

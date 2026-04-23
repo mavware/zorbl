@@ -152,7 +152,7 @@ new #[Title('Constructor Profile')] class extends Component {
         <flux:heading size="lg" class="mb-4">{{ __('Published Puzzles') }}</flux:heading>
 
         @if($this->publishedPuzzles->isEmpty())
-            <div class="flex flex-col items-center justify-center rounded-lg border border-dashed border-zinc-400 py-8 dark:border-zinc-600">
+            <div class="border-line-strong flex flex-col items-center justify-center rounded-lg border border-dashed py-8">
                 <flux:icon name="puzzle-piece" class="mb-2 size-8 text-zinc-500" />
                 <flux:text size="sm" class="text-zinc-500">{{ __('No published puzzles yet.') }}</flux:text>
             </div>
@@ -162,7 +162,7 @@ new #[Title('Constructor Profile')] class extends Component {
                     <a
                         href="{{ route('crosswords.solver', $puzzle) }}"
                         wire:navigate
-                        class="group rounded-xl border border-zinc-300 p-4 transition-colors hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-600"
+                        class="border-line group rounded-xl border p-4 transition-colors hover:border-zinc-400 dark:hover:border-zinc-600"
                     >
                         <div class="mb-3 flex justify-center">
                             <x-grid-thumbnail :grid="$puzzle->grid" :width="$puzzle->width" :height="$puzzle->height" />

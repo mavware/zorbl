@@ -713,7 +713,7 @@ class extends Component {
             </div>
 
             {{-- Mode toggle --}}
-            <div class="flex rounded-lg border border-zinc-300 dark:border-zinc-700">
+            <div class="flex rounded-lg border border-line">
                 <span
                     class="rounded-l-lg bg-zinc-800 px-3 py-1 text-sm font-medium text-white dark:bg-zinc-200 dark:text-zinc-900">{{ __('Edit') }}</span>
                 <a
@@ -727,7 +727,7 @@ class extends Component {
             <flux:tooltip content="{{ __('Rotational symmetry') }}">
                 <button
                     x-on:click="symmetry = !symmetry"
-                    :class="symmetry ? 'bg-zinc-800 text-white dark:bg-zinc-200 dark:text-zinc-900' : 'text-zinc-600 dark:text-zinc-400'"
+                    :class="symmetry ? 'bg-zinc-800 text-white dark:bg-zinc-200 dark:text-zinc-900' : 'text-fg-muted'"
                     class="rounded-lg p-1.5 transition-colors"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 24 24" fill="none"
@@ -1076,7 +1076,7 @@ class extends Component {
                     <div
                         x-show="open"
                         x-cloak
-                        class="absolute z-10 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border border-zinc-300 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-800"
+                        class="bg-elevated border-line absolute z-10 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border shadow-lg"
                     >
                         @php
                             $available = collect($this->availableTags)->reject(fn ($t) => in_array($t['id'], $this->tagIds));
@@ -1095,7 +1095,7 @@ class extends Component {
                         @endforeach
 
                         @if(count($suggestions))
-                            <div class="px-3 pt-2 pb-1 text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-500">
+                            <div class="px-3 pt-2 pb-1 text-xs font-semibold uppercase tracking-wide text-fg-subtle">
                                 {{ __('Suggested') }}
                             </div>
                             @foreach($suggestions as $name)

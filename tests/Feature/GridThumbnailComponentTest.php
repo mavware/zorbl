@@ -17,7 +17,7 @@ it('renders a grid thumbnail with block and open cells', function () {
     $html->assertSee('grid-template-columns: repeat(3', false)
         ->assertSee('width: 24px', false)
         ->assertSee('bg-zinc-800 dark:bg-zinc-300', false)
-        ->assertSee('bg-white dark:bg-zinc-800', false);
+        ->assertSee('bg-elevated', false);
 });
 
 it('renders null cells as invisible', function () {

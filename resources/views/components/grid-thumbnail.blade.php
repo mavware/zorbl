@@ -13,7 +13,7 @@
     @for($row = 0; $row < $height; $row++)
         @for($col = 0; $col < $width; $col++)
             @php($cell = $grid[$row][$col] ?? null)
-            <div class="{{ $cell === null ? 'invisible' : ($cell === '#' ? 'bg-zinc-800 dark:bg-zinc-300' : 'bg-white dark:bg-zinc-800') }}" style="aspect-ratio: 1;"></div>
+            <div class="{{ $cell === null ? 'invisible' : ($cell === '#' ? 'bg-zinc-800 dark:bg-zinc-300' : 'bg-elevated') }}" style="aspect-ratio: 1;"></div>
         @endfor
     @endfor
 </div>

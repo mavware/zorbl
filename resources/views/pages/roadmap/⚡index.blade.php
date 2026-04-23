@@ -233,7 +233,7 @@ new #[Title('Roadmap')] class extends Component {
 
     {{-- Empty State --}}
     @if($this->groupedItems['in_progress']->isEmpty() && $this->groupedItems['planned']->isEmpty() && $this->groupedItems['completed']->isEmpty())
-        <div class="flex flex-col items-center justify-center rounded-xl border border-dashed border-zinc-400 py-16 dark:border-zinc-600">
+        <div class="border-line-strong flex flex-col items-center justify-center rounded-xl border border-dashed py-16">
             <flux:icon name="map" class="mb-4 size-12 text-zinc-500" />
             <flux:heading size="lg" class="mb-2">{{ __('No roadmap items yet') }}</flux:heading>
             <flux:text>{{ __('Add features, fixes, and improvements to share what\'s coming next.') }}</flux:text>

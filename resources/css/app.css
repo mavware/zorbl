@@ -26,6 +26,22 @@
     --color-accent: var(--color-neutral-800);
     --color-accent-content: var(--color-neutral-800);
     --color-accent-foreground: var(--color-white);
+
+    /* Semantic surface tokens — change these to adjust the whole app */
+    --color-page:           var(--color-zinc-100);
+    --color-surface:        #ffffff;
+    --color-elevated:       #ffffff;
+    --color-muted:          var(--color-zinc-100);
+
+    /* Semantic text tokens */
+    --color-fg:             var(--color-zinc-900);
+    --color-fg-muted:       var(--color-zinc-600);
+    --color-fg-subtle:      var(--color-zinc-500);
+
+    /* Semantic border tokens */
+    --color-line:           var(--color-zinc-300);
+    --color-line-soft:      var(--color-zinc-200);
+    --color-line-strong:    var(--color-zinc-400);
 }
 
 @layer theme {
@@ -33,6 +49,20 @@
         --color-accent: var(--color-white);
         --color-accent-content: var(--color-white);
         --color-accent-foreground: var(--color-neutral-800);
+
+        /* Semantic tokens — dark mode overrides */
+        --color-page:        var(--color-zinc-800);
+        --color-surface:     var(--color-zinc-900);
+        --color-elevated:    var(--color-zinc-800);
+        --color-muted:       var(--color-zinc-700);
+
+        --color-fg:          var(--color-zinc-100);
+        --color-fg-muted:    var(--color-zinc-400);
+        --color-fg-subtle:   var(--color-zinc-500);
+
+        --color-line:        var(--color-zinc-700);
+        --color-line-soft:   var(--color-zinc-800);
+        --color-line-strong: var(--color-zinc-600);
     }
 }
 

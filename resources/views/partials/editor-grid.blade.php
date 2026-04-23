@@ -21,7 +21,7 @@
                                 x-on:touchstart.passive="startLongPress(rowIdx, colIdx, $event)"
                                 x-on:touchend="cancelLongPress()"
                                 x-on:touchmove="cancelLongPress()"
-                                :class="[cellClasses(rowIdx, colIdx), isVoid(rowIdx, colIdx) ? '' : 'border border-zinc-400 dark:border-zinc-600']"
+                                :class="[cellClasses(rowIdx, colIdx), isVoid(rowIdx, colIdx) ? '' : 'border border-line-strong']"
                                 :style="cellBarStyles(rowIdx, colIdx)"
                                 class="relative box-border flex aspect-square items-center justify-center overflow-hidden select-none"
                                 role="gridcell"
@@ -40,7 +40,7 @@
                                     <svg class="pointer-events-none absolute inset-0.5 size-[calc(100%-4px)]"
                                          viewBox="0 0 100 100">
                                         <circle cx="50" cy="50" r="46" fill="none" stroke="currentColor"
-                                                stroke-width="2" class="text-zinc-500 dark:text-zinc-500"/>
+                                                stroke-width="2" class="text-fg-subtle"/>
                                     </svg>
                                 </template>
 
@@ -57,7 +57,7 @@
                                 {{-- Letter --}}
                                 <span
                                     class="font-semibold uppercase"
-                                    :class="isPrefilled(rowIdx, colIdx) ? 'text-violet-700 dark:text-violet-300' : 'text-zinc-900 dark:text-zinc-100'"
+                                    :class="isPrefilled(rowIdx, colIdx) ? 'text-violet-700 dark:text-violet-300' : 'text-fg'"
                                     :style="letterFontStyle(rowIdx, colIdx)"
                                     x-text="isBlock(rowIdx, colIdx) ? '' : (solution[rowIdx]?.[colIdx] || '')"
                                 ></span>
@@ -72,7 +72,7 @@
                 x-show="contextMenu.show"
                 x-on:click.stop
                 :style="'position: fixed; left: ' + contextMenu.x + 'px; top: ' + contextMenu.y + 'px; z-index: 50;'"
-                class="min-w-44 rounded-lg border border-zinc-300 bg-white py-1 shadow-lg dark:border-zinc-700 dark:bg-zinc-800"
+                class="bg-elevated border-line min-w-44 rounded-lg border py-1 shadow-lg"
                 x-transition
                 x-cloak
             >
@@ -100,7 +100,7 @@
                 </button>
 
                 <div x-show="!isBlock(contextMenu.row, contextMenu.col)">
-                    <div class="my-1 border-t border-zinc-300 dark:border-zinc-700"></div>
+                    <div class="my-1 border-t border-line"></div>
                     <div class="px-3 py-1 text-xs font-medium text-zinc-500">{{ __('Cell color') }}</div>
                     <div class="flex flex-wrap gap-1 px-3 py-1.5">
                         @php
@@ -112,7 +112,7 @@
                         @foreach ($colors as $color)
                             <button
                                 x-on:click.stop="contextSetColor('{{ $color }}')"
-                                class="size-5 rounded border border-zinc-400 transition hover:scale-110 dark:border-zinc-600"
+                                class="border-line-strong size-5 rounded border transition hover:scale-110"
                                 style="background-color: {{ $color }}"
                                 title="{{ $color }}"
                             ></button>
@@ -120,7 +120,7 @@
                         <button
                             x-on:click.stop="contextClearColor()"
                             x-show="getCellColor(contextMenu.row, contextMenu.col)"
-                            class="flex size-5 items-center justify-center rounded border border-zinc-400 bg-white text-xs text-zinc-500 transition hover:scale-110 dark:border-zinc-600 dark:bg-zinc-800"
+                            class="bg-elevated border-line-strong flex size-5 items-center justify-center rounded border text-xs text-zinc-500 transition hover:scale-110"
                             title="{{ __('Remove color') }}"
                         >&times;</button>
                     </div>
@@ -145,7 +145,7 @@
                 </button>
 
                 <div x-show="!isBlock(contextMenu.row, contextMenu.col)">
-                    <div class="my-1 border-t border-zinc-300 dark:border-zinc-700"></div>
+                    <div class="my-1 border-t border-line"></div>
                     <div class="px-3 py-1 text-xs font-medium text-zinc-500">{{ __('Bars') }}</div>
                     <template x-for="edge in ['top', 'right', 'bottom', 'left']" :key="'bar-' + edge">
                         <button
@@ -174,7 +174,7 @@
                 class="absolute inset-x-0 top-0 z-40 flex items-start justify-center pt-4"
             >
                 <div
-                    class="w-64 rounded-lg border border-zinc-300 bg-white p-3 shadow-lg dark:border-zinc-700 dark:bg-zinc-800"
+                    class="bg-elevated border-line w-64 rounded-lg border p-3 shadow-lg"
                     x-on:keydown.escape.stop="cancelRebus()"
                     x-on:keydown.enter.stop="applyRebus()"
                     x-on:click.stop
@@ -182,14 +182,14 @@
                     <div class="mb-2 flex items-center gap-2 text-sm font-medium text-zinc-800 dark:text-zinc-300">
                         <span x-text="rebusCells.length > 1 ? '{{ __('Pre-fill') }} ' + rebusCells.length + ' {{ __('cells') }}' : '{{ __('Pre-fill cell') }}'"></span>
                     </div>
-                    <p class="mb-3 text-xs text-zinc-600 dark:text-zinc-400">
+                    <p class="mb-3 text-xs text-fg-muted">
                         <span x-text="rebusCells.length > 1 ? '{{ __('Enter a value to apply to all selected cells. This value will be given to solvers as a pre-filled clue.') }}' : '{{ __('Enter a letter, multiple characters (rebus), or a symbol/emoji. This value will be given to solvers as a pre-filled clue.') }}'"></span>
                     </p>
                     <input
                         type="text"
                         x-ref="rebusInput"
                         x-model="rebusInputValue"
-                        class="mb-3 w-full rounded-md border border-zinc-400 bg-white px-2 py-1.5 text-sm text-zinc-900 placeholder-zinc-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-zinc-600 dark:bg-zinc-700 dark:text-zinc-100 dark:placeholder-zinc-500"
+                        class="border-line-strong text-fg mb-3 w-full rounded-md border bg-white px-2 py-1.5 text-sm placeholder-zinc-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:bg-zinc-700 dark:placeholder-zinc-500"
                         placeholder="{{ __('e.g. A, THE, ★, 🌟') }}"
                     />
                     <div class="flex items-center justify-between">
@@ -214,7 +214,7 @@
                 class="absolute inset-x-0 top-0 z-40 flex items-start justify-center pt-4"
             >
                 <div
-                    class="w-56 rounded-lg border border-zinc-300 bg-white p-3 shadow-lg dark:border-zinc-700 dark:bg-zinc-800"
+                    class="bg-elevated border-line w-56 rounded-lg border p-3 shadow-lg"
                     x-on:keydown.escape.stop="cancelCustomNumber()"
                     x-on:keydown.enter.stop="applyCustomNumber()"
                     x-on:click.stop
@@ -222,14 +222,14 @@
                     <div class="mb-2 text-sm font-medium text-zinc-800 dark:text-zinc-300">
                         {{ __('Custom number') }}
                     </div>
-                    <p class="mb-3 text-xs text-zinc-600 dark:text-zinc-400">
+                    <p class="mb-3 text-xs text-fg-muted">
                         {{ __('Enter a number to display on this cell instead of the auto-generated clue number.') }}
                     </p>
                     <input
                         type="number"
                         x-ref="customNumberInput"
                         x-model="customNumberInputValue"
-                        class="w-full rounded border border-zinc-400 px-2 py-1 text-center text-sm dark:border-zinc-600 dark:bg-zinc-700 dark:text-zinc-200"
+                        class="border-line-strong w-full rounded border px-2 py-1 text-center text-sm dark:bg-zinc-700 dark:text-zinc-200"
                         min="0"
                     >
                     <div class="mt-3 flex items-center justify-between">

@@ -21,7 +21,7 @@ function decodeSolution(encoded, crosswordId) {
  */
 function buildTemplate(data) {
     return `
-    <div x-data="crosswordSolver" class="zorbl-embed relative flex flex-col font-sans text-zinc-900 dark:text-zinc-100" style="max-width: 100%;">
+    <div x-data="crosswordSolver" class="zorbl-embed relative flex flex-col font-sans text-fg" style="max-width: 100%;">
         <!-- Toolbar -->
         <div class="mb-3 flex flex-wrap items-center gap-2">
             <div class="flex flex-1 items-center gap-2 min-w-0">

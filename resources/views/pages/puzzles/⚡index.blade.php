@@ -356,7 +356,7 @@ class extends Component {
 
     {{-- Secondary Filters (collapsible) --}}
     @if($showFilters)
-        <div class="grid gap-3 rounded-xl border border-zinc-300 p-4 sm:grid-cols-2 lg:grid-cols-3 dark:border-zinc-700">
+        <div class="border-line grid gap-3 rounded-xl border p-4 sm:grid-cols-2 lg:grid-cols-3">
             <flux:field>
                 <flux:label>{{ __('Constructor') }}</flux:label>
                 <flux:input wire:model.live.debounce.300ms="constructor" size="sm" placeholder="{{ __('Name...') }}" />
@@ -389,7 +389,7 @@ class extends Component {
     @php $results = $this->puzzles; @endphp
 
     @if($results->isEmpty())
-        <div class="flex flex-col items-center justify-center rounded-xl border border-dashed border-zinc-400 py-12 dark:border-zinc-600">
+        <div class="border-line-strong flex flex-col items-center justify-center rounded-xl border border-dashed py-12">
             <flux:icon name="magnifying-glass" class="mb-4 size-12 text-zinc-500" />
             <flux:heading size="lg" class="mb-2">{{ __('No puzzles found') }}</flux:heading>
             <flux:text class="text-zinc-500">
@@ -405,7 +405,7 @@ class extends Component {
             @foreach($results as $crossword)
                 <div
                     wire:key="browse-{{ $crossword->id }}"
-                    class="group rounded-xl border border-zinc-300 p-4 transition-colors hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-500"
+                    class="border-line group rounded-xl border p-4 transition-colors hover:border-zinc-400 dark:hover:border-zinc-500"
                 >
                     <div class="mb-3 flex justify-center">
                         <x-grid-thumbnail :grid="$crossword->grid" :width="$crossword->width" :height="$crossword->height" />
@@ -471,22 +471,22 @@ class extends Component {
             class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
             x-on:click.self="showSignup = false"
         >
-            <div class="mx-4 w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-xl dark:bg-zinc-800" x-on:click.stop>
+            <div class="bg-elevated mx-4 w-full max-w-md rounded-2xl p-8 text-center shadow-xl" x-on:click.stop>
                 <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30">
                     <svg xmlns="http://www.w3.org/2000/svg" class="size-8 text-amber-600 dark:text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/>
                         <path d="m9 15 2 2 4-4"/>
                     </svg>
                 </div>
-                <h3 class="text-xl font-bold text-zinc-900 dark:text-zinc-100">{{ __('Ready for more puzzles?') }}</h3>
-                <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+                <h3 class="text-xl font-bold text-fg">{{ __('Ready for more puzzles?') }}</h3>
+                <p class="mt-2 text-sm text-fg-muted">
                     {{ __('Create a free account to solve unlimited puzzles, save your progress across devices, and track your stats.') }}
                 </p>
                 <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
                     <a href="{{ route('register') }}" class="rounded-xl bg-amber-500 px-6 py-2.5 text-sm font-semibold text-zinc-950 hover:bg-amber-400 transition">
                         {{ __('Create Free Account') }}
                     </a>
-                    <a href="{{ route('login') }}" class="rounded-xl border border-zinc-400 px-6 py-2.5 text-sm font-semibold text-zinc-800 hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-300 dark:hover:bg-zinc-700 transition">
+                    <a href="{{ route('login') }}" class="border-line-strong rounded-xl border px-6 py-2.5 text-sm font-semibold text-zinc-800 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-700 transition">
                         {{ __('Log In') }}
                     </a>
                 </div>

@@ -14,9 +14,9 @@
             x-on:keydown.tab.prevent="focusNextClue($el, '{{ $direction }}', false)"
             x-on:keydown.shift.tab.prevent="focusNextClue($el, '{{ $direction }}', true)"
             :class="[
-                    activeClueNumber === clue.number && direction === '{{ $direction }}' ? 'bg-blue-100 dark:bg-blue-900/40' : 'hover:bg-zinc-100 dark:hover:bg-zinc-700/50',
-                    isClueIncomplete('{{ $direction }}') && !clue.clue?.trim() ? 'ring-2 ring-amber-400 dark:ring-amber-500' : ''
-                ]"
+activeClueNumber === clue.number && direction === '{{ $direction }}' ? 'bg-blue-100 dark:bg-blue-900/40' : 'hover:bg-zinc-100 dark:hover:bg-zinc-700/50',
+isClueIncomplete('{{ $direction }}') && !clue.clue?.trim() ? 'ring-2 ring-amber-400 dark:ring-amber-500' : ''
+]"
             class="cursor-pointer rounded px-2 py-1"
             :id="'clue-{{ $direction }}-' + clue.number"
         >
@@ -81,7 +81,7 @@
                                     :title="suggestion.puzzle + ' — ' + suggestion.author"
                                 >
                                     <span x-text="suggestion.clue"></span>
-                                    <span class="text-zinc-500 dark:text-zinc-500"
+                                    <span class="text-fg-subtle"
                                           x-text="' — ' + suggestion.author"></span>
                                 </div>
                             </template>
@@ -106,7 +106,7 @@
                                     class="clue-content cursor-pointer rounded px-1 py-0.5 text-xs text-zinc-700 hover:bg-blue-50 dark:text-zinc-400 dark:hover:bg-blue-900/20"
                                 >
                                     <span x-text="suggestion.word"></span>
-                                    <span class="text-zinc-500 dark:text-zinc-500" x-text="'(' + suggestion.score + ')'"></span>
+                                    <span class="text-fg-subtle" x-text="'(' + suggestion.score + ')'"></span>
                                 </div>
                             </template>
                         </div>

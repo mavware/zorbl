@@ -1,14 +1,14 @@
         {{-- Mobile clue panels --}}
         <div class="lg:hidden">
-            <div class="flex border-b border-zinc-300 dark:border-zinc-700">
+            <div class="flex border-b border-line">
                 <button
                     x-on:click="direction = 'across'"
-                    :class="direction === 'across' ? 'border-zinc-800 text-zinc-900 dark:border-zinc-200 dark:text-zinc-100' : 'border-transparent text-zinc-600'"
+                    :class="text-fg direction === 'across' ? 'border-zinc-800 dark:border-zinc-200 ' : 'border-transparent text-zinc-600'"
                     class="border-b-2 px-4 py-2 text-sm font-medium"
                 >{{ __('Across') }}</button>
                 <button
                     x-on:click="direction = 'down'"
-                    :class="direction === 'down' ? 'border-zinc-800 text-zinc-900 dark:border-zinc-200 dark:text-zinc-100' : 'border-transparent text-zinc-600'"
+                    :class="text-fg direction === 'down' ? 'border-zinc-800 dark:border-zinc-200 ' : 'border-transparent text-zinc-600'"
                     class="border-b-2 px-4 py-2 text-sm font-medium"
                 >{{ __('Down') }}</button>
             </div>
@@ -22,9 +22,9 @@
                                 x-on:keydown.tab.prevent="focusNextClue($el, 'across', false)"
                                 x-on:keydown.shift.tab.prevent="focusNextClue($el, 'across', true)"
                                 :class="[
-                                        activeClueNumber === clue.number && direction === 'across' ? 'bg-blue-100 dark:bg-blue-900/40' : '',
-                                        isClueIncomplete('across') && !clue.clue?.trim() ? 'ring-2 ring-amber-400 dark:ring-amber-500' : ''
-                                    ]"
+activeClueNumber === clue.number && direction === 'across' ? 'bg-blue-100 dark:bg-blue-900/40' : '',
+isClueIncomplete('across') && !clue.clue?.trim() ? 'ring-2 ring-amber-400 dark:ring-amber-500' : ''
+]"
                                 class="cursor-pointer rounded px-2 py-1"
                             >
                                 <div class="flex items-start gap-1.5">
@@ -99,7 +99,7 @@
                                                 class="cursor-pointer rounded px-1 py-0.5 text-xs text-zinc-700 hover:bg-blue-50 dark:text-zinc-400 dark:hover:bg-blue-900/20"
                                             >
                                                 <span x-text="suggestion.word"></span>
-                                                <span class="text-zinc-500 dark:text-zinc-500" x-text="'(' + suggestion.score + ')'"></span>
+                                                <span class="text-fg-subtle" x-text="'(' + suggestion.score + ')'"></span>
                                             </div>
                                         </template>
                                     </div>
@@ -117,9 +117,9 @@
                                 x-on:keydown.tab.prevent="focusNextClue($el, 'down', false)"
                                 x-on:keydown.shift.tab.prevent="focusNextClue($el, 'down', true)"
                                 :class="[
-                                        activeClueNumber === clue.number && direction === 'down' ? 'bg-blue-100 dark:bg-blue-900/40' : '',
-                                        isClueIncomplete('down') && !clue.clue?.trim() ? 'ring-2 ring-amber-400 dark:ring-amber-500' : ''
-                                    ]"
+activeClueNumber === clue.number && direction === 'down' ? 'bg-blue-100 dark:bg-blue-900/40' : '',
+isClueIncomplete('down') && !clue.clue?.trim() ? 'ring-2 ring-amber-400 dark:ring-amber-500' : ''
+]"
                                 class="cursor-pointer rounded px-2 py-1"
                             >
                                 <div class="flex items-start gap-1.5">
@@ -194,7 +194,7 @@
                                                 class="cursor-pointer rounded px-1 py-0.5 text-xs text-zinc-700 hover:bg-blue-50 dark:text-zinc-400 dark:hover:bg-blue-900/20"
                                             >
                                                 <span x-text="suggestion.word"></span>
-                                                <span class="text-zinc-500 dark:text-zinc-500" x-text="'(' + suggestion.score + ')'"></span>
+                                                <span class="text-fg-subtle" x-text="'(' + suggestion.score + ')'"></span>
                                             </div>
                                         </template>
                                     </div>
