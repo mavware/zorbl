@@ -216,15 +216,18 @@ new #[Title('My Puzzles')] class extends Component {
                     <flux:error name="newHeight" />
                 </flux:field>
             </div>
-            <div class="h-48">
+            <div class="relative h-48" wire:key="template-section-{{ $newWidth }}x{{ $newHeight }}">
+                <div wire:loading.delay wire:target="newWidth, newHeight" class="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-white/60 dark:bg-zinc-900/60">
+                    <flux:icon.loading class="size-5 text-zinc-400" />
+                </div>
+            @if(count($this->templates) > 0)
                 <flux:label class="mb-2">{{ __('Grid Template') }} <span class="text-zinc-400 text-xs font-normal">{{ __('(optional)') }}</span></flux:label>
-                <div class="flex h-[8.5rem] items-start gap-3 overflow-x-auto pb-2" wire:loading.class="opacity-50" wire:target="newWidth, newHeight">
-                @if(count($this->templates) > 0)
+                <div class="flex min-h-[6.5rem] gap-3 overflow-x-auto pb-2">
                     {{-- Blank grid option --}}
                     <button
                         type="button"
                         wire:click="$set('selectedTemplate', null)"
-                        class="flex size-[6.5rem] shrink-0 flex-col items-center justify-center gap-1.5 rounded-lg border-2 p-2 transition-colors {{ $selectedTemplate === null ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' : 'border-zinc-200 hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-500' }}"
+                        class="flex shrink-0 flex-col items-center gap-1.5 rounded-lg border-2 p-2 transition-colors {{ $selectedTemplate === null ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' : 'border-zinc-200 hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-500' }}"
                     >
                         <x-grid-thumbnail :grid="Crossword::emptyGrid($newWidth, $newHeight)" :width="$newWidth" :height="$newHeight" :cell-size="6" :max-width="80" />
                         <span class="whitespace-nowrap text-xs text-zinc-600 dark:text-zinc-400">{{ __('Blank') }}</span>
@@ -234,18 +237,18 @@ new #[Title('My Puzzles')] class extends Component {
                             <button
                                 type="button"
                                 wire:click="$set('selectedTemplate', {{ $index }})"
-                                class="flex size-[6.5rem] shrink-0 flex-col items-center justify-center gap-1.5 rounded-lg border-2 p-2 transition-colors {{ $selectedTemplate === $index ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' : 'border-zinc-200 hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-500' }}"
+                                class="flex shrink-0 flex-col items-center gap-1.5 rounded-lg border-2 p-2 transition-colors {{ $selectedTemplate === $index ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' : 'border-zinc-200 hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-500' }}"
                             >
                                 <x-grid-thumbnail :grid="$template['grid']" :width="$newWidth" :height="$newHeight" :cell-size="6" :max-width="80" />
                                 <span class="whitespace-nowrap text-xs text-zinc-600 dark:text-zinc-400">{{ $template['name'] }}</span>
                             </button>
                     @endforeach
-                @else
-                    <div class="flex h-full w-full items-center justify-center">
-                        <flux:text size="sm" class="text-zinc-400">{{ __('No templates available for this grid size.') }}</flux:text>
-                    </div>
-                @endif
                 </div>
+            @else
+                <div class="flex h-full items-center justify-center">
+                    <flux:text size="sm" class="text-zinc-400">{{ __('Templates are available for square grids (3×3 to 27×27).') }}</flux:text>
+                </div>
+            @endif
             </div>
 
             <div class="flex justify-end gap-2">

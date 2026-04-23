@@ -22,7 +22,7 @@ test('template picker appears in new puzzle modal for standard sizes', function 
         ->assertSee($firstTemplateName);
 });
 
-test('template picker shows empty state for non-standard sizes', function () {
+test('template picker does not appear for non-standard sizes', function () {
     $user = User::factory()->create();
     $this->actingAs($user);
 
@@ -30,19 +30,8 @@ test('template picker shows empty state for non-standard sizes', function () {
         ->set('showNewModal', true)
         ->set('newWidth', 2)
         ->set('newHeight', 2)
-        ->assertSee('No templates available for this grid size');
-});
-
-test('template picker shows empty state for non-square grids', function () {
-    $user = User::factory()->create();
-    $this->actingAs($user);
-
-    Livewire\Livewire::test('pages::crosswords.index')
-        ->set('showNewModal', true)
-        ->set('newWidth', 15)
-        ->set('newHeight', 10)
-        ->assertSee('No templates available for this grid size')
-        ->assertDontSee('Blank');
+        ->assertDontSee('Grid Template')
+        ->assertSee('Templates are available for square grids');
 });
 
 test('creating puzzle with selected template uses that grid', function () {
@@ -167,4 +156,43 @@ test('admin templates respect sort_order', function () {
     $secondIndex = array_search('Second', $names, true);
 
     expect($firstIndex)->toBeLessThan($secondIndex);
+});
+
+test('non-square dimensions show informational message instead of empty space', function () {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    Livewire\Livewire::test('pages::crosswords.index')
+        ->set('showNewModal', true)
+        ->set('newWidth', 10)
+        ->set('newHeight', 8)
+        ->assertDontSee('Grid Template')
+        ->assertSee('Templates are available for square grids');
+});
+
+test('square dimensions within range show templates not informational message', function () {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    Livewire\Livewire::test('pages::crosswords.index')
+        ->set('showNewModal', true)
+        ->set('newWidth', 11)
+        ->set('newHeight', 11)
+        ->assertSee('Grid Template')
+        ->assertDontSee('Templates are available for square grids');
+});
+
+test('switching from square to non-square dimensions keeps template section stable', function () {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    Livewire\Livewire::test('pages::crosswords.index')
+        ->set('showNewModal', true)
+        ->set('newWidth', 15)
+        ->set('newHeight', 15)
+        ->assertSee('Grid Template')
+        ->set('newWidth', 10)
+        ->assertSet('selectedTemplate', null)
+        ->assertDontSee('Grid Template')
+        ->assertSee('Templates are available for square grids');
 });
