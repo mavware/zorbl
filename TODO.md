@@ -10,7 +10,7 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [ ] Type of puzzle selection when creating a new puzzle (standard, diamond, freestyle)
 - [ ] Create a step-by-step marketing plan for the site
 - [x] Ability to search for a puzzle by tag
-- [ ] Ability to select tags that you never want to see puzzles associated with
+- [x] Ability to select tags that you never want to see puzzles associated with
 - [ ] Ability to sign in with a passkey
 - [ ] Ability to sign in with google
 - [ ] Brainstorm ways to generate engaging puzzles with AI
