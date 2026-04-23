@@ -4,6 +4,7 @@ use Zorbl\CrosswordIO\Exceptions\IpuzImportException;
 use Zorbl\CrosswordIO\Exceptions\JpzImportException;
 use Zorbl\CrosswordIO\Exceptions\PdfImportException;
 use Zorbl\CrosswordIO\Exceptions\PuzImportException;
+use App\Enums\PuzzleType;
 use App\Models\Crossword;
 use App\Services\GridTemplateProvider;
 use Zorbl\CrosswordIO\GridNumberer;
@@ -19,6 +20,7 @@ new #[Title('My Puzzles')] class extends Component {
 
     public bool $showNewModal = false;
     public bool $showImportModal = false;
+    public string $puzzleType = 'standard';
     public int $newWidth = 15;
     public int $newHeight = 15;
     public ?int $selectedTemplate = null;
@@ -32,29 +34,84 @@ new #[Title('My Puzzles')] class extends Component {
     }
 
     #[Computed]
+    public function selectedPuzzleType(): PuzzleType
+    {
+        return PuzzleType::tryFrom($this->puzzleType) ?? PuzzleType::Standard;
+    }
+
+    #[Computed]
     public function templates(): array
     {
+        if ($this->selectedPuzzleType === PuzzleType::Diamond) {
+            return [];
+        }
+
         return app(GridTemplateProvider::class)->getTemplates($this->newWidth ?? 0, $this->newHeight ?? 0);
+    }
+
+    public function updatedPuzzleType(): void
+    {
+        $type = $this->selectedPuzzleType;
+
+        if ($type === PuzzleType::Diamond) {
+            if ($this->newWidth % 2 === 0) {
+                $this->newWidth = $this->newWidth + 1;
+            }
+            $this->newHeight = $this->newWidth;
+        } elseif ($type === PuzzleType::Standard) {
+            $this->newHeight = $this->newWidth;
+        }
+
+        $this->selectedTemplate = null;
+        unset($this->templates, $this->selectedPuzzleType);
     }
 
     public function updatedNewWidth(): void
     {
+        $type = $this->selectedPuzzleType;
+
+        if ($type->requiresSquare()) {
+            $this->newHeight = $this->newWidth;
+        }
+
         $this->selectedTemplate = null;
-        unset($this->templates);
+        unset($this->templates, $this->selectedPuzzleType);
     }
 
     public function updatedNewHeight(): void
     {
+        $type = $this->selectedPuzzleType;
+
+        if ($type->requiresSquare()) {
+            $this->newWidth = $this->newHeight;
+        }
+
         $this->selectedTemplate = null;
-        unset($this->templates);
+        unset($this->templates, $this->selectedPuzzleType);
     }
 
     public function createPuzzle(): void
     {
-        $this->validate([
+        $type = $this->selectedPuzzleType;
+
+        $rules = [
             'newWidth' => ['required', 'integer', 'min:3', 'max:30'],
             'newHeight' => ['required', 'integer', 'min:3', 'max:30'],
-        ]);
+        ];
+
+        $this->validate($rules);
+
+        if ($type->requiresSquare() && $this->newWidth !== $this->newHeight) {
+            $this->addError('newHeight', __(':type puzzles must be square.', ['type' => $type->label()]));
+
+            return;
+        }
+
+        if ($type->requiresOdd() && $this->newWidth % 2 === 0) {
+            $this->addError('newWidth', __(':type puzzles require an odd grid size.', ['type' => $type->label()]));
+
+            return;
+        }
 
         $user = Auth::user();
         $limits = $user->planLimits();
@@ -70,21 +127,22 @@ new #[Title('My Puzzles')] class extends Component {
         if ($this->selectedTemplate !== null && isset($this->templates[$this->selectedTemplate])) {
             $grid = $this->templates[$this->selectedTemplate]['grid'];
         } else {
-            $grid = Crossword::emptyGrid($this->newWidth ?? 0, $this->newHeight ?? 0);
+            $grid = $type->generateGrid($this->newWidth, $this->newHeight);
         }
 
-        $result = app(GridNumberer::class)->number($grid, $this->newWidth ?? 0, $this->newHeight ?? 0);
+        $result = app(GridNumberer::class)->number($grid, $this->newWidth, $this->newHeight);
 
         $crossword = Auth::user()->crosswords()->create([
             'title' => 'Untitled Puzzle',
             'author' => Auth::user()->name,
             'copyright' => copyright(Auth::user()->copyright_name ?? Auth::user()->name ?? ''),
-            'width' => $this->newWidth ?? 0,
-            'height' => $this->newHeight ?? 0,
+            'width' => $this->newWidth,
+            'height' => $this->newHeight,
             'grid' => $result['grid'],
-            'solution' => Crossword::emptySolution($this->newWidth ?? 0, $this->newHeight ?? 0),
+            'solution' => Crossword::emptySolution($this->newWidth, $this->newHeight),
             'clues_across' => array_map(fn ($s) => ['number' => $s['number'], 'clue' => ''], $result['across']),
             'clues_down' => array_map(fn ($s) => ['number' => $s['number'], 'clue' => ''], $result['down']),
+            'metadata' => ['puzzle_type' => $type->value],
         ]);
 
         $this->redirect(route('crosswords.editor', $crossword), navigate: true);
@@ -203,53 +261,104 @@ new #[Title('My Puzzles')] class extends Component {
         <div class="space-y-6">
             <flux:heading size="lg">{{ __('New Puzzle') }}</flux:heading>
 
+            {{-- Puzzle Type Selector --}}
+            <div>
+                <flux:label class="mb-2">{{ __('Puzzle Type') }}</flux:label>
+                <div class="grid grid-cols-3 gap-3">
+                    @foreach (PuzzleType::cases() as $type)
+                        <button
+                            type="button"
+                            wire:click="$set('puzzleType', @js($type->value))"
+                            @class([
+                                'flex flex-col items-center gap-2 rounded-lg border-2 p-3 text-center transition-colors',
+                                'border-blue-500 bg-blue-50 ring-1 ring-blue-500 dark:border-blue-400 dark:bg-blue-950/40 dark:ring-blue-400' => $puzzleType === $type->value,
+                                'border-zinc-200 hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:border-zinc-500 dark:hover:bg-zinc-800' => $puzzleType !== $type->value,
+                            ])
+                        >
+                            <flux:icon :name="$type->icon()" @class([
+                                'size-6',
+                                'text-blue-600 dark:text-blue-400' => $puzzleType === $type->value,
+                                'text-zinc-400' => $puzzleType !== $type->value,
+                            ]) />
+                            <span @class([
+                                'text-sm font-medium',
+                                'text-blue-700 dark:text-blue-300' => $puzzleType === $type->value,
+                                'text-zinc-700 dark:text-zinc-300' => $puzzleType !== $type->value,
+                            ])>{{ __($type->label()) }}</span>
+                            <span class="text-[11px] leading-tight text-zinc-400">{{ __($type->description()) }}</span>
+                        </button>
+                    @endforeach
+                </div>
+            </div>
+
+            {{-- Grid Dimensions --}}
             <div class="grid grid-cols-2 gap-4">
                 <flux:field>
-                    <flux:label>{{ __('Width') }}</flux:label>
-                    <flux:input type="number" wire:model.live.debounce.300ms="newWidth" min="3" max="30" />
+                    <flux:label>{{ $this->selectedPuzzleType->requiresSquare() ? __('Size') : __('Width') }}</flux:label>
+                    <flux:input
+                        type="number"
+                        wire:model.live.debounce.300ms="newWidth"
+                        min="3"
+                        max="30"
+                        :step="$this->selectedPuzzleType->requiresOdd() ? 2 : 1"
+                    />
                     <flux:error name="newWidth" />
                 </flux:field>
 
-                <flux:field>
-                    <flux:label>{{ __('Height') }}</flux:label>
-                    <flux:input type="number" wire:model.live.debounce.300ms="newHeight" min="3" max="30" />
-                    <flux:error name="newHeight" />
-                </flux:field>
+                @if (! $this->selectedPuzzleType->requiresSquare())
+                    <flux:field>
+                        <flux:label>{{ __('Height') }}</flux:label>
+                        <flux:input type="number" wire:model.live.debounce.300ms="newHeight" min="3" max="30" />
+                        <flux:error name="newHeight" />
+                    </flux:field>
+                @endif
             </div>
-            <div class="relative h-48" wire:key="template-section-{{ $newWidth }}x{{ $newHeight }}">
-                <div wire:loading.delay wire:target="newWidth, newHeight" class="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-white/60 dark:bg-zinc-900/60">
-                    <flux:icon.loading class="size-5 text-zinc-400" />
-                </div>
-            @if(count($this->templates) > 0)
-                <flux:label class="mb-2">{{ __('Grid Template') }} <span class="text-zinc-400 text-xs font-normal">{{ __('(optional)') }}</span></flux:label>
-                <div class="flex min-h-[6.5rem] gap-3 overflow-x-auto pb-2">
-                    {{-- Blank grid option --}}
-                    <button
-                        type="button"
-                        wire:click="$set('selectedTemplate', null)"
-                        class="flex shrink-0 flex-col items-center gap-1.5 rounded-lg border-2 p-2 transition-colors {{ $selectedTemplate === null ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' : 'border-zinc-200 hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-500' }}"
-                    >
-                        <x-grid-thumbnail :grid="Crossword::emptyGrid($newWidth, $newHeight)" :width="$newWidth" :height="$newHeight" :cell-size="6" :max-width="80" />
-                        <span class="whitespace-nowrap text-xs text-zinc-600 dark:text-zinc-400">{{ __('Blank') }}</span>
-                    </button>
 
-                    @foreach($this->templates as $index => $template)
-                            <button
-                                type="button"
-                                wire:click="$set('selectedTemplate', {{ $index }})"
-                                class="flex shrink-0 flex-col items-center gap-1.5 rounded-lg border-2 p-2 transition-colors {{ $selectedTemplate === $index ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' : 'border-zinc-200 hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-500' }}"
-                            >
-                                <x-grid-thumbnail :grid="$template['grid']" :width="$newWidth" :height="$newHeight" :cell-size="6" :max-width="80" />
-                                <span class="whitespace-nowrap text-xs text-zinc-600 dark:text-zinc-400">{{ $template['name'] }}</span>
-                            </button>
-                    @endforeach
-                </div>
-            @else
-                <div class="flex h-full items-center justify-center">
-                    <flux:text size="sm" class="text-zinc-400">{{ __('Templates are available for square grids (3×3 to 27×27).') }}</flux:text>
+            {{-- Diamond Preview --}}
+            @if ($this->selectedPuzzleType === PuzzleType::Diamond)
+                <div class="flex flex-col items-center gap-2">
+                    <flux:label>{{ __('Preview') }}</flux:label>
+                    <x-grid-thumbnail :grid="PuzzleType::Diamond->generateGrid($newWidth, $newHeight)" :width="$newWidth" :height="$newHeight" :cell-size="6" :max-width="120" />
                 </div>
             @endif
-            </div>
+
+            {{-- Grid Template (Standard and Freestyle only) --}}
+            @if ($this->selectedPuzzleType !== PuzzleType::Diamond)
+                <div class="relative h-48" wire:key="template-section-{{ $puzzleType }}-{{ $newWidth }}x{{ $newHeight }}">
+                    <div wire:loading.delay wire:target="newWidth, newHeight, puzzleType" class="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-white/60 dark:bg-zinc-900/60">
+                        <flux:icon.loading class="size-5 text-zinc-400" />
+                    </div>
+                    @if(count($this->templates) > 0)
+                        <flux:label class="mb-2">{{ __('Grid Template') }} <span class="text-zinc-400 text-xs font-normal">{{ __('(optional)') }}</span></flux:label>
+                        <div class="flex min-h-[6.5rem] gap-3 overflow-x-auto pb-2">
+                            {{-- Blank grid option --}}
+                            <button
+                                type="button"
+                                wire:click="$set('selectedTemplate', null)"
+                                class="flex shrink-0 flex-col items-center gap-1.5 rounded-lg border-2 p-2 transition-colors {{ $selectedTemplate === null ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' : 'border-zinc-200 hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-500' }}"
+                            >
+                                <x-grid-thumbnail :grid="Crossword::emptyGrid($newWidth, $newHeight)" :width="$newWidth" :height="$newHeight" :cell-size="6" :max-width="80" />
+                                <span class="whitespace-nowrap text-xs text-zinc-600 dark:text-zinc-400">{{ __('Blank') }}</span>
+                            </button>
+
+                            @foreach($this->templates as $index => $template)
+                                <button
+                                    type="button"
+                                    wire:click="$set('selectedTemplate', {{ $index }})"
+                                    class="flex shrink-0 flex-col items-center gap-1.5 rounded-lg border-2 p-2 transition-colors {{ $selectedTemplate === $index ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' : 'border-zinc-200 hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-500' }}"
+                                >
+                                    <x-grid-thumbnail :grid="$template['grid']" :width="$newWidth" :height="$newHeight" :cell-size="6" :max-width="80" />
+                                    <span class="whitespace-nowrap text-xs text-zinc-600 dark:text-zinc-400">{{ $template['name'] }}</span>
+                                </button>
+                            @endforeach
+                        </div>
+                    @else
+                        <div class="flex h-full items-center justify-center">
+                            <flux:text size="sm" class="text-zinc-400">{{ __('Templates are available for square grids (3×3 to 27×27).') }}</flux:text>
+                        </div>
+                    @endif
+                </div>
+            @endif
 
             <div class="flex justify-end gap-2">
                 <flux:button wire:click="$set('showNewModal', false)">{{ __('Cancel') }}</flux:button>
