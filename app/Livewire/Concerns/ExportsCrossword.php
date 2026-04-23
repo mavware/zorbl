@@ -41,6 +41,17 @@ trait ExportsCrossword
 
     public function attemptExport(string $format): mixed
     {
+        $gate = $this->getExportPlanGates()[$format] ?? null;
+        if ($gate && ! Auth::user()->planLimits()->{$gate}()) {
+            $this->onExportUpgradeRequired($format);
+
+            return null;
+        }
+
+        if ($format === 'pdf') {
+            return $this->exportPdf();
+        }
+
         $crossword = $this->getExportableCrossword();
 
         $exporter = match ($format) {
@@ -65,6 +76,11 @@ trait ExportsCrossword
         }
 
         return $this->runExport($format, allowLossyExport: false);
+    }
+
+    protected function onExportUpgradeRequired(string $format): void
+    {
+        abort(403, "Upgrade to Pro to export .{$format} files.");
     }
 
     public function confirmExport(): mixed

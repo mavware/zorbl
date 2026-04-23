@@ -654,6 +654,12 @@ class extends Component {
             'pdf' => 'canExportPdf',
         ];
     }
+
+    protected function onExportUpgradeRequired(string $format): void
+    {
+        $this->upgradeFeature = 'export';
+        $this->showUpgradeModal = true;
+    }
 }
 ?>
 
@@ -821,7 +827,7 @@ class extends Component {
                             <flux:badge color="purple" size="sm">{{ __('Pro') }}</flux:badge>
                         @endunless
                     </flux:menu.item>
-                    <flux:menu.item wire:click="exportPdf" :class="! Auth::user()->planLimits()->canExportPdf() ? 'opacity-60' : ''">
+                    <flux:menu.item wire:click="attemptExport('pdf')" :class="! Auth::user()->planLimits()->canExportPdf() ? 'opacity-60' : ''">
                         {{ __('.pdf (Print-Ready)') }}
                         @unless (Auth::user()->planLimits()->canExportPdf())
                             <flux:badge color="purple" size="sm">{{ __('Pro') }}</flux:badge>
@@ -912,25 +918,68 @@ class extends Component {
         </div>
     </flux:modal>
 
-    {{-- Upgrade Prompt Modal --}}
-    <flux:modal wire:model="showUpgradeModal" class="w-full max-w-sm">
-        <div class="space-y-6 text-center">
-            <div class="mx-auto flex size-12 items-center justify-center rounded-full bg-purple-100 dark:bg-purple-900/30">
-                <svg xmlns="http://www.w3.org/2000/svg" class="size-6 text-purple-600 dark:text-purple-400" viewBox="0 0 20 20" fill="currentColor">
-                    <path d="M15.98 1.804a1 1 0 0 0-1.96 0l-.24 1.192a1 1 0 0 1-.784.785l-1.192.238a1 1 0 0 0 0 1.962l1.192.238a1 1 0 0 1 .785.785l.238 1.192a1 1 0 0 0 1.962 0l.238-1.192a1 1 0 0 1 .785-.785l1.192-.238a1 1 0 0 0 0-1.962l-1.192-.238a1 1 0 0 1-.785-.785l-.238-1.192ZM6.949 5.684a1 1 0 0 0-1.898 0l-.683 2.051a1 1 0 0 1-.633.633l-2.051.683a1 1 0 0 0 0 1.898l2.051.683a1 1 0 0 1 .633.633l.683 2.051a1 1 0 0 0 1.898 0l.683-2.051a1 1 0 0 1 .633-.633l2.051-.683a1 1 0 0 0 0-1.898l-2.051-.683a1 1 0 0 1-.633-.633l-.683-2.051ZM15.98 13.804a1 1 0 0 0-1.96 0l-.24 1.192a1 1 0 0 1-.784.785l-1.192.238a1 1 0 0 0 0 1.962l1.192.238a1 1 0 0 1 .785.785l.238 1.192a1 1 0 0 0 1.962 0l.238-1.192a1 1 0 0 1 .785-.785l1.192-.238a1 1 0 0 0 0-1.962l-1.192-.238a1 1 0 0 1-.785-.785l-.238-1.192Z" />
-                </svg>
+    {{-- Upgrade Modal --}}
+    <flux:modal wire:model="showUpgradeModal">
+        <div class="space-y-6">
+            <div class="flex items-center gap-3">
+                <div class="flex size-10 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-900/30">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="size-5 text-purple-600 dark:text-purple-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M15.98 1.804a1 1 0 0 0-1.96 0l-.24 1.192a1 1 0 0 1-.784.785l-1.192.238a1 1 0 0 0 0 1.962l1.192.238a1 1 0 0 1 .785.785l.238 1.192a1 1 0 0 0 1.962 0l.238-1.192a1 1 0 0 1 .785-.785l1.192-.238a1 1 0 0 0 0-1.962l-1.192-.238a1 1 0 0 1-.785-.785l-.238-1.192ZM6.949 5.684a1 1 0 0 0-1.898 0l-.683 2.051a1 1 0 0 1-.633.633l-2.051.683a1 1 0 0 0 0 1.898l2.051.683a1 1 0 0 1 .633.633l.683 2.051a1 1 0 0 0 1.898 0l.683-2.051a1 1 0 0 1 .633-.633l2.051-.683a1 1 0 0 0 0-1.898l-2.051-.683a1 1 0 0 1-.633-.633l-.683-2.051ZM15.98 13.804a1 1 0 0 0-1.96 0l-.24 1.192a1 1 0 0 1-.784.785l-1.192.238a1 1 0 0 0 0 1.962l1.192.238a1 1 0 0 1 .785.785l.238 1.192a1 1 0 0 0 1.962 0l.238-1.192a1 1 0 0 1 .785-.785l1.192-.238a1 1 0 0 0 0-1.962l-1.192-.238a1 1 0 0 1-.785-.785l-.238-1.192Z" />
+                    </svg>
+                </div>
+                <flux:heading size="lg">{{ __('Upgrade to Pro') }}</flux:heading>
             </div>
-            <flux:heading size="lg">{{ __('Upgrade to Pro') }}</flux:heading>
+
             <flux:text>
-                @if($upgradeFeature === 'clue_generation')
-                    {{ __('AI Clue Generation is a Pro feature. Upgrade to unlock 50 AI-powered clue generations per month.') }}
+                @if ($upgradeFeature === 'ai_fill')
+                    {{ __('AI Fill uses Claude to intelligently fill your grid with thematic words. Upgrade to Pro to unlock this feature.') }}
+                @elseif ($upgradeFeature === 'ai_clues')
+                    {{ __('AI Generate Clues writes creative, high-quality clues for every word in your puzzle. Upgrade to Pro to unlock this feature.') }}
+                @elseif ($upgradeFeature === 'export')
+                    {{ __('Export your puzzles to .puz, .jpz, and PDF formats for sharing and printing. Upgrade to Pro to unlock this feature.') }}
                 @else
-                    {{ __('AI Autofill is a Pro feature. Upgrade to unlock 50 AI-powered grid fills per month.') }}
+                    {{ __('Unlock AI-powered tools to build better puzzles faster. Upgrade to Pro to get started.') }}
                 @endif
             </flux:text>
-            <div class="flex justify-center gap-2">
+
+            <ul class="space-y-2 text-sm">
+                <li class="flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="size-4 shrink-0 text-purple-500" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clip-rule="evenodd" />
+                    </svg>
+                    {{ __('50 AI Fills per month') }}
+                </li>
+                <li class="flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="size-4 shrink-0 text-purple-500" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clip-rule="evenodd" />
+                    </svg>
+                    {{ __('50 AI Clue Generations per month') }}
+                </li>
+                <li class="flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="size-4 shrink-0 text-purple-500" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clip-rule="evenodd" />
+                    </svg>
+                    {{ __('Export to .puz, .jpz, and PDF') }}
+                </li>
+                <li class="flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="size-4 shrink-0 text-purple-500" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clip-rule="evenodd" />
+                    </svg>
+                    {{ __('Unlimited puzzles') }}
+                </li>
+                <li class="flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="size-4 shrink-0 text-purple-500" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clip-rule="evenodd" />
+                    </svg>
+                    {{ __('Constructor analytics dashboard') }}
+                </li>
+            </ul>
+
+            <div class="flex justify-end gap-2">
                 <flux:button wire:click="$set('showUpgradeModal', false)">{{ __('Maybe Later') }}</flux:button>
-                <flux:button variant="primary" :href="route('billing.index')" wire:navigate>{{ __('View Plans') }}</flux:button>
+                <flux:button :href="route('billing.index')" wire:navigate variant="primary">
+                    {{ __('Upgrade Now') }}
+                </flux:button>
             </div>
         </div>
     </flux:modal>
