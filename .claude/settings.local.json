@@ -92,7 +92,9 @@
       "Read(//tmp/**)",
       "Bash(awk 'NR==770,/^        {{-- Clues panel/' \"resources/views/pages/crosswords/⚡editor.blade.php\")",
       "Bash(composer show *)",
-      "mcp__laravel-boost__browser-logs"
+      "mcp__laravel-boost__browser-logs",
+      "Bash(git add *)",
+      "Bash(grep -rn *)"
     ]
   },
   "enableAllProjectMcpServers": true,
