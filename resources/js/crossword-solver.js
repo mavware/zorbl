@@ -204,21 +204,40 @@ export function crosswordSolver({ width, height, grid, solution, progress, style
             return this.styles[row + ',' + col]?.shapebg === 'circle';
         },
 
+        getCellColor(row, col) {
+            return this.styles[row + ',' + col]?.color ?? null;
+        },
+
         hasBar(row, col, edge) {
             return this.styles[row + ',' + col]?.bars?.includes(edge) || false;
         },
 
         cellBarStyles(row, col) {
             const key = row + ',' + col;
-            const bars = this.styles[key]?.bars;
-            if (!bars || bars.length === 0) return '';
+            const entry = this.styles[key];
+            const parts = [];
 
-            const shadows = [];
-            if (bars.includes('top'))    shadows.push('inset 0 2px 0 0 var(--bar-color)');
-            if (bars.includes('bottom')) shadows.push('inset 0 -2px 0 0 var(--bar-color)');
-            if (bars.includes('left'))   shadows.push('inset 2px 0 0 0 var(--bar-color)');
-            if (bars.includes('right'))  shadows.push('inset -2px 0 0 0 var(--bar-color)');
-            return 'box-shadow: ' + shadows.join(', ');
+            const bars = entry?.bars;
+            if (bars && bars.length > 0) {
+                const shadows = [];
+                if (bars.includes('top'))    shadows.push('inset 0 2px 0 0 var(--bar-color)');
+                if (bars.includes('bottom')) shadows.push('inset 0 -2px 0 0 var(--bar-color)');
+                if (bars.includes('left'))   shadows.push('inset 2px 0 0 0 var(--bar-color)');
+                if (bars.includes('right'))  shadows.push('inset -2px 0 0 0 var(--bar-color)');
+                parts.push('box-shadow: ' + shadows.join(', '));
+            }
+
+            const color = entry?.color;
+            if (color && !this.isBlock(row, col)) {
+                const isSelected = row === this.selectedRow && col === this.selectedCol;
+                const wordCells = this.selectedRow >= 0 ? this.getWordCells(this.selectedRow, this.selectedCol, this.direction) : [];
+                const isInWord = wordCells.some(([r, c]) => r === row && c === col);
+                if (!isSelected && !isInWord) {
+                    parts.push('background-color: ' + color);
+                }
+            }
+
+            return parts.join('; ');
         },
 
         cellClasses(row, col) {
@@ -233,6 +252,7 @@ export function crosswordSolver({ width, height, grid, solution, progress, style
 
             if (isSelected) return prefilled ? 'bg-blue-200 dark:bg-blue-800 cursor-pointer' : 'bg-blue-300 dark:bg-blue-700 cursor-pointer';
             if (isInWord) return prefilled ? 'bg-blue-50 dark:bg-blue-900/30 cursor-pointer' : 'bg-blue-100 dark:bg-blue-900/50 cursor-pointer';
+            if (this.getCellColor(row, col)) return (prefilled ? 'cursor-pointer' : 'cursor-pointer');
             if (prefilled) return 'bg-zinc-100 dark:bg-zinc-700 cursor-pointer';
             return 'bg-white dark:bg-zinc-800 cursor-pointer';
         },

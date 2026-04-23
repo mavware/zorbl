@@ -99,6 +99,33 @@
                         x-text="hasCircle(contextMenu.row, contextMenu.col) ? '{{ __('Remove circle') }}' : '{{ __('Add circle') }}'"></span>
                 </button>
 
+                <div x-show="!isBlock(contextMenu.row, contextMenu.col)">
+                    <div class="my-1 border-t border-zinc-200 dark:border-zinc-700"></div>
+                    <div class="px-3 py-1 text-xs font-medium text-zinc-400">{{ __('Cell color') }}</div>
+                    <div class="flex flex-wrap gap-1 px-3 py-1.5">
+                        @php
+                            $colors = [
+                                '#FECACA', '#FED7AA', '#FEF08A', '#BBF7D0',
+                                '#BAE6FD', '#C7D2FE', '#E9D5FF', '#FBCFE8',
+                            ];
+                        @endphp
+                        @foreach ($colors as $color)
+                            <button
+                                x-on:click.stop="contextSetColor('{{ $color }}')"
+                                class="size-5 rounded border border-zinc-300 transition hover:scale-110 dark:border-zinc-600"
+                                style="background-color: {{ $color }}"
+                                title="{{ $color }}"
+                            ></button>
+                        @endforeach
+                        <button
+                            x-on:click.stop="contextClearColor()"
+                            x-show="getCellColor(contextMenu.row, contextMenu.col)"
+                            class="flex size-5 items-center justify-center rounded border border-zinc-300 bg-white text-xs text-zinc-400 transition hover:scale-110 dark:border-zinc-600 dark:bg-zinc-800"
+                            title="{{ __('Remove color') }}"
+                        >&times;</button>
+                    </div>
+                </div>
+
                 <button
                     x-show="!isBlock(contextMenu.row, contextMenu.col)"
                     x-on:click="contextEditRebus()"

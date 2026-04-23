@@ -474,3 +474,66 @@ test('the selected layout card is marked pressed and the others are not', functi
 
     expect(substr_count($html, 'aria-pressed="true"'))->toBe(1);
 });
+
+test('users can save cell background colors via styles', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create([
+        'width' => 3,
+        'height' => 3,
+    ]);
+
+    $this->actingAs($user);
+
+    $styles = [
+        '0,1' => ['color' => '#FECACA'],
+        '1,2' => ['color' => '#BAE6FD', 'shapebg' => 'circle'],
+    ];
+
+    Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->call('save', $crossword->grid, $crossword->solution, $styles, [], [])
+        ->assertDispatched('saved');
+
+    $crossword->refresh();
+    expect($crossword->styles)->toBe($styles);
+});
+
+test('cell background colors are loaded on editor mount', function () {
+    $user = User::factory()->create();
+    $styles = [
+        '0,0' => ['color' => '#FEF08A'],
+        '2,1' => ['color' => '#BBF7D0', 'bars' => ['top']],
+    ];
+    $crossword = Crossword::factory()->for($user)->create([
+        'width' => 3,
+        'height' => 3,
+        'styles' => $styles,
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->assertSet('styles', $styles);
+});
+
+test('cell background colors persist alongside other style properties', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create([
+        'width' => 3,
+        'height' => 3,
+        'styles' => ['0,0' => ['shapebg' => 'circle']],
+    ]);
+
+    $this->actingAs($user);
+
+    $updatedStyles = [
+        '0,0' => ['shapebg' => 'circle', 'color' => '#E9D5FF'],
+    ];
+
+    Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->call('save', $crossword->grid, $crossword->solution, $updatedStyles, [], [])
+        ->assertDispatched('saved');
+
+    $crossword->refresh();
+    expect($crossword->styles['0,0']['shapebg'])->toBe('circle')
+        ->and($crossword->styles['0,0']['color'])->toBe('#E9D5FF');
+});

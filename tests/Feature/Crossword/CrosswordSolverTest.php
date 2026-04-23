@@ -196,3 +196,20 @@ test('adding puzzle to list is idempotent', function () {
 
     expect($list->crosswords()->where('crossword_id', $crossword->id)->count())->toBe(1);
 });
+
+test('solver loads cell background colors from styles', function () {
+    $user = User::factory()->create();
+    $styles = [
+        '0,0' => ['color' => '#FECACA'],
+        '1,1' => ['color' => '#BAE6FD', 'shapebg' => 'circle'],
+    ];
+    $crossword = Crossword::factory()->published()->for($user)->create([
+        'styles' => $styles,
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::crosswords.solver', ['crossword' => $crossword])
+        ->assertOk()
+        ->assertSet('styles', $styles);
+});
