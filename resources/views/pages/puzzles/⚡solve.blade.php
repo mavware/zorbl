@@ -140,7 +140,7 @@ class extends Component {
             <div class="flex flex-1 items-center gap-3">
                 <flux:heading size="lg">{{ $title }}</flux:heading>
                 @if($authorName)
-                    <flux:text size="sm" class="text-zinc-400">
+                    <flux:text size="sm" class="text-zinc-500">
                         {{ __('by') }} {{ $authorName }}
                     </flux:text>
                 @endif
@@ -151,7 +151,7 @@ class extends Component {
                 <flux:tooltip content="{{ __('Pencil mode (P)') }}">
                     <button
                         x-on:click="pencilMode = !pencilMode"
-                        :class="pencilMode ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' : 'text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200'"
+                        :class="pencilMode ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' : 'text-zinc-600 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200'"
                         class="rounded-lg p-1.5 transition-colors"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -163,17 +163,17 @@ class extends Component {
 
                 {{-- Timer --}}
                 <div class="mr-2 flex items-center gap-1.5 rounded-lg bg-zinc-100 px-2.5 py-1 font-mono text-sm tabular-nums dark:bg-zinc-800">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="size-4 text-zinc-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="size-4 text-zinc-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
                     </svg>
-                    <span x-text="formattedTime()" :class="solved ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-700 dark:text-zinc-300'"></span>
+                    <span x-text="formattedTime()" :class="solved ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-800 dark:text-zinc-300'"></span>
                 </div>
 
                 {{-- Check answers --}}
                 <flux:tooltip content="{{ __('Check answers') }}">
                     <button
                         x-on:click="checkAnswers()"
-                        class="rounded-lg p-1.5 text-zinc-500 transition-colors hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
+                        class="rounded-lg p-1.5 text-zinc-600 transition-colors hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M20 6 9 17l-5-5"/>
@@ -185,7 +185,7 @@ class extends Component {
                 <flux:tooltip content="{{ __('Reveal letter') }}">
                     <button
                         x-on:click="revealLetter()"
-                        class="rounded-lg p-1.5 text-zinc-500 transition-colors hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
+                        class="rounded-lg p-1.5 text-zinc-600 transition-colors hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/>
@@ -204,7 +204,7 @@ class extends Component {
                 </flux:dropdown>
 
                 {{-- Status --}}
-                <div class="flex items-center gap-1 pl-2 text-sm text-zinc-400">
+                <div class="flex items-center gap-1 pl-2 text-sm text-zinc-500">
                     <template x-if="pencilMode && !solved">
                         <span class="mr-1 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">{{ __('Pencil') }}</span>
                     </template>
@@ -233,10 +233,10 @@ class extends Component {
                             tabindex="0"
                         >
                             <div class="flex items-start gap-1.5">
-                                <span class="mt-px text-xs font-bold text-zinc-500" x-text="clue.number"></span>
+                                <span class="mt-px text-xs font-bold text-zinc-600" x-text="clue.number"></span>
                                 <div class="flex-1">
-                                    <span class="text-sm text-zinc-700 dark:text-zinc-300" x-text="clue.clue || '—'"></span>
-                                    <span class="text-xs text-zinc-400" x-text="'(' + clue.length + ')'"></span>
+                                    <span class="text-sm text-zinc-800 dark:text-zinc-300" x-text="clue.clue || '—'"></span>
+                                    <span class="text-xs text-zinc-500" x-text="'(' + clue.length + ')'"></span>
                                 </div>
                             </div>
                         </div>
@@ -267,7 +267,7 @@ class extends Component {
                             <template x-for="(cell, colIdx) in row" :key="'cell-' + rowIdx + '-' + colIdx">
                                 <div
                                     x-on:click="selectCell(rowIdx, colIdx)"
-                                    :class="[cellClasses(rowIdx, colIdx), isVoid(rowIdx, colIdx) ? '' : 'border border-zinc-300 dark:border-zinc-600']"
+                                    :class="[cellClasses(rowIdx, colIdx), isVoid(rowIdx, colIdx) ? '' : 'border border-zinc-400 dark:border-zinc-600']"
                                     :style="cellBarStyles(rowIdx, colIdx)"
                                     class="relative box-border flex aspect-square items-center justify-center select-none"
                                     role="gridcell"
@@ -277,7 +277,7 @@ class extends Component {
                                     {{-- Clue number --}}
                                     <template x-if="typeof cell === 'number' && cell > 0">
                                         <span
-                                            class="absolute top-0 left-0.5 text-zinc-700 dark:text-zinc-400 leading-none"
+                                            class="absolute top-0 left-0.5 text-zinc-800 dark:text-zinc-400 leading-none"
                                             :style="'font-size: ' + Math.max(8, Math.min(11, 600 / width * 0.22)) + 'px'"
                                             x-text="cell"
                                         ></span>
@@ -286,7 +286,7 @@ class extends Component {
                                     {{-- Circle annotation --}}
                                     <template x-if="hasCircle(rowIdx, colIdx)">
                                         <svg class="pointer-events-none absolute inset-0.5 size-[calc(100%-4px)]" viewBox="0 0 100 100">
-                                            <circle cx="50" cy="50" r="46" fill="none" stroke="currentColor" stroke-width="2" class="text-zinc-400 dark:text-zinc-500" />
+                                            <circle cx="50" cy="50" r="46" fill="none" stroke="currentColor" stroke-width="2" class="text-zinc-500 dark:text-zinc-500" />
                                         </svg>
                                     </template>
 
@@ -335,10 +335,10 @@ class extends Component {
                             tabindex="0"
                         >
                             <div class="flex items-start gap-1.5">
-                                <span class="mt-px text-xs font-bold text-zinc-500" x-text="clue.number"></span>
+                                <span class="mt-px text-xs font-bold text-zinc-600" x-text="clue.number"></span>
                                 <div class="flex-1">
-                                    <span class="text-sm text-zinc-700 dark:text-zinc-300" x-text="clue.clue || '—'"></span>
-                                    <span class="text-xs text-zinc-400" x-text="'(' + clue.length + ')'"></span>
+                                    <span class="text-sm text-zinc-800 dark:text-zinc-300" x-text="clue.clue || '—'"></span>
+                                    <span class="text-xs text-zinc-500" x-text="'(' + clue.length + ')'"></span>
                                 </div>
                             </div>
                         </div>
@@ -348,15 +348,15 @@ class extends Component {
 
             {{-- Mobile clue panels --}}
             <div class="lg:hidden">
-                <div class="flex border-b border-zinc-200 dark:border-zinc-700">
+                <div class="flex border-b border-zinc-300 dark:border-zinc-700">
                     <button
                         x-on:click="mobileClueTab = 'across'"
-                        :class="mobileClueTab === 'across' ? 'border-zinc-800 text-zinc-900 dark:border-zinc-200 dark:text-zinc-100' : 'border-transparent text-zinc-500'"
+                        :class="mobileClueTab === 'across' ? 'border-zinc-800 text-zinc-900 dark:border-zinc-200 dark:text-zinc-100' : 'border-transparent text-zinc-600'"
                         class="border-b-2 px-4 py-2 text-sm font-medium"
                     >{{ __('Across') }}</button>
                     <button
                         x-on:click="mobileClueTab = 'down'"
-                        :class="mobileClueTab === 'down' ? 'border-zinc-800 text-zinc-900 dark:border-zinc-200 dark:text-zinc-100' : 'border-transparent text-zinc-500'"
+                        :class="mobileClueTab === 'down' ? 'border-zinc-800 text-zinc-900 dark:border-zinc-200 dark:text-zinc-100' : 'border-transparent text-zinc-600'"
                         class="border-b-2 px-4 py-2 text-sm font-medium"
                     >{{ __('Down') }}</button>
                 </div>
@@ -374,10 +374,10 @@ class extends Component {
                                     tabindex="0"
                                 >
                                     <div class="flex items-start gap-1.5">
-                                        <span class="mt-px text-xs font-bold text-zinc-500" x-text="clue.number"></span>
+                                        <span class="mt-px text-xs font-bold text-zinc-600" x-text="clue.number"></span>
                                         <div class="flex-1">
-                                            <span class="text-sm text-zinc-700 dark:text-zinc-300" x-text="clue.clue || '—'"></span>
-                                            <span class="text-xs text-zinc-400" x-text="'(' + clue.length + ')'"></span>
+                                            <span class="text-sm text-zinc-800 dark:text-zinc-300" x-text="clue.clue || '—'"></span>
+                                            <span class="text-xs text-zinc-500" x-text="'(' + clue.length + ')'"></span>
                                         </div>
                                     </div>
                                 </div>
@@ -397,10 +397,10 @@ class extends Component {
                                     tabindex="0"
                                 >
                                     <div class="flex items-start gap-1.5">
-                                        <span class="mt-px text-xs font-bold text-zinc-500" x-text="clue.number"></span>
+                                        <span class="mt-px text-xs font-bold text-zinc-600" x-text="clue.number"></span>
                                         <div class="flex-1">
-                                            <span class="text-sm text-zinc-700 dark:text-zinc-300" x-text="clue.clue || '—'"></span>
-                                            <span class="text-xs text-zinc-400" x-text="'(' + clue.length + ')'"></span>
+                                            <span class="text-sm text-zinc-800 dark:text-zinc-300" x-text="clue.clue || '—'"></span>
+                                            <span class="text-xs text-zinc-500" x-text="'(' + clue.length + ')'"></span>
                                         </div>
                                     </div>
                                 </div>
@@ -444,18 +444,18 @@ class extends Component {
                         </svg>
                     </div>
                     <h3 class="text-xl font-bold text-zinc-900 dark:text-zinc-100">{{ __('Congratulations!') }}</h3>
-                    <p class="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
+                    <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
                         {{ __('Great solve! Create a free account to save your progress across devices, track your stats, and access unlimited puzzles.') }}
                     </p>
                     <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
                         <a href="{{ route('register') }}" class="rounded-xl bg-amber-500 px-6 py-2.5 text-sm font-semibold text-zinc-950 hover:bg-amber-400 transition">
                             {{ __('Create Free Account') }}
                         </a>
-                        <a href="{{ route('login') }}" class="rounded-xl border border-zinc-300 px-6 py-2.5 text-sm font-semibold text-zinc-700 hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-300 dark:hover:bg-zinc-700 transition">
+                        <a href="{{ route('login') }}" class="rounded-xl border border-zinc-400 px-6 py-2.5 text-sm font-semibold text-zinc-800 hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-300 dark:hover:bg-zinc-700 transition">
                             {{ __('Log In') }}
                         </a>
                     </div>
-                    <button x-on:click="showSignup = false" class="mt-4 text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300">
+                    <button x-on:click="showSignup = false" class="mt-4 text-xs text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300">
                         {{ __('Continue solving') }}
                     </button>
                 </div>

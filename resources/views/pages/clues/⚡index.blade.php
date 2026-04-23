@@ -270,8 +270,8 @@ new #[Title('Clue Library')] class extends Component {
 
     {{-- Clue Table --}}
     @if($this->clues->isEmpty())
-        <div class="flex flex-col items-center justify-center rounded-xl border border-dashed border-zinc-300 py-16 dark:border-zinc-600">
-            <flux:icon name="book-open" class="mb-4 size-12 text-zinc-400" />
+        <div class="flex flex-col items-center justify-center rounded-xl border border-dashed border-zinc-400 py-16 dark:border-zinc-600">
+            <flux:icon name="book-open" class="mb-4 size-12 text-zinc-500" />
             <flux:heading size="lg" class="mb-2">{{ __('No clues found') }}</flux:heading>
             <flux:text class="mb-6">
                 @if($search)
@@ -312,7 +312,7 @@ new #[Title('Clue Library')] class extends Component {
                         @else
                             <flux:table.cell variant="strong">
                                 <span class="font-mono font-semibold tracking-wide">{{ $entry->answer }}</span>
-                                <span class="ml-1 text-xs text-zinc-400">({{ mb_strlen($entry->answer) }})</span>
+                                <span class="ml-1 text-xs text-zinc-500">({{ mb_strlen($entry->answer) }})</span>
                             </flux:table.cell>
                             <flux:table.cell>{{ $entry->clue }}</flux:table.cell>
                             <flux:table.cell class="hidden sm:table-cell">
@@ -406,7 +406,7 @@ new #[Title('Clue Library')] class extends Component {
             </flux:field>
 
             <flux:field>
-                <flux:label>{{ __('Notes') }} <span class="text-zinc-400">({{ __('optional') }})</span></flux:label>
+                <flux:label>{{ __('Notes') }} <span class="text-zinc-500">({{ __('optional') }})</span></flux:label>
                 <flux:textarea wire:model="reportNotes" placeholder="{{ __('Describe the issue...') }}" rows="3" />
                 <flux:error name="reportNotes" />
             </flux:field>

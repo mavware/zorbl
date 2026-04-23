@@ -5,7 +5,7 @@ export function crosswordSolver({ width, height, grid, solution, progress, style
         grid,
         solution,
         progress,
-        styles: styles || {},
+        styles: (styles && !Array.isArray(styles)) ? styles : {},
         prefilled: prefilled || null,
         cluesAcross: cluesAcross || [],
         cluesDown: cluesDown || [],
@@ -254,7 +254,7 @@ export function crosswordSolver({ width, height, grid, solution, progress, style
             if (isInWord) return prefilled ? 'bg-blue-50 dark:bg-blue-900/30 cursor-pointer' : 'bg-blue-100 dark:bg-blue-900/50 cursor-pointer';
             if (this.getCellColor(row, col)) return (prefilled ? 'cursor-pointer' : 'cursor-pointer');
             if (prefilled) return 'bg-zinc-100 dark:bg-zinc-700 cursor-pointer';
-            return 'bg-white dark:bg-zinc-800 cursor-pointer';
+            return 'bg-zinc-50 dark:bg-zinc-800 cursor-pointer';
         },
 
         isRebus(row, col) {
@@ -296,7 +296,7 @@ export function crosswordSolver({ width, height, grid, solution, progress, style
             if (this.revealed[key]) return 'text-blue-600 dark:text-blue-400';
             if (this.checked[key] === 'wrong') return 'text-red-600 dark:text-red-400';
             if (this.checked[key] === 'correct') return 'text-emerald-600 dark:text-emerald-400';
-            if (this.pencilCells[key]) return 'text-zinc-400 dark:text-zinc-500';
+            if (this.pencilCells[key]) return 'text-zinc-500 dark:text-zinc-500';
             return 'text-zinc-900 dark:text-zinc-100';
         },
 

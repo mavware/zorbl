@@ -4,7 +4,7 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
         height,
         grid,
         solution,
-        styles: styles || {},
+        styles: (styles && !Array.isArray(styles)) ? styles : {},
         cluesAcross: cluesAcross || [],
         cluesDown: cluesDown || [],
         minAnswerLength: minAnswerLength || 3,
@@ -333,7 +333,7 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
             if (this.getCellColor(row, col)) {
                 return 'cursor-pointer' + emptyHighlight;
             }
-            return 'bg-white dark:bg-zinc-800 cursor-pointer' + emptyHighlight;
+            return 'bg-zinc-50 dark:bg-zinc-800 cursor-pointer' + emptyHighlight;
         },
 
         isRebus(row, col) {

@@ -86,8 +86,8 @@ new #[Title('Word Details')] class extends Component {
 
     {{-- Clues Table --}}
     @if($this->clues->isEmpty())
-        <div class="flex flex-col items-center justify-center rounded-xl border border-dashed border-zinc-300 py-16 dark:border-zinc-600">
-            <flux:icon name="book-open" class="mb-4 size-12 text-zinc-400" />
+        <div class="flex flex-col items-center justify-center rounded-xl border border-dashed border-zinc-400 py-16 dark:border-zinc-600">
+            <flux:icon name="book-open" class="mb-4 size-12 text-zinc-500" />
             <flux:heading size="lg" class="mb-2">{{ __('No clues found') }}</flux:heading>
             <flux:text>{{ __('No clues have been recorded for this word yet.') }}</flux:text>
         </div>

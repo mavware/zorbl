@@ -697,7 +697,7 @@ class extends Component {
 
         <div class="flex items-center gap-2">
             {{-- Save status --}}
-            <div class="flex items-center gap-1 pl-2 text-sm text-zinc-400">
+            <div class="flex items-center gap-1 pl-2 text-sm text-zinc-500">
                 <template x-if="saving">
                     <span>{{ __('Saving...') }}</span>
                 </template>
@@ -713,13 +713,13 @@ class extends Component {
             </div>
 
             {{-- Mode toggle --}}
-            <div class="flex rounded-lg border border-zinc-200 dark:border-zinc-700">
+            <div class="flex rounded-lg border border-zinc-300 dark:border-zinc-700">
                 <span
                     class="rounded-l-lg bg-zinc-800 px-3 py-1 text-sm font-medium text-white dark:bg-zinc-200 dark:text-zinc-900">{{ __('Edit') }}</span>
                 <a
                     href="{{ route('crosswords.solver', $crosswordId) }}"
                     wire:navigate
-                    class="rounded-r-lg px-3 py-1 text-sm font-medium text-zinc-600 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+                    class="rounded-r-lg px-3 py-1 text-sm font-medium text-zinc-700 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
                 >{{ __('Solve') }}</a>
             </div>
 
@@ -727,7 +727,7 @@ class extends Component {
             <flux:tooltip content="{{ __('Rotational symmetry') }}">
                 <button
                     x-on:click="symmetry = !symmetry"
-                    :class="symmetry ? 'bg-zinc-800 text-white dark:bg-zinc-200 dark:text-zinc-900' : 'text-zinc-500 dark:text-zinc-400'"
+                    :class="symmetry ? 'bg-zinc-800 text-white dark:bg-zinc-200 dark:text-zinc-900' : 'text-zinc-600 dark:text-zinc-400'"
                     class="rounded-lg p-1.5 transition-colors"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 24 24" fill="none"
@@ -756,7 +756,7 @@ class extends Component {
                             </svg>
                             {{ __('Quick Fill') }}
                         </div>
-                        <span class="text-xs text-zinc-400 mx-3">{{ __('Dictionary-based') }}</span>
+                        <span class="text-xs text-zinc-500 mx-3">{{ __('Dictionary-based') }}</span>
                     </flux:menu.item>
                     <flux:menu.item x-on:click="aiFill()" x-bind:disabled="fillInProgress" :class="! Auth::user()->isPro() ? 'opacity-60' : ''">
                         <div class="flex items-center gap-2">
@@ -768,7 +768,7 @@ class extends Component {
                                 <flux:badge color="purple" size="sm">{{ __('Pro') }}</flux:badge>
                             @endunless
                         </div>
-                        <span class="text-xs text-zinc-400 mx-3">{{ __('Thematic, Claude-powered') }}</span>
+                        <span class="text-xs text-zinc-500 mx-3">{{ __('Thematic, Claude-powered') }}</span>
                     </flux:menu.item>
                     <flux:separator />
                     <flux:menu.item x-on:click="aiGenerateClues()" x-bind:disabled="fillInProgress || hasUnfilledSlots" :class="! Auth::user()->isPro() ? 'opacity-60' : ''">
@@ -781,7 +781,7 @@ class extends Component {
                                 <flux:badge color="blue" size="sm">{{ __('Pro') }}</flux:badge>
                             @endunless
                         </div>
-                        <div class="text-xs text-zinc-400 mx-3">{{ __('Write clues with AI') }}</div>
+                        <div class="text-xs text-zinc-500 mx-3">{{ __('Write clues with AI') }}</div>
                     </flux:menu.item>
                 </flux:menu>
             </flux:dropdown>
@@ -1026,7 +1026,7 @@ class extends Component {
                             @class([
                                 'group flex flex-col items-center gap-1.5 rounded-lg border p-2 text-left transition-colors',
                                 'border-blue-500 bg-blue-50 ring-1 ring-blue-500 dark:border-blue-400 dark:bg-blue-950/40 dark:ring-blue-400' => $selectedLayout === $case,
-                                'border-zinc-200 hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:border-zinc-500 dark:hover:bg-zinc-800' => $selectedLayout !== $case,
+                                'border-zinc-300 hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:border-zinc-500 dark:hover:bg-zinc-800' => $selectedLayout !== $case,
                             ])
                             aria-pressed="{{ $selectedLayout === $case ? 'true' : 'false' }}"
                             title="{{ $case->label() }}"
@@ -1034,7 +1034,7 @@ class extends Component {
                             <div class="w-full overflow-hidden rounded">
                                 @include('partials.layout-icon', ['case' => $case])
                             </div>
-                            <span class="line-clamp-2 text-center text-[10px] leading-tight text-zinc-600 dark:text-zinc-400">{{ $case->label() }}</span>
+                            <span class="line-clamp-2 text-center text-[10px] leading-tight text-zinc-700 dark:text-zinc-400">{{ $case->label() }}</span>
                         </button>
                     @endforeach
                 </div>
@@ -1076,7 +1076,7 @@ class extends Component {
                     <div
                         x-show="open"
                         x-cloak
-                        class="absolute z-10 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border border-zinc-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-800"
+                        class="absolute z-10 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border border-zinc-300 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-800"
                     >
                         @php
                             $available = collect($this->availableTags)->reject(fn ($t) => in_array($t['id'], $this->tagIds));
@@ -1095,7 +1095,7 @@ class extends Component {
                         @endforeach
 
                         @if(count($suggestions))
-                            <div class="px-3 pt-2 pb-1 text-xs font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
+                            <div class="px-3 pt-2 pb-1 text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-500">
                                 {{ __('Suggested') }}
                             </div>
                             @foreach($suggestions as $name)
@@ -1103,7 +1103,7 @@ class extends Component {
                                     type="button"
                                     wire:click="addStandardTag(@js($name))"
                                     x-on:click="open = false"
-                                    class="flex w-full items-center px-3 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-700"
+                                    class="flex w-full items-center px-3 py-2 text-left text-sm text-zinc-800 hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-700"
                                 >
                                     {{ $name }}
                                 </button>
@@ -1122,7 +1122,7 @@ class extends Component {
                                     {{ __('Create ":name"', ['name' => $this->tagSearch]) }}
                                 </button>
                             @else
-                                <div class="px-3 py-2 text-sm text-zinc-400">{{ __('No tags found') }}</div>
+                                <div class="px-3 py-2 text-sm text-zinc-500">{{ __('No tags found') }}</div>
                             @endif
                         @endif
                     </div>

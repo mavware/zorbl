@@ -7,7 +7,7 @@
 ])
 
 <div
-    {{ $attributes->merge(['class' => 'inline-grid gap-px rounded border border-zinc-200 bg-zinc-200 p-px dark:border-zinc-600 dark:bg-zinc-600']) }}
+    {{ $attributes->merge(['class' => 'inline-grid gap-px rounded border border-zinc-300 bg-zinc-200 p-px dark:border-zinc-600 dark:bg-zinc-600']) }}
     style="grid-template-columns: repeat({{ $width }}, minmax(0, 1fr)); width: {{ min($width * $cellSize, $maxWidth) }}px;"
 >
     @for($row = 0; $row < $height; $row++)

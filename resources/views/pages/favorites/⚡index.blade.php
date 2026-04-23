@@ -250,8 +250,8 @@ new #[Title('Favorites')] class extends Component {
 
     {{-- Puzzle Grid --}}
     @if($this->activeListCrosswords->isEmpty())
-        <div class="flex flex-col items-center justify-center rounded-xl border border-dashed border-zinc-300 py-16 dark:border-zinc-600">
-            <flux:icon name="heart" class="mb-4 size-12 text-zinc-400" />
+        <div class="flex flex-col items-center justify-center rounded-xl border border-dashed border-zinc-400 py-16 dark:border-zinc-600">
+            <flux:icon name="heart" class="mb-4 size-12 text-zinc-500" />
             <flux:heading size="lg" class="mb-2">{{ __('No puzzles here yet') }}</flux:heading>
             <flux:text>
                 @if($list === 'liked')
@@ -264,7 +264,7 @@ new #[Title('Favorites')] class extends Component {
     @else
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             @foreach($this->activeListCrosswords as $crossword)
-                <div wire:key="fav-{{ $crossword->id }}" class="group relative rounded-xl border border-zinc-200 p-4 transition-colors hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-500">
+                <div wire:key="fav-{{ $crossword->id }}" class="group relative rounded-xl border border-zinc-300 p-4 transition-colors hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-500">
                     <a href="{{ route('crosswords.solver', $crossword) }}" wire:navigate class="block">
                         <div class="mb-3 flex justify-center">
                             <x-grid-thumbnail :grid="$crossword->grid" :width="$crossword->width" :height="$crossword->height" />
@@ -278,7 +278,7 @@ new #[Title('Favorites')] class extends Component {
                         </flux:text>
 
                         <div class="mt-1.5 flex items-center gap-2">
-                            <span class="flex items-center gap-1 text-xs text-zinc-400">
+                            <span class="flex items-center gap-1 text-xs text-zinc-500">
                                 <flux:icon name="heart" class="size-3.5" />
                                 {{ $crossword->likes_count }}
                             </span>
@@ -353,10 +353,10 @@ new #[Title('Favorites')] class extends Component {
                     @foreach($this->lists as $favoriteList)
                         <button
                             wire:click="addToList({{ $favoriteList->id }})"
-                            class="flex w-full items-center gap-3 rounded-lg border border-zinc-200 px-4 py-3 text-left transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+                            class="flex w-full items-center gap-3 rounded-lg border border-zinc-300 px-4 py-3 text-left transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
                         >
-                            <flux:icon name="folder" class="size-5 text-zinc-400" />
-                            <span class="flex-1 text-sm font-medium text-zinc-700 dark:text-zinc-300">{{ $favoriteList->name }}</span>
+                            <flux:icon name="folder" class="size-5 text-zinc-500" />
+                            <span class="flex-1 text-sm font-medium text-zinc-800 dark:text-zinc-300">{{ $favoriteList->name }}</span>
                             <flux:badge size="sm">{{ $favoriteList->crosswords_count }}</flux:badge>
                         </button>
                     @endforeach

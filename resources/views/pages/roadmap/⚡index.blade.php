@@ -203,7 +203,7 @@ new #[Title('Roadmap')] class extends Component {
     @if($this->groupedItems['planned']->isNotEmpty())
         <section>
             <div class="mb-3 flex items-center gap-2">
-                <flux:icon name="clock" class="size-5 text-zinc-400" />
+                <flux:icon name="clock" class="size-5 text-zinc-500" />
                 <flux:heading size="lg">{{ __('Planned') }}</flux:heading>
                 <flux:badge size="sm">{{ $this->groupedItems['planned']->count() }}</flux:badge>
             </div>
@@ -233,8 +233,8 @@ new #[Title('Roadmap')] class extends Component {
 
     {{-- Empty State --}}
     @if($this->groupedItems['in_progress']->isEmpty() && $this->groupedItems['planned']->isEmpty() && $this->groupedItems['completed']->isEmpty())
-        <div class="flex flex-col items-center justify-center rounded-xl border border-dashed border-zinc-300 py-16 dark:border-zinc-600">
-            <flux:icon name="map" class="mb-4 size-12 text-zinc-400" />
+        <div class="flex flex-col items-center justify-center rounded-xl border border-dashed border-zinc-400 py-16 dark:border-zinc-600">
+            <flux:icon name="map" class="mb-4 size-12 text-zinc-500" />
             <flux:heading size="lg" class="mb-2">{{ __('No roadmap items yet') }}</flux:heading>
             <flux:text>{{ __('Add features, fixes, and improvements to share what\'s coming next.') }}</flux:text>
         </div>
@@ -269,7 +269,7 @@ new #[Title('Roadmap')] class extends Component {
                 </flux:field>
 
                 <flux:field>
-                    <flux:label>{{ __('Target Date') }} <span class="text-zinc-400">({{ __('optional') }})</span></flux:label>
+                    <flux:label>{{ __('Target Date') }} <span class="text-zinc-500">({{ __('optional') }})</span></flux:label>
                     <flux:input type="date" wire:model="newTargetDate" />
                     <flux:error name="newTargetDate" />
                 </flux:field>

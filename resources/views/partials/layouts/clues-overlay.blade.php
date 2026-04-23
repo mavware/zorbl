@@ -17,7 +17,7 @@
         x-show="cluesOverlayOpen"
         x-transition
         x-cloak
-        class="absolute inset-x-4 bottom-20 top-4 z-20 hidden flex-col gap-4 rounded-lg border border-zinc-200 bg-white/95 p-4 shadow-xl backdrop-blur lg:flex lg:flex-row dark:border-zinc-700 dark:bg-zinc-900/95"
+        class="absolute inset-x-4 bottom-20 top-4 z-20 hidden flex-col gap-4 rounded-lg border border-zinc-300 bg-white/95 p-4 shadow-xl backdrop-blur lg:flex lg:flex-row dark:border-zinc-700 dark:bg-zinc-900/95"
     >
         <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
             @include('partials.editor-clue-panel', ['direction' => 'across'])

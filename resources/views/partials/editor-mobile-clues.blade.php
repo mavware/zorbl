@@ -1,14 +1,14 @@
         {{-- Mobile clue panels --}}
         <div class="lg:hidden">
-            <div class="flex border-b border-zinc-200 dark:border-zinc-700">
+            <div class="flex border-b border-zinc-300 dark:border-zinc-700">
                 <button
                     x-on:click="direction = 'across'"
-                    :class="direction === 'across' ? 'border-zinc-800 text-zinc-900 dark:border-zinc-200 dark:text-zinc-100' : 'border-transparent text-zinc-500'"
+                    :class="direction === 'across' ? 'border-zinc-800 text-zinc-900 dark:border-zinc-200 dark:text-zinc-100' : 'border-transparent text-zinc-600'"
                     class="border-b-2 px-4 py-2 text-sm font-medium"
                 >{{ __('Across') }}</button>
                 <button
                     x-on:click="direction = 'down'"
-                    :class="direction === 'down' ? 'border-zinc-800 text-zinc-900 dark:border-zinc-200 dark:text-zinc-100' : 'border-transparent text-zinc-500'"
+                    :class="direction === 'down' ? 'border-zinc-800 text-zinc-900 dark:border-zinc-200 dark:text-zinc-100' : 'border-transparent text-zinc-600'"
                     class="border-b-2 px-4 py-2 text-sm font-medium"
                 >{{ __('Down') }}</button>
             </div>
@@ -28,17 +28,17 @@
                                 class="cursor-pointer rounded px-2 py-1"
                             >
                                 <div class="flex items-start gap-1.5">
-                                    <span class="mt-px text-xs font-bold text-zinc-500" x-text="clue.displayNumber"></span>
+                                    <span class="mt-px text-xs font-bold text-zinc-600" x-text="clue.displayNumber"></span>
                                     <div class="flex-1">
                                         <input
                                             type="text"
                                             x-model="clue.clue"
                                             x-on:blur="markDirty()"
                                             placeholder="{{ __('Enter clue...') }}"
-                                            class="w-full border-0 bg-transparent p-0 text-sm text-zinc-700 placeholder-zinc-400 focus:ring-0 dark:text-zinc-300 dark:placeholder-zinc-500"
+                                            class="w-full border-0 bg-transparent p-0 text-sm text-zinc-800 placeholder-zinc-400 focus:ring-0 dark:text-zinc-300 dark:placeholder-zinc-500"
                                         />
                                         <div class="flex items-center gap-1">
-                                            <span class="text-xs text-zinc-400" x-text="'(' + clue.length + ')'"></span>
+                                            <span class="text-xs text-zinc-500" x-text="'(' + clue.length + ')'"></span>
                                             @include('partials.clue-quality-icon', ['dir' => 'across'])
                                             <flux:tooltip content="{{ __('Clue library') }}" x-show="activeClueNumber === clue.number && direction === 'across'">
                                                 <button
@@ -79,7 +79,7 @@
                                                   :key="'msa-' + idx">
                                             <div
                                                 x-on:click.stop="useClue(clue, suggestion.clue)"
-                                                class="cursor-pointer rounded px-1 py-0.5 text-xs text-zinc-600 hover:bg-amber-50 dark:text-zinc-400 dark:hover:bg-amber-900/20"
+                                                class="cursor-pointer rounded px-1 py-0.5 text-xs text-zinc-700 hover:bg-amber-50 dark:text-zinc-400 dark:hover:bg-amber-900/20"
                                             >
                                                 <span x-text="suggestion.clue"></span>
                                             </div>
@@ -96,10 +96,10 @@
                                                   :key="'mwa-' + idx">
                                             <div
                                                 x-on:click.stop="applyWordSuggestion(suggestion.word)"
-                                                class="cursor-pointer rounded px-1 py-0.5 text-xs text-zinc-600 hover:bg-blue-50 dark:text-zinc-400 dark:hover:bg-blue-900/20"
+                                                class="cursor-pointer rounded px-1 py-0.5 text-xs text-zinc-700 hover:bg-blue-50 dark:text-zinc-400 dark:hover:bg-blue-900/20"
                                             >
                                                 <span x-text="suggestion.word"></span>
-                                                <span class="text-zinc-400 dark:text-zinc-500" x-text="'(' + suggestion.score + ')'"></span>
+                                                <span class="text-zinc-500 dark:text-zinc-500" x-text="'(' + suggestion.score + ')'"></span>
                                             </div>
                                         </template>
                                     </div>
@@ -123,17 +123,17 @@
                                 class="cursor-pointer rounded px-2 py-1"
                             >
                                 <div class="flex items-start gap-1.5">
-                                    <span class="mt-px text-xs font-bold text-zinc-500" x-text="clue.displayNumber"></span>
+                                    <span class="mt-px text-xs font-bold text-zinc-600" x-text="clue.displayNumber"></span>
                                     <div class="flex-1">
                                         <input
                                             type="text"
                                             x-model="clue.clue"
                                             x-on:blur="markDirty()"
                                             placeholder="{{ __('Enter clue...') }}"
-                                            class="w-full border-0 bg-transparent p-0 text-sm text-zinc-700 placeholder-zinc-400 focus:ring-0 dark:text-zinc-300 dark:placeholder-zinc-500"
+                                            class="w-full border-0 bg-transparent p-0 text-sm text-zinc-800 placeholder-zinc-400 focus:ring-0 dark:text-zinc-300 dark:placeholder-zinc-500"
                                         />
                                         <div class="flex items-center gap-1">
-                                            <span class="text-xs text-zinc-400" x-text="'(' + clue.length + ')'"></span>
+                                            <span class="text-xs text-zinc-500" x-text="'(' + clue.length + ')'"></span>
                                             @include('partials.clue-quality-icon', ['dir' => 'down'])
                                             <flux:tooltip content="{{ __('Clue library') }}" x-show="activeClueNumber === clue.number && direction === 'down'">
                                                 <button
@@ -174,7 +174,7 @@
                                                   :key="'msd-' + idx">
                                             <div
                                                 x-on:click.stop="useClue(clue, suggestion.clue)"
-                                                class="cursor-pointer rounded px-1 py-0.5 text-xs text-zinc-600 hover:bg-amber-50 dark:text-zinc-400 dark:hover:bg-amber-900/20"
+                                                class="cursor-pointer rounded px-1 py-0.5 text-xs text-zinc-700 hover:bg-amber-50 dark:text-zinc-400 dark:hover:bg-amber-900/20"
                                             >
                                                 <span x-text="suggestion.clue"></span>
                                             </div>
@@ -191,10 +191,10 @@
                                                   :key="'mwd-' + idx">
                                             <div
                                                 x-on:click.stop="applyWordSuggestion(suggestion.word)"
-                                                class="cursor-pointer rounded px-1 py-0.5 text-xs text-zinc-600 hover:bg-blue-50 dark:text-zinc-400 dark:hover:bg-blue-900/20"
+                                                class="cursor-pointer rounded px-1 py-0.5 text-xs text-zinc-700 hover:bg-blue-50 dark:text-zinc-400 dark:hover:bg-blue-900/20"
                                             >
                                                 <span x-text="suggestion.word"></span>
-                                                <span class="text-zinc-400 dark:text-zinc-500" x-text="'(' + suggestion.score + ')'"></span>
+                                                <span class="text-zinc-500 dark:text-zinc-500" x-text="'(' + suggestion.score + ')'"></span>
                                             </div>
                                         </template>
                                     </div>

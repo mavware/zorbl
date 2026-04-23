@@ -41,8 +41,8 @@ new #[Title('Solving')] class extends Component {
         </div>
 
         @if($this->attempts->isEmpty())
-            <div class="flex flex-col items-center justify-center rounded-xl border border-dashed border-zinc-300 py-12 dark:border-zinc-600">
-                <flux:icon name="puzzle-piece" class="mb-4 size-12 text-zinc-400" />
+            <div class="flex flex-col items-center justify-center rounded-xl border border-dashed border-zinc-400 py-12 dark:border-zinc-600">
+                <flux:icon name="puzzle-piece" class="mb-4 size-12 text-zinc-500" />
                 <flux:heading size="lg" class="mb-2">{{ __('No puzzles in progress') }}</flux:heading>
                 <flux:text>{{ __('Browse published puzzles below and start solving.') }}</flux:text>
             </div>
@@ -51,7 +51,7 @@ new #[Title('Solving')] class extends Component {
                 @foreach($this->attempts as $attempt)
                     <div
                         wire:key="attempt-{{ $attempt->id }}"
-                        class="group relative rounded-xl border border-zinc-200 p-4 transition-colors hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-500"
+                        class="group relative rounded-xl border border-zinc-300 p-4 transition-colors hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-500"
                     >
                         <a href="{{ route('crosswords.solver', $attempt->crossword) }}" wire:navigate class="block">
                             <div class="mb-3 flex justify-center">
@@ -72,13 +72,13 @@ new #[Title('Solving')] class extends Component {
                                         style="width: {{ $solveProgress }}%"
                                     ></div>
                                 </div>
-                                <span class="text-xs tabular-nums text-zinc-400">{{ $solveProgress }}%</span>
+                                <span class="text-xs tabular-nums text-zinc-500">{{ $solveProgress }}%</span>
                             </div>
                             <div class="mt-1.5 flex items-center gap-2">
                                 @if($attempt->is_completed)
                                     <flux:badge size="sm" variant="solid" color="green">{{ __('Completed') }}</flux:badge>
                                     @if($attempt->formattedSolveTime())
-                                        <flux:text size="sm" class="flex items-center gap-1 text-zinc-400">
+                                        <flux:text size="sm" class="flex items-center gap-1 text-zinc-500">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                                             {{ $attempt->formattedSolveTime() }}
                                         </flux:text>
@@ -86,7 +86,7 @@ new #[Title('Solving')] class extends Component {
                                 @else
                                     <flux:badge size="sm" variant="solid" color="sky">{{ __('In Progress') }}</flux:badge>
                                 @endif
-                                <flux:text size="sm" class="text-zinc-400">{{ $attempt->updated_at->diffForHumans() }}</flux:text>
+                                <flux:text size="sm" class="text-zinc-500">{{ $attempt->updated_at->diffForHumans() }}</flux:text>
                             </div>
                         </a>
 

@@ -42,8 +42,8 @@ new #[Title('Contests')] class extends Component {
         <flux:heading size="xl">{{ __('Active Contests') }}</flux:heading>
 
         @if($this->activeContests->isEmpty())
-            <div class="flex flex-col items-center justify-center rounded-xl border border-dashed border-zinc-300 py-12 dark:border-zinc-600">
-                <flux:icon name="trophy" class="mb-4 size-12 text-zinc-400" />
+            <div class="flex flex-col items-center justify-center rounded-xl border border-dashed border-zinc-400 py-12 dark:border-zinc-600">
+                <flux:icon name="trophy" class="mb-4 size-12 text-zinc-500" />
                 <flux:heading size="lg" class="mb-2">{{ __('No active contests') }}</flux:heading>
                 <flux:text>{{ __('Check back soon for new contests.') }}</flux:text>
             </div>
@@ -54,7 +54,7 @@ new #[Title('Contests')] class extends Component {
                         href="{{ route('contests.show', $contest) }}"
                         wire:navigate
                         wire:key="active-{{ $contest->id }}"
-                        class="group rounded-xl border border-zinc-200 p-5 transition-colors hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-500"
+                        class="group rounded-xl border border-zinc-300 p-5 transition-colors hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-500"
                     >
                         <div class="mb-3 flex items-center gap-2">
                             <flux:badge color="green" size="sm">{{ __('Active') }}</flux:badge>
@@ -95,7 +95,7 @@ new #[Title('Contests')] class extends Component {
                         href="{{ route('contests.show', $contest) }}"
                         wire:navigate
                         wire:key="upcoming-{{ $contest->id }}"
-                        class="group rounded-xl border border-zinc-200 p-5 transition-colors hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-500"
+                        class="group rounded-xl border border-zinc-300 p-5 transition-colors hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-500"
                     >
                         <div class="mb-3 flex items-center gap-2">
                             <flux:badge color="blue" size="sm">{{ __('Upcoming') }}</flux:badge>
@@ -134,7 +134,7 @@ new #[Title('Contests')] class extends Component {
                         href="{{ route('contests.show', $contest) }}"
                         wire:navigate
                         wire:key="past-{{ $contest->id }}"
-                        class="group rounded-xl border border-zinc-200 p-5 transition-colors hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-500"
+                        class="group rounded-xl border border-zinc-300 p-5 transition-colors hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-500"
                     >
                         <div class="mb-3">
                             <flux:badge color="zinc" size="sm">{{ __('Ended') }}</flux:badge>

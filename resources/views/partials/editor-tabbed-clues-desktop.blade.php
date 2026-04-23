@@ -3,17 +3,17 @@
      (which sets `direction`) automatically surfaces the matching tab, and
      clicking a tab updates the grid's active direction. --}}
 <div class="flex min-h-0 flex-col overflow-hidden">
-    <div class="flex shrink-0 border-b border-zinc-200 dark:border-zinc-700">
+    <div class="flex shrink-0 border-b border-zinc-300 dark:border-zinc-700">
         <button
             type="button"
             x-on:click="direction = 'across'"
-            :class="direction === 'across' ? 'border-zinc-800 text-zinc-900 dark:border-zinc-200 dark:text-zinc-100' : 'border-transparent text-zinc-500'"
+            :class="direction === 'across' ? 'border-zinc-800 text-zinc-900 dark:border-zinc-200 dark:text-zinc-100' : 'border-transparent text-zinc-600'"
             class="border-b-2 px-4 py-2 text-sm font-medium"
         >{{ __('Across') }}</button>
         <button
             type="button"
             x-on:click="direction = 'down'"
-            :class="direction === 'down' ? 'border-zinc-800 text-zinc-900 dark:border-zinc-200 dark:text-zinc-100' : 'border-transparent text-zinc-500'"
+            :class="direction === 'down' ? 'border-zinc-800 text-zinc-900 dark:border-zinc-200 dark:text-zinc-100' : 'border-transparent text-zinc-600'"
             class="border-b-2 px-4 py-2 text-sm font-medium"
         >{{ __('Down') }}</button>
     </div>
