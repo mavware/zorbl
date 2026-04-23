@@ -285,6 +285,26 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
             return this.styles[key]?.shapebg === 'circle';
         },
 
+        getCellColor(row, col) {
+            return this.styles[row + ',' + col]?.color ?? null;
+        },
+
+        setCellColor(row, col, color) {
+            if (this.isBlock(row, col)) return;
+            const key = row + ',' + col;
+            if (color) {
+                this.styles[key] = { ...this.styles[key], color };
+            } else {
+                const entry = { ...this.styles[key] };
+                delete entry.color;
+                if (Object.keys(entry).length === 0 || (Object.keys(entry).length === 1 && entry.bars?.length === 0)) {
+                    delete this.styles[key];
+                } else {
+                    this.styles[key] = entry;
+                }
+            }
+        },
+
         cellClasses(row, col) {
             if (this.isVoid(row, col)) {
                 return 'invisible';
@@ -309,6 +329,9 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
             }
             if (isInWord) {
                 return 'bg-blue-100 dark:bg-blue-900/50 cursor-pointer' + emptyHighlight;
+            }
+            if (this.getCellColor(row, col)) {
+                return 'cursor-pointer' + emptyHighlight;
             }
             return 'bg-white dark:bg-zinc-800 cursor-pointer' + emptyHighlight;
         },
@@ -800,6 +823,24 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
             this.closeContextMenu();
         },
 
+        contextSetColor(color) {
+            const cells = this.getMultiSelectedCoords();
+            if (cells.length > 0) {
+                for (const [r, c] of cells) {
+                    this.setCellColor(r, c, color);
+                }
+                this.clearMultiSelection();
+            } else {
+                this.setCellColor(this.contextMenu.row, this.contextMenu.col, color);
+            }
+            this.markDirty();
+            this.closeContextMenu();
+        },
+
+        contextClearColor() {
+            this.contextSetColor(null);
+        },
+
         // --- Pre-fill / Rebus ---
         showRebusInput: false,
         rebusInputValue: '',
@@ -1031,15 +1072,31 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
 
         cellBarStyles(row, col) {
             const key = row + ',' + col;
-            const bars = this.styles[key]?.bars;
-            if (!bars || bars.length === 0) return '';
+            const entry = this.styles[key];
+            const parts = [];
 
-            const shadows = [];
-            if (bars.includes('top'))    shadows.push('inset 0 2px 0 0 var(--bar-color)');
-            if (bars.includes('bottom')) shadows.push('inset 0 -2px 0 0 var(--bar-color)');
-            if (bars.includes('left'))   shadows.push('inset 2px 0 0 0 var(--bar-color)');
-            if (bars.includes('right'))  shadows.push('inset -2px 0 0 0 var(--bar-color)');
-            return 'box-shadow: ' + shadows.join(', ');
+            const bars = entry?.bars;
+            if (bars && bars.length > 0) {
+                const shadows = [];
+                if (bars.includes('top'))    shadows.push('inset 0 2px 0 0 var(--bar-color)');
+                if (bars.includes('bottom')) shadows.push('inset 0 -2px 0 0 var(--bar-color)');
+                if (bars.includes('left'))   shadows.push('inset 2px 0 0 0 var(--bar-color)');
+                if (bars.includes('right'))  shadows.push('inset -2px 0 0 0 var(--bar-color)');
+                parts.push('box-shadow: ' + shadows.join(', '));
+            }
+
+            const color = entry?.color;
+            if (color && !this.isBlock(row, col)) {
+                const isSelected = row === this.selectedRow && col === this.selectedCol;
+                const isMulti = this.isMultiSelected(row, col);
+                const wordCells = this.selectedRow >= 0 ? this.getWordCells(this.selectedRow, this.selectedCol, this.direction) : [];
+                const isInWord = wordCells.some(([r, c]) => r === row && c === col);
+                if (!isSelected && !isMulti && !isInWord) {
+                    parts.push('background-color: ' + color);
+                }
+            }
+
+            return parts.join('; ');
         },
 
         // --- Long press (mobile) ---
