@@ -14,7 +14,7 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [ ] Ability to sign in with a passkey
 - [ ] Ability to sign in with google
 - [ ] Double check the printable/downloadable PDFs for the puzzle editor/solver
-- [ ] Ensure that freestyle puzzles can be exported as PDFs with the removed squares
+- [x] Ensure that freestyle puzzles can be exported as PDFs with the removed squares
 - [ ] Execute puzzle entgagement ranker plan at `.claude/plans/puzzle-engagement-ranker.md` (deferred — gated on ≥2k completed attempts across ≥300 published puzzles; see gate conditions in file)
 - [ ] Add Livewire component tests for settings, favorites, roadmap, and support pages
 - [x] Audit Livewire page components for authorization — ensure they use policies instead of inline ownership checks
@@ -27,6 +27,7 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [x] Add tag filtering to the crosswords API endpoint (query param `?tag=slug`)
 - [x] Seed a default set of common crossword tags (e.g. Pop Culture, Sports, Science, History, Movies, Music, Geography, Food, Literature, Current Events)
 - [x] ability to change color of cell background
+- [ ] Render bar-style word boundaries in PDF exports (bars are used for numbering but not visually drawn in the PDF)
 
 ## Done
 
