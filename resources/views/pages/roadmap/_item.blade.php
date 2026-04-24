@@ -1,6 +1,6 @@
-<div class="group flex items-start gap-4 rounded-xl border border-zinc-200 p-4 dark:border-zinc-700">
+<div class="border-line group flex items-start gap-4 rounded-xl border p-4">
     <div class="mt-0.5">
-        <flux:icon :name="$this->statusIcon($item->status)" class="{{ match($item->status) { 'in_progress' => 'text-blue-500', 'completed' => 'text-green-500', default => 'text-zinc-400' } }} size-5" />
+        <flux:icon :name="$this->statusIcon($item->status)" class="{{ match($item->status) { 'in_progress' => 'text-blue-500', 'completed' => 'text-green-500', default => 'text-zinc-500' } }} size-5" />
     </div>
 
     <div class="min-w-0 flex-1">
@@ -17,7 +17,7 @@
             <flux:text class="mt-1 text-sm">{{ $item->description }}</flux:text>
         @endif
 
-        <div class="mt-2 flex items-center gap-3 text-xs text-zinc-400">
+        <div class="mt-2 flex items-center gap-3 text-xs text-zinc-500">
             @if($item->target_date)
                 <span class="flex items-center gap-1">
                     <flux:icon name="calendar" class="size-3.5" />

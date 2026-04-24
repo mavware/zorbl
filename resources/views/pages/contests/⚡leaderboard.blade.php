@@ -64,8 +64,8 @@ new #[Title('Leaderboard')] class extends Component {
     </div>
 
     @if($this->entries->isEmpty())
-        <div class="flex flex-col items-center justify-center rounded-xl border border-dashed border-zinc-300 py-12 dark:border-zinc-600">
-            <flux:icon name="chart-bar" class="mb-4 size-12 text-zinc-400" />
+        <div class="border-line-strong flex flex-col items-center justify-center rounded-xl border border-dashed py-12">
+            <flux:icon name="chart-bar" class="mb-4 size-12 text-zinc-500" />
             <flux:heading size="lg" class="mb-2">{{ __('No entries yet') }}</flux:heading>
             <flux:text>{{ __('Be the first to join this contest!') }}</flux:text>
         </div>
@@ -92,7 +92,7 @@ new #[Title('Leaderboard')] class extends Component {
                                     'bg-amber-700' => $entry->rank === 3,
                                 ])>{{ $entry->rank }}</span>
                             @else
-                                <span class="px-2 text-sm text-zinc-500">{{ $entry->rank }}</span>
+                                <span class="px-2 text-sm text-zinc-600">{{ $entry->rank }}</span>
                             @endif
                         </flux:table.cell>
                         <flux:table.cell variant="strong">{{ $entry->user->name }}</flux:table.cell>

@@ -21,18 +21,18 @@ function decodeSolution(encoded, crosswordId) {
  */
 function buildTemplate(data) {
     return `
-    <div x-data="crosswordSolver" class="zorbl-embed relative flex flex-col font-sans text-zinc-900 dark:text-zinc-100" style="max-width: 100%;">
+    <div x-data="crosswordSolver" class="zorbl-embed relative flex flex-col font-sans text-fg" style="max-width: 100%;">
         <!-- Toolbar -->
         <div class="mb-3 flex flex-wrap items-center gap-2">
             <div class="flex flex-1 items-center gap-2 min-w-0">
                 <h2 class="text-lg font-semibold truncate">${escapeHtml(data.title || 'Crossword')}</h2>
-                ${data.author ? `<span class="text-sm text-zinc-400">by ${escapeHtml(data.author)}</span>` : ''}
+                ${data.author ? `<span class="text-sm text-zinc-500">by ${escapeHtml(data.author)}</span>` : ''}
             </div>
             <div class="flex items-center gap-1">
                 <!-- Pencil mode -->
                 <button
                     x-on:click="pencilMode = !pencilMode"
-                    :class="pencilMode ? 'bg-amber-100 text-amber-700' : 'text-zinc-500 hover:text-zinc-800'"
+                    :class="pencilMode ? 'bg-amber-100 text-amber-700' : 'text-zinc-600 hover:text-zinc-800'"
                     class="rounded-lg p-1.5 transition-colors"
                     title="Pencil mode (P)"
                 >
@@ -43,26 +43,26 @@ function buildTemplate(data) {
                 </button>
                 <!-- Timer -->
                 <div class="mr-1 flex items-center gap-1 rounded-lg bg-zinc-100 px-2 py-1 font-mono text-sm tabular-nums">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="size-4 text-zinc-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="size-4 text-zinc-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
                     </svg>
-                    <span x-text="formattedTime()" :class="solved ? 'text-emerald-600' : 'text-zinc-700'"></span>
+                    <span x-text="formattedTime()" :class="solved ? 'text-emerald-600' : 'text-zinc-800'"></span>
                 </div>
                 <!-- Check answers -->
-                <button x-on:click="checkAnswers()" class="rounded-lg p-1.5 text-zinc-500 hover:text-zinc-800 transition-colors" title="Check answers">
+                <button x-on:click="checkAnswers()" class="rounded-lg p-1.5 text-zinc-600 hover:text-zinc-800 transition-colors" title="Check answers">
                     <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M20 6 9 17l-5-5"/>
                     </svg>
                 </button>
                 <!-- Reveal letter -->
-                <button x-on:click="revealLetter()" class="rounded-lg p-1.5 text-zinc-500 hover:text-zinc-800 transition-colors" title="Reveal letter">
+                <button x-on:click="revealLetter()" class="rounded-lg p-1.5 text-zinc-600 hover:text-zinc-800 transition-colors" title="Reveal letter">
                     <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/>
                         <circle cx="12" cy="12" r="3"/>
                     </svg>
                 </button>
                 <!-- Status -->
-                <div class="flex items-center gap-1 pl-1 text-sm text-zinc-400">
+                <div class="flex items-center gap-1 pl-1 text-sm text-zinc-500">
                     <template x-if="pencilMode && !solved">
                         <span class="rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-700">Pencil</span>
                     </template>
@@ -92,10 +92,10 @@ function buildTemplate(data) {
                             class="cursor-pointer rounded px-2 py-1"
                         >
                             <div class="flex items-start gap-1.5">
-                                <span class="mt-px text-xs font-bold text-zinc-500" x-text="clue.displayNumber"></span>
+                                <span class="mt-px text-xs font-bold text-zinc-600" x-text="clue.displayNumber"></span>
                                 <div class="flex-1">
-                                    <span class="text-sm text-zinc-700" x-text="clue.clue || '—'"></span>
-                                    <span class="text-xs text-zinc-400" x-text="'(' + clue.length + ')'"></span>
+                                    <span class="text-sm text-zinc-800" x-text="clue.clue || '—'"></span>
+                                    <span class="text-xs text-zinc-500" x-text="'(' + clue.length + ')'"></span>
                                 </div>
                             </div>
                         </div>
@@ -121,7 +121,7 @@ function buildTemplate(data) {
                             <template x-for="(cell, colIdx) in row" :key="'cell-' + rowIdx + '-' + colIdx">
                                 <div
                                     x-on:click="selectCell(rowIdx, colIdx)"
-                                    :class="[cellClasses(rowIdx, colIdx), isVoid(rowIdx, colIdx) ? '' : 'border border-zinc-300']"
+                                    :class="[cellClasses(rowIdx, colIdx), isVoid(rowIdx, colIdx) ? '' : 'border border-zinc-400']"
                                     :style="cellBarStyles(rowIdx, colIdx)"
                                     class="relative box-border flex aspect-square items-center justify-center overflow-hidden select-none"
                                     role="gridcell"
@@ -129,7 +129,7 @@ function buildTemplate(data) {
                                     <!-- Clue number -->
                                     <template x-if="getDisplayNumber(rowIdx, colIdx) !== null">
                                         <span
-                                            class="absolute top-0 left-0.5 text-zinc-700 leading-none"
+                                            class="absolute top-0 left-0.5 text-zinc-800 leading-none"
                                             :style="'font-size: ' + Math.max(8, Math.min(11, 600 / width * 0.22)) + 'px'"
                                             x-text="getDisplayNumber(rowIdx, colIdx)"
                                         ></span>
@@ -137,7 +137,7 @@ function buildTemplate(data) {
                                     <!-- Circle -->
                                     <template x-if="hasCircle(rowIdx, colIdx)">
                                         <svg class="pointer-events-none absolute inset-0.5 size-[calc(100%-4px)]" viewBox="0 0 100 100">
-                                            <circle cx="50" cy="50" r="46" fill="none" stroke="currentColor" stroke-width="2" class="text-zinc-400" />
+                                            <circle cx="50" cy="50" r="46" fill="none" stroke="currentColor" stroke-width="2" class="text-zinc-500" />
                                         </svg>
                                     </template>
                                     <!-- Letter -->
@@ -173,10 +173,10 @@ function buildTemplate(data) {
                             class="cursor-pointer rounded px-2 py-1"
                         >
                             <div class="flex items-start gap-1.5">
-                                <span class="mt-px text-xs font-bold text-zinc-500" x-text="clue.displayNumber"></span>
+                                <span class="mt-px text-xs font-bold text-zinc-600" x-text="clue.displayNumber"></span>
                                 <div class="flex-1">
-                                    <span class="text-sm text-zinc-700" x-text="clue.clue || '—'"></span>
-                                    <span class="text-xs text-zinc-400" x-text="'(' + clue.length + ')'"></span>
+                                    <span class="text-sm text-zinc-800" x-text="clue.clue || '—'"></span>
+                                    <span class="text-xs text-zinc-500" x-text="'(' + clue.length + ')'"></span>
                                 </div>
                             </div>
                         </div>
@@ -186,15 +186,15 @@ function buildTemplate(data) {
 
             <!-- Mobile clue tabs -->
             <div class="lg:hidden">
-                <div class="flex border-b border-zinc-200">
+                <div class="flex border-b border-zinc-300">
                     <button
                         x-on:click="mobileClueTab = 'across'"
-                        :class="mobileClueTab === 'across' ? 'border-zinc-800 text-zinc-900' : 'border-transparent text-zinc-500'"
+                        :class="mobileClueTab === 'across' ? 'border-zinc-800 text-zinc-900' : 'border-transparent text-zinc-600'"
                         class="border-b-2 px-4 py-2 text-sm font-medium"
                     >Across</button>
                     <button
                         x-on:click="mobileClueTab = 'down'"
-                        :class="mobileClueTab === 'down' ? 'border-zinc-800 text-zinc-900' : 'border-transparent text-zinc-500'"
+                        :class="mobileClueTab === 'down' ? 'border-zinc-800 text-zinc-900' : 'border-transparent text-zinc-600'"
                         class="border-b-2 px-4 py-2 text-sm font-medium"
                     >Down</button>
                 </div>
@@ -208,10 +208,10 @@ function buildTemplate(data) {
                                     class="cursor-pointer rounded px-2 py-1"
                                 >
                                     <div class="flex items-start gap-1.5">
-                                        <span class="mt-px text-xs font-bold text-zinc-500" x-text="clue.displayNumber"></span>
+                                        <span class="mt-px text-xs font-bold text-zinc-600" x-text="clue.displayNumber"></span>
                                         <div class="flex-1">
-                                            <span class="text-sm text-zinc-700" x-text="clue.clue || '—'"></span>
-                                            <span class="text-xs text-zinc-400" x-text="'(' + clue.length + ')'"></span>
+                                            <span class="text-sm text-zinc-800" x-text="clue.clue || '—'"></span>
+                                            <span class="text-xs text-zinc-500" x-text="'(' + clue.length + ')'"></span>
                                         </div>
                                     </div>
                                 </div>
@@ -227,10 +227,10 @@ function buildTemplate(data) {
                                     class="cursor-pointer rounded px-2 py-1"
                                 >
                                     <div class="flex items-start gap-1.5">
-                                        <span class="mt-px text-xs font-bold text-zinc-500" x-text="clue.displayNumber"></span>
+                                        <span class="mt-px text-xs font-bold text-zinc-600" x-text="clue.displayNumber"></span>
                                         <div class="flex-1">
-                                            <span class="text-sm text-zinc-700" x-text="clue.clue || '—'"></span>
-                                            <span class="text-xs text-zinc-400" x-text="'(' + clue.length + ')'"></span>
+                                            <span class="text-sm text-zinc-800" x-text="clue.clue || '—'"></span>
+                                            <span class="text-xs text-zinc-500" x-text="'(' + clue.length + ')'"></span>
                                         </div>
                                     </div>
                                 </div>

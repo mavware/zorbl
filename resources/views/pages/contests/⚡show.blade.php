@@ -138,7 +138,7 @@ new #[Title('Contest')] class extends Component {
     @endif
 
     @if($contest->rules)
-        <div class="rounded-xl border border-zinc-200 p-5 dark:border-zinc-700">
+        <div class="border-line rounded-xl border p-5">
             <flux:heading size="lg" class="mb-2">{{ __('Rules') }}</flux:heading>
             <div class="prose dark:prose-invert max-w-none text-sm">
                 {!! nl2br(e($contest->rules)) !!}
@@ -169,14 +169,14 @@ new #[Title('Contest')] class extends Component {
     <div class="space-y-4">
         <flux:heading size="xl">{{ __('Puzzles') }}</flux:heading>
 
-        <div class="divide-y divide-zinc-200 rounded-xl border border-zinc-200 dark:divide-zinc-700 dark:border-zinc-700">
+        <div class="border-line divide-y divide-zinc-200 rounded-xl border dark:divide-zinc-700">
             @foreach($this->crosswords as $index => $crossword)
                 <div
                     wire:key="puzzle-{{ $crossword->id }}"
                     class="flex items-center justify-between p-4"
                 >
                     <div class="flex items-center gap-3">
-                        <span class="flex size-8 items-center justify-center rounded-full bg-zinc-100 text-sm font-medium dark:bg-zinc-800">
+                        <span class="bg-page flex size-8 items-center justify-center rounded-full text-sm font-medium">
                             {{ $index + 1 }}
                         </span>
                         <div>
@@ -208,7 +208,7 @@ new #[Title('Contest')] class extends Component {
 
     {{-- Meta Answer Submission --}}
     @if($this->entry && $contest->isActive())
-        <div class="rounded-xl border border-zinc-200 p-5 dark:border-zinc-700">
+        <div class="border-line rounded-xl border p-5">
             <flux:heading size="lg" class="mb-2">{{ __('Meta Answer') }}</flux:heading>
 
             @if($contest->meta_hint)

@@ -53,8 +53,8 @@ new #[Title('Support Tickets')] class extends Component {
     </div>
 
     @if($this->tickets->isEmpty())
-        <div class="flex flex-col items-center justify-center rounded-xl border border-dashed border-zinc-300 py-16 dark:border-zinc-600">
-            <flux:icon name="chat-bubble-left-right" class="mb-4 size-12 text-zinc-400" />
+        <div class="border-line-strong flex flex-col items-center justify-center rounded-xl border border-dashed py-16">
+            <flux:icon name="chat-bubble-left-right" class="mb-4 size-12 text-zinc-500" />
             <flux:heading size="lg" class="mb-2">{{ __('No tickets yet') }}</flux:heading>
             <flux:text class="mb-6">{{ __('Need help? Submit a support ticket and our team will assist you.') }}</flux:text>
             <flux:button variant="primary" icon="plus" :href="route('support.create')" wire:navigate>
@@ -68,7 +68,7 @@ new #[Title('Support Tickets')] class extends Component {
                     href="{{ route('support.show', $ticket) }}"
                     wire:navigate
                     wire:key="ticket-{{ $ticket->id }}"
-                    class="block rounded-xl border border-zinc-200 p-4 transition-colors hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-500"
+                    class="border-line block rounded-xl border p-4 transition-colors hover:border-zinc-400 dark:hover:border-zinc-500"
                 >
                     <div class="flex items-start justify-between gap-4">
                         <div class="min-w-0 flex-1">

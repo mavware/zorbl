@@ -44,7 +44,7 @@ new class extends Component {
     </div>
 
     @if($this->tags->isEmpty())
-        <flux:text class="text-zinc-400">{{ __('No tags available yet.') }}</flux:text>
+        <flux:text class="text-zinc-500">{{ __('No tags available yet.') }}</flux:text>
     @else
         <div class="flex flex-wrap gap-2">
             @foreach($this->tags as $tag)
@@ -54,7 +54,7 @@ new class extends Component {
                     @class([
                         'inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors',
                         'border-red-300 bg-red-50 text-red-700 dark:border-red-700 dark:bg-red-900/30 dark:text-red-400' => in_array($tag->id, $blockedTagIds),
-                        'border-zinc-200 bg-white text-zinc-700 hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:border-zinc-500' => ! in_array($tag->id, $blockedTagIds),
+                        'border-zinc-300 bg-white text-zinc-800 hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:border-zinc-500' => ! in_array($tag->id, $blockedTagIds),
                     ])
                 >
                     @if(in_array($tag->id, $blockedTagIds))
@@ -68,7 +68,7 @@ new class extends Component {
         </div>
 
         @if(count($blockedTagIds) > 0)
-            <flux:text size="sm" class="text-zinc-500">
+            <flux:text size="sm" class="text-zinc-600">
                 {{ trans_choice(':count tag blocked|:count tags blocked', count($blockedTagIds)) }}
             </flux:text>
         @endif

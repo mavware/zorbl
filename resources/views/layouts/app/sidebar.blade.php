@@ -3,8 +3,8 @@
     <head>
         @include('partials.head')
     </head>
-    <body class="min-h-screen bg-white dark:bg-zinc-800">
-        <flux:sidebar sticky collapsible="mobile" class="border-e border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900">
+    <body class="min-h-screen bg-page">
+        <flux:sidebar sticky collapsible="mobile" class="bg-surface border-line border-e">
             <flux:sidebar.header>
                 <x-app-logo :sidebar="true" href="{{ route('dashboard') }}" wire:navigate />
                 <flux:sidebar.collapse class="lg:hidden" />
@@ -54,7 +54,7 @@
                         <flux:icon.sparkles class="size-4 text-amber-500" />
                         <span class="text-sm font-semibold text-zinc-100 dark:text-zinc-100">{{ __('Upgrade to Pro') }}</span>
                     </div>
-                    <p class="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
+                    <p class="mt-1 text-xs text-zinc-700 dark:text-zinc-400">
                         {{ __('Unlock AI grid fills and clue suggestions.') }}
                     </p>
                 </a>

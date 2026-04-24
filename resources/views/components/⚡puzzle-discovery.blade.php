@@ -322,7 +322,7 @@ new class extends Component {
 
     {{-- Secondary Filters (collapsible) --}}
     @if($showFilters)
-        <div class="grid gap-3 rounded-xl border border-zinc-200 p-4 sm:grid-cols-2 lg:grid-cols-3 dark:border-zinc-700">
+        <div class="border-line grid gap-3 rounded-xl border p-4 sm:grid-cols-2 lg:grid-cols-3">
             <flux:field>
                 <flux:label>{{ __('Constructor') }}</flux:label>
                 <flux:input wire:model.live.debounce.300ms="constructor" size="sm" placeholder="{{ __('Name...') }}" />
@@ -348,10 +348,10 @@ new class extends Component {
     @endphp
 
     @if(count($items) === 0)
-        <div class="flex flex-col items-center justify-center rounded-xl border border-dashed border-zinc-300 py-12 dark:border-zinc-600">
-            <flux:icon name="magnifying-glass" class="mb-4 size-12 text-zinc-400" />
+        <div class="border-line-strong flex flex-col items-center justify-center rounded-xl border border-dashed py-12">
+            <flux:icon name="magnifying-glass" class="mb-4 size-12 text-zinc-500" />
             <flux:heading size="lg" class="mb-2">{{ __('No puzzles found') }}</flux:heading>
-            <flux:text class="text-zinc-400">
+            <flux:text class="text-zinc-500">
                 @if($this->hasActiveFilters())
                     {{ __('Try adjusting your filters or search terms.') }}
                 @else
@@ -365,7 +365,7 @@ new class extends Component {
                 <div
                     wire:key="discover-{{ $crossword->id }}"
                     wire:click="startSolving({{ $crossword->id }})"
-                    class="group rounded-xl border border-zinc-200 p-4 transition-colors hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-500 cursor-pointer"
+                    class="border-line group rounded-xl border p-4 transition-colors hover:border-zinc-400 dark:hover:border-zinc-500 cursor-pointer"
                 >
                     <div class="mb-3 flex justify-center">
                         <x-grid-thumbnail :grid="$crossword->grid" :width="$crossword->width" :height="$crossword->height" />
@@ -394,7 +394,7 @@ new class extends Component {
                         </flux:button>
                         <button
                             wire:click.stop="toggleLike({{ $crossword->id }})"
-                            class="flex items-center gap-1 rounded-lg px-2 py-1 text-xs transition-colors {{ isset($this->likedIds[$crossword->id]) ? 'text-red-500' : 'text-zinc-400 hover:text-red-400' }}"
+                            class="flex items-center gap-1 rounded-lg px-2 py-1 text-xs transition-colors {{ isset($this->likedIds[$crossword->id]) ? 'text-red-500' : 'text-zinc-500 hover:text-red-400' }}"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" class="size-4" viewBox="0 0 24 24" fill="{{ isset($this->likedIds[$crossword->id]) ? 'currentColor' : 'none' }}" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />

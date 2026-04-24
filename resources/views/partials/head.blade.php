@@ -11,7 +11,7 @@
 <link rel="icon" href="{{ asset('favicon-16x16.png') }}" type="image/png" sizes="16x16">
 <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}">
 <link rel="manifest" href="{{ asset('site.webmanifest') }}">
-<meta name="theme-color" content="#ffffff">
+<meta name="theme-color" content="#f5f5f5">
 
 <link rel="preconnect" href="https://fonts.bunny.net">
 <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />

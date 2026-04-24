@@ -94,7 +94,9 @@
       "Bash(composer show *)",
       "mcp__laravel-boost__browser-logs",
       "Bash(git add *)",
-      "Bash(grep -rn *)"
+      "Bash(grep -rn *)",
+      "Bash(php -l \"resources/views/pages/crosswords/⚡index.blade.php\")",
+      "Bash(php -r ' *)"
     ]
   },
   "enableAllProjectMcpServers": true,

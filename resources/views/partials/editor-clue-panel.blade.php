@@ -14,24 +14,24 @@
             x-on:keydown.tab.prevent="focusNextClue($el, '{{ $direction }}', false)"
             x-on:keydown.shift.tab.prevent="focusNextClue($el, '{{ $direction }}', true)"
             :class="[
-                    activeClueNumber === clue.number && direction === '{{ $direction }}' ? 'bg-blue-100 dark:bg-blue-900/40' : 'hover:bg-zinc-100 dark:hover:bg-zinc-700/50',
-                    isClueIncomplete('{{ $direction }}') && !clue.clue?.trim() ? 'ring-2 ring-amber-400 dark:ring-amber-500' : ''
-                ]"
+activeClueNumber === clue.number && direction === '{{ $direction }}' ? 'bg-blue-100 dark:bg-blue-900/40' : 'hover:bg-zinc-100 dark:hover:bg-zinc-700/50',
+isClueIncomplete('{{ $direction }}') && !clue.clue?.trim() ? 'ring-2 ring-amber-400 dark:ring-amber-500' : ''
+]"
             class="cursor-pointer rounded px-2 py-1"
             :id="'clue-{{ $direction }}-' + clue.number"
         >
             <div class="flex items-start gap-1.5">
-                <span class="mt-px text-xs font-bold text-zinc-500" x-text="clue.displayNumber"></span>
+                <span class="mt-px text-xs font-bold text-zinc-600" x-text="clue.displayNumber"></span>
                 <div class="clue-content flex-1">
                     <input
                         type="text"
                         x-model="clue.clue"
                         x-on:blur="markDirty()"
                         placeholder="{{ __('Enter clue...') }}"
-                        class="w-full border-0 bg-transparent p-0 text-sm text-zinc-700 placeholder-zinc-400 focus:ring-0 dark:text-zinc-300 dark:placeholder-zinc-500"
+                        class="w-full border-0 bg-transparent p-0 text-sm text-zinc-800 placeholder-zinc-400 focus:ring-0 dark:text-zinc-300 dark:placeholder-zinc-500"
                     />
                     <div class="flex items-center gap-1">
-                        <span class="text-xs text-zinc-400 cursor-text" x-text="'(' + clue.length + ')'"
+                        <span class="text-xs text-zinc-500 cursor-text" x-text="'(' + clue.length + ')'"
                               x-on:click="$event.target.closest('.clue-content').querySelector('input').focus()"></span>
                         @include('partials.clue-quality-icon', ['dir' => $direction])
                         <flux:tooltip content="{{ __('Clue library') }}" x-show="activeClueNumber === clue.number && direction === '{{ $direction }}'">
@@ -68,7 +68,7 @@
                 x-if="activeClueNumber === clue.number && direction === '{{ $direction }}' && showSuggestions && (clueSuggestions.length > 0 || clueSuggestionsLoading)">
                 <div class="mt-1 ml-5 border-l-2 border-amber-300 pl-2 dark:border-amber-600">
                     <template x-if="clueSuggestionsLoading">
-                        <span class="text-xs text-zinc-400 italic">{{ __('Loading suggestions...') }}</span>
+                        <span class="text-xs text-zinc-500 italic">{{ __('Loading suggestions...') }}</span>
                     </template>
                     <template x-if="!clueSuggestionsLoading">
                         <div class="space-y-0.5">
@@ -77,11 +77,11 @@
                             <template x-for="(suggestion, idx) in clueSuggestions" :key="'s{{ $dirLetter }}-' + idx">
                                 <div
                                     x-on:click.stop="useClue(clue, suggestion.clue)"
-                                    class="clue-content cursor-pointer rounded px-1 py-0.5 text-xs text-zinc-600 hover:bg-amber-50 dark:text-zinc-400 dark:hover:bg-amber-900/20"
+                                    class="clue-content cursor-pointer rounded px-1 py-0.5 text-xs text-zinc-700 hover:bg-amber-50 dark:text-zinc-400 dark:hover:bg-amber-900/20"
                                     :title="suggestion.puzzle + ' — ' + suggestion.author"
                                 >
                                     <span x-text="suggestion.clue"></span>
-                                    <span class="text-zinc-400 dark:text-zinc-500"
+                                    <span class="text-fg-subtle"
                                           x-text="' — ' + suggestion.author"></span>
                                 </div>
                             </template>
@@ -95,7 +95,7 @@
                 x-if="activeClueNumber === clue.number && direction === '{{ $direction }}' && showWordSuggestions && (wordSuggestions.length > 0 || wordSuggestionsLoading)">
                 <div class="mt-1 ml-5 border-l-2 border-blue-300 pl-2 dark:border-blue-600">
                     <template x-if="wordSuggestionsLoading">
-                        <span class="text-xs text-zinc-400 italic">{{ __('Finding words...') }}</span>
+                        <span class="text-xs text-zinc-500 italic">{{ __('Finding words...') }}</span>
                     </template>
                     <template x-if="!wordSuggestionsLoading">
                         <div class="space-y-0.5">
@@ -103,10 +103,10 @@
                             <template x-for="(suggestion, idx) in wordSuggestions" :key="'w{{ $dirLetter }}-' + idx">
                                 <div
                                     x-on:click.stop="applyWordSuggestion(suggestion.word)"
-                                    class="clue-content cursor-pointer rounded px-1 py-0.5 text-xs text-zinc-600 hover:bg-blue-50 dark:text-zinc-400 dark:hover:bg-blue-900/20"
+                                    class="clue-content cursor-pointer rounded px-1 py-0.5 text-xs text-zinc-700 hover:bg-blue-50 dark:text-zinc-400 dark:hover:bg-blue-900/20"
                                 >
                                     <span x-text="suggestion.word"></span>
-                                    <span class="text-zinc-400 dark:text-zinc-500" x-text="'(' + suggestion.score + ')'"></span>
+                                    <span class="text-fg-subtle" x-text="'(' + suggestion.score + ')'"></span>
                                 </div>
                             </template>
                         </div>

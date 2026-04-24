@@ -24,7 +24,7 @@
         x-transition:leave-start="translate-y-0"
         x-transition:leave-end="translate-y-full"
         x-cloak
-        class="absolute inset-x-0 bottom-0 z-20 hidden h-64 flex-row gap-4 border-t border-zinc-200 bg-white p-4 shadow-xl lg:flex dark:border-zinc-700 dark:bg-zinc-900"
+        class="bg-surface border-line absolute inset-x-0 bottom-0 z-20 hidden h-64 flex-row gap-4 border-t p-4 shadow-xl lg:flex"
     >
         <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
             @include('partials.editor-clue-panel', ['direction' => 'across'])

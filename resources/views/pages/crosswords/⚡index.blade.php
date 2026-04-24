@@ -197,8 +197,8 @@ new #[Title('My Puzzles')] class extends Component {
         </div>
 
         @if($this->crosswords->isEmpty())
-            <div class="flex flex-col items-center justify-center rounded-xl border border-dashed border-zinc-300 py-16 dark:border-zinc-600">
-                <flux:icon name="puzzle-piece" class="mb-4 size-12 text-zinc-400" />
+            <div class="border-line-strong flex flex-col items-center justify-center rounded-xl border border-dashed py-16">
+                <flux:icon name="puzzle-piece" class="mb-4 size-12 text-zinc-500" />
                 <flux:heading size="lg" class="mb-2">{{ __('No puzzles yet') }}</flux:heading>
                 <flux:text class="mb-6">{{ __('Create a new crossword or import an existing puzzle file.') }}</flux:text>
                 <div class="flex gap-2">
@@ -215,7 +215,7 @@ new #[Title('My Puzzles')] class extends Component {
                 @foreach($this->crosswords as $crossword)
                     <div
                         wire:key="crossword-{{ $crossword->id }}"
-                        class="group relative rounded-xl border border-zinc-200 p-4 transition-colors hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-500"
+                        class="border-line group relative rounded-xl border p-4 transition-colors hover:border-zinc-400 dark:hover:border-zinc-500"
                     >
                         @php($completeness = $crossword->completeness())
                         <a href="{{ route('crosswords.editor', $crossword) }}" wire:navigate class="block">
@@ -245,7 +245,7 @@ new #[Title('My Puzzles')] class extends Component {
                                         style="width: {{ $completeness['percentage'] }}%"
                                     ></div>
                                 </div>
-                                <span class="text-xs tabular-nums text-zinc-400">{{ $completeness['percentage'] }}%</span>
+                                <span class="text-xs tabular-nums text-zinc-500">{{ $completeness['percentage'] }}%</span>
                             </div>
                         </a>
 
@@ -333,36 +333,36 @@ new #[Title('My Puzzles')] class extends Component {
             {{-- Grid Template (Standard and Freestyle only) --}}
             @if ($this->selectedPuzzleType !== PuzzleType::Diamond)
                 <div class="relative h-48" wire:key="template-section-{{ $puzzleType }}-{{ $newWidth }}x{{ $newHeight }}">
-                    <div wire:loading.delay wire:target="newWidth, newHeight, puzzleType" class="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-white/60 dark:bg-zinc-900/60">
-                        <flux:icon.loading class="size-5 text-zinc-400" />
+                    <div wire:loading.delay wire:target="newWidth, newHeight, puzzleType" class="bg-surface absolute inset-0 z-10 flex items-center justify-center rounded-lg /60 /60">
+                        <flux:icon.loading class="size-5 text-zinc-500" />
                     </div>
                     @if(count($this->templates) > 0)
-                        <flux:label class="mb-2">{{ __('Grid Template') }} <span class="text-zinc-400 text-xs font-normal">{{ __('(optional)') }}</span></flux:label>
+                        <flux:label class="mb-2">{{ __('Grid Template') }} <span class="text-zinc-500 text-xs font-normal">{{ __('(optional)') }}</span></flux:label>
                         <div class="flex min-h-[6.5rem] gap-3 overflow-x-auto pb-2">
                             {{-- Blank grid option --}}
                             <button
                                 type="button"
                                 wire:click="$set('selectedTemplate', null)"
-                                class="flex shrink-0 flex-col items-center gap-1.5 rounded-lg border-2 p-2 transition-colors {{ $selectedTemplate === null ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' : 'border-zinc-200 hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-500' }}"
+                                class="border-line flex shrink-0 flex-col items-center gap-1.5 rounded-lg border-2 p-2 transition-colors {{ $selectedTemplate === null ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' : ' hover:border-zinc-400 dark:hover:border-zinc-500' }}"
                             >
                                 <x-grid-thumbnail :grid="Crossword::emptyGrid($newWidth, $newHeight)" :width="$newWidth" :height="$newHeight" :cell-size="6" :max-width="80" />
-                                <span class="whitespace-nowrap text-xs text-zinc-600 dark:text-zinc-400">{{ __('Blank') }}</span>
+                                <span class="whitespace-nowrap text-xs text-zinc-700 dark:text-zinc-400">{{ __('Blank') }}</span>
                             </button>
 
                             @foreach($this->templates as $index => $template)
                                 <button
                                     type="button"
                                     wire:click="$set('selectedTemplate', {{ $index }})"
-                                    class="flex shrink-0 flex-col items-center gap-1.5 rounded-lg border-2 p-2 transition-colors {{ $selectedTemplate === $index ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' : 'border-zinc-200 hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-500' }}"
+                                    class="border-line flex shrink-0 flex-col items-center gap-1.5 rounded-lg border-2 p-2 transition-colors {{ $selectedTemplate === $index ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' : ' hover:border-zinc-400 dark:hover:border-zinc-500' }}"
                                 >
                                     <x-grid-thumbnail :grid="$template['grid']" :width="$newWidth" :height="$newHeight" :cell-size="6" :max-width="80" />
-                                    <span class="whitespace-nowrap text-xs text-zinc-600 dark:text-zinc-400">{{ $template['name'] }}</span>
+                                    <span class="whitespace-nowrap text-xs text-zinc-700 dark:text-zinc-400">{{ $template['name'] }}</span>
                                 </button>
                             @endforeach
                         </div>
                     @else
                         <div class="flex h-full items-center justify-center">
-                            <flux:text size="sm" class="text-zinc-400">{{ __('Templates are available for square grids (3×3 to 27×27).') }}</flux:text>
+                            <flux:text size="sm" class="text-zinc-500">{{ __('Templates are available for square grids (3×3 to 27×27).') }}</flux:text>
                         </div>
                     @endif
                 </div>
