@@ -310,6 +310,57 @@ it('renders circles on cells with shapebg style', function () {
     expect($html)->toContain('class="circle"');
 });
 
+it('renders bar-style word boundaries as thick borders', function () {
+    $crossword = Crossword::factory()->make([
+        'title' => 'Barred Puzzle',
+        'width' => 4,
+        'height' => 2,
+        'grid' => [
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+        ],
+        'solution' => [
+            ['A', 'B', 'C', 'D'],
+            ['E', 'F', 'G', 'H'],
+        ],
+        'styles' => [
+            '0,1' => ['bars' => ['right']],
+            '1,0' => ['bars' => ['bottom']],
+        ],
+        'clues_across' => [
+            ['number' => 1, 'clue' => 'ABCD'],
+        ],
+        'clues_down' => [
+            ['number' => 1, 'clue' => 'AE'],
+        ],
+    ]);
+
+    $exporter = app(PdfExporter::class);
+    $pdf = $exporter->export($crossword, includeSolution: true);
+
+    expect($pdf)->toStartWith('%PDF');
+
+    $html = view('exports.crossword-pdf', [
+        'title' => $crossword->title,
+        'author' => $crossword->author,
+        'copyright' => $crossword->copyright,
+        'numberedGrid' => $crossword->grid,
+        'solution' => $crossword->solution,
+        'cluesAcross' => $crossword->clues_across,
+        'cluesDown' => $crossword->clues_down,
+        'styles' => $crossword->styles,
+        'includeSolution' => true,
+        'cellSize' => 0.33,
+        'numberFontSize' => 6,
+        'letterFontSize' => 9,
+        'numberHeight' => 0.116,
+    ])->render();
+
+    expect($html)
+        ->toContain('border-right: 3pt solid #000;')
+        ->toContain('border-bottom: 3pt solid #000;');
+});
+
 it('uses untitled puzzle when title is empty', function () {
     $crossword = Crossword::factory()->make([
         'title' => null,
