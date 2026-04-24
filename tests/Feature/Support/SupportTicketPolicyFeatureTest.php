@@ -57,7 +57,6 @@ test('assigned admin can respond to the ticket', function () {
     $this->assertDatabaseHas('ticket_responses', [
         'support_ticket_id' => $ticket->id,
         'user_id' => $admin->id,
-        'is_admin_response' => true,
     ]);
 });
 

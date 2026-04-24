@@ -19,7 +19,6 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [ ] Add feature tests for admin-assigned-ticket access via SupportTicketPolicy
 - [ ] Let users set up webhooks for their puzzles for common events like puzzle completion or puzzle attempt submission, etc...
 - [ ] Add Filament test coverage for ContestResource CRUD (create, edit, delete) — currently only basic tests exist in ContestAdminTest
-- [ ] Fix pre-existing CrosswordImportTest failure (redirect assertion in `users can import a crossword`)
 - [x] Wire PuzzleAttemptPolicy `update` check into the solver page's `saveProgress` method for defense-in-depth
 - [x] If the user is not a paid user, the AI fill and AI clue generation should prompt them to upgrade to a paid account
 - [x] Add tag filtering to the crosswords API endpoint (query param `?tag=slug`)
