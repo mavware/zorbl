@@ -1,4 +1,4 @@
-export function crosswordGrid({ width, height, grid, solution, styles, cluesAcross, cluesDown, minAnswerLength, prefilled }) {
+export function crosswordGrid({ width, height, grid, solution, styles, cluesAcross, cluesDown, minAnswerLength, prefilled, gridLocked }) {
     return {
         width,
         height,
@@ -9,6 +9,7 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
         cluesDown: cluesDown || [],
         minAnswerLength: minAnswerLength || 3,
         prefilled: prefilled || null,
+        gridLocked: !!gridLocked,
         selectedRow: -1,
         selectedCol: -1,
         direction: 'across',
@@ -307,7 +308,9 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
 
         cellClasses(row, col) {
             if (this.isVoid(row, col)) {
-                return 'invisible';
+                return this.mode === 'edit'
+                    ? 'bg-transparent cursor-pointer'
+                    : 'invisible';
             }
             if (this.isBlock(row, col)) {
                 return 'bg-zinc-800 dark:bg-zinc-300 cursor-pointer';
@@ -393,7 +396,12 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
 
         // --- Selection ---
         selectCell(row, col, event) {
-            if (this.isVoid(row, col)) return;
+            if (this.isVoid(row, col)) {
+                if (this.mode === 'edit' && !this.gridLocked && !(event && (event.ctrlKey || event.metaKey))) {
+                    this.toggleVoid(row, col);
+                }
+                return;
+            }
 
             // Ctrl/Cmd+click for multi-select
             if (event && (event.ctrlKey || event.metaKey)) {
@@ -419,7 +427,7 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
             this.clearMultiSelection();
 
             if (this.isBlock(row, col)) {
-                if (this.mode === 'edit') {
+                if (this.mode === 'edit' && !this.gridLocked) {
                     this.toggleBlock(row, col);
                 }
                 return;
@@ -516,7 +524,7 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
             // Toggle rebus mode with Insert key
             if (key === 'Insert') {
                 e.preventDefault();
-                if (!this.isBlock(this.selectedRow, this.selectedCol)) {
+                if (!this.isBlock(this.selectedRow, this.selectedCol) && !this.gridLocked) {
                     this.rebusMode = !this.rebusMode;
                     if (this.rebusMode) {
                         this.solution[this.selectedRow][this.selectedCol] = '';
@@ -575,9 +583,14 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
                 return;
             }
 
-            if (key === ' ' && this.mode === 'edit') {
+            if (key === ' ' && this.mode === 'edit' && !this.gridLocked) {
                 e.preventDefault();
                 this.toggleBlock(this.selectedRow, this.selectedCol);
+                return;
+            }
+
+            if (this.gridLocked) {
+                // Navigation/direction toggle is fine; mutations are not.
                 return;
             }
 
@@ -733,6 +746,37 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
             this.markDirty();
         },
 
+        toggleVoid(row, col) {
+            if (this.isVoid(row, col)) {
+                this.grid[row][col] = 0;
+                this.solution[row][col] = '';
+                if (this.symmetry) {
+                    const symRow = this.height - 1 - row;
+                    const symCol = this.width - 1 - col;
+                    this.grid[symRow][symCol] = 0;
+                    this.solution[symRow][symCol] = '';
+                }
+            } else {
+                this.grid[row][col] = null;
+                this.solution[row][col] = null;
+                delete this.styles[row + ',' + col];
+                if (this.symmetry) {
+                    const symRow = this.height - 1 - row;
+                    const symCol = this.width - 1 - col;
+                    this.grid[symRow][symCol] = null;
+                    this.solution[symRow][symCol] = null;
+                    delete this.styles[symRow + ',' + symCol];
+                }
+                if (this.selectedRow === row && this.selectedCol === col) {
+                    this.selectedRow = -1;
+                    this.selectedCol = -1;
+                }
+            }
+
+            this.numberGrid();
+            this.markDirty();
+        },
+
         // --- Annotations ---
         toggleCircle() {
             if (this.selectedRow < 0 || this.isBlock(this.selectedRow, this.selectedCol)) return;
@@ -754,7 +798,9 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
 
         // --- Context menu ---
         openContextMenu(row, col, event) {
-            if (this.isVoid(row, col)) return;
+            // Locked freestyle puzzles disallow grid mutations entirely.
+            if (this.gridLocked) return;
+
             const menuWidth = 200;
             const menuHeight = 280;
             this.contextMenu.x = Math.min(event.clientX, window.innerWidth - menuWidth);
@@ -788,6 +834,23 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
                 this.clearMultiSelection();
             } else {
                 this.toggleBlock(this.contextMenu.row, this.contextMenu.col);
+            }
+            this.closeContextMenu();
+        },
+
+        contextToggleVoid() {
+            const cells = this.getMultiSelectedCoords();
+            if (cells.length > 0) {
+                const makeVoid = !this.isVoid(this.contextMenu.row, this.contextMenu.col);
+                for (const [r, c] of cells) {
+                    const currentlyVoid = this.isVoid(r, c);
+                    if (makeVoid !== currentlyVoid) {
+                        this.toggleVoid(r, c);
+                    }
+                }
+                this.clearMultiSelection();
+            } else {
+                this.toggleVoid(this.contextMenu.row, this.contextMenu.col);
             }
             this.closeContextMenu();
         },
@@ -1075,13 +1138,36 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
             const entry = this.styles[key];
             const parts = [];
 
+            // box-shadow renders the FIRST listed shadow on top, so the order is:
+            // user bars → thick puzzle outline → thin internal seams. The thick
+            // outline draws over any seam that would otherwise break it at the
+            // corner where a seam meets the puzzle edge.
+            const shadows = [];
+
             const bars = entry?.bars;
             if (bars && bars.length > 0) {
-                const shadows = [];
                 if (bars.includes('top'))    shadows.push('inset 0 2px 0 0 var(--bar-color)');
                 if (bars.includes('bottom')) shadows.push('inset 0 -2px 0 0 var(--bar-color)');
                 if (bars.includes('left'))   shadows.push('inset 2px 0 0 0 var(--bar-color)');
                 if (bars.includes('right'))  shadows.push('inset -2px 0 0 0 var(--bar-color)');
+            }
+
+            if (!this.isVoid(row, col)) {
+                const topMissing    = row === 0              || this.isVoid(row - 1, col);
+                const bottomMissing = row === this.height - 1 || this.isVoid(row + 1, col);
+                const leftMissing   = col === 0              || this.isVoid(row, col - 1);
+                const rightMissing  = col === this.width - 1  || this.isVoid(row, col + 1);
+                if (topMissing)    shadows.push('inset 0 2px 0 0 var(--bar-color)');
+                if (bottomMissing) shadows.push('inset 0 -2px 0 0 var(--bar-color)');
+                if (leftMissing)   shadows.push('inset 2px 0 0 0 var(--bar-color)');
+                if (rightMissing)  shadows.push('inset -2px 0 0 0 var(--bar-color)');
+                if (!topMissing)    shadows.push('inset 0 1px 0 0 var(--color-line-strong)');
+                if (!bottomMissing) shadows.push('inset 0 -1px 0 0 var(--color-line-strong)');
+                if (!leftMissing)   shadows.push('inset 1px 0 0 0 var(--color-line-strong)');
+                if (!rightMissing)  shadows.push('inset -1px 0 0 0 var(--color-line-strong)');
+            }
+
+            if (shadows.length > 0) {
                 parts.push('box-shadow: ' + shadows.join(', '));
             }
 
@@ -1113,6 +1199,7 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
 
         // --- Clear ---
         clearLetters() {
+            if (this.gridLocked) return;
             for (let row = 0; row < this.height; row++) {
                 for (let col = 0; col < this.width; col++) {
                     if (!this.isBlock(row, col)) {
@@ -1124,6 +1211,7 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
         },
 
         clearAll() {
+            if (this.gridLocked) return;
             this.grid = Array.from({ length: this.height }, () => Array(this.width).fill(0));
             this.solution = Array.from({ length: this.height }, () => Array(this.width).fill(''));
             this.styles = {};

@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Zorbl\CrosswordIO\Crossword as CrosswordDTO;
+use Zorbl\CrosswordIO\GridNumberer;
 
 /**
  * @property int $id
@@ -26,6 +27,7 @@ use Zorbl\CrosswordIO\Crossword as CrosswordDTO;
  * @property string|null $secret_theme
  * @property CrosswordLayout|null $layout
  * @property PuzzleType $puzzle_type
+ * @property bool $freestyle_locked
  * @property int $width
  * @property int $height
  * @property string $kind
@@ -55,7 +57,7 @@ use Zorbl\CrosswordIO\Crossword as CrosswordDTO;
  */
 #[Fillable([
     'title', 'author', 'copyright', 'notes', 'secret_theme', 'layout',
-    'width', 'height', 'kind', 'puzzle_type',
+    'width', 'height', 'kind', 'puzzle_type', 'freestyle_locked',
     'grid', 'solution', 'prefilled', 'user_progress', 'clues_across', 'clues_down',
     'styles', 'metadata', 'is_published',
     'difficulty_score', 'difficulty_label',
@@ -82,6 +84,7 @@ class Crossword extends Model
             'styles' => 'array',
             'metadata' => 'array',
             'is_published' => 'boolean',
+            'freestyle_locked' => 'boolean',
             'layout' => CrosswordLayout::class,
             'puzzle_type' => PuzzleType::class,
         ];
@@ -196,7 +199,11 @@ class Crossword extends Model
             }
         }
 
-        $hasFill = $totalCells > 0 && $filledCells === $totalCells;
+        // Freestyle puzzles are allowed to publish with empty cells; the publish
+        // flow converts those into voids. Require at least one filled cell.
+        $hasFill = $this->puzzle_type === PuzzleType::Freestyle
+            ? $filledCells > 0
+            : $totalCells > 0 && $filledCells === $totalCells;
 
         // Check all clue slots have text
         $acrossClues = $this->clues_across ?? [];
@@ -240,6 +247,107 @@ class Crossword extends Model
     public static function emptySolution(int $width, int $height): array
     {
         return array_fill(0, $height, array_fill(0, $width, ''));
+    }
+
+    /**
+     * Freestyle workflow: turn every empty playable cell into a void cell.
+     * Re-numbers the grid and reconciles clues, keying old clues by start
+     * coordinates so renumbering doesn't reassign them to different slots.
+     */
+    public function convertEmptyCellsToVoid(): void
+    {
+        $oldClues = $this->indexCluesByLocation();
+        $grid = $this->grid ?? [];
+        $solution = $this->solution ?? [];
+
+        foreach ($grid as $r => $row) {
+            foreach ($row as $c => $cell) {
+                if ($cell === null || $cell === '#') {
+                    continue;
+                }
+                $value = $solution[$r][$c] ?? '';
+                if ($value === '' || $value === null) {
+                    $grid[$r][$c] = null;
+                    $solution[$r][$c] = null;
+                }
+            }
+        }
+
+        $this->applyRenumberedGrid($grid, $solution, $oldClues);
+    }
+
+    /**
+     * Freestyle workflow inverse: turn every void cell back into an empty
+     * playable cell, re-number, and append empty clue entries for new slots.
+     */
+    public function restoreVoidCellsToEmpty(): void
+    {
+        $oldClues = $this->indexCluesByLocation();
+        $grid = $this->grid ?? [];
+        $solution = $this->solution ?? [];
+
+        foreach ($grid as $r => $row) {
+            foreach ($row as $c => $cell) {
+                if ($cell === null) {
+                    $grid[$r][$c] = 0;
+                    $solution[$r][$c] = '';
+                }
+            }
+        }
+
+        $this->applyRenumberedGrid($grid, $solution, $oldClues);
+    }
+
+    /**
+     * @return array{across: array<string, string>, down: array<string, string>}
+     */
+    private function indexCluesByLocation(): array
+    {
+        $numberer = app(GridNumberer::class);
+        $result = $numberer->number($this->grid ?? [], $this->width, $this->height, $this->styles ?? []);
+
+        $across = collect($this->clues_across ?? [])->keyBy('number');
+        $down = collect($this->clues_down ?? [])->keyBy('number');
+
+        $byLocation = ['across' => [], 'down' => []];
+        foreach ($result['across'] as $slot) {
+            $clue = $across->get($slot['number']);
+            $byLocation['across'][$slot['row'].','.$slot['col']] = $clue['clue'] ?? '';
+        }
+        foreach ($result['down'] as $slot) {
+            $clue = $down->get($slot['number']);
+            $byLocation['down'][$slot['row'].','.$slot['col']] = $clue['clue'] ?? '';
+        }
+
+        return $byLocation;
+    }
+
+    /**
+     * @param  array<int, array<int, mixed>>  $grid
+     * @param  array<int, array<int, mixed>>  $solution
+     * @param  array{across: array<string, string>, down: array<string, string>}  $oldClues
+     */
+    private function applyRenumberedGrid(array $grid, array $solution, array $oldClues): void
+    {
+        $numberer = app(GridNumberer::class);
+        $result = $numberer->number($grid, $this->width, $this->height, $this->styles ?? []);
+
+        $newAcross = array_map(fn ($slot) => [
+            'number' => $slot['number'],
+            'clue' => $oldClues['across'][$slot['row'].','.$slot['col']] ?? '',
+        ], $result['across']);
+
+        $newDown = array_map(fn ($slot) => [
+            'number' => $slot['number'],
+            'clue' => $oldClues['down'][$slot['row'].','.$slot['col']] ?? '',
+        ], $result['down']);
+
+        $this->update([
+            'grid' => $result['grid'],
+            'solution' => $solution,
+            'clues_across' => $newAcross,
+            'clues_down' => $newDown,
+        ]);
     }
 
     /**

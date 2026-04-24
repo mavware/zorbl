@@ -132,6 +132,17 @@ new #[Title('My Puzzles')] class extends Component {
 
         $result = app(GridNumberer::class)->number($grid, $this->newWidth, $this->newHeight);
 
+        $solution = Crossword::emptySolution($this->newWidth, $this->newHeight);
+        foreach ($result['grid'] as $r => $row) {
+            foreach ($row as $c => $cell) {
+                if ($cell === null) {
+                    $solution[$r][$c] = null;
+                } elseif ($cell === '#') {
+                    $solution[$r][$c] = '#';
+                }
+            }
+        }
+
         $crossword = Auth::user()->crosswords()->create([
             'title' => 'Untitled Puzzle',
             'author' => Auth::user()->name,
@@ -140,7 +151,7 @@ new #[Title('My Puzzles')] class extends Component {
             'height' => $this->newHeight,
             'puzzle_type' => $type,
             'grid' => $result['grid'],
-            'solution' => Crossword::emptySolution($this->newWidth, $this->newHeight),
+            'solution' => $solution,
             'clues_across' => array_map(fn ($s) => ['number' => $s['number'], 'clue' => ''], $result['across']),
             'clues_down' => array_map(fn ($s) => ['number' => $s['number'], 'clue' => ''], $result['down']),
             'metadata' => ['puzzle_type' => $type->value],

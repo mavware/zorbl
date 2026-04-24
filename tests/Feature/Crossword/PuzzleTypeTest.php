@@ -52,7 +52,7 @@ test('factory supports puzzle type states', function () {
 
     $diamond = Crossword::factory()->diamond()->create();
     expect($diamond->puzzle_type)->toBe(PuzzleType::Diamond);
-    expect($diamond->grid[0][0])->toBe('#');
+    expect($diamond->grid[0][0])->toBeNull();
 
     $freestyle = Crossword::factory()->freestyle()->create();
     expect($freestyle->puzzle_type)->toBe(PuzzleType::Freestyle);

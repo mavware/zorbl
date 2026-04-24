@@ -1,4 +1,8 @@
         {{-- Mobile clue panels --}}
+        @php
+            $freestyleUnlocked = $this->puzzleType === \App\Enums\PuzzleType::Freestyle && ! $this->freestyleLocked;
+        @endphp
+        @if (! $freestyleUnlocked)
         <div class="lg:hidden">
             <div class="flex border-b border-line">
                 <button
@@ -205,3 +209,4 @@ isClueIncomplete('down') && !clue.clue?.trim() ? 'ring-2 ring-amber-400 dark:rin
                 </template>
             </div>
         </div>
+        @endif

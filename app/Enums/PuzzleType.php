@@ -21,7 +21,7 @@ enum PuzzleType: string
     {
         return match ($this) {
             self::Standard => 'Classic crossword with rotational symmetry. Square grid.',
-            self::Diamond => 'Diamond-shaped grid with blocks in the corners. Odd-sized square grid.',
+            self::Diamond => 'Diamond-shaped grid with the corners removed. Odd-sized square grid.',
             self::Freestyle => 'No symmetry or shape constraints. Any dimensions.',
         };
     }
@@ -54,7 +54,7 @@ enum PuzzleType: string
     /**
      * Generate the initial grid for this puzzle type.
      *
-     * @return array<int, array<int, int|string>>
+     * @return array<int, array<int, int|string|null>>
      */
     public function generateGrid(int $width, int $height): array
     {
@@ -65,7 +65,7 @@ enum PuzzleType: string
     }
 
     /**
-     * @return array<int, array<int, int|string>>
+     * @return array<int, array<int, int|string|null>>
      */
     private static function diamondGrid(int $width, int $height): array
     {
@@ -77,7 +77,7 @@ enum PuzzleType: string
             $row = [];
             for ($c = 0; $c < $width; $c++) {
                 $distance = abs($r - $centerR) + abs($c - $centerC);
-                $row[] = $distance > $centerR ? '#' : 0;
+                $row[] = $distance > $centerR ? null : 0;
             }
             $grid[] = $row;
         }

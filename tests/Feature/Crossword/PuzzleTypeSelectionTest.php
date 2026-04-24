@@ -37,9 +37,9 @@ test('users can create a diamond puzzle', function () {
         ->and($crossword->metadata['puzzle_type'])->toBe('diamond');
 
     $grid = $crossword->grid;
-    expect($grid[0][0])->toBe('#')
-        ->and($grid[0][5])->not->toBe('#')
-        ->and($grid[5][5])->not->toBe('#');
+    expect($grid[0][0])->toBeNull()
+        ->and($grid[0][5])->not->toBeNull()
+        ->and($grid[5][5])->not->toBeNull();
 });
 
 test('diamond puzzles require odd grid size', function () {
@@ -133,17 +133,17 @@ test('puzzle type defaults to standard', function () {
 test('diamond grid has correct shape', function () {
     $grid = PuzzleType::Diamond->generateGrid(7, 7);
 
-    expect($grid[0][0])->toBe('#')
-        ->and($grid[0][1])->toBe('#')
-        ->and($grid[0][2])->toBe('#');
+    expect($grid[0][0])->toBeNull()
+        ->and($grid[0][1])->toBeNull()
+        ->and($grid[0][2])->toBeNull();
 
     expect($grid[0][3])->toBe(0);
 
     expect($grid[3])->toBe([0, 0, 0, 0, 0, 0, 0]);
 
-    expect($grid[6][6])->toBe('#')
-        ->and($grid[6][5])->toBe('#')
-        ->and($grid[6][4])->toBe('#');
+    expect($grid[6][6])->toBeNull()
+        ->and($grid[6][5])->toBeNull()
+        ->and($grid[6][4])->toBeNull();
 });
 
 test('standard grid generates empty grid', function () {

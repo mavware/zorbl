@@ -10,7 +10,7 @@
                 :aria-label="'Crossword grid, ' + width + ' columns by ' + height + ' rows'"
             >
                 <div
-                    class="grid border border-zinc-800 dark:border-zinc-300 [--bar-color:var(--color-zinc-800)] dark:[--bar-color:var(--color-zinc-300)]"
+                    class="grid [--bar-color:var(--color-zinc-800)] dark:[--bar-color:var(--color-zinc-300)]"
                     :style="'grid-template-columns: repeat(' + width + ', minmax(0, 1fr));'"
                 >
                     <template x-for="(row, rowIdx) in grid" :key="'row-' + rowIdx">
@@ -21,7 +21,7 @@
                                 x-on:touchstart.passive="startLongPress(rowIdx, colIdx, $event)"
                                 x-on:touchend="cancelLongPress()"
                                 x-on:touchmove="cancelLongPress()"
-                                :class="[cellClasses(rowIdx, colIdx), isVoid(rowIdx, colIdx) ? '' : 'border border-line-strong']"
+                                :class="cellClasses(rowIdx, colIdx)"
                                 :style="cellBarStyles(rowIdx, colIdx)"
                                 class="relative box-border flex aspect-square items-center justify-center overflow-hidden select-none"
                                 role="gridcell"
@@ -83,11 +83,20 @@
                 </template>
 
                 <button
+                    x-show="!isVoid(contextMenu.row, contextMenu.col)"
                     x-on:click="contextToggleBlock()"
                     class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-zinc-800 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700"
                 >
                     <span
                         x-text="isBlock(contextMenu.row, contextMenu.col) ? '{{ __('Make white') }}' : '{{ __('Make black') }}'"></span>
+                </button>
+
+                <button
+                    x-on:click="contextToggleVoid()"
+                    class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-zinc-800 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                >
+                    <span
+                        x-text="isVoid(contextMenu.row, contextMenu.col) ? '{{ __('Restore cell') }}' : '{{ __('Remove cell') }}'"></span>
                 </button>
 
                 <button

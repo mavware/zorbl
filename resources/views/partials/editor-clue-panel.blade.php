@@ -4,7 +4,13 @@
     $computed = $direction === 'across' ? 'computedCluesAcross' : 'computedCluesDown';
     $panelRef = $direction === 'across' ? 'acrossPanel' : 'downPanel';
     $dirLetter = $direction[0]; // 'a' or 'd'
+    $freestyleUnlocked = $this->puzzleType === \App\Enums\PuzzleType::Freestyle && ! $this->freestyleLocked;
 @endphp
+@if ($freestyleUnlocked)
+    <div class="text-fg-muted flex h-full items-center justify-center px-4 text-center text-sm">
+        {{ __('Lock the grid to start writing clues.') }}
+    </div>
+@else
 <flux:heading size="sm" class="mb-2 shrink-0">{{ $label }}</flux:heading>
 <div class="flex-1 space-y-0.5 overflow-y-auto" x-ref="{{ $panelRef }}">
     <template x-for="clue in {{ $computed }}" :key="'{{ $direction }}-' + clue.number">
@@ -116,3 +122,4 @@ isClueIncomplete('{{ $direction }}') && !clue.clue?.trim() ? 'ring-2 ring-amber-
         </div>
     </template>
 </div>
+@endif

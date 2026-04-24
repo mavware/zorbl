@@ -2,6 +2,14 @@
      Bound directly to the parent `direction` Alpine state so clicking a cell
      (which sets `direction`) automatically surfaces the matching tab, and
      clicking a tab updates the grid's active direction. --}}
+@php
+    $freestyleUnlocked = $this->puzzleType === \App\Enums\PuzzleType::Freestyle && ! $this->freestyleLocked;
+@endphp
+@if ($freestyleUnlocked)
+    <div class="text-fg-muted flex h-full items-center justify-center px-4 text-center text-sm">
+        {{ __('Lock the grid to start writing clues.') }}
+    </div>
+@else
 <div class="flex min-h-0 flex-col overflow-hidden">
     <div class="flex shrink-0 border-b border-line">
         <button
@@ -26,3 +34,4 @@
         </div>
     </div>
 </div>
+@endif

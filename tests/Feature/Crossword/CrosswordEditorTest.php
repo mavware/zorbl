@@ -62,6 +62,38 @@ test('users can save grid state', function () {
         ->and($crossword->clues_across[0]['clue'])->toBe('Test');
 });
 
+test('users can save grid with void (null) cells', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create([
+        'width' => 3,
+        'height' => 3,
+    ]);
+
+    $this->actingAs($user);
+
+    // Void corners — a plus-sign-shaped puzzle.
+    $newGrid = [
+        [null, 1,    null],
+        [2,    0,    0],
+        [null, 0,    null],
+    ];
+    $newSolution = [
+        [null, 'A',  null],
+        ['B',  'C',  'D'],
+        [null, 'E',  null],
+    ];
+
+    Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->call('save', $newGrid, $newSolution, null, [], [])
+        ->assertDispatched('saved');
+
+    $crossword->refresh();
+    expect($crossword->grid)->toBe($newGrid)
+        ->and($crossword->solution)->toBe($newSolution)
+        ->and($crossword->grid[0][0])->toBeNull()
+        ->and($crossword->grid[2][2])->toBeNull();
+});
+
 test('users can update metadata', function () {
     $user = User::factory()->create();
     $crossword = Crossword::factory()->for($user)->create();

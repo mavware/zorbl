@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\CrosswordLayout;
+use App\Enums\PuzzleType;
 use App\Models\ClueEntry;
 use App\Models\Crossword;
 use App\Models\Tag;
@@ -49,6 +50,8 @@ class extends Component {
     public int $minAnswerLength = 3;
 
     public bool $isPublished = false;
+    public bool $freestyleLocked = false;
+    public PuzzleType $puzzleType = PuzzleType::Standard;
 
     public bool $showPublishWarning = false;
     public array $incompleteChecks = [];
@@ -85,6 +88,8 @@ class extends Component {
         $this->layout = $crossword->layout;
         $this->minAnswerLength = $crossword->metadata['min_answer_length'] ?? 3;
         $this->isPublished = $crossword->is_published;
+        $this->freestyleLocked = $crossword->freestyle_locked ?? false;
+        $this->puzzleType = $crossword->puzzle_type;
         $this->resizeWidth = $crossword->width;
         $this->resizeHeight = $crossword->height;
         $this->tagIds = $crossword->tags()->pluck('tags.id')->all();
@@ -297,6 +302,58 @@ class extends Component {
 
         $this->incompleteChecks = array_keys(array_filter($completeness['checks'], fn($v) => !$v));
         $this->showPublishWarning = true;
+    }
+
+    /**
+     * Freestyle phase 2: lock the grid, void unused cells, and reveal clues.
+     * Only valid for Freestyle puzzles.
+     */
+    public function lockFreestyleGrid(): void
+    {
+        $crossword = $this->crossword;
+        $this->authorize('update', $crossword);
+
+        if ($crossword->puzzle_type !== PuzzleType::Freestyle) {
+            return;
+        }
+
+        $crossword->convertEmptyCellsToVoid();
+        $crossword->update(['freestyle_locked' => true]);
+        $crossword->refresh();
+
+        $this->freestyleLocked = true;
+        $this->grid = $crossword->grid;
+        $this->solution = $crossword->solution;
+        $this->cluesAcross = $crossword->clues_across ?? [];
+        $this->cluesDown = $crossword->clues_down ?? [];
+
+        $this->dispatch('freestyle-locked', locked: true);
+    }
+
+    /**
+     * Freestyle phase 1: restore voided cells back to empty so the user can
+     * keep editing the grid. Hides the clues panel again.
+     */
+    public function unlockFreestyleGrid(): void
+    {
+        $crossword = $this->crossword;
+        $this->authorize('update', $crossword);
+
+        if ($crossword->puzzle_type !== PuzzleType::Freestyle) {
+            return;
+        }
+
+        $crossword->restoreVoidCellsToEmpty();
+        $crossword->update(['freestyle_locked' => false]);
+        $crossword->refresh();
+
+        $this->freestyleLocked = false;
+        $this->grid = $crossword->grid;
+        $this->solution = $crossword->solution;
+        $this->cluesAcross = $crossword->clues_across ?? [];
+        $this->cluesDown = $crossword->clues_down ?? [];
+
+        $this->dispatch('freestyle-locked', locked: false);
     }
 
     public function togglePublished(): void
@@ -674,7 +731,9 @@ class extends Component {
             cluesDown: @js($cluesDown),
             minAnswerLength: @js($minAnswerLength),
             prefilled: @js($prefilled),
+            gridLocked: @js($freestyleLocked && $puzzleType === PuzzleType::Freestyle),
         })"
+    x-on:freestyle-locked.window="gridLocked = $event.detail.locked; grid = $wire.grid; solution = $wire.solution; cluesAcross = $wire.cluesAcross; cluesDown = $wire.cluesDown;"
     x-on:saved.window="onSaved()"
     x-on:prefilled-saved.window="onSaved()"
     x-on:grid-resized.window="onGridResized()"
@@ -797,6 +856,26 @@ class extends Component {
                                     class="text-red-600 dark:text-red-400">{{ __('Clear everything') }}</flux:menu.item>
                 </flux:menu>
             </flux:dropdown>
+
+            {{-- Freestyle: lock the grid (void empty cells) or unlock to keep editing --}}
+            @if ($puzzleType === PuzzleType::Freestyle)
+                @if ($freestyleLocked)
+                    <flux:button
+                        variant="ghost"
+                        size="sm"
+                        icon="pencil-square"
+                        wire:click="unlockFreestyleGrid"
+                        wire:confirm="{{ __('Restore voided cells and return to grid editing? Empty cells will reappear.') }}"
+                    >{{ __('Edit grid') }}</flux:button>
+                @else
+                    <flux:button
+                        variant="primary"
+                        size="sm"
+                        icon="lock-closed"
+                        wire:click="lockFreestyleGrid"
+                    >{{ __('Lock grid & write clues') }}</flux:button>
+                @endif
+            @endif
 
             {{-- Publish toggle --}}
             <flux:tooltip content="{{ $isPublished ? __('Unpublish puzzle') : __('Publish for others to solve') }}">
