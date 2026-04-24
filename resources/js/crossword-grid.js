@@ -1,5 +1,35 @@
-export function crosswordGrid({ width, height, grid, solution, styles, cluesAcross, cluesDown, minAnswerLength, prefilled, gridLocked }) {
+import {
+    cellKey,
+    isVoid,
+    isBlock,
+    hasCircle,
+    hasBar,
+    getCellColor,
+    getCustomNumber,
+    getDisplayNumber,
+    hasLeftBoundary,
+    hasRightBoundary,
+    hasTopBoundary,
+    hasBottomBoundary,
+    findSlot,
+    getClueNumberForCell,
+    getWordCells,
+    computeActiveWordCells,
+    cleanupStyleEntry,
+} from './grid/helpers.js';
+import { numberGrid as runNumberGrid } from './grid/numbering.js';
+import { cloneForWire, createAutosave } from './grid/persistence.js';
+
+const HIGHLIGHT_AUTO_CLEAR_MS = 8000;
+const WORD_SUGGEST_DEBOUNCE_MS = 300;
+const LONG_PRESS_MS = 500;
+
+export function crosswordGrid({
+    width, height, grid, solution, styles, cluesAcross, cluesDown,
+    minAnswerLength, prefilled, gridLocked,
+}) {
     return {
+        // --- State -----------------------------------------------------------
         width,
         height,
         grid,
@@ -21,175 +51,139 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
         clueSuggestions: [],
         clueSuggestionsLoading: false,
         clueSuggestionsWord: '',
+        showSuggestions: false,
+        showWordSuggestions: false,
+        wordSuggestions: [],
+        wordSuggestionsLoading: false,
+        wordSuggestionsPattern: '',
+        showRebusInput: false,
+        rebusInputValue: '',
+        rebusCells: [],
+        showCustomNumberInput: false,
+        customNumberInputValue: '',
+        customNumberCells: [],
         incompleteHighlights: [],
         rebusMode: false,
         multiSelectedCells: {},
         contextMenu: { show: false, row: -1, col: -1, x: 0, y: 0 },
-        _saveTimer: null,
-        _saving: false,
-        _savedTimer: null,
+        fillInProgress: false,
+        fillMode: null,
+
+        // Internal: timers and listeners. Kept on `this` so destroy() can clean them up.
+        _autosave: null,
         _longPressTimer: null,
+        _wordSuggestTimer: null,
+        _highlightTimer: null,
+        _onDocClick: null,
+        _onDocMousedown: null,
+        _onBeforeUnload: null,
+        _onLivewireNavigating: null,
 
+        // --- Lifecycle -------------------------------------------------------
         init() {
-            document.addEventListener('click', () => this.closeContextMenu());
-            document.addEventListener('mousedown', (e) => this.handleClickOutside(e));
-            this.$watch('isDirty', (val) => {
-                if (val) this.debouncedSave();
+            this._autosave = createAutosave({
+                save: () => this._performSave(),
+                isDirty: () => this.isDirty,
+                setDirty: (v) => { this.isDirty = v; },
+                setSaving: (v) => { this.saving = v; },
+                setShowSaved: (v) => { this.showSaved = v; },
             });
 
-            this.$watch('activeClueNumber', () => {
-                this.closeSuggestions();
-            });
-
-            this.$watch('direction', () => {
-                this.closeSuggestions();
-            });
-
-            window.addEventListener('beforeunload', (e) => {
+            this._onDocClick = () => this.closeContextMenu();
+            this._onDocMousedown = (e) => this.handleClickOutside(e);
+            this._onBeforeUnload = (e) => {
                 if (this.isDirty) {
                     e.preventDefault();
                     e.returnValue = '';
                 }
-            });
-
-            document.addEventListener('livewire:navigating', () => {
-                if (this.isDirty && !this._saving) {
-                    clearTimeout(this._saveTimer);
+            };
+            this._onLivewireNavigating = () => {
+                if (this.isDirty && !this._autosave?.isInFlight()) {
                     this.$wire.save(
-                        JSON.parse(JSON.stringify(this.grid)),
-                        JSON.parse(JSON.stringify(this.solution)),
-                        Object.keys(this.styles).length > 0 ? JSON.parse(JSON.stringify(this.styles)) : null,
-                        JSON.parse(JSON.stringify(this.cluesAcross)),
-                        JSON.parse(JSON.stringify(this.cluesDown)),
+                        cloneForWire(this.grid),
+                        cloneForWire(this.solution),
+                        Object.keys(this.styles).length > 0 ? cloneForWire(this.styles) : null,
+                        cloneForWire(this.cluesAcross),
+                        cloneForWire(this.cluesDown),
                     );
                     this.isDirty = false;
                 }
-            });
+            };
+
+            document.addEventListener('click', this._onDocClick);
+            document.addEventListener('mousedown', this._onDocMousedown);
+            window.addEventListener('beforeunload', this._onBeforeUnload);
+            document.addEventListener('livewire:navigating', this._onLivewireNavigating);
+
+            this.$watch('isDirty', (val) => { if (val) this._autosave.scheduleSave(); });
+            this.$watch('activeClueNumber', () => this.closeSuggestions());
+            this.$watch('direction', () => this.closeSuggestions());
         },
 
-        // --- Word boundary helpers (bars + blocks) ---
-        hasLeftBoundary(row, col) {
-            if (col === 0) return true;
-            if (this.isBlock(row, col - 1)) return true;
-            return this.hasBar(row, col, 'left') || this.hasBar(row, col - 1, 'right');
+        destroy() {
+            if (this._onDocClick) document.removeEventListener('click', this._onDocClick);
+            if (this._onDocMousedown) document.removeEventListener('mousedown', this._onDocMousedown);
+            if (this._onBeforeUnload) window.removeEventListener('beforeunload', this._onBeforeUnload);
+            if (this._onLivewireNavigating) document.removeEventListener('livewire:navigating', this._onLivewireNavigating);
+            this._onDocClick = this._onDocMousedown = this._onBeforeUnload = this._onLivewireNavigating = null;
+
+            this._autosave?.destroy();
+            clearTimeout(this._longPressTimer);
+            clearTimeout(this._wordSuggestTimer);
+            clearTimeout(this._highlightTimer);
         },
 
-        hasRightBoundary(row, col) {
-            if (col + 1 >= this.width) return true;
-            if (this.isBlock(row, col + 1)) return true;
-            return this.hasBar(row, col, 'right') || this.hasBar(row, col + 1, 'left');
+        // --- Cell / slot helpers (delegate to grid/helpers) -----------------
+        isVoid(row, col)        { return isVoid(this.grid, row, col); },
+        isBlock(row, col)       { return isBlock(this.grid, row, col); },
+        hasCircle(row, col)     { return hasCircle(this.styles, row, col); },
+        hasBar(row, col, edge)  { return hasBar(this.styles, row, col, edge); },
+        getCellColor(row, col)  { return getCellColor(this.styles, row, col); },
+        getCustomNumber(row, col){ return getCustomNumber(this.styles, row, col); },
+        getDisplayNumber(row, col){ return getDisplayNumber(this.grid, this.styles, row, col); },
+        hasLeftBoundary(row, col)  { return hasLeftBoundary(this.grid, this.styles, row, col); },
+        hasRightBoundary(row, col) { return hasRightBoundary(this.grid, this.styles, this.width, row, col); },
+        hasTopBoundary(row, col)   { return hasTopBoundary(this.grid, this.styles, row, col); },
+        hasBottomBoundary(row, col){ return hasBottomBoundary(this.grid, this.styles, this.height, row, col); },
+        findSlot(dir, n) {
+            return findSlot(this.grid, this.styles, this.width, this.height, dir, n);
+        },
+        getClueNumberForCell(r, c, d) {
+            return getClueNumberForCell(this.grid, this.styles, r, c, d);
+        },
+        getWordCells(r, c, d) {
+            return getWordCells(this.grid, this.styles, this.width, this.height, r, c, d);
         },
 
-        hasTopBoundary(row, col) {
-            if (row === 0) return true;
-            if (this.isBlock(row - 1, col)) return true;
-            return this.hasBar(row, col, 'top') || this.hasBar(row - 1, col, 'bottom');
-        },
-
-        hasBottomBoundary(row, col) {
-            if (row + 1 >= this.height) return true;
-            if (this.isBlock(row + 1, col)) return true;
-            return this.hasBar(row, col, 'bottom') || this.hasBar(row + 1, col, 'top');
-        },
-
-        // --- Grid numbering (mirrors PHP GridNumberer) ---
+        // --- Grid numbering --------------------------------------------------
         numberGrid() {
-            const minLen = this.minAnswerLength || 2;
-            const acrossSlots = [];
-            const downSlots = [];
-            let clueNum = 0;
-
-            // Reset all non-block, non-void cells to 0 in place
-            for (let row = 0; row < this.height; row++) {
-                for (let col = 0; col < this.width; col++) {
-                    const cell = this.grid[row][col];
-                    if (cell !== '#' && cell !== null) {
-                        this.grid[row][col] = 0;
-                    }
-                }
-            }
-
-            for (let row = 0; row < this.height; row++) {
-                for (let col = 0; col < this.width; col++) {
-                    if (this.isBlock(row, col)) continue;
-
-                    const startsAcross = this.hasLeftBoundary(row, col) && !this.hasRightBoundary(row, col);
-                    const startsDown = this.hasTopBoundary(row, col) && !this.hasBottomBoundary(row, col);
-
-                    let acrossLen = 0;
-                    let downLen = 0;
-
-                    if (startsAcross) {
-                        acrossLen = 1;
-                        while (!this.hasRightBoundary(row, col + acrossLen - 1)) acrossLen++;
-                    }
-                    if (startsDown) {
-                        downLen = 1;
-                        while (!this.hasBottomBoundary(row + downLen - 1, col)) downLen++;
-                    }
-
-                    const hasAcross = startsAcross && acrossLen >= minLen;
-                    const hasDown = startsDown && downLen >= minLen;
-
-                    if (hasAcross || hasDown) {
-                        clueNum++;
-                        this.grid[row][col] = clueNum;
-
-                        if (hasAcross) {
-                            acrossSlots.push({ number: clueNum, row, col, length: acrossLen });
-                        }
-                        if (hasDown) {
-                            downSlots.push({ number: clueNum, row, col, length: downLen });
-                        }
-                    }
-                }
-            }
-
-            this.remapClues(acrossSlots, downSlots);
+            const result = runNumberGrid({
+                grid: this.grid,
+                width: this.width,
+                height: this.height,
+                styles: this.styles,
+                minLength: this.minAnswerLength,
+                cluesAcross: this.cluesAcross,
+                cluesDown: this.cluesDown,
+            });
+            this.cluesAcross = result.cluesAcross;
+            this.cluesDown = result.cluesDown;
         },
 
-        remapClues(acrossSlots, downSlots) {
-            const oldAcross = new Map(this.cluesAcross.map(c => [c.number, c.clue]));
-            const oldDown = new Map(this.cluesDown.map(c => [c.number, c.clue]));
-
-            this.cluesAcross = acrossSlots.map(s => ({
-                number: s.number,
-                clue: oldAcross.get(s.number) || '',
-            }));
-            this.cluesDown = downSlots.map(s => ({
-                number: s.number,
-                clue: oldDown.get(s.number) || '',
-            }));
-        },
-
-        // --- Custom numbers ---
-        getCustomNumber(row, col) {
-            return this.styles[row + ',' + col]?.number ?? null;
-        },
-
+        // --- Custom numbers --------------------------------------------------
         setCustomNumber(row, col, number) {
-            const key = row + ',' + col;
+            const key = cellKey(row, col);
             if (number !== null && number !== '') {
                 this.styles[key] = { ...this.styles[key], number: parseInt(number, 10) };
-            } else {
-                const entry = { ...this.styles[key] };
-                delete entry.number;
-                if (Object.keys(entry).length === 0 || (Object.keys(entry).length === 1 && entry.bars?.length === 0)) {
-                    delete this.styles[key];
-                } else {
-                    this.styles[key] = entry;
-                }
+                return;
             }
+            const entry = { ...this.styles[key] };
+            delete entry.number;
+            this.styles[key] = entry;
+            cleanupStyleEntry(this.styles, key);
         },
 
-        getDisplayNumber(row, col) {
-            const custom = this.getCustomNumber(row, col);
-            if (custom !== null) return custom;
-            const cell = this.grid[row]?.[col];
-            return typeof cell === 'number' && cell > 0 ? cell : null;
-        },
-
-        // --- Computed clue lists with lengths ---
+        // --- Computed clue lists --------------------------------------------
         get computedCluesAcross() {
             return this.cluesAcross.map(clue => {
                 const slot = this.findSlot('across', clue.number);
@@ -208,104 +202,23 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
             });
         },
 
-        findSlot(dir, number) {
-            for (let row = 0; row < this.height; row++) {
-                for (let col = 0; col < this.width; col++) {
-                    if (this.grid[row][col] === number) {
-                        if (dir === 'across') {
-                            let len = 1;
-                            while (!this.hasRightBoundary(row, col + len - 1)) len++;
-                            if (len > 1) return { row, col, length: len };
-                        } else {
-                            let len = 1;
-                            while (!this.hasBottomBoundary(row + len - 1, col)) len++;
-                            if (len > 1) return { row, col, length: len };
-                        }
-                    }
-                }
-            }
-            return null;
-        },
-
-        // --- Active clue tracking ---
+        // --- Active clue tracking --------------------------------------------
         get activeClueNumber() {
             if (this.selectedRow < 0) return -1;
             return this.getClueNumberForCell(this.selectedRow, this.selectedCol, this.direction);
         },
 
-        getClueNumberForCell(row, col, dir) {
-            if (this.isBlock(row, col)) return -1;
-
-            if (dir === 'across') {
-                let c = col;
-                while (c > 0 && !this.hasLeftBoundary(row, c)) c--;
-                return typeof this.grid[row][c] === 'number' && this.grid[row][c] > 0 ? this.grid[row][c] : -1;
-            } else {
-                let r = row;
-                while (r > 0 && !this.hasTopBoundary(r, col)) r--;
-                return typeof this.grid[r][col] === 'number' && this.grid[r][col] > 0 ? this.grid[r][col] : -1;
-            }
+        // Cached membership for the active word. Alpine evaluates getters lazily
+        // and dedupes within a render pass, so this collapses ~width*height
+        // linear scans down to one.
+        get activeWordCellSet() {
+            return computeActiveWordCells(
+                this.grid, this.styles, this.width, this.height,
+                this.selectedRow, this.selectedCol, this.direction,
+            );
         },
 
-        getWordCells(row, col, dir) {
-            if (this.isBlock(row, col)) return [];
-            const cells = [];
-
-            if (dir === 'across') {
-                let c = col;
-                while (c > 0 && !this.hasLeftBoundary(row, c)) c--;
-                while (c < this.width && !this.isBlock(row, c)) {
-                    cells.push([row, c]);
-                    if (this.hasRightBoundary(row, c)) break;
-                    c++;
-                }
-            } else {
-                let r = row;
-                while (r > 0 && !this.hasTopBoundary(r, col)) r--;
-                while (r < this.height && !this.isBlock(r, col)) {
-                    cells.push([r, col]);
-                    if (this.hasBottomBoundary(r, col)) break;
-                    r++;
-                }
-            }
-            return cells;
-        },
-
-        // --- Cell state helpers ---
-        isVoid(row, col) {
-            return this.grid[row]?.[col] === null;
-        },
-
-        isBlock(row, col) {
-            const cell = this.grid[row]?.[col];
-            return cell === '#' || cell === null;
-        },
-
-        hasCircle(row, col) {
-            const key = row + ',' + col;
-            return this.styles[key]?.shapebg === 'circle';
-        },
-
-        getCellColor(row, col) {
-            return this.styles[row + ',' + col]?.color ?? null;
-        },
-
-        setCellColor(row, col, color) {
-            if (this.isBlock(row, col)) return;
-            const key = row + ',' + col;
-            if (color) {
-                this.styles[key] = { ...this.styles[key], color };
-            } else {
-                const entry = { ...this.styles[key] };
-                delete entry.color;
-                if (Object.keys(entry).length === 0 || (Object.keys(entry).length === 1 && entry.bars?.length === 0)) {
-                    delete this.styles[key];
-                } else {
-                    this.styles[key] = entry;
-                }
-            }
-        },
-
+        // --- Cell appearance --------------------------------------------------
         cellClasses(row, col) {
             if (this.isVoid(row, col)) {
                 return this.mode === 'edit'
@@ -318,8 +231,7 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
 
             const isSelected = row === this.selectedRow && col === this.selectedCol;
             const isMulti = this.isMultiSelected(row, col);
-            const wordCells = this.selectedRow >= 0 ? this.getWordCells(this.selectedRow, this.selectedCol, this.direction) : [];
-            const isInWord = wordCells.some(([r, c]) => r === row && c === col);
+            const isInWord = this.activeWordCellSet.has(cellKey(row, col));
 
             const emptyHighlight = this.isCellIncomplete() && !this.solution[row]?.[col]?.trim()
                 ? ' ring-2 ring-inset ring-amber-400 dark:ring-amber-500' : '';
@@ -355,25 +267,68 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
             return classes.join(' ');
         },
 
+        cellBarStyles(row, col) {
+            if (this.isVoid(row, col)) return '';
+
+            const key = cellKey(row, col);
+            const entry = this.styles[key];
+            const parts = [];
+
+            // box-shadow renders the FIRST listed shadow on top, so the order is:
+            // user bars → thick puzzle outline → thin internal seams. The thick
+            // outline draws over any seam that would otherwise break it at the
+            // corner where a seam meets the puzzle edge.
+            const shadows = [];
+
+            const bars = entry?.bars;
+            if (bars && bars.length > 0) {
+                if (bars.includes('top'))    shadows.push('inset 0 2px 0 0 var(--bar-color)');
+                if (bars.includes('bottom')) shadows.push('inset 0 -2px 0 0 var(--bar-color)');
+                if (bars.includes('left'))   shadows.push('inset 2px 0 0 0 var(--bar-color)');
+                if (bars.includes('right'))  shadows.push('inset -2px 0 0 0 var(--bar-color)');
+            }
+
+            const topMissing    = row === 0              || this.isVoid(row - 1, col);
+            const bottomMissing = row === this.height - 1 || this.isVoid(row + 1, col);
+            const leftMissing   = col === 0              || this.isVoid(row, col - 1);
+            const rightMissing  = col === this.width - 1  || this.isVoid(row, col + 1);
+            if (topMissing)    shadows.push('inset 0 2px 0 0 var(--bar-color)');
+            if (bottomMissing) shadows.push('inset 0 -2px 0 0 var(--bar-color)');
+            if (leftMissing)   shadows.push('inset 2px 0 0 0 var(--bar-color)');
+            if (rightMissing)  shadows.push('inset -2px 0 0 0 var(--bar-color)');
+            if (!topMissing)    shadows.push('inset 0 1px 0 0 var(--color-line-strong)');
+            if (!bottomMissing) shadows.push('inset 0 -1px 0 0 var(--color-line-strong)');
+            if (!leftMissing)   shadows.push('inset 1px 0 0 0 var(--color-line-strong)');
+            if (!rightMissing)  shadows.push('inset -1px 0 0 0 var(--color-line-strong)');
+
+            if (shadows.length > 0) parts.push('box-shadow: ' + shadows.join(', '));
+
+            const color = entry?.color;
+            if (color && !this.isBlock(row, col)) {
+                const isSelected = row === this.selectedRow && col === this.selectedCol;
+                const isMulti = this.isMultiSelected(row, col);
+                const isInWord = this.activeWordCellSet.has(key);
+                if (!isSelected && !isMulti && !isInWord) parts.push('background-color: ' + color);
+            }
+
+            return parts.join('; ');
+        },
+
         isRebus(row, col) {
-            const val = this.solution[row]?.[col] || '';
-            return val.length > 1;
+            return (this.solution[row]?.[col] || '').length > 1;
         },
 
         letterFontStyle(row, col) {
             const val = this.solution[row]?.[col] || '';
-            const baseFontSize = Math.max(12, Math.min(24, 600 / this.width * 0.55));
-            if (val.length <= 1) {
-                return 'font-size: ' + baseFontSize + 'px';
-            }
-            // Scale down for multi-letter cells
+            const baseFontSize = clamp(12, 24, 600 / this.width * 0.55);
+            if (val.length <= 1) return 'font-size: ' + baseFontSize + 'px';
             const scaled = Math.max(6, baseFontSize / Math.max(val.length * 0.55, 1));
             return 'font-size: ' + scaled + 'px; letter-spacing: -0.5px';
         },
 
-        // --- Multi-selection ---
+        // --- Multi-selection -------------------------------------------------
         isMultiSelected(row, col) {
-            return !!this.multiSelectedCells[row + ',' + col];
+            return !!this.multiSelectedCells[cellKey(row, col)];
         },
 
         clearMultiSelection() {
@@ -388,7 +343,16 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
         },
 
         handleClickOutside(event) {
-            if (this.selectedRow < 0 && this.selectedCol < 0 && Object.keys(this.multiSelectedCells).length === 0) {
+            if (this.selectedRow < 0 && this.selectedCol < 0
+                && Object.keys(this.multiSelectedCells).length === 0) {
+                return;
+            }
+
+            // An open overlay (context menu, rebus prompt, custom-number prompt)
+            // is a sibling of the grid container, so clicks in it otherwise
+            // look "outside" and would clear the very selection the overlay is
+            // acting on. Suppress the deselect while any overlay is open.
+            if (this.contextMenu.show || this.showRebusInput || this.showCustomNumberInput) {
                 return;
             }
 
@@ -410,7 +374,7 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
             }
         },
 
-        // --- Selection ---
+        // --- Selection -------------------------------------------------------
         selectCell(row, col, event) {
             if (this.isVoid(row, col)) {
                 if (this.mode === 'edit' && !this.gridLocked && !(event && (event.ctrlKey || event.metaKey))) {
@@ -419,18 +383,15 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
                 return;
             }
 
-            // Ctrl/Cmd+click for multi-select
+            // Ctrl/Cmd+click → multi-select
             if (event && (event.ctrlKey || event.metaKey)) {
                 if (this.isBlock(row, col)) return;
-                const key = row + ',' + col;
-                if (this.multiSelectedCells[key]) {
-                    delete this.multiSelectedCells[key];
-                } else {
-                    this.multiSelectedCells[key] = true;
-                }
-                // Also include the primary selected cell in multi-selection if starting fresh
+                const key = cellKey(row, col);
+                if (this.multiSelectedCells[key]) delete this.multiSelectedCells[key];
+                else this.multiSelectedCells[key] = true;
+                // Also include the primary selected cell when starting fresh.
                 if (Object.keys(this.multiSelectedCells).length === 1 && this.selectedRow >= 0) {
-                    const primaryKey = this.selectedRow + ',' + this.selectedCol;
+                    const primaryKey = cellKey(this.selectedRow, this.selectedCol);
                     if (!this.isBlock(this.selectedRow, this.selectedCol)) {
                         this.multiSelectedCells[primaryKey] = true;
                     }
@@ -439,7 +400,6 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
                 return;
             }
 
-            // Normal click clears multi-selection
             this.clearMultiSelection();
 
             if (this.isBlock(row, col)) {
@@ -473,17 +433,15 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
             const clue = clues.find(c => c.number === number);
             if (!clue) return;
 
-            const clickedInput = event?.target?.tagName === 'INPUT' || event?.target?.closest?.('.clue-content');
+            const clickedInput = event?.target?.tagName === 'INPUT'
+                || event?.target?.closest?.('.clue-content');
 
-            // Find the cell with this clue number
             for (let row = 0; row < this.height; row++) {
                 for (let col = 0; col < this.width; col++) {
                     if (this.grid[row][col] === number) {
                         this.selectedRow = row;
                         this.selectedCol = col;
-                        if (!clickedInput) {
-                            this.$refs.gridContainer?.focus();
-                        }
+                        if (!clickedInput) this.$refs.gridContainer?.focus();
                         return;
                     }
                 }
@@ -492,51 +450,40 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
 
         focusNextClue(currentEl, dir, reverse) {
             const parent = currentEl.parentElement;
+            if (!parent) return;
             const siblings = [...parent.children].filter(el => el.nodeType === 1);
             const idx = siblings.indexOf(currentEl);
             if (idx < 0) return;
 
-            let nextIdx = reverse
+            const nextIdx = reverse
                 ? (idx <= 0 ? siblings.length - 1 : idx - 1)
                 : (idx >= siblings.length - 1 ? 0 : idx + 1);
 
             const nextClue = siblings[nextIdx];
-            const input = nextClue.querySelector('input');
-            if (input) {
-                input.focus();
-            } else {
-                nextClue.focus();
-            }
+            const input = nextClue?.querySelector('input');
+            if (input) input.focus();
+            else nextClue?.focus();
         },
 
         scrollActiveClueIntoView() {
             this.$nextTick(() => {
                 const num = this.activeClueNumber;
                 if (num < 0) return;
-
                 const panel = this.direction === 'across' ? this.$refs.acrossPanel : this.$refs.downPanel;
                 const el = document.getElementById('clue-' + this.direction + '-' + num);
-                if (el && panel) {
-                    el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-                }
+                if (el && panel) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
             });
         },
 
-        // --- Keyboard handling ---
+        // --- Keyboard handling ------------------------------------------------
         handleKeydown(e) {
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
             const key = e.key;
 
             if (key === 'Escape') {
-                if (this.contextMenu.show) {
-                    this.closeContextMenu();
-                    return;
-                }
-                if (Object.keys(this.multiSelectedCells).length > 0) {
-                    this.clearMultiSelection();
-                    return;
-                }
+                if (this.contextMenu.show) { this.closeContextMenu(); return; }
+                if (Object.keys(this.multiSelectedCells).length > 0) { this.clearMultiSelection(); return; }
                 this.selectedRow = -1;
                 this.selectedCol = -1;
                 return;
@@ -544,7 +491,6 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
 
             if (this.selectedRow < 0) return;
 
-            // Toggle rebus mode with Insert key
             if (key === 'Insert') {
                 e.preventDefault();
                 if (!this.isBlock(this.selectedRow, this.selectedCol) && !this.gridLocked) {
@@ -557,13 +503,8 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
                 return;
             }
 
-            // In rebus mode, accumulate letters and handle special keys
             if (this.rebusMode) {
-                if (key === 'Escape') {
-                    e.preventDefault();
-                    this.rebusMode = false;
-                    return;
-                }
+                if (key === 'Escape') { e.preventDefault(); this.rebusMode = false; return; }
                 if (key === 'Enter' || key === 'Tab') {
                     e.preventDefault();
                     this.rebusMode = false;
@@ -593,11 +534,7 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
                 return;
             }
 
-            if (key === 'Tab') {
-                e.preventDefault();
-                this.jumpToNextClue(e.shiftKey);
-                return;
-            }
+            if (key === 'Tab') { e.preventDefault(); this.jumpToNextClue(e.shiftKey); return; }
 
             if (key === 'Enter') {
                 e.preventDefault();
@@ -612,10 +549,7 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
                 return;
             }
 
-            if (this.gridLocked) {
-                // Navigation/direction toggle is fine; mutations are not.
-                return;
-            }
+            if (this.gridLocked) return; // navigation/direction toggle is fine; mutations are not
 
             if (key === 'Backspace') {
                 e.preventDefault();
@@ -643,7 +577,6 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
                     this.debouncedRefreshWordSuggestions();
                 }
             }
-
         },
 
         moveArrow(key) {
@@ -651,29 +584,23 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
             let col = this.selectedCol;
 
             const delta = {
-                ArrowUp: [-1, 0],
-                ArrowDown: [1, 0],
-                ArrowLeft: [0, -1],
-                ArrowRight: [0, 1],
+                ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1],
             }[key];
 
             do {
                 row += delta[0];
                 col += delta[1];
             } while (
-                row >= 0 && row < this.height &&
-                col >= 0 && col < this.width &&
-                this.isBlock(row, col)
+                row >= 0 && row < this.height
+                && col >= 0 && col < this.width
+                && this.isBlock(row, col)
             );
 
             if (row >= 0 && row < this.height && col >= 0 && col < this.width && !this.isVoid(row, col)) {
                 this.selectedRow = row;
                 this.selectedCol = col;
-
-                // Update direction to match arrow
                 if (key === 'ArrowLeft' || key === 'ArrowRight') this.direction = 'across';
                 if (key === 'ArrowUp' || key === 'ArrowDown') this.direction = 'down';
-
                 this.scrollActiveClueIntoView();
             }
         },
@@ -681,15 +608,10 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
         advanceCursor() {
             const row = this.selectedRow;
             const col = this.selectedCol;
-
             if (this.direction === 'across') {
-                if (!this.hasRightBoundary(row, col)) {
-                    this.selectedCol = col + 1;
-                }
+                if (!this.hasRightBoundary(row, col)) this.selectedCol = col + 1;
             } else {
-                if (!this.hasBottomBoundary(row, col)) {
-                    this.selectedRow = row + 1;
-                }
+                if (!this.hasBottomBoundary(row, col)) this.selectedRow = row + 1;
             }
         },
 
@@ -700,20 +622,19 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
             if (!this.isBlock(row, col) && this.solution[row][col]) {
                 this.solution[row][col] = '';
                 this.markDirty();
+                return;
+            }
+            if (this.direction === 'across') {
+                if (!this.hasLeftBoundary(row, col)) {
+                    this.selectedCol = col - 1;
+                    this.solution[row][col - 1] = '';
+                    this.markDirty();
+                }
             } else {
-                // Move backward within the current word
-                if (this.direction === 'across') {
-                    if (!this.hasLeftBoundary(row, col)) {
-                        this.selectedCol = col - 1;
-                        this.solution[row][col - 1] = '';
-                        this.markDirty();
-                    }
-                } else {
-                    if (!this.hasTopBoundary(row, col)) {
-                        this.selectedRow = row - 1;
-                        this.solution[row - 1][col] = '';
-                        this.markDirty();
-                    }
+                if (!this.hasTopBoundary(row, col)) {
+                    this.selectedRow = row - 1;
+                    this.solution[row - 1][col] = '';
+                    this.markDirty();
                 }
             }
         },
@@ -721,118 +642,128 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
         jumpToNextClue(reverse) {
             const clues = this.direction === 'across' ? this.cluesAcross : this.cluesDown;
             if (clues.length === 0) return;
-
             const currentNum = this.activeClueNumber;
             const idx = clues.findIndex(c => c.number === currentNum);
-
-            let nextIdx;
-            if (reverse) {
-                nextIdx = idx <= 0 ? clues.length - 1 : idx - 1;
-            } else {
-                nextIdx = idx >= clues.length - 1 ? 0 : idx + 1;
-            }
-
+            const nextIdx = reverse
+                ? (idx <= 0 ? clues.length - 1 : idx - 1)
+                : (idx >= clues.length - 1 ? 0 : idx + 1);
             this.selectClue(this.direction, clues[nextIdx].number);
         },
 
-        // --- Block toggling ---
+        // --- Block / void toggling -------------------------------------------
         toggleBlock(row, col) {
-            if (this.isBlock(row, col)) {
-                this.grid[row][col] = 0;
-                this.solution[row][col] = '';
-                if (this.symmetry) {
-                    const symRow = this.height - 1 - row;
-                    const symCol = this.width - 1 - col;
-                    this.grid[symRow][symCol] = 0;
-                    this.solution[symRow][symCol] = '';
-                }
-            } else {
-                this.grid[row][col] = '#';
-                this.solution[row][col] = '#';
-                // Remove style for blocked cell
-                delete this.styles[row + ',' + col];
-                if (this.symmetry) {
-                    const symRow = this.height - 1 - row;
-                    const symCol = this.width - 1 - col;
-                    this.grid[symRow][symCol] = '#';
-                    this.solution[symRow][symCol] = '#';
-                    delete this.styles[symRow + ',' + symCol];
-                }
-                // Deselect if we blocked the selected cell
-                if (this.selectedRow === row && this.selectedCol === col) {
-                    this.selectedRow = -1;
-                    this.selectedCol = -1;
-                }
+            const becomingBlock = !this.isBlock(row, col);
+            this._writeCell(row, col, becomingBlock ? '#' : 0, becomingBlock ? '#' : '');
+            if (this.symmetry) {
+                const symRow = this.height - 1 - row;
+                const symCol = this.width - 1 - col;
+                this._writeCell(symRow, symCol, becomingBlock ? '#' : 0, becomingBlock ? '#' : '');
             }
-
+            if (becomingBlock && this.selectedRow === row && this.selectedCol === col) {
+                this.selectedRow = -1;
+                this.selectedCol = -1;
+            }
             this.numberGrid();
             this.markDirty();
         },
 
         toggleVoid(row, col) {
-            if (this.isVoid(row, col)) {
-                this.grid[row][col] = 0;
-                this.solution[row][col] = '';
-                if (this.symmetry) {
-                    const symRow = this.height - 1 - row;
-                    const symCol = this.width - 1 - col;
-                    this.grid[symRow][symCol] = 0;
-                    this.solution[symRow][symCol] = '';
-                }
-            } else {
-                this.grid[row][col] = null;
-                this.solution[row][col] = null;
-                delete this.styles[row + ',' + col];
-                if (this.symmetry) {
-                    const symRow = this.height - 1 - row;
-                    const symCol = this.width - 1 - col;
-                    this.grid[symRow][symCol] = null;
-                    this.solution[symRow][symCol] = null;
-                    delete this.styles[symRow + ',' + symCol];
-                }
-                if (this.selectedRow === row && this.selectedCol === col) {
-                    this.selectedRow = -1;
-                    this.selectedCol = -1;
-                }
+            const becomingVoid = !this.isVoid(row, col);
+            this._writeCell(row, col, becomingVoid ? null : 0, becomingVoid ? null : '');
+            if (this.symmetry) {
+                const symRow = this.height - 1 - row;
+                const symCol = this.width - 1 - col;
+                this._writeCell(symRow, symCol, becomingVoid ? null : 0, becomingVoid ? null : '');
             }
-
+            if (becomingVoid && this.selectedRow === row && this.selectedCol === col) {
+                this.selectedRow = -1;
+                this.selectedCol = -1;
+            }
             this.numberGrid();
             this.markDirty();
         },
 
-        // --- Annotations ---
+        _writeCell(row, col, gridValue, solutionValue) {
+            this.grid[row][col] = gridValue;
+            this.solution[row][col] = solutionValue;
+            // A block / void cell can't have annotations.
+            if (gridValue === '#' || gridValue === null) {
+                delete this.styles[cellKey(row, col)];
+            }
+        },
+
+        // --- Annotations -----------------------------------------------------
         toggleCircle() {
             if (this.selectedRow < 0 || this.isBlock(this.selectedRow, this.selectedCol)) return;
-
-            const key = this.selectedRow + ',' + this.selectedCol;
-            if (this.styles[key]?.shapebg === 'circle') {
-                const entry = { ...this.styles[key] };
-                delete entry.shapebg;
-                if (Object.keys(entry).length === 0 || (Object.keys(entry).length === 1 && entry.bars?.length === 0)) {
-                    delete this.styles[key];
-                } else {
-                    this.styles[key] = entry;
-                }
-            } else {
-                this.styles[key] = { ...this.styles[key], shapebg: 'circle' };
-            }
+            this.setCircle(this.selectedRow, this.selectedCol, !this.hasCircle(this.selectedRow, this.selectedCol));
             this.markDirty();
         },
 
-        // --- Context menu ---
-        openContextMenu(row, col, event) {
-            // Locked freestyle puzzles disallow grid mutations entirely.
-            if (this.gridLocked) return;
+        setCircle(row, col, addCircle) {
+            if (this.isBlock(row, col)) return;
+            const key = cellKey(row, col);
+            if (addCircle) {
+                this.styles[key] = { ...this.styles[key], shapebg: 'circle' };
+                return;
+            }
+            const entry = { ...this.styles[key] };
+            delete entry.shapebg;
+            this.styles[key] = entry;
+            cleanupStyleEntry(this.styles, key);
+        },
 
-            // Place the menu at the click point first; once it renders we
-            // measure and reposition so it stays inside the viewport.
+        setCellColor(row, col, color) {
+            if (this.isBlock(row, col)) return;
+            const key = cellKey(row, col);
+            if (color) {
+                this.styles[key] = { ...this.styles[key], color };
+                return;
+            }
+            const entry = { ...this.styles[key] };
+            delete entry.color;
+            this.styles[key] = entry;
+            cleanupStyleEntry(this.styles, key);
+        },
+
+        // --- Bars ------------------------------------------------------------
+        toggleBar(row, col, edge) {
+            this._mutateBars(row, col, (bars) => {
+                const idx = bars.indexOf(edge);
+                if (idx >= 0) bars.splice(idx, 1);
+                else bars.push(edge);
+            });
+            this.markDirty();
+        },
+
+        setBar(row, col, edge, addBar) {
+            if (this.isBlock(row, col)) return;
+            this._mutateBars(row, col, (bars) => {
+                const idx = bars.indexOf(edge);
+                if (addBar && idx < 0) bars.push(edge);
+                else if (!addBar && idx >= 0) bars.splice(idx, 1);
+            });
+        },
+
+        _mutateBars(row, col, mutate) {
+            const key = cellKey(row, col);
+            const entry = this.styles[key] ? { ...this.styles[key] } : {};
+            const bars = entry.bars ? [...entry.bars] : [];
+            mutate(bars);
+            if (bars.length > 0) entry.bars = bars;
+            else delete entry.bars;
+            this.styles[key] = entry;
+            cleanupStyleEntry(this.styles, key);
+        },
+
+        // --- Context menu -----------------------------------------------------
+        openContextMenu(row, col, event) {
+            if (this.gridLocked) return;
             this.contextMenu.x = event.clientX;
             this.contextMenu.y = event.clientY;
             this.contextMenu.row = row;
             this.contextMenu.col = col;
             this.contextMenu.show = true;
 
-            // If right-clicking outside the multi-selection, clear it
             if (Object.keys(this.multiSelectedCells).length > 0 && !this.isMultiSelected(row, col)) {
                 this.clearMultiSelection();
             }
@@ -873,12 +804,7 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
             if (cells.length > 0) {
                 const makeBlock = !this.isBlock(this.contextMenu.row, this.contextMenu.col);
                 for (const [r, c] of cells) {
-                    const currentlyBlock = this.isBlock(r, c);
-                    if (makeBlock && !currentlyBlock) {
-                        this.toggleBlock(r, c);
-                    } else if (!makeBlock && currentlyBlock) {
-                        this.toggleBlock(r, c);
-                    }
+                    if (makeBlock !== this.isBlock(r, c)) this.toggleBlock(r, c);
                 }
                 this.clearMultiSelection();
             } else {
@@ -892,10 +818,7 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
             if (cells.length > 0) {
                 const makeVoid = !this.isVoid(this.contextMenu.row, this.contextMenu.col);
                 for (const [r, c] of cells) {
-                    const currentlyVoid = this.isVoid(r, c);
-                    if (makeVoid !== currentlyVoid) {
-                        this.toggleVoid(r, c);
-                    }
+                    if (makeVoid !== this.isVoid(r, c)) this.toggleVoid(r, c);
                 }
                 this.clearMultiSelection();
             } else {
@@ -904,47 +827,21 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
             this.closeContextMenu();
         },
 
-        setCircle(row, col, addCircle) {
-            if (this.isBlock(row, col)) return;
-            const key = row + ',' + col;
-            if (addCircle) {
-                this.styles[key] = { ...this.styles[key], shapebg: 'circle' };
-            } else {
-                const entry = { ...this.styles[key] };
-                delete entry.shapebg;
-                if (Object.keys(entry).length === 0 || (Object.keys(entry).length === 1 && entry.bars?.length === 0)) {
-                    delete this.styles[key];
-                } else {
-                    this.styles[key] = entry;
-                }
-            }
-        },
-
         contextToggleCircle() {
             const addCircle = !this.hasCircle(this.contextMenu.row, this.contextMenu.col);
             const cells = this.getMultiSelectedCoords();
-            if (cells.length > 0) {
-                for (const [r, c] of cells) {
-                    this.setCircle(r, c, addCircle);
-                }
-                this.clearMultiSelection();
-            } else {
-                this.setCircle(this.contextMenu.row, this.contextMenu.col, addCircle);
-            }
+            const targets = cells.length > 0 ? cells : [[this.contextMenu.row, this.contextMenu.col]];
+            for (const [r, c] of targets) this.setCircle(r, c, addCircle);
+            if (cells.length > 0) this.clearMultiSelection();
             this.markDirty();
             this.closeContextMenu();
         },
 
         contextSetColor(color) {
             const cells = this.getMultiSelectedCoords();
-            if (cells.length > 0) {
-                for (const [r, c] of cells) {
-                    this.setCellColor(r, c, color);
-                }
-                this.clearMultiSelection();
-            } else {
-                this.setCellColor(this.contextMenu.row, this.contextMenu.col, color);
-            }
+            const targets = cells.length > 0 ? cells : [[this.contextMenu.row, this.contextMenu.col]];
+            for (const [r, c] of targets) this.setCellColor(r, c, color);
+            if (cells.length > 0) this.clearMultiSelection();
             this.markDirty();
             this.closeContextMenu();
         },
@@ -953,22 +850,25 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
             this.contextSetColor(null);
         },
 
-        // --- Pre-fill / Rebus ---
-        showRebusInput: false,
-        rebusInputValue: '',
-        rebusCells: [],
+        contextToggleBar(edge) {
+            const addBar = !this.hasBar(this.contextMenu.row, this.contextMenu.col, edge);
+            const cells = this.getMultiSelectedCoords();
+            const targets = cells.length > 0 ? cells : [[this.contextMenu.row, this.contextMenu.col]];
+            for (const [r, c] of targets) this.setBar(r, c, edge, addBar);
+            if (cells.length > 0) this.clearMultiSelection();
+            this.markDirty();
+        },
 
+        // --- Pre-fill / Rebus ------------------------------------------------
         contextEditRebus() {
             const row = this.contextMenu.row;
             const col = this.contextMenu.col;
             if (this.isBlock(row, col)) return;
 
             const cells = this.getMultiSelectedCoords();
-            if (cells.length > 0) {
-                this.rebusCells = cells.filter(([r, c]) => !this.isBlock(r, c));
-            } else {
-                this.rebusCells = [[row, col]];
-            }
+            this.rebusCells = cells.length > 0
+                ? cells.filter(([r, c]) => !this.isBlock(r, c))
+                : [[row, col]];
 
             this.rebusInputValue = this.solution[row]?.[col] || '';
             this.showRebusInput = true;
@@ -1022,9 +922,7 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
                 }
             }
 
-            if (prefillDirty) {
-                this.savePrefilled();
-            }
+            if (prefillDirty) this.savePrefilled();
 
             this.clearMultiSelection();
             this.showRebusInput = false;
@@ -1032,22 +930,16 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
             this.$refs.gridContainer?.focus();
         },
 
-        // --- Custom number overlay ---
-        showCustomNumberInput: false,
-        customNumberInputValue: '',
-        customNumberCells: [],
-
+        // --- Custom number overlay -------------------------------------------
         contextSetCustomNumber() {
             const row = this.contextMenu.row;
             const col = this.contextMenu.col;
             if (this.isBlock(row, col)) return;
 
             const cells = this.getMultiSelectedCoords();
-            if (cells.length > 0) {
-                this.customNumberCells = cells.filter(([r, c]) => !this.isBlock(r, c));
-            } else {
-                this.customNumberCells = [[row, col]];
-            }
+            this.customNumberCells = cells.length > 0
+                ? cells.filter(([r, c]) => !this.isBlock(r, c))
+                : [[row, col]];
 
             const existing = this.getCustomNumber(row, col);
             this.customNumberInputValue = existing !== null ? String(existing) : '';
@@ -1090,7 +982,6 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
             for (const [row, col] of this.customNumberCells) {
                 this.setCustomNumber(row, col, null);
             }
-
             this.clearMultiSelection();
             this.showCustomNumberInput = false;
             this.markDirty();
@@ -1098,162 +989,29 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
         },
 
         ensurePrefillGrid() {
-            if (!this.prefilled) {
-                this.prefilled = [];
-                for (let r = 0; r < this.height; r++) {
-                    this.prefilled.push([]);
-                    for (let c = 0; c < this.width; c++) {
-                        this.prefilled[r].push('');
-                    }
-                }
-            }
+            if (this.prefilled) return;
+            this.prefilled = Array.from({ length: this.height },
+                () => Array(this.width).fill(''));
         },
 
-        // --- Bars ---
-        toggleBar(row, col, edge) {
-            const key = row + ',' + col;
-            const entry = this.styles[key] ? { ...this.styles[key] } : {};
-            const bars = entry.bars ? [...entry.bars] : [];
-
-            const idx = bars.indexOf(edge);
-            if (idx >= 0) {
-                bars.splice(idx, 1);
-            } else {
-                bars.push(edge);
-            }
-
-            if (bars.length > 0) {
-                entry.bars = bars;
-            } else {
-                delete entry.bars;
-            }
-
-            if (Object.keys(entry).length === 0) {
-                delete this.styles[key];
-            } else {
-                this.styles[key] = entry;
-            }
-            this.markDirty();
-        },
-
-        setBar(row, col, edge, addBar) {
-            if (this.isBlock(row, col)) return;
-            const key = row + ',' + col;
-            const entry = this.styles[key] ? { ...this.styles[key] } : {};
-            const bars = entry.bars ? [...entry.bars] : [];
-            const idx = bars.indexOf(edge);
-
-            if (addBar && idx < 0) {
-                bars.push(edge);
-            } else if (!addBar && idx >= 0) {
-                bars.splice(idx, 1);
-            } else {
-                return;
-            }
-
-            if (bars.length > 0) {
-                entry.bars = bars;
-            } else {
-                delete entry.bars;
-            }
-
-            if (Object.keys(entry).length === 0) {
-                delete this.styles[key];
-            } else {
-                this.styles[key] = entry;
-            }
-        },
-
-        contextToggleBar(edge) {
-            const addBar = !this.hasBar(this.contextMenu.row, this.contextMenu.col, edge);
-            const cells = this.getMultiSelectedCoords();
-            if (cells.length > 0) {
-                for (const [r, c] of cells) {
-                    this.setBar(r, c, edge, addBar);
-                }
-                this.clearMultiSelection();
-            } else {
-                this.setBar(this.contextMenu.row, this.contextMenu.col, edge, addBar);
-            }
-            this.markDirty();
-        },
-
-        hasBar(row, col, edge) {
-            return this.styles[row + ',' + col]?.bars?.includes(edge) || false;
-        },
-
-        cellBarStyles(row, col) {
-            const key = row + ',' + col;
-            const entry = this.styles[key];
-            const parts = [];
-
-            // box-shadow renders the FIRST listed shadow on top, so the order is:
-            // user bars → thick puzzle outline → thin internal seams. The thick
-            // outline draws over any seam that would otherwise break it at the
-            // corner where a seam meets the puzzle edge.
-            const shadows = [];
-
-            const bars = entry?.bars;
-            if (bars && bars.length > 0) {
-                if (bars.includes('top'))    shadows.push('inset 0 2px 0 0 var(--bar-color)');
-                if (bars.includes('bottom')) shadows.push('inset 0 -2px 0 0 var(--bar-color)');
-                if (bars.includes('left'))   shadows.push('inset 2px 0 0 0 var(--bar-color)');
-                if (bars.includes('right'))  shadows.push('inset -2px 0 0 0 var(--bar-color)');
-            }
-
-            if (!this.isVoid(row, col)) {
-                const topMissing    = row === 0              || this.isVoid(row - 1, col);
-                const bottomMissing = row === this.height - 1 || this.isVoid(row + 1, col);
-                const leftMissing   = col === 0              || this.isVoid(row, col - 1);
-                const rightMissing  = col === this.width - 1  || this.isVoid(row, col + 1);
-                if (topMissing)    shadows.push('inset 0 2px 0 0 var(--bar-color)');
-                if (bottomMissing) shadows.push('inset 0 -2px 0 0 var(--bar-color)');
-                if (leftMissing)   shadows.push('inset 2px 0 0 0 var(--bar-color)');
-                if (rightMissing)  shadows.push('inset -2px 0 0 0 var(--bar-color)');
-                if (!topMissing)    shadows.push('inset 0 1px 0 0 var(--color-line-strong)');
-                if (!bottomMissing) shadows.push('inset 0 -1px 0 0 var(--color-line-strong)');
-                if (!leftMissing)   shadows.push('inset 1px 0 0 0 var(--color-line-strong)');
-                if (!rightMissing)  shadows.push('inset -1px 0 0 0 var(--color-line-strong)');
-            }
-
-            if (shadows.length > 0) {
-                parts.push('box-shadow: ' + shadows.join(', '));
-            }
-
-            const color = entry?.color;
-            if (color && !this.isBlock(row, col)) {
-                const isSelected = row === this.selectedRow && col === this.selectedCol;
-                const isMulti = this.isMultiSelected(row, col);
-                const wordCells = this.selectedRow >= 0 ? this.getWordCells(this.selectedRow, this.selectedCol, this.direction) : [];
-                const isInWord = wordCells.some(([r, c]) => r === row && c === col);
-                if (!isSelected && !isMulti && !isInWord) {
-                    parts.push('background-color: ' + color);
-                }
-            }
-
-            return parts.join('; ');
-        },
-
-        // --- Long press (mobile) ---
+        // --- Long press (mobile) ---------------------------------------------
         startLongPress(row, col, event) {
             const touch = event.touches[0];
             this._longPressTimer = setTimeout(() => {
                 this.openContextMenu(row, col, { clientX: touch.clientX, clientY: touch.clientY });
-            }, 500);
+            }, LONG_PRESS_MS);
         },
 
         cancelLongPress() {
             clearTimeout(this._longPressTimer);
         },
 
-        // --- Clear ---
+        // --- Clear -----------------------------------------------------------
         clearLetters() {
             if (this.gridLocked) return;
             for (let row = 0; row < this.height; row++) {
                 for (let col = 0; col < this.width; col++) {
-                    if (!this.isBlock(row, col)) {
-                        this.solution[row][col] = '';
-                    }
+                    if (!this.isBlock(row, col)) this.solution[row][col] = '';
                 }
             }
             this.markDirty();
@@ -1270,53 +1028,28 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
             this.markDirty();
         },
 
-        // --- Persistence ---
+        // --- Persistence -----------------------------------------------------
         markDirty() {
             this.isDirty = true;
         },
 
-        debouncedSave() {
-            clearTimeout(this._saveTimer);
-            this._saveTimer = setTimeout(() => {
-                this.saveNow();
-            }, 3000);
+        // Manual save (kept for compatibility with templates that call it).
+        async saveNow() {
+            if (this._autosave) await this._autosave.flush();
         },
 
-        async saveNow() {
-            if (!this.isDirty || this._saving) return;
-
-            this._saving = true;
-            this.saving = true;
-            this.showSaved = false;
-            this.isDirty = false;
-
-            try {
-                await this.$wire.save(
-                    JSON.parse(JSON.stringify(this.grid)),
-                    JSON.parse(JSON.stringify(this.solution)),
-                    Object.keys(this.styles).length > 0 ? JSON.parse(JSON.stringify(this.styles)) : null,
-                    JSON.parse(JSON.stringify(this.cluesAcross)),
-                    JSON.parse(JSON.stringify(this.cluesDown)),
-                );
-            } catch (e) {
-                this.isDirty = true;
-            } finally {
-                this._saving = false;
-                this.saving = false;
-
-                if (this.isDirty) {
-                    this.debouncedSave();
-                }
-            }
+        async _performSave() {
+            await this.$wire.save(
+                cloneForWire(this.grid),
+                cloneForWire(this.solution),
+                Object.keys(this.styles).length > 0 ? cloneForWire(this.styles) : null,
+                cloneForWire(this.cluesAcross),
+                cloneForWire(this.cluesDown),
+            );
         },
 
         onSaved() {
-            this.saving = false;
-            this.showSaved = true;
-            clearTimeout(this._savedTimer);
-            this._savedTimer = setTimeout(() => {
-                this.showSaved = false;
-            }, 2000);
+            this._autosave?.acknowledge();
         },
 
         isPrefilled(row, col) {
@@ -1328,7 +1061,7 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
             if (!this.prefilled) return;
             this.saving = true;
             this.showSaved = false;
-            await this.$wire.savePrefilled(JSON.parse(JSON.stringify(this.prefilled)));
+            await this.$wire.savePrefilled(cloneForWire(this.prefilled));
             this.saving = false;
         },
 
@@ -1341,13 +1074,14 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
             }
         },
 
+        // --- Highlights ------------------------------------------------------
         highlightIncomplete(checks) {
             this.incompleteHighlights = checks;
-
-            // Auto-clear highlights after 8 seconds
-            setTimeout(() => {
+            clearTimeout(this._highlightTimer);
+            this._highlightTimer = setTimeout(() => {
                 this.incompleteHighlights = [];
-            }, 8000);
+                this._highlightTimer = null;
+            }, HIGHLIGHT_AUTO_CLEAR_MS);
         },
 
         isClueIncomplete(dir) {
@@ -1358,7 +1092,7 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
             return this.incompleteHighlights.includes('fill');
         },
 
-        // --- Clue quality indicators ---
+        // --- Clue quality indicators -----------------------------------------
         clueQuality(clue, dir) {
             const text = (clue.clue || '').trim();
             if (!text) return [];
@@ -1366,24 +1100,21 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
             const issues = [];
             const answer = this.getAnswerForSlot(dir, clue.number);
 
-            // Too short: clue text should be meaningfully longer than the answer
             if (text.length < 4) {
                 issues.push({ type: 'short', message: 'Clue may be too short' });
             }
 
-            // Clue contains the answer
             if (answer && answer.length > 1) {
-                const answerLower = answer.toLowerCase();
-                const textLower = text.toLowerCase();
-                if (textLower.includes(answerLower)) {
+                if (text.toLowerCase().includes(answer.toLowerCase())) {
                     issues.push({ type: 'answer', message: 'Clue contains the answer' });
                 }
             }
 
-            // Duplicate clue text (same text used for another clue)
             const allClues = [...this.cluesAcross, ...this.cluesDown];
             const dupes = allClues.filter(c => {
-                if (c.number === clue.number && ((dir === 'across' && this.cluesAcross.includes(c)) || (dir === 'down' && this.cluesDown.includes(c)))) return false;
+                if (c.number === clue.number
+                    && ((dir === 'across' && this.cluesAcross.includes(c))
+                        || (dir === 'down' && this.cluesDown.includes(c)))) return false;
                 return (c.clue || '').trim().toLowerCase() === text.toLowerCase();
             });
             if (dupes.length > 0) {
@@ -1401,12 +1132,10 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
         },
 
         clueQualityTooltip(clue, dir) {
-            const issues = this.clueQuality(clue, dir);
-            return issues.map(i => i.message).join(', ');
+            return this.clueQuality(clue, dir).map(i => i.message).join(', ');
         },
 
         onGridResized() {
-            // Re-sync from Livewire after resize
             this.width = this.$wire.width;
             this.height = this.$wire.height;
             this.grid = this.$wire.grid;
@@ -1419,7 +1148,7 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
             this.isDirty = false;
         },
 
-        // --- Clue suggestions ---
+        // --- Clue suggestions ------------------------------------------------
         getAnswerForSlot(dir, number) {
             const slot = this.findSlot(dir, number);
             if (!slot) return null;
@@ -1434,8 +1163,6 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
             }
             return word.toUpperCase();
         },
-
-        showSuggestions: false,
 
         toggleSuggestions() {
             if (this.showSuggestions) {
@@ -1487,12 +1214,7 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
             this.markDirty();
         },
 
-        // --- Word suggestions (autofill) ---
-        showWordSuggestions: false,
-        wordSuggestions: [],
-        wordSuggestionsLoading: false,
-        wordSuggestionsPattern: '',
-
+        // --- Word suggestions (autofill) -------------------------------------
         getPatternForSlot(dir, number) {
             const slot = this.findSlot(dir, number);
             if (!slot) return null;
@@ -1502,7 +1224,7 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
                 const r = dir === 'across' ? slot.row : slot.row + i;
                 const c = dir === 'across' ? slot.col + i : slot.col;
                 const letter = this.solution[r]?.[c] || '';
-                pattern += (letter && letter !== '#' && letter !== '') ? letter.toUpperCase() : '_';
+                pattern += (letter && letter !== '#') ? letter.toUpperCase() : '_';
             }
             return pattern;
         },
@@ -1532,23 +1254,15 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
             this._wordSuggestTimer = setTimeout(() => {
                 this.wordSuggestionsPattern = '';
                 this.fetchWordSuggestions();
-            }, 300);
+            }, WORD_SUGGEST_DEBOUNCE_MS);
         },
 
         async fetchWordSuggestions() {
             const num = this.activeClueNumber;
-            if (num < 0) {
-                this.wordSuggestions = [];
-                return;
-            }
+            if (num < 0) { this.wordSuggestions = []; return; }
 
             const pattern = this.getPatternForSlot(this.direction, num);
-            if (!pattern || pattern.length < 2) {
-                this.wordSuggestions = [];
-                return;
-            }
-
-            if (!pattern.includes('_')) {
+            if (!pattern || pattern.length < 2 || !pattern.includes('_')) {
                 this.wordSuggestions = [];
                 return;
             }
@@ -1581,10 +1295,7 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
             this.markDirty();
         },
 
-        // --- Grid autofill ---
-        fillInProgress: false,
-        fillMode: null,
-
+        // --- Grid autofill ---------------------------------------------------
         get hasUnfilledSlots() {
             for (const clue of this.computedCluesAcross) {
                 const pattern = this.getPatternForSlot('across', clue.number);
@@ -1598,80 +1309,41 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
         },
 
         async quickFill() {
-            this.fillInProgress = true;
-            this.fillMode = 'heuristic';
-            try {
-                const result = await this.$wire.heuristicFill(
-                    JSON.parse(JSON.stringify(this.solution))
-                );
-                if (result.fills && result.fills.length) {
-                    this.applyFills(result.fills);
-                }
-                this.$dispatch('notify', {
-                    message: result.message,
-                    type: result.success ? 'success' : 'warning',
-                });
-            } catch (e) {
-                this.$dispatch('notify', {
-                    message: 'Fill failed: ' + (e.message || 'Unknown error'),
-                    type: 'error',
-                });
-            }
-            this.fillInProgress = false;
-            this.fillMode = null;
+            await this._runFill('heuristic', 'Fill failed', () => this.$wire.heuristicFill(
+                cloneForWire(this.solution),
+                cloneForWire(this.grid),
+                this._stylesPayload(),
+            ));
         },
 
         async aiFill() {
-            this.fillInProgress = true;
-            this.fillMode = 'ai';
-            try {
-                const result = await this.$wire.aiFill(
-                    JSON.parse(JSON.stringify(this.solution))
-                );
-                if (result.upgrade) {
-                    this.$wire.set('upgradeFeature', 'ai_fill');
-                    this.$wire.set('showUpgradeModal', true);
-                    this.fillInProgress = false;
-                    this.fillMode = null;
-                    return;
-                }
-                if (result.fills && result.fills.length) {
-                    this.applyFills(result.fills);
-                }
-                this.$dispatch('notify', {
-                    message: result.message,
-                    type: result.success ? 'success' : 'warning',
-                });
-                if (result.needs_theme) {
-                    this.$wire.set('showSettingsModal', true);
-                }
-            } catch (e) {
-                this.$dispatch('notify', {
-                    message: 'AI fill failed: ' + (e.message || 'Unknown error'),
-                    type: 'error',
-                });
-            }
-            this.fillInProgress = false;
-            this.fillMode = null;
+            await this._runFill('ai', 'AI fill failed', () => this.$wire.aiFill(
+                cloneForWire(this.solution),
+                cloneForWire(this.grid),
+                this._stylesPayload(),
+            ), {
+                upgradeFeature: 'ai_fill',
+                onResult: (result) => {
+                    if (result.needs_theme) this.$wire.set('showSettingsModal', true);
+                },
+            });
+        },
+
+        _stylesPayload() {
+            return Object.keys(this.styles).length > 0 ? cloneForWire(this.styles) : null;
         },
 
         async aiGenerateClues() {
             this.fillInProgress = true;
             this.fillMode = 'ai';
             try {
-                const result = await this.$wire.aiGenerateClues(
-                    JSON.parse(JSON.stringify(this.solution))
-                );
+                const result = await this.$wire.aiGenerateClues(cloneForWire(this.solution));
                 if (result.upgrade) {
                     this.$wire.set('upgradeFeature', 'ai_clues');
                     this.$wire.set('showUpgradeModal', true);
-                    this.fillInProgress = false;
-                    this.fillMode = null;
                     return;
                 }
-                if (result.success && result.clues) {
-                    this.applyClues(result.clues);
-                }
+                if (result.success && result.clues) this.applyClues(result.clues);
                 this.$dispatch('notify', {
                     message: result.message,
                     type: result.success ? 'success' : 'warning',
@@ -1681,9 +1353,39 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
                     message: 'Clue generation failed: ' + (e.message || 'Unknown error'),
                     type: 'error',
                 });
+            } finally {
+                this.fillInProgress = false;
+                this.fillMode = null;
             }
-            this.fillInProgress = false;
-            this.fillMode = null;
+        },
+
+        async _runFill(mode, errorPrefix, action, opts = {}) {
+            this.fillInProgress = true;
+            this.fillMode = mode;
+            try {
+                const result = await action();
+                if (result.upgrade) {
+                    if (opts.upgradeFeature) {
+                        this.$wire.set('upgradeFeature', opts.upgradeFeature);
+                        this.$wire.set('showUpgradeModal', true);
+                    }
+                    return;
+                }
+                if (result.fills && result.fills.length) this.applyFills(result.fills);
+                this.$dispatch('notify', {
+                    message: result.message,
+                    type: result.success ? 'success' : 'warning',
+                });
+                opts.onResult?.(result);
+            } catch (e) {
+                this.$dispatch('notify', {
+                    message: errorPrefix + ': ' + (e.message || 'Unknown error'),
+                    type: 'error',
+                });
+            } finally {
+                this.fillInProgress = false;
+                this.fillMode = null;
+            }
         },
 
         applyFills(fills) {
@@ -1700,25 +1402,20 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
         },
 
         applyClues(clues) {
-            if (clues.across) {
-                for (const [num, text] of Object.entries(clues.across)) {
-                    const key = parseInt(num);
-                    const clue = this.cluesAcross.find(c => c.number === key);
-                    if (clue) {
-                        clue.clue = text;
-                    }
+            const apply = (list, source) => {
+                if (!source) return;
+                for (const [num, text] of Object.entries(source)) {
+                    const clue = list.find(c => c.number === parseInt(num));
+                    if (clue) clue.clue = text;
                 }
-            }
-            if (clues.down) {
-                for (const [num, text] of Object.entries(clues.down)) {
-                    const key = parseInt(num);
-                    const clue = this.cluesDown.find(c => c.number === key);
-                    if (clue) {
-                        clue.clue = text;
-                    }
-                }
-            }
+            };
+            apply(this.cluesAcross, clues.across);
+            apply(this.cluesDown, clues.down);
             this.markDirty();
         },
     };
+}
+
+function clamp(min, max, value) {
+    return Math.max(min, Math.min(max, value));
 }

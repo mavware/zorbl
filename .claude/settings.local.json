@@ -97,7 +97,9 @@
       "Bash(grep -rn *)",
       "Bash(php -l \"resources/views/pages/crosswords/⚡index.blade.php\")",
       "Bash(php -r ' *)",
-      "Bash(git stash *)"
+      "Bash(git stash *)",
+      "Bash(sed 's/\\($//')",
+      "Bash(grep *)"
     ]
   },
   "enableAllProjectMcpServers": true,

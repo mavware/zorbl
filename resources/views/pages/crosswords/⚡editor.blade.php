@@ -108,6 +108,15 @@ class extends Component {
             'clues_down'   => $cluesDown,
         ]);
 
+        // Keep Livewire's in-memory snapshot in sync with what was just
+        // persisted, so subsequent server-side actions (heuristicFill, aiFill,
+        // attemptPublish, etc.) see the latest grid even before a page reload.
+        $this->grid = $grid;
+        $this->solution = $solution;
+        $this->styles = $styles;
+        $this->cluesAcross = $cluesAcross;
+        $this->cluesDown = $cluesDown;
+
         if ($this->isPublished) {
             app(ClueHarvester::class)->harvest($crossword);
         }
@@ -436,31 +445,58 @@ class extends Component {
     }
 
     /**
-     * Fill empty grid slots using heuristic backtracking.
+     * Fill empty grid slots using heuristic backtracking. Each attempt uses a
+     * fresh random seed so the search explores different orderings; if one
+     * attempt fails (or only partially fills), retry up to 2 more times and
+     * keep the best result.
+     *
+     * `$grid` / `$styles` come straight from the Alpine state — `$this->grid`
+     * is only refreshed on mount/resize, so it can be stale relative to the
+     * user's most recent block/void/bar edits.
      *
      * @return array{success: bool, fills: list<array{direction: string, number: int, word: string}>, message: string}
      */
-    public function heuristicFill(array $solution): array
+    public function heuristicFill(array $solution, ?array $grid = null, ?array $styles = null): array
     {
         $crossword = $this->crossword;
         $this->authorize('update', $crossword);
 
-        return app(GridFiller::class)->fill(
-            $this->grid,
-            $solution,
-            $this->width,
-            $this->height,
-            $this->styles ?? [],
-            $this->minAnswerLength,
-        );
+        $filler = app(GridFiller::class);
+        $best = null;
+        $effectiveGrid = $grid ?? $this->grid;
+        $effectiveStyles = $styles ?? $this->styles ?? [];
+
+        for ($attempt = 0; $attempt < 3; $attempt++) {
+            $result = $filler->fill(
+                $effectiveGrid,
+                $solution,
+                $this->width,
+                $this->height,
+                $effectiveStyles,
+                $this->minAnswerLength,
+                seed: random_int(1, PHP_INT_MAX),
+            );
+
+            if ($result['success']) {
+                return $result;
+            }
+
+            if ($best === null || count($result['fills']) > count($best['fills'])) {
+                $best = $result;
+            }
+        }
+
+        return $best;
     }
 
     /**
      * Fill empty grid slots by generating several heuristic fills and letting AI pick the best.
      *
+     * `$grid` / `$styles` come from the Alpine state — see heuristicFill() for why.
+     *
      * @return array{success: bool, fills: list<array{direction: string, number: int, word: string}>, message: string, upgrade?: bool}
      */
-    public function aiFill(array $solution): array
+    public function aiFill(array $solution, ?array $grid = null, ?array $styles = null): array
     {
         $crossword = $this->crossword;
         $this->authorize('update', $crossword);
@@ -491,16 +527,18 @@ class extends Component {
         $filler = app(GridFiller::class);
         $attempts = 4;
         $perAttemptTimeout = 5;
+        $effectiveGrid = $grid ?? $this->grid;
+        $effectiveStyles = $styles ?? $this->styles ?? [];
 
         $candidates = [];
         $seen = [];
         for ($i = 0; $i < $attempts; $i++) {
             $result = $filler->fill(
-                $this->grid,
+                $effectiveGrid,
                 $solution,
                 $this->width,
                 $this->height,
-                $this->styles ?? [],
+                $effectiveStyles,
                 $this->minAnswerLength,
                 timeout: $perAttemptTimeout,
                 seed: $i + 1,

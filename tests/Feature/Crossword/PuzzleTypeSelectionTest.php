@@ -87,7 +87,7 @@ test('changing puzzle type to diamond syncs height and ensures odd size', functi
         ->assertSet('newWidth', 15);
 });
 
-test('changing puzzle type to standard syncs height to width', function () {
+test('changing puzzle type to standard preserves the existing dimensions', function () {
     $user = User::factory()->create();
     $this->actingAs($user);
 
@@ -96,18 +96,38 @@ test('changing puzzle type to standard syncs height to width', function () {
         ->set('newWidth', 12)
         ->set('newHeight', 8)
         ->set('puzzleType', 'standard')
-        ->assertSet('newHeight', 12)
-        ->assertSet('newWidth', 12);
+        ->assertSet('newWidth', 12)
+        ->assertSet('newHeight', 8);
 });
 
-test('standard type syncs height when width changes', function () {
+test('standard type allows independent width and height', function () {
     $user = User::factory()->create();
     $this->actingAs($user);
 
     Livewire\Livewire::test('pages::crosswords.index')
         ->set('puzzleType', 'standard')
-        ->set('newWidth', 9)
-        ->assertSet('newHeight', 9);
+        ->set('newWidth', 12)
+        ->set('newHeight', 7)
+        ->assertSet('newWidth', 12)
+        ->assertSet('newHeight', 7);
+});
+
+test('users can create a non-square standard puzzle', function () {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    Livewire\Livewire::test('pages::crosswords.index')
+        ->set('puzzleType', 'standard')
+        ->set('newWidth', 12)
+        ->set('newHeight', 8)
+        ->call('createPuzzle')
+        ->assertRedirect();
+
+    $crossword = $user->crosswords()->first();
+    expect($crossword)->not->toBeNull()
+        ->and($crossword->width)->toBe(12)
+        ->and($crossword->height)->toBe(8)
+        ->and($crossword->puzzle_type)->toBe(PuzzleType::Standard);
 });
 
 test('freestyle type allows independent width and height', function () {
@@ -159,7 +179,7 @@ test('freestyle grid generates empty grid', function () {
 });
 
 test('puzzle type enum has correct properties', function () {
-    expect(PuzzleType::Standard->requiresSquare())->toBeTrue()
+    expect(PuzzleType::Standard->requiresSquare())->toBeFalse()
         ->and(PuzzleType::Standard->requiresOdd())->toBeFalse()
         ->and(PuzzleType::Diamond->requiresSquare())->toBeTrue()
         ->and(PuzzleType::Diamond->requiresOdd())->toBeTrue()

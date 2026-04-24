@@ -100,6 +100,63 @@ test('heuristic fill can be called from editor', function () {
         ->assertNoRedirect();
 });
 
+test('heuristic fill returns gracefully when no fill exists in the dictionary', function () {
+    // Wipe the dictionary so all 3 retry attempts in the editor are guaranteed
+    // to fail. The call should still return cleanly (not throw or hang).
+    Word::query()->delete();
+
+    $user = User::factory()->create();
+    $crossword = makeSmallCrossword($user);
+    $solution = [['', '', ''], ['', '', ''], ['', '', '']];
+
+    Livewire::actingAs($user)
+        ->test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->call('heuristicFill', $solution)
+        ->assertNoRedirect();
+});
+
+test('heuristic fill honours the grid passed from the client over server state', function () {
+    // The bug: $this->grid is only refreshed on mount/resize, so block edits
+    // made in the editor (which live in Alpine state until autosave fires)
+    // don't propagate to the server when Quick Fill is invoked. The client
+    // now passes the live grid as a parameter — make sure the server uses it.
+    $user = User::factory()->create();
+    $crossword = makeSmallCrossword($user);
+
+    // Server-side state thinks the grid is fully open. Pass a grid with a
+    // block at (1,1) that should change the slot layout.
+    $stale = [[1, 2, 3], [4, 0, 0], [5, 0, 0]];
+    $live = [[1, 2, 3], [4, '#', 5], [6, 0, 0]];
+    $solution = [['', '', ''], ['', '#', ''], ['', '', '']];
+
+    Livewire::actingAs($user)
+        ->test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->set('grid', $stale)
+        ->call('heuristicFill', $solution, $live, null)
+        ->assertNoRedirect();
+});
+
+test('GridFiller seed produces different placements across runs', function () {
+    // The editor's 3-retry loop relies on this: different seeds explore the
+    // search space differently. With enough candidates, two runs with
+    // different seeds should produce different first-slot fills.
+    seedExtraThreeLetterWords();
+
+    $numberer = app(GridNumberer::class);
+    $numbered = $numberer->number([[0, 0, 0], [0, 0, 0], [0, 0, 0]], 3, 3, [], 3);
+    $blank = [['', '', ''], ['', '', ''], ['', '', '']];
+
+    $signatures = collect(range(1, 10))->map(function (int $seed) use ($numbered, $blank) {
+        $result = app(GridFiller::class)->fill(
+            $numbered['grid'], $blank, 3, 3, [], 3, seed: $seed,
+        );
+
+        return collect($result['fills'])->sortBy(['direction', 'number'])->pluck('word')->implode('|');
+    })->unique();
+
+    expect($signatures->count())->toBeGreaterThan(1);
+});
+
 test('heuristic fill service fills a simple grid', function () {
     $numberer = app(GridNumberer::class);
     $rawGrid = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];

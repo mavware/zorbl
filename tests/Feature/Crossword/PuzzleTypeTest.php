@@ -59,7 +59,7 @@ test('factory supports puzzle type states', function () {
 });
 
 test('PuzzleType enum has correct properties', function () {
-    expect(PuzzleType::Standard->requiresSquare())->toBeTrue()
+    expect(PuzzleType::Standard->requiresSquare())->toBeFalse()
         ->and(PuzzleType::Standard->requiresOdd())->toBeFalse()
         ->and(PuzzleType::Diamond->requiresSquare())->toBeTrue()
         ->and(PuzzleType::Diamond->requiresOdd())->toBeTrue()

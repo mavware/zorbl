@@ -58,8 +58,6 @@ new #[Title('My Puzzles')] class extends Component {
                 $this->newWidth = $this->newWidth + 1;
             }
             $this->newHeight = $this->newWidth;
-        } elseif ($type === PuzzleType::Standard) {
-            $this->newHeight = $this->newWidth;
         }
 
         $this->selectedTemplate = null;
