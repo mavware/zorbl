@@ -15,7 +15,7 @@ new #[Title('Ticket Detail')] class extends Component {
 
     public function mount(): void
     {
-        abort_unless($this->ticket->user_id === Auth::id(), 403);
+        $this->authorize('view', $this->ticket);
     }
 
     #[Computed]
@@ -26,7 +26,7 @@ new #[Title('Ticket Detail')] class extends Component {
 
     public function addResponse(): void
     {
-        abort_unless($this->ticket->status !== 'closed', 403);
+        $this->authorize('respond', $this->ticket);
 
         $this->validate([
             'responseBody' => ['required', 'string', 'min:5', 'max:5000'],
@@ -35,7 +35,7 @@ new #[Title('Ticket Detail')] class extends Component {
         $this->ticket->responses()->create([
             'user_id' => Auth::id(),
             'body' => $this->responseBody,
-            'is_admin_response' => false,
+            'is_admin_response' => Auth::id() === $this->ticket->assigned_to,
         ]);
 
         $this->reset('responseBody');
