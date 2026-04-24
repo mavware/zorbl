@@ -148,7 +148,8 @@
                         @elseif ($cell === '#')
                             <td class="block"></td>
                         @else
-                            <td>
+                            @php $bg = $styles[$r.','.$c]['shapebg'] ?? null; @endphp
+                            <td @if ($bg) style="background-color: {{ $bg }}" @endif>
                                 @if (is_int($cell) && $cell > 0)
                                     <div class="cell-number">{{ $cell }}</div>
                                 @else
@@ -210,7 +211,8 @@
                             @elseif ($cell === '#')
                                 <td class="block"></td>
                             @else
-                                <td>
+                                @php $bg = $styles[$r.','.$c]['shapebg'] ?? null; @endphp
+                                <td @if ($bg) style="background-color: {{ $bg }}" @endif>
                                     @if (is_int($cell) && $cell > 0)
                                         <div class="cell-number">{{ $cell }}</div>
                                     @else

@@ -14,7 +14,7 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [ ] Ability to sign in with a passkey
 - [ ] Ability to sign in with google
 - [ ] Double check the printable/downloadable PDFs for the puzzle editor/solver
-- [ ] Ensure that freestyle puzzles can be exported as PDFs with the removed squares
+- [x] Ensure that freestyle puzzles can be exported as PDFs with the removed squares
 - [ ] Execute puzzle entgagement ranker plan at `.claude/plans/puzzle-engagement-ranker.md` (deferred — gated on ≥2k completed attempts across ≥300 published puzzles; see gate conditions in file)
 - [ ] Add Livewire component tests for settings, favorites, roadmap, and support pages
 - [x] Audit Livewire page components for authorization — ensure they use policies instead of inline ownership checks
@@ -22,6 +22,7 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [ ] Let users set up webhooks for their puzzles for common events like puzzle completion or puzzle attempt submission, etc...
 - [ ] Add Filament test coverage for ContestResource CRUD (create, edit, delete) — currently only basic tests exist in ContestAdminTest
 - [ ] Add plagiarism detection that gives a percentage of similarity to the other puzzles.  For copyright protection, this should be done with a third-party service like PlagiarismCheck.com or a custom implementation using machine learning algorithms.
+- [ ] Render bar styles (thick cell dividers) in PDF exports — bars affect numbering but are not visually rendered in the PDF output
 - [x] Wire PuzzleAttemptPolicy `update` check into the solver page's `saveProgress` method for defense-in-depth
 - [x] If the user is not a paid user, the AI fill and AI clue generation should prompt them to upgrade to a paid account
 - [x] Add tag filtering to the crosswords API endpoint (query param `?tag=slug`)
