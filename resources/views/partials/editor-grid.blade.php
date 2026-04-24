@@ -17,11 +17,12 @@
                         <template x-for="(cell, colIdx) in row" :key="'cell-' + rowIdx + '-' + colIdx">
                             <div
                                 x-on:click="selectCell(rowIdx, colIdx, $event)"
+                                x-on:dblclick.prevent="toggleBlockOnDblClick(rowIdx, colIdx)"
                                 x-on:contextmenu.prevent="openContextMenu(rowIdx, colIdx, $event)"
                                 x-on:touchstart.passive="startLongPress(rowIdx, colIdx, $event)"
                                 x-on:touchend="cancelLongPress()"
                                 x-on:touchmove="cancelLongPress()"
-                                :class="cellClasses(rowIdx, colIdx)"
+                                :class="[cellClasses(rowIdx, colIdx), cellBorderClasses(rowIdx, colIdx)]"
                                 :style="cellBarStyles(rowIdx, colIdx)"
                                 class="relative box-border flex aspect-square items-center justify-center overflow-hidden select-none"
                                 role="gridcell"
@@ -69,6 +70,7 @@
 
             {{-- Context menu --}}
             <div
+                x-ref="contextMenu"
                 x-show="contextMenu.show"
                 x-on:click.stop
                 :style="'position: fixed; left: ' + contextMenu.x + 'px; top: ' + contextMenu.y + 'px; z-index: 50;'"

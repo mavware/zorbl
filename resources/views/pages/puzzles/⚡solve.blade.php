@@ -151,7 +151,7 @@ class extends Component {
                 <flux:tooltip content="{{ __('Pencil mode (P)') }}">
                     <button
                         x-on:click="pencilMode = !pencilMode"
-                        :class="text-fg-muted pencilMode ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' : ' hover:text-zinc-800 dark:hover:text-zinc-200'"
+                        :class="['text-fg-muted', pencilMode ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' : 'hover:text-zinc-800 dark:hover:text-zinc-200']"
                         class="rounded-lg p-1.5 transition-colors"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -351,12 +351,12 @@ class extends Component {
                 <div class="flex border-b border-line">
                     <button
                         x-on:click="mobileClueTab = 'across'"
-                        :class="text-fg mobileClueTab === 'across' ? 'border-zinc-800 dark:border-zinc-200 ' : 'border-transparent text-zinc-600'"
+                        :class="['text-fg', mobileClueTab === 'across' ? 'border-zinc-800 dark:border-zinc-200' : 'border-transparent text-zinc-600']"
                         class="border-b-2 px-4 py-2 text-sm font-medium"
                     >{{ __('Across') }}</button>
                     <button
                         x-on:click="mobileClueTab = 'down'"
-                        :class="text-fg mobileClueTab === 'down' ? 'border-zinc-800 dark:border-zinc-200 ' : 'border-transparent text-zinc-600'"
+                        :class="['text-fg', mobileClueTab === 'down' ? 'border-zinc-800 dark:border-zinc-200' : 'border-transparent text-zinc-600']"
                         class="border-b-2 px-4 py-2 text-sm font-medium"
                     >{{ __('Down') }}</button>
                 </div>

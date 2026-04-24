@@ -7,12 +7,12 @@
             <div class="flex border-b border-line">
                 <button
                     x-on:click="direction = 'across'"
-                    :class="text-fg direction === 'across' ? 'border-zinc-800 dark:border-zinc-200 ' : 'border-transparent text-zinc-600'"
+                    :class="['text-fg', direction === 'across' ? 'border-zinc-800 dark:border-zinc-200' : 'border-transparent text-zinc-600']"
                     class="border-b-2 px-4 py-2 text-sm font-medium"
                 >{{ __('Across') }}</button>
                 <button
                     x-on:click="direction = 'down'"
-                    :class="text-fg direction === 'down' ? 'border-zinc-800 dark:border-zinc-200 ' : 'border-transparent text-zinc-600'"
+                    :class="['text-fg', direction === 'down' ? 'border-zinc-800 dark:border-zinc-200' : 'border-transparent text-zinc-600']"
                     class="border-b-2 px-4 py-2 text-sm font-medium"
                 >{{ __('Down') }}</button>
             </div>

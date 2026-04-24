@@ -309,11 +309,11 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
         cellClasses(row, col) {
             if (this.isVoid(row, col)) {
                 return this.mode === 'edit'
-                    ? 'bg-transparent cursor-pointer'
+                    ? 'bg-transparent hover:bg-zinc-200/40 dark:hover:bg-zinc-700/30 cursor-pointer'
                     : 'invisible';
             }
             if (this.isBlock(row, col)) {
-                return 'bg-zinc-800 dark:bg-zinc-300 cursor-pointer';
+                return 'bg-zinc-800 hover:bg-zinc-700 dark:bg-zinc-300 dark:hover:bg-zinc-200 cursor-pointer';
             }
 
             const isSelected = row === this.selectedRow && col === this.selectedCol;
@@ -325,18 +325,34 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
                 ? ' ring-2 ring-inset ring-amber-400 dark:ring-amber-500' : '';
 
             if (isMulti) {
-                return 'bg-emerald-200 dark:bg-emerald-700 cursor-pointer' + emptyHighlight;
+                return 'bg-emerald-200 hover:bg-emerald-300 dark:bg-emerald-700 dark:hover:bg-emerald-600 cursor-pointer' + emptyHighlight;
             }
             if (isSelected) {
-                return 'bg-blue-300 dark:bg-blue-700 cursor-pointer' + emptyHighlight;
+                return 'bg-blue-300 hover:bg-blue-400 dark:bg-blue-700 dark:hover:bg-blue-600 cursor-pointer' + emptyHighlight;
             }
             if (isInWord) {
-                return 'bg-blue-100 dark:bg-blue-900/50 cursor-pointer' + emptyHighlight;
+                return 'bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/50 dark:hover:bg-blue-900/70 cursor-pointer' + emptyHighlight;
             }
             if (this.getCellColor(row, col)) {
-                return 'cursor-pointer' + emptyHighlight;
+                // Background-color is set inline in cellBarStyles; CSS hover
+                // can't override it, so darken via brightness instead.
+                return 'cursor-pointer transition-[filter] hover:brightness-95 dark:hover:brightness-110' + emptyHighlight;
             }
-            return 'bg-zinc-50 dark:bg-zinc-800 cursor-pointer' + emptyHighlight;
+            return 'bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-700/70 cursor-pointer' + emptyHighlight;
+        },
+
+        // Dotted seams between adjacent void cells, edit-mode only. Regular
+        // cell seams + the thick puzzle outline are drawn via box-shadow in
+        // cellBarStyles so the outline stays unbroken at intersections.
+        cellBorderClasses(row, col) {
+            if (this.mode !== 'edit') return '';
+            if (!this.isVoid(row, col)) return '';
+            const classes = ['border-dashed', 'border-zinc-200/50', 'dark:border-zinc-700/50'];
+            if (row > 0                && this.isVoid(row - 1, col)) classes.push('border-t');
+            if (row < this.height - 1  && this.isVoid(row + 1, col)) classes.push('border-b');
+            if (col > 0                && this.isVoid(row, col - 1)) classes.push('border-l');
+            if (col < this.width - 1   && this.isVoid(row, col + 1)) classes.push('border-r');
+            return classes.join(' ');
         },
 
         isRebus(row, col) {
@@ -427,9 +443,7 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
             this.clearMultiSelection();
 
             if (this.isBlock(row, col)) {
-                if (this.mode === 'edit' && !this.gridLocked) {
-                    this.toggleBlock(row, col);
-                }
+                // Block cells aren't selectable; double-click toggles them.
                 return;
             }
 
@@ -442,6 +456,15 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
 
             this.scrollActiveClueIntoView();
             this.$refs.gridContainer?.focus();
+        },
+
+        // Double-click toggles a cell between black and white. Not for void
+        // cells (those use single-click) and not while the grid is locked.
+        toggleBlockOnDblClick(row, col) {
+            if (this.mode !== 'edit') return;
+            if (this.gridLocked) return;
+            if (this.isVoid(row, col)) return;
+            this.toggleBlock(row, col);
         },
 
         selectClue(dir, number, event) {
@@ -801,10 +824,10 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
             // Locked freestyle puzzles disallow grid mutations entirely.
             if (this.gridLocked) return;
 
-            const menuWidth = 200;
-            const menuHeight = 280;
-            this.contextMenu.x = Math.min(event.clientX, window.innerWidth - menuWidth);
-            this.contextMenu.y = Math.min(event.clientY, window.innerHeight - menuHeight);
+            // Place the menu at the click point first; once it renders we
+            // measure and reposition so it stays inside the viewport.
+            this.contextMenu.x = event.clientX;
+            this.contextMenu.y = event.clientY;
             this.contextMenu.row = row;
             this.contextMenu.col = col;
             this.contextMenu.show = true;
@@ -813,6 +836,32 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
             if (Object.keys(this.multiSelectedCells).length > 0 && !this.isMultiSelected(row, col)) {
                 this.clearMultiSelection();
             }
+
+            this.$nextTick(() => this.repositionContextMenu(event.clientX, event.clientY));
+        },
+
+        // Keep the menu fully on-screen, flipping above/left of the click
+        // when there isn't enough room below/right.
+        repositionContextMenu(clickX, clickY) {
+            const menu = this.$refs.contextMenu;
+            if (!menu) return;
+            const margin = 8;
+            const { width, height } = menu.getBoundingClientRect();
+            const vw = window.innerWidth;
+            const vh = window.innerHeight;
+
+            let x = clickX;
+            if (x + width > vw - margin) x = clickX - width;
+            if (x < margin) x = margin;
+            if (x + width > vw - margin) x = vw - width - margin;
+
+            let y = clickY;
+            if (y + height > vh - margin) y = clickY - height;
+            if (y < margin) y = margin;
+            if (y + height > vh - margin) y = vh - height - margin;
+
+            this.contextMenu.x = x;
+            this.contextMenu.y = y;
         },
 
         closeContextMenu() {
