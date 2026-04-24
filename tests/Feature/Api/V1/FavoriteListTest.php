@@ -78,3 +78,29 @@ it('prevents deleting other user list', function () {
     $this->deleteJson("/api/v1/favorites/{$list->id}")
         ->assertForbidden();
 });
+
+it('prevents adding crossword to other user list', function () {
+    $user = User::factory()->create();
+    $otherUser = User::factory()->create();
+    $list = FavoriteList::factory()->create(['user_id' => $otherUser->id]);
+    $crossword = Crossword::factory()->published()->create();
+
+    Sanctum::actingAs($user);
+
+    $this->postJson("/api/v1/favorites/{$list->id}/crosswords", [
+        'crossword' => $crossword->id,
+    ])->assertForbidden();
+});
+
+it('prevents removing crossword from other user list', function () {
+    $user = User::factory()->create();
+    $otherUser = User::factory()->create();
+    $list = FavoriteList::factory()->create(['user_id' => $otherUser->id]);
+    $crossword = Crossword::factory()->published()->create();
+    $list->crosswords()->attach($crossword);
+
+    Sanctum::actingAs($user);
+
+    $this->deleteJson("/api/v1/favorites/{$list->id}/crosswords/{$crossword->id}")
+        ->assertForbidden();
+});

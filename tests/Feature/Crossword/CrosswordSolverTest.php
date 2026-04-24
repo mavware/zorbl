@@ -4,6 +4,7 @@ use App\Models\Crossword;
 use App\Models\FavoriteList;
 use App\Models\PuzzleAttempt;
 use App\Models\User;
+use Illuminate\Support\Facades\Gate;
 use Livewire\Livewire;
 
 test('owner can solve their own puzzle', function () {
@@ -161,6 +162,27 @@ test('user can create new list and add puzzle from solver', function () {
         ->and($list->crosswords()->where('crossword_id', $crossword->id)->exists())->toBeTrue();
 });
 
+test('saveProgress enforces PuzzleAttemptPolicy update check', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create(['width' => 2, 'height' => 2]);
+
+    $this->actingAs($user);
+
+    $component = Livewire::test('pages::crosswords.solver', ['crossword' => $crossword]);
+
+    Gate::before(function ($authUser, $ability, $arguments) {
+        if ($ability === 'update' && isset($arguments[0]) && $arguments[0] instanceof PuzzleAttempt) {
+            return false;
+        }
+    });
+
+    $component->call('saveProgress', [['Z', ''], ['', '']], false, 10)
+        ->assertForbidden();
+
+    $attempt = PuzzleAttempt::where('user_id', $user->id)->where('crossword_id', $crossword->id)->first();
+    expect($attempt->progress[0][0])->not->toBe('Z');
+});
+
 test('adding puzzle to list is idempotent', function () {
     $user = User::factory()->create();
     $creator = User::factory()->create();
@@ -173,4 +195,21 @@ test('adding puzzle to list is idempotent', function () {
         ->call('addToList', $list->id);
 
     expect($list->crosswords()->where('crossword_id', $crossword->id)->count())->toBe(1);
+});
+
+test('solver loads cell background colors from styles', function () {
+    $user = User::factory()->create();
+    $styles = [
+        '0,0' => ['color' => '#FECACA'],
+        '1,1' => ['color' => '#BAE6FD', 'shapebg' => 'circle'],
+    ];
+    $crossword = Crossword::factory()->published()->for($user)->create([
+        'styles' => $styles,
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::crosswords.solver', ['crossword' => $crossword])
+        ->assertOk()
+        ->assertSet('styles', $styles);
 });

@@ -3,6 +3,16 @@
 use App\Models\SupportTicket;
 use App\Models\User;
 use Livewire\Livewire;
+use Spatie\Permission\Models\Role;
+
+function makeAdmin(): User
+{
+    Role::findOrCreate('Admin', 'web');
+    $admin = User::factory()->create();
+    $admin->assignRole('Admin');
+
+    return $admin;
+}
 
 test('ticket owner can view their ticket', function () {
     $user = User::factory()->create();
@@ -15,7 +25,7 @@ test('ticket owner can view their ticket', function () {
 
 test('assigned admin can view the ticket', function () {
     $owner = User::factory()->create();
-    $admin = User::factory()->create();
+    $admin = makeAdmin();
     $ticket = SupportTicket::factory()->assignedTo($admin)->create(['user_id' => $owner->id]);
 
     $this->actingAs($admin)
@@ -35,7 +45,7 @@ test('unrelated user cannot view the ticket', function () {
 
 test('assigned admin can respond to the ticket', function () {
     $owner = User::factory()->create();
-    $admin = User::factory()->create();
+    $admin = makeAdmin();
     $ticket = SupportTicket::factory()->open()->assignedTo($admin)->create(['user_id' => $owner->id]);
 
     $this->actingAs($admin);
@@ -53,7 +63,7 @@ test('assigned admin can respond to the ticket', function () {
 
 test('ticket owner response is not marked as admin', function () {
     $owner = User::factory()->create();
-    $admin = User::factory()->create();
+    $admin = makeAdmin();
     $ticket = SupportTicket::factory()->open()->assignedTo($admin)->create(['user_id' => $owner->id]);
 
     $this->actingAs($owner);
@@ -71,7 +81,7 @@ test('ticket owner response is not marked as admin', function () {
 
 test('assigned admin cannot respond to closed ticket', function () {
     $owner = User::factory()->create();
-    $admin = User::factory()->create();
+    $admin = makeAdmin();
     $ticket = SupportTicket::factory()->closed()->assignedTo($admin)->create(['user_id' => $owner->id]);
 
     $this->actingAs($admin);

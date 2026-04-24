@@ -9,22 +9,22 @@
         @vite(['resources/css/app.css', 'resources/js/app.js'])
         @fluxAppearance
     </head>
-    <body class="min-h-screen bg-white antialiased dark:bg-zinc-800">
+    <body class="bg-page min-h-screen antialiased">
         {{-- Navigation --}}
-        <nav class="sticky top-0 z-50 border-b border-zinc-200 bg-white/80 backdrop-blur-lg dark:border-zinc-700 dark:bg-zinc-800/80">
+        <nav class="bg-elevated border-line sticky top-0 z-50 border-b /80 backdrop-blur-lg /80">
             <div class="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
                 <div class="flex items-center gap-6">
                     <a href="{{ url('/') }}" class="text-xl font-bold tracking-tight text-amber-500">{{ config('app.name') }}</a>
-                    <a href="{{ route('puzzles.index') }}" wire:navigate class="text-sm text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition">
+                    <a href="{{ route('puzzles.index') }}" wire:navigate class="text-fg-muted text-sm hover:text-zinc-900 dark:hover:text-zinc-100 transition">
                         {{ __('Browse Puzzles') }}
                     </a>
                 </div>
                 <div class="flex items-center gap-4">
                     @auth
-                        <a href="{{ route('dashboard') }}" wire:navigate class="text-sm text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition">{{ __('Dashboard') }}</a>
-                        <a href="{{ route('crosswords.solving') }}" wire:navigate class="text-sm text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition">{{ __('My Solving') }}</a>
+                        <a href="{{ route('dashboard') }}" wire:navigate class="text-fg-muted text-sm hover:text-zinc-900 dark:hover:text-zinc-100 transition">{{ __('Dashboard') }}</a>
+                        <a href="{{ route('crosswords.solving') }}" wire:navigate class="text-fg-muted text-sm hover:text-zinc-900 dark:hover:text-zinc-100 transition">{{ __('My Solving') }}</a>
                     @else
-                        <a href="{{ route('login') }}" class="text-sm text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition">{{ __('Log in') }}</a>
+                        <a href="{{ route('login') }}" class="text-fg-muted text-sm hover:text-zinc-900 dark:hover:text-zinc-100 transition">{{ __('Log in') }}</a>
                         <a href="{{ route('register') }}" class="rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-zinc-950 hover:bg-amber-400 transition">{{ __('Sign up') }}</a>
                     @endauth
                 </div>

@@ -16,7 +16,7 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [ ] Brainstorm ways to generate engaging puzzles with AI
 - [ ] Add Livewire component tests for settings, favorites, roadmap, and support pages
 - [x] Audit Livewire page components for authorization — ensure they use policies instead of inline ownership checks
-- [x] Add feature tests for admin-assigned-ticket access via SupportTicketPolicy
+- [ ] Add feature tests for admin-assigned-ticket access via SupportTicketPolicy
 - [ ] Let users set up webhooks for their puzzles for common events like puzzle completion or puzzle attempt submission, etc...
 - [ ] Add Filament test coverage for ContestResource CRUD (create, edit, delete) — currently only basic tests exist in ContestAdminTest
 - [ ] Fix pre-existing CrosswordImportTest failure (redirect assertion in `users can import a crossword`)

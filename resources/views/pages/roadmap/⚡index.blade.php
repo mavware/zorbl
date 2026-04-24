@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\RoadmapItem;
+use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
@@ -24,6 +25,12 @@ new #[Title('Roadmap')] class extends Component {
     public string $editStatus = 'planned';
     public string $editTargetDate = '';
 
+    #[Computed]
+    public function canManage(): bool
+    {
+        return Gate::allows('create', RoadmapItem::class);
+    }
+
     /** @return array<string, \Illuminate\Support\Collection<int, RoadmapItem>> */
     #[Computed]
     public function groupedItems(): array
@@ -45,6 +52,8 @@ new #[Title('Roadmap')] class extends Component {
 
     public function addItem(): void
     {
+        Gate::authorize('create', RoadmapItem::class);
+
         $this->validate([
             'newTitle' => ['required', 'string', 'min:3', 'max:255'],
             'newDescription' => ['nullable', 'string', 'max:2000'],
@@ -69,6 +78,8 @@ new #[Title('Roadmap')] class extends Component {
     {
         $item = RoadmapItem::findOrFail($id);
 
+        Gate::authorize('update', $item);
+
         $this->editingItemId = $item->id;
         $this->editTitle = $item->title;
         $this->editDescription = $item->description ?? '';
@@ -80,6 +91,10 @@ new #[Title('Roadmap')] class extends Component {
 
     public function saveEdit(): void
     {
+        $item = RoadmapItem::findOrFail($this->editingItemId);
+
+        Gate::authorize('update', $item);
+
         $this->validate([
             'editTitle' => ['required', 'string', 'min:3', 'max:255'],
             'editDescription' => ['nullable', 'string', 'max:2000'],
@@ -87,8 +102,6 @@ new #[Title('Roadmap')] class extends Component {
             'editStatus' => ['required', 'in:planned,in_progress,completed'],
             'editTargetDate' => ['nullable', 'date'],
         ]);
-
-        $item = RoadmapItem::findOrFail($this->editingItemId);
 
         $item->update([
             'title' => trim($this->editTitle),
@@ -106,7 +119,11 @@ new #[Title('Roadmap')] class extends Component {
 
     public function deleteItem(int $id): void
     {
-        RoadmapItem::findOrFail($id)->delete();
+        $item = RoadmapItem::findOrFail($id);
+
+        Gate::authorize('delete', $item);
+
+        $item->delete();
         unset($this->groupedItems);
     }
 
@@ -149,9 +166,11 @@ new #[Title('Roadmap')] class extends Component {
             <flux:text class="mt-1">{{ __('Upcoming features, fixes, and improvements.') }}</flux:text>
         </div>
 
-        <flux:button variant="primary" icon="plus" wire:click="$set('showAddModal', true)">
-            {{ __('Add Item') }}
-        </flux:button>
+        @if($this->canManage)
+            <flux:button variant="primary" icon="plus" wire:click="$set('showAddModal', true)">
+                {{ __('Add Item') }}
+            </flux:button>
+        @endif
     </div>
 
     {{-- Type Filter --}}
@@ -174,7 +193,7 @@ new #[Title('Roadmap')] class extends Component {
             </div>
             <div class="grid gap-3">
                 @foreach($this->groupedItems['in_progress'] as $item)
-                    @include('pages.roadmap._item', ['item' => $item])
+                    @include('pages.roadmap._item', ['item' => $item, 'canManage' => $this->canManage])
                 @endforeach
             </div>
         </section>
@@ -184,13 +203,13 @@ new #[Title('Roadmap')] class extends Component {
     @if($this->groupedItems['planned']->isNotEmpty())
         <section>
             <div class="mb-3 flex items-center gap-2">
-                <flux:icon name="clock" class="size-5 text-zinc-400" />
+                <flux:icon name="clock" class="size-5 text-zinc-500" />
                 <flux:heading size="lg">{{ __('Planned') }}</flux:heading>
                 <flux:badge size="sm">{{ $this->groupedItems['planned']->count() }}</flux:badge>
             </div>
             <div class="grid gap-3">
                 @foreach($this->groupedItems['planned'] as $item)
-                    @include('pages.roadmap._item', ['item' => $item])
+                    @include('pages.roadmap._item', ['item' => $item, 'canManage' => $this->canManage])
                 @endforeach
             </div>
         </section>
@@ -206,7 +225,7 @@ new #[Title('Roadmap')] class extends Component {
             </div>
             <div class="grid gap-3">
                 @foreach($this->groupedItems['completed'] as $item)
-                    @include('pages.roadmap._item', ['item' => $item])
+                    @include('pages.roadmap._item', ['item' => $item, 'canManage' => $this->canManage])
                 @endforeach
             </div>
         </section>
@@ -214,8 +233,8 @@ new #[Title('Roadmap')] class extends Component {
 
     {{-- Empty State --}}
     @if($this->groupedItems['in_progress']->isEmpty() && $this->groupedItems['planned']->isEmpty() && $this->groupedItems['completed']->isEmpty())
-        <div class="flex flex-col items-center justify-center rounded-xl border border-dashed border-zinc-300 py-16 dark:border-zinc-600">
-            <flux:icon name="map" class="mb-4 size-12 text-zinc-400" />
+        <div class="border-line-strong flex flex-col items-center justify-center rounded-xl border border-dashed py-16">
+            <flux:icon name="map" class="mb-4 size-12 text-zinc-500" />
             <flux:heading size="lg" class="mb-2">{{ __('No roadmap items yet') }}</flux:heading>
             <flux:text>{{ __('Add features, fixes, and improvements to share what\'s coming next.') }}</flux:text>
         </div>
@@ -250,7 +269,7 @@ new #[Title('Roadmap')] class extends Component {
                 </flux:field>
 
                 <flux:field>
-                    <flux:label>{{ __('Target Date') }} <span class="text-zinc-400">({{ __('optional') }})</span></flux:label>
+                    <flux:label>{{ __('Target Date') }} <span class="text-zinc-500">({{ __('optional') }})</span></flux:label>
                     <flux:input type="date" wire:model="newTargetDate" />
                     <flux:error name="newTargetDate" />
                 </flux:field>

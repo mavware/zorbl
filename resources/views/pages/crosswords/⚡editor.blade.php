@@ -1,14 +1,16 @@
 <?php
 
+use App\Enums\CrosswordLayout;
 use App\Models\ClueEntry;
 use App\Models\Crossword;
+use App\Models\Tag;
 use App\Services\ClueHarvester;
 use App\Livewire\Concerns\ExportsCrossword;
 use Zorbl\CrosswordIO\GridNumberer;
 use App\Services\WordSuggester;
 use App\Services\DifficultyRater;
 use App\Services\GridFiller;
-use App\Services\AiGridFiller;
+use App\Services\AiFillPicker;
 use App\Services\AiClueGenerator;
 use App\Support\AiUsageTracker;
 use Illuminate\Support\Facades\Auth;
@@ -42,6 +44,8 @@ class extends Component {
 
     public string $copyright = '';
     public string $notes = '';
+    public string $secretTheme = '';
+    public ?CrosswordLayout $layout = null;
     public int $minAnswerLength = 3;
 
     public bool $isPublished = false;
@@ -52,8 +56,13 @@ class extends Component {
     public ?array $prefilled = null;
 
     public bool $showSettingsModal = false;
+    public bool $showUpgradeModal = false;
+    public string $upgradeFeature = '';
     public int $resizeWidth;
     public int $resizeHeight;
+
+    public array $tagIds = [];
+    public string $tagSearch = '';
 
     public function mount(Crossword $crossword): void
     {
@@ -72,10 +81,13 @@ class extends Component {
         $this->prefilled = $crossword->prefilled;
         $this->copyright = $crossword->copyright ?? copyright(Auth::user()->copyright_name ?? Auth::user()->name ?? '');
         $this->notes = $crossword->notes ?? '';
+        $this->secretTheme = $crossword->secret_theme ?? '';
+        $this->layout = $crossword->layout;
         $this->minAnswerLength = $crossword->metadata['min_answer_length'] ?? 3;
         $this->isPublished = $crossword->is_published;
         $this->resizeWidth = $crossword->width;
         $this->resizeHeight = $crossword->height;
+        $this->tagIds = $crossword->tags()->pluck('tags.id')->all();
     }
 
     public function save(array $grid, array $solution, ?array $styles, array $cluesAcross, array $cluesDown): void
@@ -132,6 +144,7 @@ class extends Component {
             'author'          => ['nullable', 'string', 'max:255'],
             'copyright'       => ['nullable', 'string', 'max:255'],
             'notes'           => ['nullable', 'string', 'max:1000'],
+            'secretTheme'     => ['nullable', 'string', 'max:500'],
             'minAnswerLength' => ['required', 'integer', 'min:1', 'max:15'],
         ]);
 
@@ -142,16 +155,127 @@ class extends Component {
         $metadata['min_answer_length'] = $this->minAnswerLength;
 
         $crossword->update([
-            'title'     => $this->title,
-            'author'    => $this->author,
-            'copyright' => $this->copyright,
-            'notes'     => $this->notes,
-            'metadata'  => $metadata,
+            'title'        => $this->title,
+            'author'       => $this->author,
+            'copyright'    => $this->copyright,
+            'notes'        => $this->notes,
+            'secret_theme' => $this->secretTheme !== '' ? $this->secretTheme : null,
+            'layout'       => $this->layout,
+            'metadata'     => $metadata,
         ]);
+
+        $crossword->tags()->sync($this->tagIds);
 
         $this->showSettingsModal = false;
         $this->dispatch('settings-updated');
         $this->dispatch('saved');
+    }
+
+    /** @return array<int, array{id: int, name: string}> */
+    #[Computed]
+    public function availableTags(): array
+    {
+        $query = Tag::query()->orderBy('name');
+
+        if ($this->tagSearch !== '') {
+            $query->whereLike('name', "%{$this->tagSearch}%");
+        }
+
+        return $query->limit(30)->get(['id', 'name'])->toArray();
+    }
+
+    /** @return array<int, array{id: int, name: string}> */
+    #[Computed]
+    public function selectedTags(): array
+    {
+        if (empty($this->tagIds)) {
+            return [];
+        }
+
+        return Tag::whereIn('id', $this->tagIds)->orderBy('name')->get(['id', 'name'])->toArray();
+    }
+
+    public function addTag(int $tagId): void
+    {
+        if (! in_array($tagId, $this->tagIds)) {
+            $this->tagIds[] = $tagId;
+        }
+        $this->tagSearch = '';
+        unset($this->availableTags, $this->selectedTags);
+    }
+
+    public function removeTag(int $tagId): void
+    {
+        $this->tagIds = array_values(array_filter($this->tagIds, fn (int $id) => $id !== $tagId));
+        unset($this->availableTags, $this->selectedTags);
+    }
+
+    public function createTag(): void
+    {
+        $name = trim($this->tagSearch);
+        if ($name === '' || mb_strlen($name) > 50) {
+            return;
+        }
+
+        $tag = Tag::firstOrCreate(
+            ['slug' => \Illuminate\Support\Str::slug($name)],
+            ['name' => $name],
+        );
+
+        if (! in_array($tag->id, $this->tagIds)) {
+            $this->tagIds[] = $tag->id;
+        }
+        $this->tagSearch = '';
+        unset($this->availableTags, $this->selectedTags, $this->suggestedStandardTags);
+    }
+
+    public function addStandardTag(string $name): void
+    {
+        if (! in_array($name, Tag::STANDARD, true)) {
+            return;
+        }
+
+        $tag = Tag::firstOrCreate(
+            ['slug' => \Illuminate\Support\Str::slug($name)],
+            ['name' => $name],
+        );
+
+        if (! in_array($tag->id, $this->tagIds)) {
+            $this->tagIds[] = $tag->id;
+        }
+        $this->tagSearch = '';
+        unset($this->availableTags, $this->selectedTags, $this->suggestedStandardTags);
+    }
+
+    /** @return array<int, string> */
+    #[Computed]
+    public function suggestedStandardTags(): array
+    {
+        $matching = Tag::standardSuggestions($this->tagSearch);
+
+        if ($matching === []) {
+            return [];
+        }
+
+        $availableSlugs = array_map(
+            fn (array $t): string => \Illuminate\Support\Str::slug($t['name']),
+            $this->availableTags,
+        );
+        $selectedSlugs = array_map(
+            fn (array $t): string => \Illuminate\Support\Str::slug($t['name']),
+            $this->selectedTags,
+        );
+        $taken = array_merge($availableSlugs, $selectedSlugs);
+
+        return array_values(array_filter(
+            $matching,
+            fn (string $name): bool => ! in_array(\Illuminate\Support\Str::slug($name), $taken, true),
+        ));
+    }
+
+    public function updatedTagSearch(): void
+    {
+        unset($this->availableTags, $this->suggestedStandardTags);
     }
 
     public function attemptPublish(): void
@@ -275,9 +399,9 @@ class extends Component {
     }
 
     /**
-     * Fill empty grid slots using AI (Anthropic Claude).
+     * Fill empty grid slots by generating several heuristic fills and letting AI pick the best.
      *
-     * @return array{success: bool, fills: list<array{direction: string, number: int, word: string}>, message: string}
+     * @return array{success: bool, fills: list<array{direction: string, number: int, word: string}>, message: string, upgrade?: bool}
      */
     public function aiFill(array $solution): array
     {
@@ -298,41 +422,116 @@ class extends Component {
             ];
         }
 
+        if (trim($this->secretTheme) === '' && trim($this->title) === '') {
+            return [
+                'success' => false,
+                'fills' => [],
+                'message' => __('Add a puzzle title or a secret theme in Settings so AI Autofill knows what to aim for.'),
+                'needs_theme' => true,
+            ];
+        }
+
+        $filler = app(GridFiller::class);
+        $attempts = 4;
+        $perAttemptTimeout = 5;
+
+        $candidates = [];
+        $seen = [];
+        for ($i = 0; $i < $attempts; $i++) {
+            $result = $filler->fill(
+                $this->grid,
+                $solution,
+                $this->width,
+                $this->height,
+                $this->styles ?? [],
+                $this->minAnswerLength,
+                timeout: $perAttemptTimeout,
+                seed: $i + 1,
+            );
+
+            if (! $result['success'] || empty($result['fills'])) {
+                continue;
+            }
+
+            $signature = $this->fillSignature($result['fills']);
+            if (isset($seen[$signature])) {
+                continue;
+            }
+            $seen[$signature] = true;
+            $candidates[] = $result['fills'];
+        }
+
+        if (empty($candidates)) {
+            return [
+                'success' => false,
+                'fills' => [],
+                'message' => __('Could not find valid words to fill the grid. Try filling some letters manually first.'),
+            ];
+        }
+
+        if (count($candidates) === 1) {
+            $tracker->record($user, 'grid_fill');
+
+            return [
+                'success' => true,
+                'fills' => $candidates[0],
+                'message' => 'Filled '.count($candidates[0]).' '.str('word')->plural(count($candidates[0])).' (only one valid arrangement found).',
+            ];
+        }
+
+        $pinnedWords = $this->pinnedWords($solution);
+
+        $choice = app(AiFillPicker::class)->pick(
+            $candidates,
+            $this->title,
+            $this->notes,
+            $pinnedWords,
+            $this->secretTheme,
+        );
+
+        $tracker->record($user, 'grid_fill');
+
+        return [
+            'success' => true,
+            'fills' => $candidates[$choice['index']],
+            'message' => $choice['message'],
+        ];
+    }
+
+    /**
+     * Stable signature of a fill set for deduplication.
+     *
+     * @param  list<array{direction: string, number: int, word: string}>  $fills
+     */
+    private function fillSignature(array $fills): string
+    {
+        $sorted = $fills;
+        usort($sorted, fn ($a, $b) => [$a['direction'], $a['number']] <=> [$b['direction'], $b['number']]);
+
+        return implode('|', array_map(fn ($f) => "{$f['direction']}{$f['number']}={$f['word']}", $sorted));
+    }
+
+    /**
+     * Words already in the solution grid, shared across every heuristic candidate.
+     *
+     * @return list<array{direction: string, number: int, word: string}>
+     */
+    private function pinnedWords(array $solution): array
+    {
         $numberer = app(GridNumberer::class);
         $numbered = $numberer->number($this->grid, $this->width, $this->height, $this->styles ?? [], $this->minAnswerLength);
 
-        $slots = [];
-        $filledWords = [];
-
+        $pinned = [];
         foreach (['across', 'down'] as $dir) {
             foreach ($numbered[$dir] as $slot) {
-                $pattern = GridFiller::getPattern($solution, $slot, $dir);
-                if (str_contains($pattern, '_')) {
-                    $slots[] = [
-                        'direction' => $dir,
-                        'number' => $slot['number'],
-                        'length' => $slot['length'],
-                        'pattern' => $pattern,
-                        'row' => $slot['row'],
-                        'col' => $slot['col'],
-                    ];
-                } else {
-                    $filledWords[] = [
-                        'direction' => $dir,
-                        'number' => $slot['number'],
-                        'word' => $pattern,
-                    ];
+                $word = GridFiller::getPattern($solution, $slot, $dir);
+                if (! str_contains($word, '_')) {
+                    $pinned[] = ['direction' => $dir, 'number' => $slot['number'], 'word' => $word];
                 }
             }
         }
 
-        $result = app(AiGridFiller::class)->fill($slots, $filledWords, $this->title, $this->notes);
-
-        if ($result['success'] || ! empty($result['fills'])) {
-            $tracker->record($user, 'grid_fill');
-        }
-
-        return $result;
+        return $pinned;
     }
 
     /**
@@ -455,6 +654,12 @@ class extends Component {
             'pdf' => 'canExportPdf',
         ];
     }
+
+    protected function onExportUpgradeRequired(string $format): void
+    {
+        $this->upgradeFeature = 'export';
+        $this->showUpgradeModal = true;
+    }
 }
 ?>
 
@@ -492,7 +697,7 @@ class extends Component {
 
         <div class="flex items-center gap-2">
             {{-- Save status --}}
-            <div class="flex items-center gap-1 pl-2 text-sm text-zinc-400">
+            <div class="flex items-center gap-1 pl-2 text-sm text-zinc-500">
                 <template x-if="saving">
                     <span>{{ __('Saving...') }}</span>
                 </template>
@@ -508,13 +713,13 @@ class extends Component {
             </div>
 
             {{-- Mode toggle --}}
-            <div class="flex rounded-lg border border-zinc-200 dark:border-zinc-700">
+            <div class="flex rounded-lg border border-line">
                 <span
                     class="rounded-l-lg bg-zinc-800 px-3 py-1 text-sm font-medium text-white dark:bg-zinc-200 dark:text-zinc-900">{{ __('Edit') }}</span>
                 <a
                     href="{{ route('crosswords.solver', $crosswordId) }}"
                     wire:navigate
-                    class="rounded-r-lg px-3 py-1 text-sm font-medium text-zinc-600 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+                    class="rounded-r-lg px-3 py-1 text-sm font-medium text-zinc-700 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
                 >{{ __('Solve') }}</a>
             </div>
 
@@ -522,7 +727,7 @@ class extends Component {
             <flux:tooltip content="{{ __('Rotational symmetry') }}">
                 <button
                     x-on:click="symmetry = !symmetry"
-                    :class="symmetry ? 'bg-zinc-800 text-white dark:bg-zinc-200 dark:text-zinc-900' : 'text-zinc-500 dark:text-zinc-400'"
+                    :class="symmetry ? 'bg-zinc-800 text-white dark:bg-zinc-200 dark:text-zinc-900' : 'text-fg-muted'"
                     class="rounded-lg p-1.5 transition-colors"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 24 24" fill="none"
@@ -551,7 +756,7 @@ class extends Component {
                             </svg>
                             {{ __('Quick Fill') }}
                         </div>
-                        <span class="text-xs text-zinc-400">{{ __('Dictionary-based') }}</span>
+                        <span class="text-xs text-zinc-500 mx-3">{{ __('Dictionary-based') }}</span>
                     </flux:menu.item>
                     <flux:menu.item x-on:click="aiFill()" x-bind:disabled="fillInProgress" :class="! Auth::user()->isPro() ? 'opacity-60' : ''">
                         <div class="flex items-center gap-2">
@@ -563,7 +768,7 @@ class extends Component {
                                 <flux:badge color="purple" size="sm">{{ __('Pro') }}</flux:badge>
                             @endunless
                         </div>
-                        <span class="text-xs text-zinc-400">{{ __('Thematic, Claude-powered') }}</span>
+                        <span class="text-xs text-zinc-500 mx-3">{{ __('Thematic, Claude-powered') }}</span>
                     </flux:menu.item>
                     <flux:separator />
                     <flux:menu.item x-on:click="aiGenerateClues()" x-bind:disabled="fillInProgress || hasUnfilledSlots" :class="! Auth::user()->isPro() ? 'opacity-60' : ''">
@@ -576,7 +781,7 @@ class extends Component {
                                 <flux:badge color="blue" size="sm">{{ __('Pro') }}</flux:badge>
                             @endunless
                         </div>
-                        <span class="text-xs text-zinc-400">{{ __('Write clues with AI') }}</span>
+                        <div class="text-xs text-zinc-500 mx-3">{{ __('Write clues with AI') }}</div>
                     </flux:menu.item>
                 </flux:menu>
             </flux:dropdown>
@@ -622,7 +827,7 @@ class extends Component {
                             <flux:badge color="purple" size="sm">{{ __('Pro') }}</flux:badge>
                         @endunless
                     </flux:menu.item>
-                    <flux:menu.item wire:click="exportPdf" :class="! Auth::user()->planLimits()->canExportPdf() ? 'opacity-60' : ''">
+                    <flux:menu.item wire:click="attemptExport('pdf')" :class="! Auth::user()->planLimits()->canExportPdf() ? 'opacity-60' : ''">
                         {{ __('.pdf (Print-Ready)') }}
                         @unless (Auth::user()->planLimits()->canExportPdf())
                             <flux:badge color="purple" size="sm">{{ __('Pro') }}</flux:badge>
@@ -638,670 +843,10 @@ class extends Component {
         </div>
     </div>
 
-    {{-- Main editor layout --}}
-    <div class="flex flex-1 gap-4 overflow-hidden max-lg:flex-col lg:max-h-[calc(100dvh-8rem)]">
-        {{-- Across clues panel (desktop) --}}
-        <div class="hidden w-64 flex-col overflow-hidden lg:flex">
-            <flux:heading size="sm" class="mb-2 shrink-0">{{ __('Across') }}</flux:heading>
-            <div class="flex-1 space-y-0.5 overflow-y-auto" x-ref="acrossPanel">
-                <template x-for="clue in computedCluesAcross" :key="'across-' + clue.number">
-                    <div
-                        x-on:click="selectClue('across', clue.number, $event)"
-                        x-on:focusin="selectClue('across', clue.number, $event)"
-                        x-on:keydown.tab.prevent="focusNextClue($el, 'across', false)"
-                        x-on:keydown.shift.tab.prevent="focusNextClue($el, 'across', true)"
-                        :class="[
-                                activeClueNumber === clue.number && direction === 'across' ? 'bg-blue-100 dark:bg-blue-900/40' : 'hover:bg-zinc-100 dark:hover:bg-zinc-700/50',
-                                isClueIncomplete('across') && !clue.clue?.trim() ? 'ring-2 ring-amber-400 dark:ring-amber-500' : ''
-                            ]"
-                        class="cursor-pointer rounded px-2 py-1"
-                        :id="'clue-across-' + clue.number"
-                    >
-                        <div class="flex items-start gap-1.5">
-                            <span class="mt-px text-xs font-bold text-zinc-500" x-text="clue.displayNumber"></span>
-                            <div class="clue-content flex-1">
-                                <input
-                                    type="text"
-                                    x-model="clue.clue"
-                                    x-on:blur="markDirty()"
-                                    placeholder="{{ __('Enter clue...') }}"
-                                    class="w-full border-0 bg-transparent p-0 text-sm text-zinc-700 placeholder-zinc-400 focus:ring-0 dark:text-zinc-300 dark:placeholder-zinc-500"
-                                />
-                                <div class="flex items-center gap-1">
-                                    <span class="text-xs text-zinc-400 cursor-text" x-text="'(' + clue.length + ')'"
-                                          x-on:click="$event.target.closest('.clue-content').querySelector('input').focus()"></span>
-                                    @include('partials.clue-quality-icon', ['dir' => 'across'])
-                                    <flux:tooltip content="{{ __('Clue library') }}" x-show="activeClueNumber === clue.number && direction === 'across'">
-                                        <button
-                                            type="button"
-                                            x-on:click.stop="toggleSuggestions()"
-                                            class="inline-flex items-center rounded px-1 py-0.5 text-amber-500 transition-colors hover:bg-amber-50 hover:text-amber-600 dark:text-amber-400 dark:hover:bg-amber-900/20 dark:hover:text-amber-300 cursor-pointer"
-                                        >
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="size-3.5" viewBox="0 0 20 20"
-                                                 fill="currentColor">
-                                                <path
-                                                    d="M9 4.804A7.968 7.968 0 0 0 5.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 0 1 5.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0 1 14.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0 0 14.5 4c-1.669 0-3.218.51-4.5 1.385V15"/>
-                                            </svg>
-                                        </button>
-                                    </flux:tooltip>
-                                    <flux:tooltip content="{{ __('Suggest words') }}" x-show="activeClueNumber === clue.number && direction === 'across'">
-                                        <button
-                                            type="button"
-                                            x-on:click.stop="toggleWordSuggestions()"
-                                            class="inline-flex items-center rounded px-1 py-0.5 text-blue-500 transition-colors hover:bg-blue-50 hover:text-blue-600 dark:text-blue-400 dark:hover:bg-blue-900/20 dark:hover:text-blue-300 cursor-pointer"
-                                        >
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="size-3.5" viewBox="0 0 20 20"
-                                                 fill="currentColor">
-                                                <path d="M10 1a6 6 0 0 0-3.815 10.631C7.237 12.5 8 13.443 8 14.456v.044a2 2 0 0 0 2 2h0a2 2 0 0 0 2-2v-.044c0-1.013.762-1.957 1.815-2.825A6 6 0 0 0 10 1ZM8 18a2 2 0 1 0 4 0H8Z"/>
-                                            </svg>
-                                        </button>
-                                    </flux:tooltip>
-                                </div>
-                            </div>
-                        </div>
-
-                        {{-- Clue suggestions --}}
-                        <template
-                            x-if="activeClueNumber === clue.number && direction === 'across' && showSuggestions && (clueSuggestions.length > 0 || clueSuggestionsLoading)">
-                            <div class="mt-1 ml-5 border-l-2 border-amber-300 pl-2 dark:border-amber-600">
-                                <template x-if="clueSuggestionsLoading">
-                                    <span class="text-xs text-zinc-400 italic">{{ __('Loading suggestions...') }}</span>
-                                </template>
-                                <template x-if="!clueSuggestionsLoading">
-                                    <div class="space-y-0.5">
-                                        <span
-                                            class="text-xs font-medium text-amber-600 dark:text-amber-400">{{ __('Clue library') }}</span>
-                                        <template x-for="(suggestion, idx) in clueSuggestions" :key="'sa-' + idx">
-                                            <div
-                                                x-on:click.stop="useClue(clue, suggestion.clue)"
-                                                class="clue-content cursor-pointer rounded px-1 py-0.5 text-xs text-zinc-600 hover:bg-amber-50 dark:text-zinc-400 dark:hover:bg-amber-900/20"
-                                                :title="suggestion.puzzle + ' — ' + suggestion.author"
-                                            >
-                                                <span x-text="suggestion.clue"></span>
-                                                <span class="text-zinc-400 dark:text-zinc-500"
-                                                      x-text="' — ' + suggestion.author"></span>
-                                            </div>
-                                        </template>
-                                    </div>
-                                </template>
-                            </div>
-                        </template>
-
-                        {{-- Word suggestions --}}
-                        <template
-                            x-if="activeClueNumber === clue.number && direction === 'across' && showWordSuggestions && (wordSuggestions.length > 0 || wordSuggestionsLoading)">
-                            <div class="mt-1 ml-5 border-l-2 border-blue-300 pl-2 dark:border-blue-600">
-                                <template x-if="wordSuggestionsLoading">
-                                    <span class="text-xs text-zinc-400 italic">{{ __('Finding words...') }}</span>
-                                </template>
-                                <template x-if="!wordSuggestionsLoading">
-                                    <div class="space-y-0.5">
-                                        <span class="text-xs font-medium text-blue-600 dark:text-blue-400">{{ __('Word suggestions') }}</span>
-                                        <template x-for="(suggestion, idx) in wordSuggestions" :key="'wa-' + idx">
-                                            <div
-                                                x-on:click.stop="applyWordSuggestion(suggestion.word)"
-                                                class="clue-content cursor-pointer rounded px-1 py-0.5 text-xs text-zinc-600 hover:bg-blue-50 dark:text-zinc-400 dark:hover:bg-blue-900/20"
-                                            >
-                                                <span x-text="suggestion.word"></span>
-                                                <span class="text-zinc-400 dark:text-zinc-500" x-text="'(' + suggestion.score + ')'"></span>
-                                            </div>
-                                        </template>
-                                    </div>
-                                </template>
-                            </div>
-                        </template>
-                    </div>
-                </template>
-            </div>
-        </div>
-
-        {{-- Grid --}}
-        <div class="flex min-w-0 flex-1 items-start justify-center overflow-hidden">
-            <div
-                class="relative max-h-full max-w-full"
-                :style="'width: ' + Math.min(600, width * 40) + 'px;'"
-                x-on:keydown="handleKeydown($event)"
-                tabindex="0"
-                x-ref="gridContainer"
-                role="grid"
-                :aria-label="'Crossword grid, ' + width + ' columns by ' + height + ' rows'"
-            >
-                <div
-                    class="grid border border-zinc-800 dark:border-zinc-300 [--bar-color:var(--color-zinc-800)] dark:[--bar-color:var(--color-zinc-300)]"
-                    :style="'grid-template-columns: repeat(' + width + ', minmax(0, 1fr));'"
-                >
-                    <template x-for="(row, rowIdx) in grid" :key="'row-' + rowIdx">
-                        <template x-for="(cell, colIdx) in row" :key="'cell-' + rowIdx + '-' + colIdx">
-                            <div
-                                x-on:click="selectCell(rowIdx, colIdx, $event)"
-                                x-on:contextmenu.prevent="openContextMenu(rowIdx, colIdx, $event)"
-                                x-on:touchstart.passive="startLongPress(rowIdx, colIdx, $event)"
-                                x-on:touchend="cancelLongPress()"
-                                x-on:touchmove="cancelLongPress()"
-                                :class="[cellClasses(rowIdx, colIdx), isVoid(rowIdx, colIdx) ? '' : 'border border-zinc-300 dark:border-zinc-600']"
-                                :style="cellBarStyles(rowIdx, colIdx)"
-                                class="relative box-border flex aspect-square items-center justify-center overflow-hidden select-none"
-                                role="gridcell"
-                            >
-                                {{-- Clue number --}}
-                                <template x-if="getDisplayNumber(rowIdx, colIdx) !== null">
-                                        <span
-                                            :class="getCustomNumber(rowIdx, colIdx) !== null ? 'absolute top-0 left-0.5 text-blue-600 dark:text-blue-400 leading-none' : 'absolute top-0 left-0.5 text-zinc-700 dark:text-zinc-400 leading-none'"
-                                            :style="'font-size: ' + Math.max(8, Math.min(11, 600 / width * 0.22)) + 'px'"
-                                            x-text="getDisplayNumber(rowIdx, colIdx)"
-                                        ></span>
-                                </template>
-
-                                {{-- Circle annotation --}}
-                                <template x-if="hasCircle(rowIdx, colIdx)">
-                                    <svg class="pointer-events-none absolute inset-0.5 size-[calc(100%-4px)]"
-                                         viewBox="0 0 100 100">
-                                        <circle cx="50" cy="50" r="46" fill="none" stroke="currentColor"
-                                                stroke-width="2" class="text-zinc-400 dark:text-zinc-500"/>
-                                    </svg>
-                                </template>
-
-                                {{-- Rebus indicator --}}
-                                <template x-if="rebusMode && rowIdx === selectedRow && colIdx === selectedCol">
-                                    <span class="absolute top-0 right-0.5 text-xs leading-none text-blue-500">R</span>
-                                </template>
-
-                                {{-- Prefilled indicator --}}
-                                <template x-if="isPrefilled(rowIdx, colIdx)">
-                                    <div class="absolute inset-0 bg-violet-200/40 dark:bg-violet-800/30"></div>
-                                </template>
-
-                                {{-- Letter --}}
-                                <span
-                                    class="font-semibold uppercase"
-                                    :class="isPrefilled(rowIdx, colIdx) ? 'text-violet-700 dark:text-violet-300' : 'text-zinc-900 dark:text-zinc-100'"
-                                    :style="letterFontStyle(rowIdx, colIdx)"
-                                    x-text="isBlock(rowIdx, colIdx) ? '' : (solution[rowIdx]?.[colIdx] || '')"
-                                ></span>
-                            </div>
-                        </template>
-                    </template>
-                </div>
-            </div>
-
-            {{-- Context menu --}}
-            <div
-                x-show="contextMenu.show"
-                x-on:click.stop
-                :style="'position: fixed; left: ' + contextMenu.x + 'px; top: ' + contextMenu.y + 'px; z-index: 50;'"
-                class="min-w-44 rounded-lg border border-zinc-200 bg-white py-1 shadow-lg dark:border-zinc-700 dark:bg-zinc-800"
-                x-transition
-                x-cloak
-            >
-                {{-- Multi-selection indicator --}}
-                <template x-if="Object.keys(multiSelectedCells).length > 1">
-                    <div class="px-3 py-1 text-xs font-medium text-emerald-600 dark:text-emerald-400"
-                         x-text="Object.keys(multiSelectedCells).length + ' {{ __('cells selected') }}'"></div>
-                </template>
-
-                <button
-                    x-on:click="contextToggleBlock()"
-                    class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700"
-                >
-                    <span
-                        x-text="isBlock(contextMenu.row, contextMenu.col) ? '{{ __('Make white') }}' : '{{ __('Make black') }}'"></span>
-                </button>
-
-                <button
-                    x-show="!isBlock(contextMenu.row, contextMenu.col)"
-                    x-on:click="contextToggleCircle()"
-                    class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700"
-                >
-                    <span
-                        x-text="hasCircle(contextMenu.row, contextMenu.col) ? '{{ __('Remove circle') }}' : '{{ __('Add circle') }}'"></span>
-                </button>
-
-                <button
-                    x-show="!isBlock(contextMenu.row, contextMenu.col)"
-                    x-on:click="contextEditRebus()"
-                    class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700"
-                >
-                    <span
-                        x-text="isPrefilled(contextMenu.row, contextMenu.col) ? '{{ __('Edit pre-filled value...') }}' : '{{ __('Pre-fill cell...') }}'"></span>
-                </button>
-
-                <button
-                    x-show="!isBlock(contextMenu.row, contextMenu.col)"
-                    x-on:click="contextSetCustomNumber()"
-                    class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700"
-                >
-                    <span
-                        x-text="getCustomNumber(contextMenu.row, contextMenu.col) !== null ? '{{ __('Edit custom number...') }}' : '{{ __('Set custom number...') }}'"></span>
-                </button>
-
-                <div x-show="!isBlock(contextMenu.row, contextMenu.col)">
-                    <div class="my-1 border-t border-zinc-200 dark:border-zinc-700"></div>
-                    <div class="px-3 py-1 text-xs font-medium text-zinc-400">{{ __('Bars') }}</div>
-                    <template x-for="edge in ['top', 'right', 'bottom', 'left']" :key="'bar-' + edge">
-                        <button
-                            x-on:click.stop="contextToggleBar(edge)"
-                            class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700"
-                        >
-                            <svg x-show="hasBar(contextMenu.row, contextMenu.col, edge)"
-                                 xmlns="http://www.w3.org/2000/svg" class="size-4 text-zinc-500" viewBox="0 0 20 20"
-                                 fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z"
-                                      clip-rule="evenodd"/>
-                            </svg>
-                            <span x-show="!hasBar(contextMenu.row, contextMenu.col, edge)" class="size-4"></span>
-                            <span x-text="edge.charAt(0).toUpperCase() + edge.slice(1)"></span>
-                        </button>
-                    </template>
-                </div>
-            </div>
-
-            {{-- Rebus input overlay --}}
-            <div
-                x-show="showRebusInput"
-                x-cloak
-                x-transition
-                class="absolute inset-x-0 top-0 z-40 flex items-start justify-center pt-4"
-            >
-                <div
-                    class="w-64 rounded-lg border border-zinc-200 bg-white p-3 shadow-lg dark:border-zinc-700 dark:bg-zinc-800"
-                    x-on:keydown.escape.stop="cancelRebus()"
-                    x-on:keydown.enter.stop="applyRebus()"
-                    x-on:click.stop
-                >
-                    <div class="mb-2 flex items-center gap-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                        <span x-text="rebusCells.length > 1 ? '{{ __('Pre-fill') }} ' + rebusCells.length + ' {{ __('cells') }}' : '{{ __('Pre-fill cell') }}'"></span>
-                    </div>
-                    <p class="mb-3 text-xs text-zinc-500 dark:text-zinc-400">
-                        <span x-text="rebusCells.length > 1 ? '{{ __('Enter a value to apply to all selected cells. This value will be given to solvers as a pre-filled clue.') }}' : '{{ __('Enter a letter, multiple characters (rebus), or a symbol/emoji. This value will be given to solvers as a pre-filled clue.') }}'"></span>
-                    </p>
-                    <input
-                        type="text"
-                        x-ref="rebusInput"
-                        x-model="rebusInputValue"
-                        class="mb-3 w-full rounded-md border border-zinc-300 bg-white px-2 py-1.5 text-sm text-zinc-900 placeholder-zinc-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-zinc-600 dark:bg-zinc-700 dark:text-zinc-100 dark:placeholder-zinc-500"
-                        placeholder="{{ __('e.g. A, THE, ★, 🌟') }}"
-                    />
-                    <div class="flex items-center justify-between">
-                        <button
-                            type="button"
-                            x-on:click="clearRebus()"
-                            class="text-xs text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300"
-                        >{{ __('Clear cell') }}</button>
-                        <div class="flex gap-2">
-                            <flux:button size="xs" x-on:click="cancelRebus()">{{ __('Cancel') }}</flux:button>
-                            <flux:button size="xs" variant="primary" x-on:click="applyRebus()">{{ __('Apply') }}</flux:button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Custom number input overlay --}}
-            <div
-                x-show="showCustomNumberInput"
-                x-cloak
-                x-transition
-                class="absolute inset-x-0 top-0 z-40 flex items-start justify-center pt-4"
-            >
-                <div
-                    class="w-56 rounded-lg border border-zinc-200 bg-white p-3 shadow-lg dark:border-zinc-700 dark:bg-zinc-800"
-                    x-on:keydown.escape.stop="cancelCustomNumber()"
-                    x-on:keydown.enter.stop="applyCustomNumber()"
-                    x-on:click.stop
-                >
-                    <div class="mb-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                        {{ __('Custom number') }}
-                    </div>
-                    <p class="mb-3 text-xs text-zinc-500 dark:text-zinc-400">
-                        {{ __('Enter a number to display on this cell instead of the auto-generated clue number.') }}
-                    </p>
-                    <input
-                        type="number"
-                        x-ref="customNumberInput"
-                        x-model="customNumberInputValue"
-                        class="w-full rounded border border-zinc-300 px-2 py-1 text-center text-sm dark:border-zinc-600 dark:bg-zinc-700 dark:text-zinc-200"
-                        min="0"
-                    >
-                    <div class="mt-3 flex items-center justify-between">
-                        <button
-                            x-show="customNumberCells.length > 0 && getCustomNumber(customNumberCells[0][0], customNumberCells[0][1]) !== null"
-                            type="button"
-                            x-on:click="removeCustomNumber()"
-                            class="text-xs text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300"
-                        >{{ __('Remove') }}</button>
-                        <span x-show="customNumberCells.length === 0 || getCustomNumber(customNumberCells[0][0], customNumberCells[0][1]) === null"></span>
-                        <div class="flex gap-2">
-                            <flux:button size="xs" x-on:click="cancelCustomNumber()">{{ __('Cancel') }}</flux:button>
-                            <flux:button size="xs" variant="primary" x-on:click="applyCustomNumber()">{{ __('Apply') }}</flux:button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        {{-- Down clues panel (desktop) --}}
-        <div class="hidden w-64 flex-col overflow-hidden lg:flex">
-            <flux:heading size="sm" class="mb-2 shrink-0">{{ __('Down') }}</flux:heading>
-            <div class="flex-1 space-y-0.5 overflow-y-auto" x-ref="downPanel">
-                <template x-for="clue in computedCluesDown" :key="'down-' + clue.number">
-                    <div
-                        x-on:click="selectClue('down', clue.number, $event)"
-                        x-on:focusin="selectClue('down', clue.number, $event)"
-                        x-on:keydown.tab.prevent="focusNextClue($el, 'down', false)"
-                        x-on:keydown.shift.tab.prevent="focusNextClue($el, 'down', true)"
-                        :class="[
-                                activeClueNumber === clue.number && direction === 'down' ? 'bg-blue-100 dark:bg-blue-900/40' : 'hover:bg-zinc-100 dark:hover:bg-zinc-700/50',
-                                isClueIncomplete('down') && !clue.clue?.trim() ? 'ring-2 ring-amber-400 dark:ring-amber-500' : ''
-                            ]"
-                        class="cursor-pointer rounded px-2 py-1"
-                        :id="'clue-down-' + clue.number"
-                    >
-                        <div class="flex items-start gap-1.5">
-                            <span class="mt-px text-xs font-bold text-zinc-500" x-text="clue.displayNumber"></span>
-                            <div class="clue-content flex-1">
-                                <input
-                                    type="text"
-                                    x-model="clue.clue"
-                                    x-on:blur="markDirty()"
-                                    placeholder="{{ __('Enter clue...') }}"
-                                    class="w-full border-0 bg-transparent p-0 text-sm text-zinc-700 placeholder-zinc-400 focus:ring-0 dark:text-zinc-300 dark:placeholder-zinc-500"
-                                />
-                                <div class="flex items-center gap-1">
-                                    <span class="text-xs text-zinc-400 cursor-text" x-text="'(' + clue.length + ')'"
-                                          x-on:click="$event.target.closest('.clue-content').querySelector('input').focus()"></span>
-                                    @include('partials.clue-quality-icon', ['dir' => 'down'])
-                                    <flux:tooltip content="{{ __('Clue library') }}" x-show="activeClueNumber === clue.number && direction === 'down'">
-                                        <button
-                                            type="button"
-                                            x-on:click.stop="toggleSuggestions()"
-                                            class="inline-flex items-center rounded px-1 py-0.5 text-amber-500 transition-colors hover:bg-amber-50 hover:text-amber-600 dark:text-amber-400 dark:hover:bg-amber-900/20 dark:hover:text-amber-300 cursor-pointer"
-                                        >
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="size-3.5" viewBox="0 0 20 20"
-                                                 fill="currentColor">
-                                                <path
-                                                    d="M9 4.804A7.968 7.968 0 0 0 5.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 0 1 5.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0 1 14.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0 0 14.5 4c-1.669 0-3.218.51-4.5 1.385V15"/>
-                                            </svg>
-                                        </button>
-                                    </flux:tooltip>
-                                    <flux:tooltip content="{{ __('Suggest words') }}" x-show="activeClueNumber === clue.number && direction === 'down'">
-                                        <button
-                                            type="button"
-                                            x-on:click.stop="toggleWordSuggestions()"
-                                            class="inline-flex items-center rounded px-1 py-0.5 text-blue-500 transition-colors hover:bg-blue-50 hover:text-blue-600 dark:text-blue-400 dark:hover:bg-blue-900/20 dark:hover:text-blue-300 cursor-pointer"
-                                        >
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="size-3.5" viewBox="0 0 20 20"
-                                                 fill="currentColor">
-                                                <path d="M10 1a6 6 0 0 0-3.815 10.631C7.237 12.5 8 13.443 8 14.456v.044a2 2 0 0 0 2 2h0a2 2 0 0 0 2-2v-.044c0-1.013.762-1.957 1.815-2.825A6 6 0 0 0 10 1ZM8 18a2 2 0 1 0 4 0H8Z"/>
-                                            </svg>
-                                        </button>
-                                    </flux:tooltip>
-                                </div>
-                            </div>
-                        </div>
-
-                        {{-- Clue suggestions --}}
-                        <template
-                            x-if="activeClueNumber === clue.number && direction === 'down' && showSuggestions && (clueSuggestions.length > 0 || clueSuggestionsLoading)">
-                            <div class="mt-1 ml-5 border-l-2 border-amber-300 pl-2 dark:border-amber-600">
-                                <template x-if="clueSuggestionsLoading">
-                                    <span class="text-xs text-zinc-400 italic">{{ __('Loading suggestions...') }}</span>
-                                </template>
-                                <template x-if="!clueSuggestionsLoading">
-                                    <div class="space-y-0.5">
-                                        <span
-                                            class="text-xs font-medium text-amber-600 dark:text-amber-400">{{ __('Clue library') }}</span>
-                                        <template x-for="(suggestion, idx) in clueSuggestions" :key="'sd-' + idx">
-                                            <div
-                                                x-on:click.stop="useClue(clue, suggestion.clue)"
-                                                class="clue-content cursor-pointer rounded px-1 py-0.5 text-xs text-zinc-600 hover:bg-amber-50 dark:text-zinc-400 dark:hover:bg-amber-900/20"
-                                                :title="suggestion.puzzle + ' — ' + suggestion.author"
-                                            >
-                                                <span x-text="suggestion.clue"></span>
-                                                <span class="text-zinc-400 dark:text-zinc-500"
-                                                      x-text="' — ' + suggestion.author"></span>
-                                            </div>
-                                        </template>
-                                    </div>
-                                </template>
-                            </div>
-                        </template>
-
-                        {{-- Word suggestions --}}
-                        <template
-                            x-if="activeClueNumber === clue.number && direction === 'down' && showWordSuggestions && (wordSuggestions.length > 0 || wordSuggestionsLoading)">
-                            <div class="mt-1 ml-5 border-l-2 border-blue-300 pl-2 dark:border-blue-600">
-                                <template x-if="wordSuggestionsLoading">
-                                    <span class="text-xs text-zinc-400 italic">{{ __('Finding words...') }}</span>
-                                </template>
-                                <template x-if="!wordSuggestionsLoading">
-                                    <div class="space-y-0.5">
-                                        <span class="text-xs font-medium text-blue-600 dark:text-blue-400">{{ __('Word suggestions') }}</span>
-                                        <template x-for="(suggestion, idx) in wordSuggestions" :key="'wd-' + idx">
-                                            <div
-                                                x-on:click.stop="applyWordSuggestion(suggestion.word)"
-                                                class="clue-content cursor-pointer rounded px-1 py-0.5 text-xs text-zinc-600 hover:bg-blue-50 dark:text-zinc-400 dark:hover:bg-blue-900/20"
-                                            >
-                                                <span x-text="suggestion.word"></span>
-                                                <span class="text-zinc-400 dark:text-zinc-500" x-text="'(' + suggestion.score + ')'"></span>
-                                            </div>
-                                        </template>
-                                    </div>
-                                </template>
-                            </div>
-                        </template>
-                    </div>
-                </template>
-            </div>
-        </div>
-
-        {{-- Mobile clue panels --}}
-        <div class="lg:hidden">
-            <div class="flex border-b border-zinc-200 dark:border-zinc-700">
-                <button
-                    x-on:click="mobileClueTab = 'across'"
-                    :class="mobileClueTab === 'across' ? 'border-zinc-800 text-zinc-900 dark:border-zinc-200 dark:text-zinc-100' : 'border-transparent text-zinc-500'"
-                    class="border-b-2 px-4 py-2 text-sm font-medium"
-                >{{ __('Across') }}</button>
-                <button
-                    x-on:click="mobileClueTab = 'down'"
-                    :class="mobileClueTab === 'down' ? 'border-zinc-800 text-zinc-900 dark:border-zinc-200 dark:text-zinc-100' : 'border-transparent text-zinc-500'"
-                    class="border-b-2 px-4 py-2 text-sm font-medium"
-                >{{ __('Down') }}</button>
-            </div>
-            <div class="max-h-48 space-y-0.5 overflow-y-auto py-2">
-                <template x-if="mobileClueTab === 'across'">
-                    <div>
-                        <template x-for="clue in computedCluesAcross" :key="'m-across-' + clue.number">
-                            <div
-                                x-on:click="selectClue('across', clue.number, $event)"
-                                x-on:focusin="selectClue('across', clue.number, $event)"
-                                x-on:keydown.tab.prevent="focusNextClue($el, 'across', false)"
-                                x-on:keydown.shift.tab.prevent="focusNextClue($el, 'across', true)"
-                                :class="[
-                                        activeClueNumber === clue.number && direction === 'across' ? 'bg-blue-100 dark:bg-blue-900/40' : '',
-                                        isClueIncomplete('across') && !clue.clue?.trim() ? 'ring-2 ring-amber-400 dark:ring-amber-500' : ''
-                                    ]"
-                                class="cursor-pointer rounded px-2 py-1"
-                            >
-                                <div class="flex items-start gap-1.5">
-                                    <span class="mt-px text-xs font-bold text-zinc-500" x-text="clue.displayNumber"></span>
-                                    <div class="flex-1">
-                                        <input
-                                            type="text"
-                                            x-model="clue.clue"
-                                            x-on:blur="markDirty()"
-                                            placeholder="{{ __('Enter clue...') }}"
-                                            class="w-full border-0 bg-transparent p-0 text-sm text-zinc-700 placeholder-zinc-400 focus:ring-0 dark:text-zinc-300 dark:placeholder-zinc-500"
-                                        />
-                                        <div class="flex items-center gap-1">
-                                            <span class="text-xs text-zinc-400" x-text="'(' + clue.length + ')'"></span>
-                                            @include('partials.clue-quality-icon', ['dir' => 'across'])
-                                            <flux:tooltip content="{{ __('Clue library') }}" x-show="activeClueNumber === clue.number && direction === 'across'">
-                                                <button
-                                                    type="button"
-                                                    x-on:click.stop="toggleSuggestions()"
-                                                    class="inline-flex items-center rounded px-1 py-0.5 text-amber-500 transition-colors hover:bg-amber-50 hover:text-amber-600 dark:text-amber-400 dark:hover:bg-amber-900/20 dark:hover:text-amber-300 cursor-pointer"
-                                                >
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="size-3.5"
-                                                         viewBox="0 0 20 20" fill="currentColor">
-                                                        <path
-                                                            d="M9 4.804A7.968 7.968 0 0 0 5.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 0 1 5.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0 1 14.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0 0 14.5 4c-1.669 0-3.218.51-4.5 1.385V15"/>
-                                                    </svg>
-                                                </button>
-                                            </flux:tooltip>
-                                            <flux:tooltip content="{{ __('Suggest words') }}" x-show="activeClueNumber === clue.number && direction === 'across'">
-                                                <button
-                                                    type="button"
-                                                    x-on:click.stop="toggleWordSuggestions()"
-                                                    class="inline-flex items-center rounded px-1 py-0.5 text-blue-500 transition-colors hover:bg-blue-50 hover:text-blue-600 dark:text-blue-400 dark:hover:bg-blue-900/20 dark:hover:text-blue-300 cursor-pointer"
-                                                >
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="size-3.5"
-                                                         viewBox="0 0 20 20" fill="currentColor">
-                                                        <path d="M10 1a6 6 0 0 0-3.815 10.631C7.237 12.5 8 13.443 8 14.456v.044a2 2 0 0 0 2 2h0a2 2 0 0 0 2-2v-.044c0-1.013.762-1.957 1.815-2.825A6 6 0 0 0 10 1ZM8 18a2 2 0 1 0 4 0H8Z"/>
-                                                    </svg>
-                                                </button>
-                                            </flux:tooltip>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {{-- Clue suggestions (mobile) --}}
-                                <template
-                                    x-if="activeClueNumber === clue.number && direction === 'across' && showSuggestions && clueSuggestions.length > 0 && !clueSuggestionsLoading">
-                                    <div class="mt-1 ml-5 border-l-2 border-amber-300 pl-2 dark:border-amber-600">
-                                        <span
-                                            class="text-xs font-medium text-amber-600 dark:text-amber-400">{{ __('Clue library') }}</span>
-                                        <template x-for="(suggestion, idx) in clueSuggestions.slice(0, 5)"
-                                                  :key="'msa-' + idx">
-                                            <div
-                                                x-on:click.stop="useClue(clue, suggestion.clue)"
-                                                class="cursor-pointer rounded px-1 py-0.5 text-xs text-zinc-600 hover:bg-amber-50 dark:text-zinc-400 dark:hover:bg-amber-900/20"
-                                            >
-                                                <span x-text="suggestion.clue"></span>
-                                            </div>
-                                        </template>
-                                    </div>
-                                </template>
-
-                                {{-- Word suggestions (mobile) --}}
-                                <template
-                                    x-if="activeClueNumber === clue.number && direction === 'across' && showWordSuggestions && wordSuggestions.length > 0 && !wordSuggestionsLoading">
-                                    <div class="mt-1 ml-5 border-l-2 border-blue-300 pl-2 dark:border-blue-600">
-                                        <span class="text-xs font-medium text-blue-600 dark:text-blue-400">{{ __('Word suggestions') }}</span>
-                                        <template x-for="(suggestion, idx) in wordSuggestions.slice(0, 10)"
-                                                  :key="'mwa-' + idx">
-                                            <div
-                                                x-on:click.stop="applyWordSuggestion(suggestion.word)"
-                                                class="cursor-pointer rounded px-1 py-0.5 text-xs text-zinc-600 hover:bg-blue-50 dark:text-zinc-400 dark:hover:bg-blue-900/20"
-                                            >
-                                                <span x-text="suggestion.word"></span>
-                                                <span class="text-zinc-400 dark:text-zinc-500" x-text="'(' + suggestion.score + ')'"></span>
-                                            </div>
-                                        </template>
-                                    </div>
-                                </template>
-                            </div>
-                        </template>
-                    </div>
-                </template>
-                <template x-if="mobileClueTab === 'down'">
-                    <div>
-                        <template x-for="clue in computedCluesDown" :key="'m-down-' + clue.number">
-                            <div
-                                x-on:click="selectClue('down', clue.number, $event)"
-                                x-on:focusin="selectClue('down', clue.number, $event)"
-                                x-on:keydown.tab.prevent="focusNextClue($el, 'down', false)"
-                                x-on:keydown.shift.tab.prevent="focusNextClue($el, 'down', true)"
-                                :class="[
-                                        activeClueNumber === clue.number && direction === 'down' ? 'bg-blue-100 dark:bg-blue-900/40' : '',
-                                        isClueIncomplete('down') && !clue.clue?.trim() ? 'ring-2 ring-amber-400 dark:ring-amber-500' : ''
-                                    ]"
-                                class="cursor-pointer rounded px-2 py-1"
-                            >
-                                <div class="flex items-start gap-1.5">
-                                    <span class="mt-px text-xs font-bold text-zinc-500" x-text="clue.displayNumber"></span>
-                                    <div class="flex-1">
-                                        <input
-                                            type="text"
-                                            x-model="clue.clue"
-                                            x-on:blur="markDirty()"
-                                            placeholder="{{ __('Enter clue...') }}"
-                                            class="w-full border-0 bg-transparent p-0 text-sm text-zinc-700 placeholder-zinc-400 focus:ring-0 dark:text-zinc-300 dark:placeholder-zinc-500"
-                                        />
-                                        <div class="flex items-center gap-1">
-                                            <span class="text-xs text-zinc-400" x-text="'(' + clue.length + ')'"></span>
-                                            @include('partials.clue-quality-icon', ['dir' => 'down'])
-                                            <flux:tooltip content="{{ __('Clue library') }}" x-show="activeClueNumber === clue.number && direction === 'down'">
-                                                <button
-                                                    type="button"
-                                                    x-on:click.stop="toggleSuggestions()"
-                                                    class="inline-flex items-center rounded px-1 py-0.5 text-amber-500 transition-colors hover:bg-amber-50 hover:text-amber-600 dark:text-amber-400 dark:hover:bg-amber-900/20 dark:hover:text-amber-300 cursor-pointer"
-                                                >
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="size-3.5"
-                                                         viewBox="0 0 20 20" fill="currentColor">
-                                                        <path
-                                                            d="M9 4.804A7.968 7.968 0 0 0 5.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 0 1 5.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0 1 14.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0 0 14.5 4c-1.669 0-3.218.51-4.5 1.385V15"/>
-                                                    </svg>
-                                                </button>
-                                            </flux:tooltip>
-                                            <flux:tooltip content="{{ __('Suggest words') }}" x-show="activeClueNumber === clue.number && direction === 'down'">
-                                                <button
-                                                    type="button"
-                                                    x-on:click.stop="toggleWordSuggestions()"
-                                                    class="inline-flex items-center rounded px-1 py-0.5 text-blue-500 transition-colors hover:bg-blue-50 hover:text-blue-600 dark:text-blue-400 dark:hover:bg-blue-900/20 dark:hover:text-blue-300 cursor-pointer"
-                                                >
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="size-3.5"
-                                                         viewBox="0 0 20 20" fill="currentColor">
-                                                        <path d="M10 1a6 6 0 0 0-3.815 10.631C7.237 12.5 8 13.443 8 14.456v.044a2 2 0 0 0 2 2h0a2 2 0 0 0 2-2v-.044c0-1.013.762-1.957 1.815-2.825A6 6 0 0 0 10 1ZM8 18a2 2 0 1 0 4 0H8Z"/>
-                                                    </svg>
-                                                </button>
-                                            </flux:tooltip>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {{-- Clue suggestions (mobile) --}}
-                                <template
-                                    x-if="activeClueNumber === clue.number && direction === 'down' && showSuggestions && clueSuggestions.length > 0 && !clueSuggestionsLoading">
-                                    <div class="mt-1 ml-5 border-l-2 border-amber-300 pl-2 dark:border-amber-600">
-                                        <span
-                                            class="text-xs font-medium text-amber-600 dark:text-amber-400">{{ __('Clue library') }}</span>
-                                        <template x-for="(suggestion, idx) in clueSuggestions.slice(0, 5)"
-                                                  :key="'msd-' + idx">
-                                            <div
-                                                x-on:click.stop="useClue(clue, suggestion.clue)"
-                                                class="cursor-pointer rounded px-1 py-0.5 text-xs text-zinc-600 hover:bg-amber-50 dark:text-zinc-400 dark:hover:bg-amber-900/20"
-                                            >
-                                                <span x-text="suggestion.clue"></span>
-                                            </div>
-                                        </template>
-                                    </div>
-                                </template>
-
-                                {{-- Word suggestions (mobile) --}}
-                                <template
-                                    x-if="activeClueNumber === clue.number && direction === 'down' && showWordSuggestions && wordSuggestions.length > 0 && !wordSuggestionsLoading">
-                                    <div class="mt-1 ml-5 border-l-2 border-blue-300 pl-2 dark:border-blue-600">
-                                        <span class="text-xs font-medium text-blue-600 dark:text-blue-400">{{ __('Word suggestions') }}</span>
-                                        <template x-for="(suggestion, idx) in wordSuggestions.slice(0, 10)"
-                                                  :key="'mwd-' + idx">
-                                            <div
-                                                x-on:click.stop="applyWordSuggestion(suggestion.word)"
-                                                class="cursor-pointer rounded px-1 py-0.5 text-xs text-zinc-600 hover:bg-blue-50 dark:text-zinc-400 dark:hover:bg-blue-900/20"
-                                            >
-                                                <span x-text="suggestion.word"></span>
-                                                <span class="text-zinc-400 dark:text-zinc-500" x-text="'(' + suggestion.score + ')'"></span>
-                                            </div>
-                                        </template>
-                                    </div>
-                                </template>
-                            </div>
-                        </template>
-                    </div>
-                </template>
-            </div>
-        </div>
-    </div>
+    {{-- The enum owns both the explicit mapping and the fallback. If no
+         layout is picked, CrosswordLayout::auto() picks the best-fit case for
+         the current grid width. --}}
+    @include(($this->layout ?? CrosswordLayout::auto($this->width))->partial())
 
     {{-- Publish Warning Modal --}}
     <flux:modal wire:model="showPublishWarning">
@@ -1373,6 +918,72 @@ class extends Component {
         </div>
     </flux:modal>
 
+    {{-- Upgrade Modal --}}
+    <flux:modal wire:model="showUpgradeModal">
+        <div class="space-y-6">
+            <div class="flex items-center gap-3">
+                <div class="flex size-10 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-900/30">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="size-5 text-purple-600 dark:text-purple-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M15.98 1.804a1 1 0 0 0-1.96 0l-.24 1.192a1 1 0 0 1-.784.785l-1.192.238a1 1 0 0 0 0 1.962l1.192.238a1 1 0 0 1 .785.785l.238 1.192a1 1 0 0 0 1.962 0l.238-1.192a1 1 0 0 1 .785-.785l1.192-.238a1 1 0 0 0 0-1.962l-1.192-.238a1 1 0 0 1-.785-.785l-.238-1.192ZM6.949 5.684a1 1 0 0 0-1.898 0l-.683 2.051a1 1 0 0 1-.633.633l-2.051.683a1 1 0 0 0 0 1.898l2.051.683a1 1 0 0 1 .633.633l.683 2.051a1 1 0 0 0 1.898 0l.683-2.051a1 1 0 0 1 .633-.633l2.051-.683a1 1 0 0 0 0-1.898l-2.051-.683a1 1 0 0 1-.633-.633l-.683-2.051ZM15.98 13.804a1 1 0 0 0-1.96 0l-.24 1.192a1 1 0 0 1-.784.785l-1.192.238a1 1 0 0 0 0 1.962l1.192.238a1 1 0 0 1 .785.785l.238 1.192a1 1 0 0 0 1.962 0l.238-1.192a1 1 0 0 1 .785-.785l1.192-.238a1 1 0 0 0 0-1.962l-1.192-.238a1 1 0 0 1-.785-.785l-.238-1.192Z" />
+                    </svg>
+                </div>
+                <flux:heading size="lg">{{ __('Upgrade to Pro') }}</flux:heading>
+            </div>
+
+            <flux:text>
+                @if ($upgradeFeature === 'ai_fill')
+                    {{ __('AI Fill uses Claude to intelligently fill your grid with thematic words. Upgrade to Pro to unlock this feature.') }}
+                @elseif ($upgradeFeature === 'ai_clues')
+                    {{ __('AI Generate Clues writes creative, high-quality clues for every word in your puzzle. Upgrade to Pro to unlock this feature.') }}
+                @elseif ($upgradeFeature === 'export')
+                    {{ __('Export your puzzles to .puz, .jpz, and PDF formats for sharing and printing. Upgrade to Pro to unlock this feature.') }}
+                @else
+                    {{ __('Unlock AI-powered tools to build better puzzles faster. Upgrade to Pro to get started.') }}
+                @endif
+            </flux:text>
+
+            <ul class="space-y-2 text-sm">
+                <li class="flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="size-4 shrink-0 text-purple-500" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clip-rule="evenodd" />
+                    </svg>
+                    {{ __('50 AI Fills per month') }}
+                </li>
+                <li class="flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="size-4 shrink-0 text-purple-500" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clip-rule="evenodd" />
+                    </svg>
+                    {{ __('50 AI Clue Generations per month') }}
+                </li>
+                <li class="flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="size-4 shrink-0 text-purple-500" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clip-rule="evenodd" />
+                    </svg>
+                    {{ __('Export to .puz, .jpz, and PDF') }}
+                </li>
+                <li class="flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="size-4 shrink-0 text-purple-500" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clip-rule="evenodd" />
+                    </svg>
+                    {{ __('Unlimited puzzles') }}
+                </li>
+                <li class="flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="size-4 shrink-0 text-purple-500" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clip-rule="evenodd" />
+                    </svg>
+                    {{ __('Constructor analytics dashboard') }}
+                </li>
+            </ul>
+
+            <div class="flex justify-end gap-2">
+                <flux:button wire:click="$set('showUpgradeModal', false)">{{ __('Maybe Later') }}</flux:button>
+                <flux:button :href="route('billing.index')" wire:navigate variant="primary">
+                    {{ __('Upgrade Now') }}
+                </flux:button>
+            </div>
+        </div>
+    </flux:modal>
+
     {{-- Settings Modal --}}
     <flux:modal wire:model="showSettingsModal">
         <div class="space-y-6">
@@ -1404,10 +1015,127 @@ class extends Component {
             </flux:field>
 
             <flux:field>
+                <flux:label>{{ __('Layout') }}</flux:label>
+                <flux:description>{{ __('How the grid and clues are arranged on screen.') }}</flux:description>
+                @php $selectedLayout = $this->layout ?? CrosswordLayout::auto($this->width); @endphp
+                <div class="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-5">
+                    @foreach (CrosswordLayout::ordered() as $case)
+                        <button
+                            type="button"
+                            wire:click="$set('layout', {{ $case->value }})"
+                            @class([
+                                'group flex flex-col items-center gap-1.5 rounded-lg border p-2 text-left transition-colors',
+                                'border-blue-500 bg-blue-50 ring-1 ring-blue-500 dark:border-blue-400 dark:bg-blue-950/40 dark:ring-blue-400' => $selectedLayout === $case,
+                                'border-zinc-300 hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:border-zinc-500 dark:hover:bg-zinc-800' => $selectedLayout !== $case,
+                            ])
+                            aria-pressed="{{ $selectedLayout === $case ? 'true' : 'false' }}"
+                            title="{{ $case->label() }}"
+                        >
+                            <div class="w-full overflow-hidden rounded">
+                                @include('partials.layout-icon', ['case' => $case])
+                            </div>
+                            <span class="line-clamp-2 text-center text-[10px] leading-tight text-zinc-700 dark:text-zinc-400">{{ $case->label() }}</span>
+                        </button>
+                    @endforeach
+                </div>
+                <flux:error name="layout"/>
+            </flux:field>
+
+            <flux:field>
                 <flux:label>{{ __('Notes') }}</flux:label>
                 <flux:textarea wire:model="notes" placeholder="{{ __('Notes for solvers (shown before solving)') }}"
                                rows="3"/>
                 <flux:error name="notes"/>
+            </flux:field>
+
+            <flux:field>
+                <flux:label>{{ __('Tags') }}</flux:label>
+                <flux:description>{{ __('Categorize your puzzle so solvers can find it more easily.') }}</flux:description>
+
+                @if(count($this->selectedTags))
+                    <div class="mt-2 flex flex-wrap gap-1.5">
+                        @foreach($this->selectedTags as $tag)
+                            <span class="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
+                                {{ $tag['name'] }}
+                                <button type="button" wire:click="removeTag({{ $tag['id'] }})" class="ml-0.5 inline-flex items-center rounded-full p-0.5 text-blue-600 hover:bg-blue-200 hover:text-blue-800 dark:text-blue-400 dark:hover:bg-blue-800 dark:hover:text-blue-200">
+                                    <svg class="size-3" viewBox="0 0 20 20" fill="currentColor"><path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z"/></svg>
+                                </button>
+                            </span>
+                        @endforeach
+                    </div>
+                @endif
+
+                <div class="relative mt-2" x-data="{ open: false }" x-on:click.outside="open = false">
+                    <flux:input
+                        wire:model.live.debounce.300ms="tagSearch"
+                        placeholder="{{ __('Search or create tags...') }}"
+                        size="sm"
+                        x-on:focus="open = true"
+                        x-on:input="open = true"
+                    />
+                    <div
+                        x-show="open"
+                        x-cloak
+                        class="bg-elevated border-line absolute z-10 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border shadow-lg"
+                    >
+                        @php
+                            $available = collect($this->availableTags)->reject(fn ($t) => in_array($t['id'], $this->tagIds));
+                            $suggestions = $this->suggestedStandardTags;
+                        @endphp
+
+                        @foreach($available as $tag)
+                            <button
+                                type="button"
+                                wire:click="addTag({{ $tag['id'] }})"
+                                x-on:click="open = false"
+                                class="flex w-full items-center px-3 py-2 text-left text-sm hover:bg-zinc-100 dark:hover:bg-zinc-700"
+                            >
+                                {{ $tag['name'] }}
+                            </button>
+                        @endforeach
+
+                        @if(count($suggestions))
+                            <div class="px-3 pt-2 pb-1 text-xs font-semibold uppercase tracking-wide text-fg-subtle">
+                                {{ __('Suggested') }}
+                            </div>
+                            @foreach($suggestions as $name)
+                                <button
+                                    type="button"
+                                    wire:click="addStandardTag(@js($name))"
+                                    x-on:click="open = false"
+                                    class="flex w-full items-center px-3 py-2 text-left text-sm text-zinc-800 hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-700"
+                                >
+                                    {{ $name }}
+                                </button>
+                            @endforeach
+                        @endif
+
+                        @if($available->isEmpty() && count($suggestions) === 0)
+                            @if($this->tagSearch !== '')
+                                <button
+                                    type="button"
+                                    wire:click="createTag"
+                                    x-on:click="open = false"
+                                    class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-blue-600 hover:bg-zinc-100 dark:text-blue-400 dark:hover:bg-zinc-700"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="size-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z"/></svg>
+                                    {{ __('Create ":name"', ['name' => $this->tagSearch]) }}
+                                </button>
+                            @else
+                                <div class="px-3 py-2 text-sm text-zinc-500">{{ __('No tags found') }}</div>
+                            @endif
+                        @endif
+                    </div>
+                </div>
+            </flux:field>
+
+            <flux:field>
+                <flux:label>{{ __('Secret Theme') }}</flux:label>
+                <flux:textarea wire:model="secretTheme"
+                               placeholder="{{ __('A theme hint only used to guide AI Autofill (e.g. "80s movies", "things that fly"). Not shown to solvers.') }}"
+                               rows="2"/>
+                <flux:description>{{ __('Only used by AI Autofill to pick the best fill. Never shown to solvers.') }}</flux:description>
+                <flux:error name="secretTheme"/>
             </flux:field>
 
             <flux:separator/>

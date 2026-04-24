@@ -14,9 +14,9 @@
         data-crossword-id="{{ $crossword->id }}"
         data-api-url="{{ url('/api/embed') }}/"
     >
-        <p class="text-sm text-zinc-400">Loading puzzle...</p>
+        <p class="text-sm text-zinc-500">Loading puzzle...</p>
     </div>
-    <div class="mt-2 text-center text-xs text-zinc-400">
+    <div class="mt-2 text-center text-xs text-zinc-500">
         <a href="{{ url('/') }}" target="_blank" rel="noopener" class="hover:text-blue-500 transition-colors">
             Powered by Zorbl
         </a>

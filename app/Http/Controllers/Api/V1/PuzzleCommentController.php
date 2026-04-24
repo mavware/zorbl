@@ -47,9 +47,7 @@ class PuzzleCommentController extends Controller
 
     public function destroy(Request $request, PuzzleComment $comment): JsonResponse
     {
-        if ($comment->user_id !== $request->user()->id) {
-            abort(403, 'You can only delete your own comments.');
-        }
+        $this->authorize('delete', $comment);
 
         $comment->delete();
 

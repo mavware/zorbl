@@ -4,7 +4,7 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
         height,
         grid,
         solution,
-        styles: styles || {},
+        styles: (styles && !Array.isArray(styles)) ? styles : {},
         cluesAcross: cluesAcross || [],
         cluesDown: cluesDown || [],
         minAnswerLength: minAnswerLength || 3,
@@ -17,7 +17,6 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
         isDirty: false,
         saving: false,
         showSaved: false,
-        mobileClueTab: 'across',
         clueSuggestions: [],
         clueSuggestionsLoading: false,
         clueSuggestionsWord: '',
@@ -32,6 +31,7 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
 
         init() {
             document.addEventListener('click', () => this.closeContextMenu());
+            document.addEventListener('mousedown', (e) => this.handleClickOutside(e));
             this.$watch('isDirty', (val) => {
                 if (val) this.debouncedSave();
             });
@@ -285,6 +285,26 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
             return this.styles[key]?.shapebg === 'circle';
         },
 
+        getCellColor(row, col) {
+            return this.styles[row + ',' + col]?.color ?? null;
+        },
+
+        setCellColor(row, col, color) {
+            if (this.isBlock(row, col)) return;
+            const key = row + ',' + col;
+            if (color) {
+                this.styles[key] = { ...this.styles[key], color };
+            } else {
+                const entry = { ...this.styles[key] };
+                delete entry.color;
+                if (Object.keys(entry).length === 0 || (Object.keys(entry).length === 1 && entry.bars?.length === 0)) {
+                    delete this.styles[key];
+                } else {
+                    this.styles[key] = entry;
+                }
+            }
+        },
+
         cellClasses(row, col) {
             if (this.isVoid(row, col)) {
                 return 'invisible';
@@ -310,7 +330,10 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
             if (isInWord) {
                 return 'bg-blue-100 dark:bg-blue-900/50 cursor-pointer' + emptyHighlight;
             }
-            return 'bg-white dark:bg-zinc-800 cursor-pointer' + emptyHighlight;
+            if (this.getCellColor(row, col)) {
+                return 'cursor-pointer' + emptyHighlight;
+            }
+            return 'bg-zinc-50 dark:bg-zinc-800 cursor-pointer' + emptyHighlight;
         },
 
         isRebus(row, col) {
@@ -343,6 +366,29 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
                 const [r, c] = key.split(',').map(Number);
                 return [r, c];
             });
+        },
+
+        handleClickOutside(event) {
+            if (this.selectedRow < 0 && this.selectedCol < 0 && Object.keys(this.multiSelectedCells).length === 0) {
+                return;
+            }
+
+            const target = event.target;
+            const grid = this.$refs.gridContainer;
+            const across = this.$refs.acrossPanel;
+            const down = this.$refs.downPanel;
+
+            if (grid?.contains(target) || across?.contains(target) || down?.contains(target)) {
+                return;
+            }
+
+            this.selectedRow = -1;
+            this.selectedCol = -1;
+            this.clearMultiSelection();
+
+            if (grid && document.activeElement && grid.contains(document.activeElement)) {
+                document.activeElement.blur();
+            }
         },
 
         // --- Selection ---
@@ -777,6 +823,24 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
             this.closeContextMenu();
         },
 
+        contextSetColor(color) {
+            const cells = this.getMultiSelectedCoords();
+            if (cells.length > 0) {
+                for (const [r, c] of cells) {
+                    this.setCellColor(r, c, color);
+                }
+                this.clearMultiSelection();
+            } else {
+                this.setCellColor(this.contextMenu.row, this.contextMenu.col, color);
+            }
+            this.markDirty();
+            this.closeContextMenu();
+        },
+
+        contextClearColor() {
+            this.contextSetColor(null);
+        },
+
         // --- Pre-fill / Rebus ---
         showRebusInput: false,
         rebusInputValue: '',
@@ -1008,15 +1072,31 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
 
         cellBarStyles(row, col) {
             const key = row + ',' + col;
-            const bars = this.styles[key]?.bars;
-            if (!bars || bars.length === 0) return '';
+            const entry = this.styles[key];
+            const parts = [];
 
-            const shadows = [];
-            if (bars.includes('top'))    shadows.push('inset 0 2px 0 0 var(--bar-color)');
-            if (bars.includes('bottom')) shadows.push('inset 0 -2px 0 0 var(--bar-color)');
-            if (bars.includes('left'))   shadows.push('inset 2px 0 0 0 var(--bar-color)');
-            if (bars.includes('right'))  shadows.push('inset -2px 0 0 0 var(--bar-color)');
-            return 'box-shadow: ' + shadows.join(', ');
+            const bars = entry?.bars;
+            if (bars && bars.length > 0) {
+                const shadows = [];
+                if (bars.includes('top'))    shadows.push('inset 0 2px 0 0 var(--bar-color)');
+                if (bars.includes('bottom')) shadows.push('inset 0 -2px 0 0 var(--bar-color)');
+                if (bars.includes('left'))   shadows.push('inset 2px 0 0 0 var(--bar-color)');
+                if (bars.includes('right'))  shadows.push('inset -2px 0 0 0 var(--bar-color)');
+                parts.push('box-shadow: ' + shadows.join(', '));
+            }
+
+            const color = entry?.color;
+            if (color && !this.isBlock(row, col)) {
+                const isSelected = row === this.selectedRow && col === this.selectedCol;
+                const isMulti = this.isMultiSelected(row, col);
+                const wordCells = this.selectedRow >= 0 ? this.getWordCells(this.selectedRow, this.selectedCol, this.direction) : [];
+                const isInWord = wordCells.some(([r, c]) => r === row && c === col);
+                if (!isSelected && !isMulti && !isInWord) {
+                    parts.push('background-color: ' + color);
+                }
+            }
+
+            return parts.join('; ');
         },
 
         // --- Long press (mobile) ---
@@ -1411,6 +1491,13 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
                 const result = await this.$wire.aiFill(
                     JSON.parse(JSON.stringify(this.solution))
                 );
+                if (result.upgrade) {
+                    this.$wire.set('upgradeFeature', 'ai_fill');
+                    this.$wire.set('showUpgradeModal', true);
+                    this.fillInProgress = false;
+                    this.fillMode = null;
+                    return;
+                }
                 if (result.fills && result.fills.length) {
                     this.applyFills(result.fills);
                 }
@@ -1418,6 +1505,9 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
                     message: result.message,
                     type: result.success ? 'success' : 'warning',
                 });
+                if (result.needs_theme) {
+                    this.$wire.set('showSettingsModal', true);
+                }
             } catch (e) {
                 this.$dispatch('notify', {
                     message: 'AI fill failed: ' + (e.message || 'Unknown error'),
@@ -1435,6 +1525,13 @@ export function crosswordGrid({ width, height, grid, solution, styles, cluesAcro
                 const result = await this.$wire.aiGenerateClues(
                     JSON.parse(JSON.stringify(this.solution))
                 );
+                if (result.upgrade) {
+                    this.$wire.set('upgradeFeature', 'ai_clues');
+                    this.$wire.set('showUpgradeModal', true);
+                    this.fillInProgress = false;
+                    this.fillMode = null;
+                    return;
+                }
                 if (result.success && result.clues) {
                     this.applyClues(result.clues);
                 }

@@ -72,6 +72,8 @@ use Spatie\Permission\Traits\HasRoles;
  * @property-read int|null $support_tickets_count
  * @property-read Collection<int, SupportTicket> $assignedTickets
  * @property-read int|null $assigned_tickets_count
+ * @property-read Collection<int, Tag> $blockedTags
+ * @property-read int|null $blocked_tags_count
  *
  * @method static UserFactory factory($count = null, $state = [])
  *
@@ -191,6 +193,14 @@ class User extends Authenticatable implements FilamentUser
     public function assignedTickets(): HasMany
     {
         return $this->hasMany(SupportTicket::class, 'assigned_to');
+    }
+
+    /**
+     * @return BelongsToMany<Tag, $this>
+     */
+    public function blockedTags(): BelongsToMany
+    {
+        return $this->belongsToMany(Tag::class, 'blocked_tags')->withTimestamps();
     }
 
     /**

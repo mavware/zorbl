@@ -3,8 +3,8 @@
     <head>
         @include('partials.head')
     </head>
-    <body class="min-h-screen bg-white dark:bg-zinc-800">
-        <flux:sidebar sticky collapsible="mobile" class="border-e border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900">
+    <body class="min-h-screen bg-page">
+        <flux:sidebar sticky collapsible="mobile" class="bg-surface border-line border-e">
             <flux:sidebar.header>
                 <x-app-logo :sidebar="true" href="{{ route('dashboard') }}" wire:navigate />
                 <flux:sidebar.collapse class="lg:hidden" />
@@ -43,6 +43,22 @@
             </flux:sidebar.nav>
 
             <flux:spacer />
+
+            @unless (auth()->user()->isPro())
+                <a
+                    href="{{ route('billing.index') }}"
+                    wire:navigate
+                    class="mx-3 mb-2 block rounded-lg border border-amber-500/30 bg-gradient-to-br from-amber-500/10 to-amber-500/5 p-3 transition hover:border-amber-500/50 hover:from-amber-500/15 hover:to-amber-500/10"
+                >
+                    <div class="flex items-center gap-2">
+                        <flux:icon.sparkles class="size-4 text-amber-500" />
+                        <span class="text-sm font-semibold text-zinc-100 dark:text-zinc-100">{{ __('Upgrade to Pro') }}</span>
+                    </div>
+                    <p class="mt-1 text-xs text-zinc-700 dark:text-zinc-400">
+                        {{ __('Unlock AI grid fills and clue suggestions.') }}
+                    </p>
+                </a>
+            @endunless
 
             <flux:sidebar.nav>
 
@@ -90,9 +106,11 @@
                         <flux:menu.item :href="route('profile.edit')" icon="cog" wire:navigate>
                             {{ __('Settings') }}
                         </flux:menu.item>
-                        <flux:menu.item :href="route('filament.admin.pages.dashboard')" icon="home" wire:navigate>
-                            {{ __('Admin') }}
-                        </flux:menu.item>
+                        @if (auth()->user()->hasRole('Admin'))
+                            <flux:menu.item :href="route('filament.admin.home')" icon="home">
+                                {{ __('Admin') }}
+                            </flux:menu.item>
+                        @endif
                     </flux:menu.radio.group>
 
                     <flux:menu.separator />
@@ -114,6 +132,10 @@
         </flux:header>
 
         {{ $slot }}
+
+        @persist('toast')
+            <flux:toast position="top end" />
+        @endpersist
 
         @fluxScripts
     </body>

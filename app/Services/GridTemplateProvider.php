@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Crossword;
+use App\Models\Template;
 use Illuminate\Support\Facades\Cache;
 
 class GridTemplateProvider
@@ -19,28 +20,67 @@ class GridTemplateProvider
             return [];
         }
 
-        $fromDb = $this->templatesFromDatabase($width, $height);
+        $fromAdmin = $this->templatesFromAdmin($width, $height);
 
-        if (count($fromDb) >= 5) {
-            return array_slice($fromDb, 0, 5);
+        if (count($fromAdmin) >= 5) {
+            return array_slice($fromAdmin, 0, 5);
+        }
+
+        $fromDb = $this->templatesFromDatabase($width, $height);
+        $seen = array_flip(array_column($fromAdmin, 'name'));
+        $merged = $fromAdmin;
+
+        foreach ($fromDb as $template) {
+            if (count($merged) >= 5) {
+                break;
+            }
+
+            if (! isset($seen[$template['name']])) {
+                $merged[] = $template;
+                $seen[$template['name']] = true;
+            }
+        }
+
+        if (count($merged) >= 5) {
+            return $merged;
         }
 
         // Fill remaining slots with generated templates
         $generated = $this->generateTemplates($width, $height);
-        $existingNames = array_flip(array_column($fromDb, 'name'));
-        $merged = $fromDb;
 
         foreach ($generated as $template) {
             if (count($merged) >= 5) {
                 break;
             }
 
-            if (! isset($existingNames[$template['name']])) {
+            if (! isset($seen[$template['name']])) {
                 $merged[] = $template;
+                $seen[$template['name']] = true;
             }
         }
 
         return $merged;
+    }
+
+    /**
+     * Fetch admin-curated templates for the requested dimensions.
+     *
+     * @return array<int, array{name: string, grid: array<int, array<int, int|string>>}>
+     */
+    private function templatesFromAdmin(int $width, int $height): array
+    {
+        return Template::query()
+            ->where('is_active', true)
+            ->where('width', $width)
+            ->where('height', $height)
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get(['name', 'grid'])
+            ->map(fn (Template $template): array => [
+                'name' => $template->name,
+                'grid' => $template->grid,
+            ])
+            ->all();
     }
 
     /**
@@ -100,11 +140,11 @@ class GridTemplateProvider
                 $seen[$fingerprint] = true;
 
                 // Validate symmetry and minimum word length
-                if (! $this->hasRotationalSymmetry($templateGrid, $width, $height)) {
+                if (! self::hasRotationalSymmetry($templateGrid, $width, $height)) {
                     continue;
                 }
 
-                if (! $this->validateMinWordLength($templateGrid, $width, $height)) {
+                if (! self::validateMinWordLength($templateGrid, $width, $height)) {
                     continue;
                 }
 
@@ -220,7 +260,7 @@ class GridTemplateProvider
      *
      * @param  array<int, array<int, int|string>>  $grid
      */
-    private function hasRotationalSymmetry(array $grid, int $width, int $height): bool
+    public static function hasRotationalSymmetry(array $grid, int $width, int $height): bool
     {
         for ($r = 0; $r < $height; $r++) {
             for ($c = 0; $c < $width; $c++) {
@@ -282,7 +322,7 @@ class GridTemplateProvider
      *
      * @param  array<int, array<int, int|string>>  $grid
      */
-    private function validateMinWordLength(array $grid, int $width, int $height, int $minLength = 3): bool
+    public static function validateMinWordLength(array $grid, int $width, int $height, int $minLength = 3): bool
     {
         // Check across words
         for ($r = 0; $r < $height; $r++) {
@@ -324,7 +364,7 @@ class GridTemplateProvider
      *
      * @return array<int, array{name: string, grid: array<int, array<int, int|string>>}>
      */
-    private function generateTemplates(int $width, int $height): array
+    public function generateTemplates(int $width, int $height): array
     {
         // Only support square grids from 3x3 to 27x27
         if ($width !== $height || $width < 3 || $width > 27) {
@@ -375,7 +415,7 @@ class GridTemplateProvider
             $blocks = $this->symmetricBlocks($n, $n, $candidate['blocks']);
             $grid = $this->buildGrid($n, $n, $blocks);
 
-            if ($this->validateMinWordLength($grid, $n, $n)) {
+            if (self::validateMinWordLength($grid, $n, $n)) {
                 $templates[] = ['name' => $candidate['name'], 'grid' => $grid];
             }
 

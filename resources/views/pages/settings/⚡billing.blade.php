@@ -57,24 +57,27 @@ new #[Title('Billing')] class extends Component {
         return app(AiUsageTracker::class)->remaining($this->user, 'clue_generation');
     }
 
-    public function subscribe(): \Symfony\Component\HttpFoundation\Response
+    public function subscribe()
     {
         $priceId = $this->billingInterval === 'yearly'
             ? config('services.stripe.pro_yearly_price')
             : config('services.stripe.pro_monthly_price');
 
-        return $this->user
+        $checkout = $this->user
             ->newSubscription('default', $priceId)
             ->checkout([
                 'success_url' => route('billing.index') . '?checkout=success',
                 'cancel_url' => route('billing.index') . '?checkout=cancelled',
-            ])
-            ->toResponse(request());
+            ]);
+
+        return $this->redirect($checkout->asStripeCheckoutSession()->url);
     }
 
-    public function manageBilling(): \Symfony\Component\HttpFoundation\Response
+    public function manageBilling()
     {
-        return $this->user->redirectToBillingPortal(route('billing.index'));
+        $url = $this->user->billingPortalUrl(route('billing.index'));
+
+        return $this->redirect($url);
     }
 }; ?>
 
@@ -128,9 +131,9 @@ new #[Title('Billing')] class extends Component {
                         <div>
                             <div class="flex justify-between text-sm">
                                 <span>{{ __('AI Autofill') }}</span>
-                                <span class="text-zinc-500">{{ $this->aiFillsUsed }} / 50</span>
+                                <span class="text-zinc-600">{{ $this->aiFillsUsed }} / 50</span>
                             </div>
-                            <div class="mt-1 h-2 w-full overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
+                            <div class="mt-1 h-2 w-full overflow-hidden rounded-full bg-page">
                                 <div class="h-full rounded-full bg-blue-500 transition-all" style="width: {{ min(100, ($this->aiFillsUsed / 50) * 100) }}%"></div>
                             </div>
                         </div>
@@ -138,14 +141,14 @@ new #[Title('Billing')] class extends Component {
                         <div>
                             <div class="flex justify-between text-sm">
                                 <span>{{ __('AI Clue Generation') }}</span>
-                                <span class="text-zinc-500">{{ $this->aiCluesUsed }} / 50</span>
+                                <span class="text-zinc-600">{{ $this->aiCluesUsed }} / 50</span>
                             </div>
-                            <div class="mt-1 h-2 w-full overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
+                            <div class="mt-1 h-2 w-full overflow-hidden rounded-full bg-page">
                                 <div class="h-full rounded-full bg-purple-500 transition-all" style="width: {{ min(100, ($this->aiCluesUsed / 50) * 100) }}%"></div>
                             </div>
                         </div>
 
-                        <flux:text size="xs" class="text-zinc-500">
+                        <flux:text size="xs" class="text-zinc-600">
                             {{ __('Usage resets on the 1st of each month.') }}
                         </flux:text>
                     </div>
@@ -186,8 +189,8 @@ new #[Title('Billing')] class extends Component {
 
                     <div class="mb-4 flex items-center gap-3">
                         <flux:radio.group wire:model="billingInterval" variant="segmented">
-                            <flux:radio value="monthly" label="{{ __('Monthly — $8/mo') }}" />
-                            <flux:radio value="yearly" label="{{ __('Yearly — $6/mo') }}" />
+                            <flux:radio value="monthly" label="{{ __('Monthly — $5/mo') }}" />
+                            <flux:radio value="yearly" label="{{ __('Yearly — $2/mo') }}" />
                         </flux:radio.group>
                     </div>
 

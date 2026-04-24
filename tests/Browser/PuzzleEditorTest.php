@@ -43,3 +43,48 @@ it('non-owners cannot view the editor', function () {
 
     $this->get(route('crosswords.editor', $crossword))->assertForbidden();
 });
+
+it('clears cell selection when clicking outside the grid and clue panels', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()
+        ->for($user)
+        ->withBlocks()
+        ->create(['title' => 'Click Away Test']);
+
+    $this->actingAs($user);
+
+    $page = visit(route('crosswords.editor', $crossword));
+
+    $gridData = 'Alpine.$data(document.querySelector(\'[x-data^="crosswordGrid"]\'))';
+
+    $page->script("(() => { const d = {$gridData}; d.selectedRow = 0; d.selectedCol = 0; })()");
+    $page->assertScript("{$gridData}.selectedRow", 0);
+
+    $page->click('input[placeholder="Puzzle title"][wire\\:change="saveMetadata"]');
+
+    $page->assertScript("{$gridData}.selectedRow", -1);
+    $page->assertScript("{$gridData}.selectedCol", -1);
+    $page->assertNoJavaScriptErrors();
+});
+
+it('keeps cell selection when clicking inside a clue panel', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()
+        ->for($user)
+        ->withBlocks()
+        ->create(['title' => 'Clue Panel Test']);
+
+    $this->actingAs($user);
+
+    $page = visit(route('crosswords.editor', $crossword));
+
+    $gridData = 'Alpine.$data(document.querySelector(\'[x-data^="crosswordGrid"]\'))';
+
+    $page->script("(() => { const d = {$gridData}; d.selectedRow = 0; d.selectedCol = 0; })()");
+
+    $page->script("document.querySelector('[x-ref=\"acrossPanel\"]').dispatchEvent(new MouseEvent('mousedown', {bubbles: true}))");
+
+    $page->assertScript("{$gridData}.selectedRow", 0);
+    $page->assertScript("{$gridData}.selectedCol", 0);
+    $page->assertNoJavaScriptErrors();
+});

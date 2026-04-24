@@ -24,6 +24,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $meta_answer
  * @property string|null $meta_hint
  * @property string $status
+ * @property CarbonImmutable|null $publish_at
  * @property CarbonImmutable $starts_at
  * @property CarbonImmutable $ends_at
  * @property int $max_meta_attempts
@@ -40,13 +41,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @method static Builder<static> active()
  * @method static Builder<static> upcoming()
  * @method static Builder<static> ended()
- * @method static Builder<static> public()
+ * @method static Builder<static> published()
  *
  * @mixin Eloquent
  */
 #[Fillable([
     'user_id', 'title', 'slug', 'description', 'rules',
-    'meta_answer', 'meta_hint', 'status',
+    'meta_answer', 'meta_hint', 'status', 'publish_at',
     'starts_at', 'ends_at', 'max_meta_attempts', 'is_featured',
 ])]
 class Contest extends Model
@@ -62,6 +63,7 @@ class Contest extends Model
         return [
             'starts_at' => 'datetime',
             'ends_at' => 'datetime',
+            'publish_at' => 'datetime',
             'is_featured' => 'boolean',
             'max_meta_attempts' => 'integer',
         ];
@@ -123,6 +125,22 @@ class Contest extends Model
     }
 
     /**
+     * Check if the contest is published (visible to the public).
+     */
+    public function isPublished(): bool
+    {
+        if (in_array($this->status, ['draft', 'archived'], true)) {
+            return false;
+        }
+
+        if ($this->publish_at && $this->publish_at->isFuture()) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
      * Normalize and compare a submitted answer against the meta answer.
      */
     public function checkMetaAnswer(string $answer): bool
@@ -159,6 +177,9 @@ class Contest extends Model
                     $q2->where('status', 'active')
                         ->where('starts_at', '>', now());
                 });
+        })->where(function (Builder $q) {
+            $q->whereNull('publish_at')
+                ->orWhere('publish_at', '<=', now());
         });
     }
 
@@ -174,13 +195,17 @@ class Contest extends Model
     }
 
     /**
-     * Scope to publicly visible contests (excludes draft and archived).
+     * Scope to published contests (excludes draft and archived).
      *
      * @param  Builder<static>  $query
      * @return Builder<static>
      */
-    public function scopePublic(Builder $query): Builder
+    public function scopePublished(Builder $query): Builder
     {
-        return $query->whereNotIn('status', ['draft', 'archived']);
+        return $query->whereNotIn('status', ['draft', 'archived'])
+            ->where(function (Builder $q) {
+                $q->whereNull('publish_at')
+                    ->orWhere('publish_at', '<=', now());
+            });
     }
 }

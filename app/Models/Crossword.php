@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\CrosswordLayout;
 use Carbon\CarbonImmutable;
 use Database\Factories\CrosswordFactory;
 use Eloquent;
@@ -21,6 +22,8 @@ use Zorbl\CrosswordIO\Crossword as CrosswordDTO;
  * @property string|null $author
  * @property string|null $copyright
  * @property string|null $notes
+ * @property string|null $secret_theme
+ * @property CrosswordLayout|null $layout
  * @property int $width
  * @property int $height
  * @property string $kind
@@ -42,12 +45,14 @@ use Zorbl\CrosswordIO\Crossword as CrosswordDTO;
  * @property-read int|null $clue_entries_count
  * @property-read Collection<int, CrosswordLike> $likes
  * @property-read int|null $likes_count
+ * @property-read Collection<int, Tag> $tags
+ * @property-read int|null $tags_count
  * @property-read User $user
  *
  * @mixin Eloquent
  */
 #[Fillable([
-    'title', 'author', 'copyright', 'notes',
+    'title', 'author', 'copyright', 'notes', 'secret_theme', 'layout',
     'width', 'height', 'kind',
     'grid', 'solution', 'prefilled', 'user_progress', 'clues_across', 'clues_down',
     'styles', 'metadata', 'is_published',
@@ -75,6 +80,7 @@ class Crossword extends Model
             'styles' => 'array',
             'metadata' => 'array',
             'is_published' => 'boolean',
+            'layout' => CrosswordLayout::class,
         ];
     }
 
@@ -126,6 +132,14 @@ class Crossword extends Model
         return $this->belongsToMany(Contest::class)
             ->withPivot(['sort_order', 'extraction_hint'])
             ->withTimestamps();
+    }
+
+    /**
+     * @return BelongsToMany<Tag, $this>
+     */
+    public function tags(): BelongsToMany
+    {
+        return $this->belongsToMany(Tag::class)->withTimestamps();
     }
 
     /**

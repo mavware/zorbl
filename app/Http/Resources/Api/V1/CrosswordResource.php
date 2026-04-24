@@ -49,6 +49,17 @@ class CrosswordResource extends JsonApiResource
             $relationships['user'] = $this->relationshipReference('users', $this->user_id);
         }
 
+        if ($this->relationLoaded('tags')) {
+            $relationships['tags'] = $this->tags->map(fn ($tag) => [
+                'type' => 'tags',
+                'id' => (string) $tag->id,
+                'attributes' => [
+                    'name' => $tag->name,
+                    'slug' => $tag->slug,
+                ],
+            ])->values()->all();
+        }
+
         return $relationships;
     }
 

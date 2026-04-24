@@ -10,11 +10,13 @@ beforeEach(function () {
     $this->owner = new User;
     $this->owner->id = 1;
 
-    $this->assignee = new User;
-    $this->assignee->id = 2;
+    $this->admin = Mockery::mock(User::class)->makePartial();
+    $this->admin->id = 2;
+    $this->admin->shouldReceive('hasRole')->with('Admin')->andReturn(true);
 
-    $this->stranger = new User;
-    $this->stranger->id = 3;
+    $this->otherUser = Mockery::mock(User::class)->makePartial();
+    $this->otherUser->id = 3;
+    $this->otherUser->shouldReceive('hasRole')->with('Admin')->andReturn(false);
 });
 
 function makeTicket(int $ownerId, ?int $assignedTo = null, string $status = 'open'): SupportTicket
@@ -32,71 +34,62 @@ test('viewAny allows any authenticated user', function () {
 });
 
 test('view allows the ticket owner', function () {
-    $ticket = makeTicket(1);
-
-    expect($this->policy->view($this->owner, $ticket))->toBeTrue();
+    expect($this->policy->view($this->owner, makeTicket(1)))->toBeTrue();
 });
 
 test('view allows the assigned admin', function () {
-    $ticket = makeTicket(1, 2);
-
-    expect($this->policy->view($this->assignee, $ticket))->toBeTrue();
+    expect($this->policy->view($this->admin, makeTicket(1, 2)))->toBeTrue();
 });
 
-test('view denies unrelated users', function () {
-    $ticket = makeTicket(1, 2);
-
-    expect($this->policy->view($this->stranger, $ticket))->toBeFalse();
+test('view denies admin who is not assigned', function () {
+    expect($this->policy->view($this->admin, makeTicket(1, 99)))->toBeFalse();
 });
 
-test('view denies when no one is assigned and user is not owner', function () {
-    $ticket = makeTicket(1);
-
-    expect($this->policy->view($this->stranger, $ticket))->toBeFalse();
+test('view denies non-owner non-admin', function () {
+    expect($this->policy->view($this->otherUser, makeTicket(1)))->toBeFalse();
 });
 
 test('create allows any authenticated user', function () {
     expect($this->policy->create($this->owner))->toBeTrue();
 });
 
-test('respond allows the ticket owner on open ticket', function () {
-    $ticket = makeTicket(1);
+test('update allows the ticket owner', function () {
+    expect($this->policy->update($this->owner, makeTicket(1)))->toBeTrue();
+});
 
-    expect($this->policy->respond($this->owner, $ticket))->toBeTrue();
+test('update allows the assigned admin', function () {
+    expect($this->policy->update($this->admin, makeTicket(1, 2)))->toBeTrue();
+});
+
+test('update denies admin who is not assigned', function () {
+    expect($this->policy->update($this->admin, makeTicket(1, 99)))->toBeFalse();
+});
+
+test('update denies non-owner non-admin', function () {
+    expect($this->policy->update($this->otherUser, makeTicket(1)))->toBeFalse();
+});
+
+test('respond allows the ticket owner on open ticket', function () {
+    expect($this->policy->respond($this->owner, makeTicket(1, null, 'open')))->toBeTrue();
+});
+
+test('respond denies everyone on closed ticket', function () {
+    expect($this->policy->respond($this->owner, makeTicket(1, null, 'closed')))->toBeFalse();
+    expect($this->policy->respond($this->admin, makeTicket(1, 2, 'closed')))->toBeFalse();
 });
 
 test('respond allows the assigned admin on open ticket', function () {
-    $ticket = makeTicket(1, 2);
-
-    expect($this->policy->respond($this->assignee, $ticket))->toBeTrue();
+    expect($this->policy->respond($this->admin, makeTicket(1, 2, 'in_progress')))->toBeTrue();
 });
 
-test('respond denies unrelated users', function () {
-    $ticket = makeTicket(1, 2);
-
-    expect($this->policy->respond($this->stranger, $ticket))->toBeFalse();
+test('respond denies non-owner non-admin', function () {
+    expect($this->policy->respond($this->otherUser, makeTicket(1, null, 'open')))->toBeFalse();
 });
 
-test('respond denies on closed ticket even for owner', function () {
-    $ticket = makeTicket(1, null, 'closed');
-
-    expect($this->policy->respond($this->owner, $ticket))->toBeFalse();
+test('delete allows admin', function () {
+    expect($this->policy->delete($this->admin, makeTicket(1)))->toBeTrue();
 });
 
-test('respond denies on closed ticket even for assigned admin', function () {
-    $ticket = makeTicket(1, 2, 'closed');
-
-    expect($this->policy->respond($this->assignee, $ticket))->toBeFalse();
-});
-
-test('respond allows on in_progress ticket for owner', function () {
-    $ticket = makeTicket(1, 2, 'in_progress');
-
-    expect($this->policy->respond($this->owner, $ticket))->toBeTrue();
-});
-
-test('respond allows on resolved ticket for owner', function () {
-    $ticket = makeTicket(1, 2, 'resolved');
-
-    expect($this->policy->respond($this->owner, $ticket))->toBeTrue();
+test('delete denies non-admin', function () {
+    expect($this->policy->delete($this->otherUser, makeTicket(1)))->toBeFalse();
 });

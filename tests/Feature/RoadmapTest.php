@@ -3,6 +3,19 @@
 use App\Models\RoadmapItem;
 use App\Models\User;
 use Livewire\Livewire;
+use Spatie\Permission\Models\Role;
+
+beforeEach(function () {
+    Role::findOrCreate('Admin', 'web');
+});
+
+function adminUser(): User
+{
+    $admin = User::factory()->create();
+    $admin->assignRole('Admin');
+
+    return $admin;
+}
 
 test('authenticated users can view the roadmap', function () {
     $user = User::factory()->create();
@@ -35,8 +48,8 @@ test('roadmap shows empty state when no items exist', function () {
         ->assertSee('No roadmap items yet');
 });
 
-test('users can add a roadmap item', function () {
-    Livewire::actingAs(User::factory()->create())
+test('admins can add a roadmap item', function () {
+    Livewire::actingAs(adminUser())
         ->test('pages::roadmap.index')
         ->set('newTitle', 'Dark mode support')
         ->set('newDescription', 'Add dark mode toggle for all pages')
@@ -46,8 +59,31 @@ test('users can add a roadmap item', function () {
     expect(RoadmapItem::where('title', 'Dark mode support')->exists())->toBeTrue();
 });
 
-test('adding a roadmap item defaults to planned status', function () {
+test('non-admins cannot add a roadmap item', function () {
     Livewire::actingAs(User::factory()->create())
+        ->test('pages::roadmap.index')
+        ->set('newTitle', 'Sneaky feature')
+        ->set('newType', 'feature')
+        ->call('addItem')
+        ->assertForbidden();
+
+    expect(RoadmapItem::where('title', 'Sneaky feature')->exists())->toBeFalse();
+});
+
+test('non-admins do not see the add item button', function () {
+    Livewire::actingAs(User::factory()->create())
+        ->test('pages::roadmap.index')
+        ->assertDontSee('Add Item');
+});
+
+test('admins see the add item button', function () {
+    Livewire::actingAs(adminUser())
+        ->test('pages::roadmap.index')
+        ->assertSee('Add Item');
+});
+
+test('adding a roadmap item defaults to planned status', function () {
+    Livewire::actingAs(adminUser())
         ->test('pages::roadmap.index')
         ->set('newTitle', 'New feature idea')
         ->set('newType', 'feature')
@@ -57,7 +93,7 @@ test('adding a roadmap item defaults to planned status', function () {
 });
 
 test('title is required when adding a roadmap item', function () {
-    Livewire::actingAs(User::factory()->create())
+    Livewire::actingAs(adminUser())
         ->test('pages::roadmap.index')
         ->set('newTitle', '')
         ->set('newType', 'feature')
@@ -66,7 +102,7 @@ test('title is required when adding a roadmap item', function () {
 });
 
 test('title must be at least 3 characters', function () {
-    Livewire::actingAs(User::factory()->create())
+    Livewire::actingAs(adminUser())
         ->test('pages::roadmap.index')
         ->set('newTitle', 'Ab')
         ->set('newType', 'feature')
@@ -75,7 +111,7 @@ test('title must be at least 3 characters', function () {
 });
 
 test('type must be valid when adding a roadmap item', function () {
-    Livewire::actingAs(User::factory()->create())
+    Livewire::actingAs(adminUser())
         ->test('pages::roadmap.index')
         ->set('newTitle', 'Some item')
         ->set('newType', 'invalid_type')
@@ -83,10 +119,10 @@ test('type must be valid when adding a roadmap item', function () {
         ->assertHasErrors(['newType' => 'in']);
 });
 
-test('users can edit a roadmap item', function () {
+test('admins can edit a roadmap item', function () {
     $item = RoadmapItem::factory()->planned()->create(['title' => 'Original Title']);
 
-    Livewire::actingAs(User::factory()->create())
+    Livewire::actingAs(adminUser())
         ->test('pages::roadmap.index')
         ->call('openEditModal', $item->id)
         ->set('editTitle', 'Updated Title')
@@ -98,10 +134,34 @@ test('users can edit a roadmap item', function () {
         ->type->toBe('improvement');
 });
 
-test('users can change status to in progress', function () {
+test('non-admins cannot open the edit modal', function () {
     $item = RoadmapItem::factory()->planned()->create();
 
     Livewire::actingAs(User::factory()->create())
+        ->test('pages::roadmap.index')
+        ->call('openEditModal', $item->id)
+        ->assertForbidden();
+});
+
+test('non-admins cannot save edits even if they bypass the UI', function () {
+    $item = RoadmapItem::factory()->planned()->create(['title' => 'Original']);
+
+    Livewire::actingAs(User::factory()->create())
+        ->test('pages::roadmap.index')
+        ->set('editingItemId', $item->id)
+        ->set('editTitle', 'Hacked')
+        ->set('editType', 'feature')
+        ->set('editStatus', 'planned')
+        ->call('saveEdit')
+        ->assertForbidden();
+
+    expect($item->fresh()->title)->toBe('Original');
+});
+
+test('admins can change status to in progress', function () {
+    $item = RoadmapItem::factory()->planned()->create();
+
+    Livewire::actingAs(adminUser())
         ->test('pages::roadmap.index')
         ->call('openEditModal', $item->id)
         ->set('editStatus', 'in_progress')
@@ -113,7 +173,7 @@ test('users can change status to in progress', function () {
 test('marking an item completed sets the completed date', function () {
     $item = RoadmapItem::factory()->planned()->create();
 
-    Livewire::actingAs(User::factory()->create())
+    Livewire::actingAs(adminUser())
         ->test('pages::roadmap.index')
         ->call('openEditModal', $item->id)
         ->set('editStatus', 'completed')
@@ -128,7 +188,7 @@ test('marking an item completed sets the completed date', function () {
 test('moving a completed item back to planned clears the completed date', function () {
     $item = RoadmapItem::factory()->completed()->create();
 
-    Livewire::actingAs(User::factory()->create())
+    Livewire::actingAs(adminUser())
         ->test('pages::roadmap.index')
         ->call('openEditModal', $item->id)
         ->set('editStatus', 'planned')
@@ -139,14 +199,35 @@ test('moving a completed item back to planned clears the completed date', functi
         ->completed_date->toBeNull();
 });
 
-test('users can delete a roadmap item', function () {
+test('admins can delete a roadmap item', function () {
     $item = RoadmapItem::factory()->create();
 
-    Livewire::actingAs(User::factory()->create())
+    Livewire::actingAs(adminUser())
         ->test('pages::roadmap.index')
         ->call('deleteItem', $item->id);
 
     expect(RoadmapItem::find($item->id))->toBeNull();
+});
+
+test('non-admins cannot delete a roadmap item', function () {
+    $item = RoadmapItem::factory()->create();
+
+    Livewire::actingAs(User::factory()->create())
+        ->test('pages::roadmap.index')
+        ->call('deleteItem', $item->id)
+        ->assertForbidden();
+
+    expect(RoadmapItem::find($item->id))->not->toBeNull();
+});
+
+test('non-admins do not see edit or delete controls', function () {
+    RoadmapItem::factory()->planned()->create(['title' => 'Visible Item']);
+
+    Livewire::actingAs(User::factory()->create())
+        ->test('pages::roadmap.index')
+        ->assertSee('Visible Item')
+        ->assertDontSee('openEditModal')
+        ->assertDontSee('deleteItem');
 });
 
 test('filter by type shows only matching items', function () {
@@ -174,7 +255,7 @@ test('filter all shows every item', function () {
 });
 
 test('roadmap item can have an optional target date', function () {
-    Livewire::actingAs(User::factory()->create())
+    Livewire::actingAs(adminUser())
         ->test('pages::roadmap.index')
         ->set('newTitle', 'Scheduled feature')
         ->set('newType', 'feature')
@@ -185,7 +266,7 @@ test('roadmap item can have an optional target date', function () {
 });
 
 test('roadmap item can be added without a target date', function () {
-    Livewire::actingAs(User::factory()->create())
+    Livewire::actingAs(adminUser())
         ->test('pages::roadmap.index')
         ->set('newTitle', 'Unscheduled feature')
         ->set('newType', 'feature')
@@ -196,15 +277,13 @@ test('roadmap item can be added without a target date', function () {
 });
 
 test('roadmap appears in sidebar navigation', function () {
-    $user = User::factory()->create();
-
-    $this->actingAs($user)
+    $this->actingAs(adminUser())
         ->get(route('roadmap.index'))
         ->assertSee('Roadmap');
 });
 
 test('description is optional when adding a roadmap item', function () {
-    Livewire::actingAs(User::factory()->create())
+    Livewire::actingAs(adminUser())
         ->test('pages::roadmap.index')
         ->set('newTitle', 'No description item')
         ->set('newDescription', '')

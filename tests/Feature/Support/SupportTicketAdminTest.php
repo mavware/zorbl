@@ -34,7 +34,7 @@ test('admin can update ticket status', function () {
     $admin = User::factory()->create();
     $admin->assignRole('Admin');
 
-    $ticket = SupportTicket::factory()->open()->create();
+    $ticket = SupportTicket::factory()->open()->create(['assigned_to' => $admin->id]);
 
     $this->actingAs($admin);
 
@@ -53,7 +53,7 @@ test('admin can assign ticket', function () {
     $admin = User::factory()->create();
     $admin->assignRole('Admin');
 
-    $ticket = SupportTicket::factory()->create();
+    $ticket = SupportTicket::factory()->create(['assigned_to' => $admin->id]);
 
     $this->actingAs($admin);
 
@@ -72,7 +72,7 @@ test('admin can change ticket priority', function () {
     $admin = User::factory()->create();
     $admin->assignRole('Admin');
 
-    $ticket = SupportTicket::factory()->create();
+    $ticket = SupportTicket::factory()->create(['assigned_to' => $admin->id]);
 
     $this->actingAs($admin);
 
@@ -91,7 +91,7 @@ test('closing ticket sets closed_at timestamp', function () {
     $admin = User::factory()->create();
     $admin->assignRole('Admin');
 
-    $ticket = SupportTicket::factory()->open()->create();
+    $ticket = SupportTicket::factory()->open()->create(['assigned_to' => $admin->id]);
     expect($ticket->closed_at)->toBeNull();
 
     $this->actingAs($admin);
