@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\PuzzleType;
 use App\Models\Crossword;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -26,6 +27,7 @@ class CrosswordFactory extends Factory
             'width' => $width,
             'height' => $height,
             'kind' => 'http://ipuz.org/crossword#1',
+            'puzzle_type' => PuzzleType::Standard,
             'grid' => Crossword::emptyGrid($width, $height),
             'solution' => Crossword::emptySolution($width, $height),
             'clues_across' => [],
@@ -41,6 +43,26 @@ class CrosswordFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'is_published' => true,
+        ]);
+    }
+
+    public function diamond(): static
+    {
+        return $this->state(function (array $attributes) {
+            $width = $attributes['width'];
+            $height = $attributes['height'];
+
+            return [
+                'puzzle_type' => PuzzleType::Diamond,
+                'grid' => PuzzleType::Diamond->generateGrid($width, $height),
+            ];
+        });
+    }
+
+    public function freestyle(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'puzzle_type' => PuzzleType::Freestyle,
         ]);
     }
 

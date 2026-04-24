@@ -23,6 +23,7 @@ class CrosswordResource extends JsonApiResource
             'width' => $this->width,
             'height' => $this->height,
             'kind' => $this->kind,
+            'puzzle_type' => $this->puzzle_type->value,
             'difficulty_score' => $this->difficulty_score,
             'difficulty_label' => $this->difficulty_label,
             'is_published' => $this->is_published,
