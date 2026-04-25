@@ -166,6 +166,19 @@
                                 foreach ($cellStyle['bars'] ?? [] as $bar) {
                                     $inlineStyle .= 'border-' . e($bar) . ': 3pt solid #000;';
                                 }
+                                $bars = $cellStyle['bars'] ?? [];
+                                if (in_array('top', $bars)) {
+                                    $inlineStyle .= ' border-top: 2.5pt solid #000;';
+                                }
+                                if (in_array('right', $bars)) {
+                                    $inlineStyle .= ' border-right: 2.5pt solid #000;';
+                                }
+                                if (in_array('bottom', $bars)) {
+                                    $inlineStyle .= ' border-bottom: 2.5pt solid #000;';
+                                }
+                                if (in_array('left', $bars)) {
+                                    $inlineStyle .= ' border-left: 2.5pt solid #000;';
+                                }
                             @endphp
                             <td class="{{ implode(' ', $classes) }}" @if ($inlineStyle) style="{{ $inlineStyle }}" @endif>
                                 @if (is_int($cell) && $cell > 0)
@@ -242,6 +255,19 @@
                                     }
                                     foreach ($cellStyle['bars'] ?? [] as $bar) {
                                         $inlineStyle .= 'border-' . e($bar) . ': 3pt solid #000;';
+                                    }
+                                    $bars = $cellStyle['bars'] ?? [];
+                                    if (in_array('top', $bars)) {
+                                        $inlineStyle .= ' border-top: 2.5pt solid #000;';
+                                    }
+                                    if (in_array('right', $bars)) {
+                                        $inlineStyle .= ' border-right: 2.5pt solid #000;';
+                                    }
+                                    if (in_array('bottom', $bars)) {
+                                        $inlineStyle .= ' border-bottom: 2.5pt solid #000;';
+                                    }
+                                    if (in_array('left', $bars)) {
+                                        $inlineStyle .= ' border-left: 2.5pt solid #000;';
                                     }
                                 @endphp
                                 <td class="{{ implode(' ', $classes) }}" @if ($inlineStyle) style="{{ $inlineStyle }}" @endif>

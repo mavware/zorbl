@@ -362,6 +362,125 @@ it('renders bar-style word boundaries as thick borders', function () {
         ->toContain('border-bottom: 3pt solid #000;');
 });
 
+it('renders bar-style word boundaries in PDF', function () {
+    $crossword = Crossword::factory()->make([
+        'title' => 'Barred Puzzle',
+        'width' => 3,
+        'height' => 3,
+        'grid' => [
+            [1, 2, 3],
+            [4, 0, 0],
+            [5, 0, 0],
+        ],
+        'solution' => [
+            ['C', 'A', 'T'],
+            ['A', 'R', 'E'],
+            ['B', 'O', 'W'],
+        ],
+        'styles' => [
+            '0,1' => ['bars' => ['right']],
+            '1,0' => ['bars' => ['bottom']],
+            '2,1' => ['bars' => ['left', 'top']],
+        ],
+        'clues_across' => [
+            ['number' => 1, 'clue' => 'Feline'],
+            ['number' => 4, 'clue' => 'Exist'],
+            ['number' => 5, 'clue' => 'Bend'],
+        ],
+        'clues_down' => [
+            ['number' => 1, 'clue' => 'Taxi'],
+            ['number' => 2, 'clue' => 'Mineral'],
+            ['number' => 3, 'clue' => 'Tie'],
+        ],
+    ]);
+
+    $exporter = app(PdfExporter::class);
+    $pdf = $exporter->export($crossword, includeSolution: true);
+
+    expect($pdf)->toStartWith('%PDF');
+
+    $html = view('exports.crossword-pdf', [
+        'title' => $crossword->title,
+        'author' => $crossword->author,
+        'copyright' => $crossword->copyright,
+        'numberedGrid' => $crossword->grid,
+        'solution' => $crossword->solution,
+        'cluesAcross' => $crossword->clues_across,
+        'cluesDown' => $crossword->clues_down,
+        'styles' => $crossword->styles ?? [],
+        'includeSolution' => true,
+        'cellSize' => 0.33,
+        'numberFontSize' => 6,
+        'letterFontSize' => 9,
+        'numberHeight' => 0.116,
+    ])->render();
+
+    expect($html)
+        ->toContain('border-right: 2.5pt solid #000;')
+        ->toContain('border-bottom: 2.5pt solid #000;')
+        ->toContain('border-left: 2.5pt solid #000;')
+        ->toContain('border-top: 2.5pt solid #000;');
+});
+
+it('renders bars combined with colors and circles in PDF', function () {
+    $crossword = Crossword::factory()->make([
+        'title' => 'Mixed Styles',
+        'width' => 3,
+        'height' => 3,
+        'grid' => [
+            [1, 2, '#'],
+            [3, 0, 4],
+            ['#', 5, 0],
+        ],
+        'solution' => [
+            ['C', 'A', '#'],
+            ['B', 'O', 'T'],
+            ['#', 'L', 'O'],
+        ],
+        'styles' => [
+            '0,0' => ['color' => '#BAE6FD', 'bars' => ['right']],
+            '1,1' => ['shapebg' => 'circle', 'bars' => ['bottom']],
+        ],
+        'clues_across' => [
+            ['number' => 1, 'clue' => 'CA'],
+            ['number' => 3, 'clue' => 'BOT'],
+            ['number' => 5, 'clue' => 'LO'],
+        ],
+        'clues_down' => [
+            ['number' => 1, 'clue' => 'CB'],
+            ['number' => 2, 'clue' => 'AOL'],
+            ['number' => 4, 'clue' => 'TO'],
+        ],
+    ]);
+
+    $exporter = app(PdfExporter::class);
+    $pdf = $exporter->export($crossword);
+
+    expect($pdf)->toStartWith('%PDF');
+
+    $html = view('exports.crossword-pdf', [
+        'title' => $crossword->title,
+        'author' => $crossword->author,
+        'copyright' => $crossword->copyright,
+        'numberedGrid' => $crossword->grid,
+        'solution' => $crossword->solution,
+        'cluesAcross' => $crossword->clues_across,
+        'cluesDown' => $crossword->clues_down,
+        'styles' => $crossword->styles ?? [],
+        'includeSolution' => false,
+        'cellSize' => 0.33,
+        'numberFontSize' => 6,
+        'letterFontSize' => 9,
+        'numberHeight' => 0.116,
+    ])->render();
+
+    expect($html)
+        ->toContain('background-color: #BAE6FD;')
+        ->toContain('border-right: 2.5pt solid #000;')
+        ->toContain('class="circle"')
+        ->toContain('border-bottom: 2.5pt solid #000;');
+});
+
 it('uses untitled puzzle when title is empty', function () {
     $crossword = Crossword::factory()->make([
         'title' => null,
