@@ -161,7 +161,10 @@
                                     $classes[] = 'circle';
                                 }
                                 if (!empty($cellStyle['color'])) {
-                                    $inlineStyle = 'background-color: ' . e($cellStyle['color']) . ';';
+                                    $inlineStyle .= 'background-color: ' . e($cellStyle['color']) . ';';
+                                }
+                                foreach ($cellStyle['bars'] ?? [] as $bar) {
+                                    $inlineStyle .= 'border-' . e($bar) . ': 3pt solid #000;';
                                 }
                             @endphp
                             <td class="{{ implode(' ', $classes) }}" @if ($inlineStyle) style="{{ $inlineStyle }}" @endif>
@@ -235,7 +238,10 @@
                                         $classes[] = 'circle';
                                     }
                                     if (!empty($cellStyle['color'])) {
-                                        $inlineStyle = 'background-color: ' . e($cellStyle['color']) . ';';
+                                        $inlineStyle .= 'background-color: ' . e($cellStyle['color']) . ';';
+                                    }
+                                    foreach ($cellStyle['bars'] ?? [] as $bar) {
+                                        $inlineStyle .= 'border-' . e($bar) . ': 3pt solid #000;';
                                     }
                                 @endphp
                                 <td class="{{ implode(' ', $classes) }}" @if ($inlineStyle) style="{{ $inlineStyle }}" @endif>
