@@ -514,3 +514,116 @@ it('uses untitled puzzle when title is empty', function () {
 
     expect($pdf)->toStartWith('%PDF');
 });
+
+it('renders bar-style word boundaries in PDF', function () {
+    $crossword = Crossword::factory()->make([
+        'title' => 'Bar Puzzle',
+        'width' => 3,
+        'height' => 3,
+        'grid' => [
+            [1, 2, 3],
+            [4, 0, 0],
+            [5, 0, 0],
+        ],
+        'solution' => [
+            ['A', 'B', 'C'],
+            ['D', 'E', 'F'],
+            ['G', 'H', 'I'],
+        ],
+        'styles' => [
+            '0,1' => ['bars' => ['right']],
+            '1,0' => ['bars' => ['bottom']],
+            '1,2' => ['bars' => ['left', 'top']],
+        ],
+        'clues_across' => [
+            ['number' => 1, 'clue' => 'ABC'],
+            ['number' => 4, 'clue' => 'DEF'],
+            ['number' => 5, 'clue' => 'GHI'],
+        ],
+        'clues_down' => [
+            ['number' => 1, 'clue' => 'ADG'],
+            ['number' => 2, 'clue' => 'BEH'],
+            ['number' => 3, 'clue' => 'CFI'],
+        ],
+    ]);
+
+    $exporter = app(PdfExporter::class);
+    $pdf = $exporter->export($crossword, includeSolution: true);
+
+    expect($pdf)->toStartWith('%PDF');
+
+    $html = view('exports.crossword-pdf', [
+        'title' => $crossword->title,
+        'author' => $crossword->author,
+        'copyright' => $crossword->copyright,
+        'numberedGrid' => $crossword->grid,
+        'solution' => $crossword->solution,
+        'cluesAcross' => $crossword->clues_across,
+        'cluesDown' => $crossword->clues_down,
+        'styles' => $crossword->styles ?? [],
+        'includeSolution' => true,
+        'cellSize' => 0.33,
+        'numberFontSize' => 6,
+        'letterFontSize' => 9,
+        'numberHeight' => 0.116,
+    ])->render();
+
+    expect($html)
+        ->toContain('bar-right')
+        ->toContain('bar-bottom')
+        ->toContain('bar-left')
+        ->toContain('bar-top');
+});
+
+it('renders bars combined with other cell styles in PDF', function () {
+    $crossword = Crossword::factory()->make([
+        'title' => 'Combined Styles',
+        'width' => 3,
+        'height' => 3,
+        'grid' => [
+            [1, 2, '#'],
+            [3, 0, 4],
+            ['#', 5, 0],
+        ],
+        'solution' => [
+            ['C', 'A', '#'],
+            ['B', 'O', 'T'],
+            ['#', 'L', 'O'],
+        ],
+        'styles' => [
+            '0,0' => ['bars' => ['right'], 'color' => '#BAE6FD'],
+            '1,1' => ['bars' => ['bottom'], 'shapebg' => 'circle'],
+        ],
+        'clues_across' => [
+            ['number' => 1, 'clue' => 'CA'],
+            ['number' => 3, 'clue' => 'BOT'],
+            ['number' => 5, 'clue' => 'LO'],
+        ],
+        'clues_down' => [
+            ['number' => 1, 'clue' => 'CB'],
+            ['number' => 2, 'clue' => 'AOL'],
+            ['number' => 4, 'clue' => 'TO'],
+        ],
+    ]);
+
+    $html = view('exports.crossword-pdf', [
+        'title' => $crossword->title,
+        'author' => $crossword->author,
+        'copyright' => $crossword->copyright,
+        'numberedGrid' => $crossword->grid,
+        'solution' => $crossword->solution,
+        'cluesAcross' => $crossword->clues_across,
+        'cluesDown' => $crossword->clues_down,
+        'styles' => $crossword->styles ?? [],
+        'includeSolution' => false,
+        'cellSize' => 0.33,
+        'numberFontSize' => 6,
+        'letterFontSize' => 9,
+        'numberHeight' => 0.116,
+    ])->render();
+
+    expect($html)
+        ->toContain('bar-right')
+        ->toContain('background-color: #BAE6FD;')
+        ->toContain('circle bar-bottom');
+});
