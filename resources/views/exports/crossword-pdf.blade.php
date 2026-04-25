@@ -67,6 +67,11 @@
             border-radius: 50%;
         }
 
+        .grid-table td.bar-top { border-top: 3pt solid #000; }
+        .grid-table td.bar-bottom { border-bottom: 3pt solid #000; }
+        .grid-table td.bar-left { border-left: 3pt solid #000; }
+        .grid-table td.bar-right { border-right: 3pt solid #000; }
+
         .cell-number {
             font-size: {{ $numberFontSize }}pt;
             font-weight: bold;
@@ -163,6 +168,9 @@
                                 if (!empty($cellStyle['color'])) {
                                     $inlineStyle = 'background-color: ' . e($cellStyle['color']) . ';';
                                 }
+                                foreach ($cellStyle['bars'] ?? [] as $edge) {
+                                    $classes[] = 'bar-' . $edge;
+                                }
                             @endphp
                             <td class="{{ implode(' ', $classes) }}" @if ($inlineStyle) style="{{ $inlineStyle }}" @endif>
                                 @if (is_int($cell) && $cell > 0)
@@ -236,6 +244,9 @@
                                     }
                                     if (!empty($cellStyle['color'])) {
                                         $inlineStyle = 'background-color: ' . e($cellStyle['color']) . ';';
+                                    }
+                                    foreach ($cellStyle['bars'] ?? [] as $edge) {
+                                        $classes[] = 'bar-' . $edge;
                                     }
                                 @endphp
                                 <td class="{{ implode(' ', $classes) }}" @if ($inlineStyle) style="{{ $inlineStyle }}" @endif>
