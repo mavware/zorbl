@@ -2,6 +2,7 @@
 
 use App\Models\Crossword;
 use App\Services\PdfExporter;
+use Zorbl\CrosswordIO\GridNumberer;
 
 it('exports a crossword to a valid PDF', function () {
     $crossword = Crossword::factory()->make([
