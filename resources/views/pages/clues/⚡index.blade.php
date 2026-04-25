@@ -2,7 +2,10 @@
 
 use App\Models\ClueEntry;
 use App\Models\ClueReport;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
@@ -12,6 +15,13 @@ use Livewire\WithPagination;
 
 new #[Title('Clue Library')] class extends Component {
     use WithPagination;
+
+    // Counting 3.7M+ rows on every initial page load is the dominant cost
+    // here. Cache the unfiltered total (the default landing view) since the
+    // user is OK with it being slightly stale.
+    private const DEFAULT_COUNT_CACHE_KEY = 'clue-entries:default-count';
+    private const DEFAULT_COUNT_CACHE_TTL = 600; // 10 minutes
+    private const PER_PAGE = 25;
 
     #[Url]
     public string $search = '';
@@ -90,7 +100,35 @@ new #[Title('Clue Library')] class extends Component {
             $query->latest('id');
         }
 
-        return $query->paginate(25);
+        // Default listing (no search, no filter, no custom sort): paginate
+        // manually with a cached total. Counting the full clue_entries table
+        // on every load is the dominant cost; the cache keeps subsequent page
+        // loads fast at the price of a slightly stale "Showing X of N" total.
+        if ($this->search === '' && $this->filter === 'all' && $this->sortField === '') {
+            $total = Cache::remember(
+                self::DEFAULT_COUNT_CACHE_KEY,
+                self::DEFAULT_COUNT_CACHE_TTL,
+                fn () => DB::table('clue_entries')->count(),
+            );
+
+            $page = $this->getPage();
+            $items = $query->forPage($page, self::PER_PAGE)->get();
+
+            return new LengthAwarePaginator(
+                $items,
+                $total,
+                self::PER_PAGE,
+                $page,
+                ['path' => Paginator::resolveCurrentPath(), 'pageName' => 'page'],
+            );
+        }
+
+        return $query->paginate(self::PER_PAGE);
+    }
+
+    private function bustDefaultCountCache(): void
+    {
+        Cache::forget(self::DEFAULT_COUNT_CACHE_KEY);
     }
 
     public function sortBy(string $field): void
@@ -147,6 +185,7 @@ new #[Title('Clue Library')] class extends Component {
             'user_id' => Auth::id(),
         ]);
 
+        $this->bustDefaultCountCache();
         $this->newAnswer = '';
         $this->newClue = '';
         $this->showAddModal = false;
@@ -196,6 +235,7 @@ new #[Title('Clue Library')] class extends Component {
         $entry = ClueEntry::findOrFail($id);
         $this->authorize('delete', $entry);
         $entry->delete();
+        $this->bustDefaultCountCache();
         unset($this->clues);
     }
 
