@@ -29,9 +29,9 @@ enum PuzzleType: string
     public function icon(): string
     {
         return match ($this) {
-            self::Standard => 'squares-2x2',
-            self::Diamond => 'stop',
-            self::Freestyle => 'pencil-square',
+            self::Standard => 'blocks',
+            self::Diamond => 'diamond',
+            self::Freestyle => 'line-squiggle',
         };
     }
 

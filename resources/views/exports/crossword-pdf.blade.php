@@ -63,6 +63,10 @@
             border: none;
         }
 
+        .grid-table td.circle {
+            border-radius: 50%;
+        }
+
         .cell-number {
             font-size: {{ $numberFontSize }}pt;
             font-weight: bold;
@@ -148,8 +152,22 @@
                         @elseif ($cell === '#')
                             <td class="block"></td>
                         @else
-                            @php $bg = $styles[$r.','.$c]['shapebg'] ?? null; @endphp
-                            <td @if ($bg) style="background-color: {{ $bg }}" @endif>
+                            @php
+                                $styleKey = $r . ',' . $c;
+                                $cellStyle = $styles[$styleKey] ?? [];
+                                $classes = [];
+                                $inlineStyle = '';
+                                if (!empty($cellStyle['shapebg']) && $cellStyle['shapebg'] === 'circle') {
+                                    $classes[] = 'circle';
+                                }
+                                if (!empty($cellStyle['color'])) {
+                                    $inlineStyle .= 'background-color: ' . e($cellStyle['color']) . ';';
+                                }
+                                foreach ($cellStyle['bars'] ?? [] as $bar) {
+                                    $inlineStyle .= 'border-' . e($bar) . ': 3pt solid #000;';
+                                }
+                            @endphp
+                            <td class="{{ implode(' ', $classes) }}" @if ($inlineStyle) style="{{ $inlineStyle }}" @endif>
                                 @if (is_int($cell) && $cell > 0)
                                     <div class="cell-number">{{ $cell }}</div>
                                 @else
@@ -211,8 +229,22 @@
                             @elseif ($cell === '#')
                                 <td class="block"></td>
                             @else
-                                @php $bg = $styles[$r.','.$c]['shapebg'] ?? null; @endphp
-                                <td @if ($bg) style="background-color: {{ $bg }}" @endif>
+                                @php
+                                    $styleKey = $r . ',' . $c;
+                                    $cellStyle = $styles[$styleKey] ?? [];
+                                    $classes = [];
+                                    $inlineStyle = '';
+                                    if (!empty($cellStyle['shapebg']) && $cellStyle['shapebg'] === 'circle') {
+                                        $classes[] = 'circle';
+                                    }
+                                    if (!empty($cellStyle['color'])) {
+                                        $inlineStyle .= 'background-color: ' . e($cellStyle['color']) . ';';
+                                    }
+                                    foreach ($cellStyle['bars'] ?? [] as $bar) {
+                                        $inlineStyle .= 'border-' . e($bar) . ': 3pt solid #000;';
+                                    }
+                                @endphp
+                                <td class="{{ implode(' ', $classes) }}" @if ($inlineStyle) style="{{ $inlineStyle }}" @endif>
                                     @if (is_int($cell) && $cell > 0)
                                         <div class="cell-number">{{ $cell }}</div>
                                     @else

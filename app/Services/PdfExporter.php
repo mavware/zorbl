@@ -40,6 +40,7 @@ class PdfExporter
             'solution' => $crossword->solution,
             'cluesAcross' => $crossword->clues_across ?? [],
             'cluesDown' => $crossword->clues_down ?? [],
+            'styles' => $crossword->styles ?? [],
             'includeSolution' => $includeSolution,
             'cellSize' => $cellSize,
             'numberFontSize' => $numberFontSize,
