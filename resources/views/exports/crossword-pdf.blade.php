@@ -67,10 +67,10 @@
             border-radius: 50%;
         }
 
-        .grid-table td.bar-top { border-top: 3pt solid #000; }
-        .grid-table td.bar-bottom { border-bottom: 3pt solid #000; }
-        .grid-table td.bar-left { border-left: 3pt solid #000; }
-        .grid-table td.bar-right { border-right: 3pt solid #000; }
+        .grid-table td.bar-top { border-top: 2.5pt solid #000; }
+        .grid-table td.bar-right { border-right: 2.5pt solid #000; }
+        .grid-table td.bar-bottom { border-bottom: 2.5pt solid #000; }
+        .grid-table td.bar-left { border-left: 2.5pt solid #000; }
 
         .cell-number {
             font-size: {{ $numberFontSize }}pt;
@@ -166,26 +166,10 @@
                                     $classes[] = 'circle';
                                 }
                                 if (!empty($cellStyle['color'])) {
-                                    $inlineStyle .= 'background-color: ' . e($cellStyle['color']) . ';';
+                                    $inlineStyle = 'background-color: ' . e($cellStyle['color']) . ';';
                                 }
                                 foreach ($cellStyle['bars'] ?? [] as $bar) {
-                                    $inlineStyle .= 'border-' . e($bar) . ': 3pt solid #000;';
-                                }
-                                $bars = $cellStyle['bars'] ?? [];
-                                if (in_array('top', $bars)) {
-                                    $inlineStyle .= ' border-top: 2.5pt solid #000;';
-                                }
-                                if (in_array('right', $bars)) {
-                                    $inlineStyle .= ' border-right: 2.5pt solid #000;';
-                                }
-                                if (in_array('bottom', $bars)) {
-                                    $inlineStyle .= ' border-bottom: 2.5pt solid #000;';
-                                }
-                                if (in_array('left', $bars)) {
-                                    $inlineStyle .= ' border-left: 2.5pt solid #000;';
-                                }
-                                foreach ($cellStyle['bars'] ?? [] as $edge) {
-                                    $classes[] = 'bar-' . $edge;
+                                    $classes[] = 'bar-' . $bar;
                                 }
                             @endphp
                             <td class="{{ implode(' ', $classes) }}" @if ($inlineStyle) style="{{ $inlineStyle }}" @endif>
@@ -259,26 +243,10 @@
                                         $classes[] = 'circle';
                                     }
                                     if (!empty($cellStyle['color'])) {
-                                        $inlineStyle .= 'background-color: ' . e($cellStyle['color']) . ';';
+                                        $inlineStyle = 'background-color: ' . e($cellStyle['color']) . ';';
                                     }
                                     foreach ($cellStyle['bars'] ?? [] as $bar) {
-                                        $inlineStyle .= 'border-' . e($bar) . ': 3pt solid #000;';
-                                    }
-                                    $bars = $cellStyle['bars'] ?? [];
-                                    if (in_array('top', $bars)) {
-                                        $inlineStyle .= ' border-top: 2.5pt solid #000;';
-                                    }
-                                    if (in_array('right', $bars)) {
-                                        $inlineStyle .= ' border-right: 2.5pt solid #000;';
-                                    }
-                                    if (in_array('bottom', $bars)) {
-                                        $inlineStyle .= ' border-bottom: 2.5pt solid #000;';
-                                    }
-                                    if (in_array('left', $bars)) {
-                                        $inlineStyle .= ' border-left: 2.5pt solid #000;';
-                                    }
-                                    foreach ($cellStyle['bars'] ?? [] as $edge) {
-                                        $classes[] = 'bar-' . $edge;
+                                        $classes[] = 'bar-' . $bar;
                                     }
                                 @endphp
                                 <td class="{{ implode(' ', $classes) }}" @if ($inlineStyle) style="{{ $inlineStyle }}" @endif>

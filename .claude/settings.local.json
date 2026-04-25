@@ -99,7 +99,8 @@
       "Bash(php -r ' *)",
       "Bash(git stash *)",
       "Bash(sed 's/\\($//')",
-      "Bash(grep *)"
+      "Bash(grep *)",
+      "Bash(git checkout *)"
     ]
   },
   "enableAllProjectMcpServers": true,
