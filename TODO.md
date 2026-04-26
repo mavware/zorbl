@@ -18,7 +18,7 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [ ] Execute puzzle entgagement ranker plan at `.claude/plans/puzzle-engagement-ranker.md` (deferred — gated on ≥2k completed attempts across ≥300 published puzzles; see gate conditions in file)
 - [ ] Add Livewire component tests for settings, favorites, roadmap, and support pages
 - [x] Audit Livewire page components for authorization — ensure they use policies instead of inline ownership checks
-- [ ] Add feature tests for admin-assigned-ticket access via SupportTicketPolicy
+- [x] Add feature tests for admin-assigned-ticket access via SupportTicketPolicy
 - [ ] Let users set up webhooks for their puzzles for common events like puzzle completion or puzzle attempt submission, etc...
 - [x] Add Filament test coverage for ContestResource CRUD (create, edit, delete) — currently only basic tests exist in ContestAdminTest
 - [ ] Add plagiarism detection that gives a percentage of similarity to the other puzzles.  For copyright protection, this should be done with a third-party service like PlagiarismCheck.com or a custom implementation using machine learning algorithms.

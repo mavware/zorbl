@@ -313,6 +313,29 @@ new #[Title('Solve Crossword')] class extends Component {
         $this->dispatch('progress-saved');
     }
 
+    public function generateShareText(): string
+    {
+        $lines = [];
+        $lines[] = __(':title on Zorbl', ['title' => $this->title]);
+        $lines[] = $this->width.'x'.$this->height.' | '.$this->formatSolveTime($this->elapsedSeconds);
+        $lines[] = route('puzzles.solve', $this->crosswordId);
+
+        return implode("\n", $lines);
+    }
+
+    private function formatSolveTime(int $seconds): string
+    {
+        $hours = intdiv($seconds, 3600);
+        $minutes = intdiv($seconds % 3600, 60);
+        $secs = $seconds % 60;
+
+        if ($hours > 0) {
+            return sprintf('%d:%02d:%02d', $hours, $minutes, $secs);
+        }
+
+        return sprintf('%d:%02d', $minutes, $secs);
+    }
+
     protected function getExportableCrossword(): Crossword
     {
         $crossword = Crossword::findOrFail($this->crosswordId);
@@ -533,7 +556,34 @@ new #[Title('Solve Crossword')] class extends Component {
                     </span>
                 </template>
                 <template x-if="solved">
-                    <span class="font-semibold text-emerald-500">{{ __('Solved!') }}</span>
+                    <span class="flex items-center gap-2">
+                        <span class="font-semibold text-emerald-500">{{ __('Solved!') }}</span>
+                        <button
+                            x-data="{ copied: false }"
+                            x-on:click="
+                                $wire.generateShareText().then(text => {
+                                    navigator.clipboard.writeText(text).then(() => {
+                                        copied = true;
+                                        setTimeout(() => copied = false, 2000);
+                                    });
+                                });
+                            "
+                            class="inline-flex items-center gap-1 rounded-lg border border-zinc-300 px-2 py-0.5 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-600 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                        >
+                            <template x-if="!copied">
+                                <span class="inline-flex items-center gap-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" x2="12" y1="2" y2="15"/></svg>
+                                    {{ __('Share') }}
+                                </span>
+                            </template>
+                            <template x-if="copied">
+                                <span class="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                                    {{ __('Copied!') }}
+                                </span>
+                            </template>
+                        </button>
+                    </span>
                 </template>
             </div>
         </div>
@@ -734,6 +784,58 @@ new #[Title('Solve Crossword')] class extends Component {
             </div>
         </div>
     </div>
+
+    {{-- Share Results (visible when solved) --}}
+    @if($isSolved)
+        <div class="mt-6 rounded-xl border border-emerald-200 bg-emerald-50/50 p-5 dark:border-emerald-900/40 dark:bg-emerald-950/20" wire:key="share-section">
+            <div class="flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="flex size-10 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/30">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="size-5 text-emerald-600 dark:text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                    </div>
+                    <div>
+                        <div class="font-semibold text-emerald-800 dark:text-emerald-200">{{ __('You solved it!') }}</div>
+                        <div class="text-sm text-emerald-700 dark:text-emerald-400">
+                            {{ $this->title }} &middot; {{ $width }}&times;{{ $height }}
+                            @if($elapsedSeconds > 0)
+                                &middot; {{ $this->formatSolveTime($elapsedSeconds) }}
+                            @endif
+                        </div>
+                    </div>
+                </div>
+                <div
+                    x-data="{ copied: false }"
+                    class="shrink-0"
+                >
+                    <flux:button
+                        size="sm"
+                        variant="primary"
+                        x-on:click="
+                            $wire.generateShareText().then(text => {
+                                navigator.clipboard.writeText(text).then(() => {
+                                    copied = true;
+                                    setTimeout(() => copied = false, 2000);
+                                });
+                            });
+                        "
+                    >
+                        <template x-if="!copied">
+                            <span class="inline-flex items-center gap-1.5">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" x2="12" y1="2" y2="15"/></svg>
+                                {{ __('Share Results') }}
+                            </span>
+                        </template>
+                        <template x-if="copied">
+                            <span class="inline-flex items-center gap-1.5">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                                {{ __('Copied to Clipboard!') }}
+                            </span>
+                        </template>
+                    </flux:button>
+                </div>
+            </div>
+        </div>
+    @endif
 
     {{-- Comments & Ratings (visible when solved) --}}
     @if($isSolved)
