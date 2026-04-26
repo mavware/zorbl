@@ -230,11 +230,6 @@ new class extends Component {
         $this->resetPage();
     }
 
-    public function puzzleTypeLabel(Crossword $crossword): string
-    {
-        return __($crossword->puzzle_type->label());
-    }
-
     public function hasActiveFilters(): bool
     {
         return $this->search !== ''
@@ -379,7 +374,7 @@ new class extends Component {
                     </flux:text>
 
                     <div class="mt-1.5 flex items-center gap-2">
-                        <flux:badge size="sm" variant="outline">{{ $this->puzzleTypeLabel($crossword) }}</flux:badge>
+                        <flux:badge size="sm" variant="outline">{{ __($crossword->puzzleTypeLabel()) }}</flux:badge>
                         @if($crossword->difficulty_label)
                             <flux:badge
                                 size="sm"
