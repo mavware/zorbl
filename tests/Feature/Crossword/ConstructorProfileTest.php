@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Crossword;
+use App\Models\CrosswordLike;
 use App\Models\Follow;
 use App\Models\PuzzleAttempt;
 use App\Models\User;
@@ -201,4 +202,175 @@ test('constructor profile only shows published puzzles in puzzle cards', functio
         ->test('pages::constructors.show', ['constructor' => $constructor])
         ->assertSee('Public Puzzle')
         ->assertDontSee('Secret Draft');
+});
+
+// --- Sorting ---
+
+test('puzzles default to newest first', function () {
+    $constructor = User::factory()->create();
+    $viewer = User::factory()->create();
+
+    Crossword::factory()->published()->for($constructor)->create([
+        'title' => 'Older Puzzle',
+        'created_at' => now()->subDays(5),
+    ]);
+    Crossword::factory()->published()->for($constructor)->create([
+        'title' => 'Newer Puzzle',
+        'created_at' => now(),
+    ]);
+
+    $component = Livewire\Livewire::actingAs($viewer)
+        ->test('pages::constructors.show', ['constructor' => $constructor]);
+
+    $puzzles = $component->get('publishedPuzzles');
+    expect($puzzles->first()->title)->toBe('Newer Puzzle')
+        ->and($puzzles->last()->title)->toBe('Older Puzzle');
+});
+
+test('puzzles can be sorted oldest first', function () {
+    $constructor = User::factory()->create();
+    $viewer = User::factory()->create();
+
+    Crossword::factory()->published()->for($constructor)->create([
+        'title' => 'Older Puzzle',
+        'created_at' => now()->subDays(5),
+    ]);
+    Crossword::factory()->published()->for($constructor)->create([
+        'title' => 'Newer Puzzle',
+        'created_at' => now(),
+    ]);
+
+    $component = Livewire\Livewire::actingAs($viewer)
+        ->test('pages::constructors.show', ['constructor' => $constructor])
+        ->set('sortBy', 'oldest');
+
+    $puzzles = $component->get('publishedPuzzles');
+    expect($puzzles->first()->title)->toBe('Older Puzzle')
+        ->and($puzzles->last()->title)->toBe('Newer Puzzle');
+});
+
+test('puzzles can be sorted by most liked', function () {
+    $constructor = User::factory()->create();
+    $viewer = User::factory()->create();
+
+    $lessLiked = Crossword::factory()->published()->for($constructor)->create(['title' => 'Less Liked']);
+    $mostLiked = Crossword::factory()->published()->for($constructor)->create(['title' => 'Most Liked']);
+
+    CrosswordLike::factory()->count(5)->create(['crossword_id' => $mostLiked->id]);
+    CrosswordLike::factory()->count(1)->create(['crossword_id' => $lessLiked->id]);
+
+    $component = Livewire\Livewire::actingAs($viewer)
+        ->test('pages::constructors.show', ['constructor' => $constructor])
+        ->set('sortBy', 'most_liked');
+
+    $puzzles = $component->get('publishedPuzzles');
+    expect($puzzles->first()->title)->toBe('Most Liked');
+});
+
+test('puzzles can be sorted by most played', function () {
+    $constructor = User::factory()->create();
+    $viewer = User::factory()->create();
+
+    $lessPlayed = Crossword::factory()->published()->for($constructor)->create(['title' => 'Less Played']);
+    $mostPlayed = Crossword::factory()->published()->for($constructor)->create(['title' => 'Most Played']);
+
+    PuzzleAttempt::factory()->count(8)->create(['crossword_id' => $mostPlayed->id]);
+    PuzzleAttempt::factory()->count(2)->create(['crossword_id' => $lessPlayed->id]);
+
+    $component = Livewire\Livewire::actingAs($viewer)
+        ->test('pages::constructors.show', ['constructor' => $constructor])
+        ->set('sortBy', 'most_played');
+
+    $puzzles = $component->get('publishedPuzzles');
+    expect($puzzles->first()->title)->toBe('Most Played');
+});
+
+// --- Difficulty Filtering ---
+
+test('puzzles can be filtered by difficulty', function () {
+    $constructor = User::factory()->create();
+    $viewer = User::factory()->create();
+
+    Crossword::factory()->published()->for($constructor)->create([
+        'title' => 'Easy Puzzle',
+        'difficulty_label' => 'Easy',
+    ]);
+    Crossword::factory()->published()->for($constructor)->create([
+        'title' => 'Hard Puzzle',
+        'difficulty_label' => 'Hard',
+    ]);
+
+    Livewire\Livewire::actingAs($viewer)
+        ->test('pages::constructors.show', ['constructor' => $constructor])
+        ->set('difficulty', 'Easy')
+        ->assertSee('Easy Puzzle')
+        ->assertDontSee('Hard Puzzle');
+});
+
+test('clearing difficulty filter shows all puzzles', function () {
+    $constructor = User::factory()->create();
+    $viewer = User::factory()->create();
+
+    Crossword::factory()->published()->for($constructor)->create([
+        'title' => 'Easy Puzzle',
+        'difficulty_label' => 'Easy',
+    ]);
+    Crossword::factory()->published()->for($constructor)->create([
+        'title' => 'Hard Puzzle',
+        'difficulty_label' => 'Hard',
+    ]);
+
+    Livewire\Livewire::actingAs($viewer)
+        ->test('pages::constructors.show', ['constructor' => $constructor])
+        ->set('difficulty', 'Easy')
+        ->set('difficulty', '')
+        ->assertSee('Easy Puzzle')
+        ->assertSee('Hard Puzzle');
+});
+
+test('difficulty filter shows contextual empty state', function () {
+    $constructor = User::factory()->create();
+    $viewer = User::factory()->create();
+
+    Crossword::factory()->published()->for($constructor)->create([
+        'title' => 'Easy Puzzle',
+        'difficulty_label' => 'Easy',
+    ]);
+
+    Livewire\Livewire::actingAs($viewer)
+        ->test('pages::constructors.show', ['constructor' => $constructor])
+        ->set('difficulty', 'Expert')
+        ->assertSee('No puzzles match this difficulty.');
+});
+
+test('sort and difficulty filter work together', function () {
+    $constructor = User::factory()->create();
+    $viewer = User::factory()->create();
+
+    $easyOld = Crossword::factory()->published()->for($constructor)->create([
+        'title' => 'Easy Old',
+        'difficulty_label' => 'Easy',
+        'created_at' => now()->subDays(5),
+    ]);
+    $easyNew = Crossword::factory()->published()->for($constructor)->create([
+        'title' => 'Easy New',
+        'difficulty_label' => 'Easy',
+        'created_at' => now(),
+    ]);
+    Crossword::factory()->published()->for($constructor)->create([
+        'title' => 'Hard Puzzle',
+        'difficulty_label' => 'Hard',
+    ]);
+
+    $component = Livewire\Livewire::actingAs($viewer)
+        ->test('pages::constructors.show', ['constructor' => $constructor])
+        ->set('difficulty', 'Easy')
+        ->set('sortBy', 'oldest');
+
+    $puzzles = $component->get('publishedPuzzles');
+    expect($puzzles)->toHaveCount(2)
+        ->and($puzzles->first()->title)->toBe('Easy Old')
+        ->and($puzzles->last()->title)->toBe('Easy New');
+
+    $component->assertDontSee('Hard Puzzle');
 });
