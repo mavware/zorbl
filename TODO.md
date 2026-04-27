@@ -22,7 +22,7 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [ ] Let users set up webhooks for their puzzles for common events like puzzle completion or puzzle attempt submission, etc...
 - [x] Add Filament test coverage for ContestResource CRUD (create, edit, delete) — currently only basic tests exist in ContestAdminTest
 - [ ] Add plagiarism detection that gives a percentage of similarity to the other puzzles.  For copyright protection, this should be done with a third-party service like PlagiarismCheck.com or a custom implementation using machine learning algorithms.
-- [ ] Render bar styles (thick cell dividers) in PDF exports — bars affect numbering but are not visually rendered in the PDF output
+- [x] Render bar styles (thick cell dividers) in PDF exports — bars affect numbering but are not visually rendered in the PDF output
 - [x] Wire PuzzleAttemptPolicy `update` check into the solver page's `saveProgress` method for defense-in-depth
 - [x] If the user is not a paid user, the AI fill and AI clue generation should prompt them to upgrade to a paid account
 - [x] Add tag filtering to the crosswords API endpoint (query param `?tag=slug`)
