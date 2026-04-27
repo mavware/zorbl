@@ -29,6 +29,7 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [x] Seed a default set of common crossword tags (e.g. Pop Culture, Sports, Science, History, Movies, Music, Geography, Food, Literature, Current Events)
 - [x] ability to change color of cell background
 - [x] Render bar-style word boundaries in PDF exports (bars are used for numbering but not visually drawn in the PDF)
+- [ ] Ask Claude to find an algorithm to generate a template based on existing template data
 
 ## Done
 

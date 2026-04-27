@@ -124,11 +124,13 @@ new #[Title('My Puzzles')] class extends Component {
 
         if ($this->selectedTemplate !== null && isset($this->templates[$this->selectedTemplate])) {
             $grid = $this->templates[$this->selectedTemplate]['grid'];
+            $styles = $this->templates[$this->selectedTemplate]['styles'] ?? null;
         } else {
             $grid = $type->generateGrid($this->newWidth, $this->newHeight);
+            $styles = null;
         }
 
-        $result = app(GridNumberer::class)->number($grid, $this->newWidth, $this->newHeight);
+        $result = app(GridNumberer::class)->number($grid, $this->newWidth, $this->newHeight, $styles ?? []);
 
         $solution = Crossword::emptySolution($this->newWidth, $this->newHeight);
         foreach ($result['grid'] as $r => $row) {
@@ -150,6 +152,7 @@ new #[Title('My Puzzles')] class extends Component {
             'puzzle_type' => $type,
             'grid' => $result['grid'],
             'solution' => $solution,
+            'styles' => $styles,
             'clues_across' => array_map(fn ($s) => ['number' => $s['number'], 'clue' => ''], $result['across']),
             'clues_down' => array_map(fn ($s) => ['number' => $s['number'], 'clue' => ''], $result['down']),
             'metadata' => ['puzzle_type' => $type->value],
@@ -346,7 +349,7 @@ new #[Title('My Puzzles')] class extends Component {
                                     wire:click="$set('selectedTemplate', {{ $index }})"
                                     class="border-line flex shrink-0 flex-col items-center gap-1.5 rounded-lg border-2 p-2 transition-colors {{ $selectedTemplate === $index ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' : ' hover:border-zinc-400 dark:hover:border-zinc-500' }}"
                                 >
-                                    <x-grid-thumbnail :grid="$template['grid']" :width="$newWidth" :height="$newHeight" :cell-size="6" :max-width="80" />
+                                    <x-grid-thumbnail :grid="$template['grid']" :styles="$template['styles'] ?? null" :width="$newWidth" :height="$newHeight" :cell-size="6" :max-width="80" />
                                     <span class="whitespace-nowrap text-xs text-zinc-700 dark:text-zinc-400">{{ $template['name'] }}</span>
                                 </button>
                             @endforeach
