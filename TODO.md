@@ -13,7 +13,7 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [x] Ability to select tags that you never want to see puzzles associated with
 - [ ] Ability to sign in with a passkey
 - [ ] Ability to sign in with google
-- [ ] Double check the printable/downloadable PDFs for the puzzle editor/solver
+- [x] Double check the printable/downloadable PDFs for the puzzle editor/solver
 - [x] Ensure that freestyle puzzles can be exported as PDFs with the removed squares
 - [ ] Execute puzzle entgagement ranker plan at `.claude/plans/puzzle-engagement-ranker.md` (deferred — gated on ≥2k completed attempts across ≥300 published puzzles; see gate conditions in file)
 - [x] Add Livewire component tests for settings, favorites, roadmap, and support pages
