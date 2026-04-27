@@ -124,11 +124,13 @@ new #[Title('My Puzzles')] class extends Component {
 
         if ($this->selectedTemplate !== null && isset($this->templates[$this->selectedTemplate])) {
             $grid = $this->templates[$this->selectedTemplate]['grid'];
+            $styles = $this->templates[$this->selectedTemplate]['styles'] ?? null;
         } else {
             $grid = $type->generateGrid($this->newWidth, $this->newHeight);
+            $styles = null;
         }
 
-        $result = app(GridNumberer::class)->number($grid, $this->newWidth, $this->newHeight);
+        $result = app(GridNumberer::class)->number($grid, $this->newWidth, $this->newHeight, $styles ?? []);
 
         $solution = Crossword::emptySolution($this->newWidth, $this->newHeight);
         foreach ($result['grid'] as $r => $row) {
@@ -150,6 +152,7 @@ new #[Title('My Puzzles')] class extends Component {
             'puzzle_type' => $type,
             'grid' => $result['grid'],
             'solution' => $solution,
+            'styles' => $styles,
             'clues_across' => array_map(fn ($s) => ['number' => $s['number'], 'clue' => ''], $result['across']),
             'clues_down' => array_map(fn ($s) => ['number' => $s['number'], 'clue' => ''], $result['down']),
             'metadata' => ['puzzle_type' => $type->value],
@@ -226,36 +229,18 @@ new #[Title('My Puzzles')] class extends Component {
                         wire:key="crossword-{{ $crossword->id }}"
                         class="border-line group relative rounded-xl border p-4 transition-colors hover:border-zinc-400 dark:hover:border-zinc-500"
                     >
-                        @php($completeness = $crossword->completeness())
                         <a href="{{ route('crosswords.editor', $crossword) }}" wire:navigate class="block">
                             <div class="mb-3 flex justify-center">
                                 <x-grid-thumbnail :grid="$crossword->grid" :width="$crossword->width" :height="$crossword->height" />
                             </div>
 
-                            <flux:heading size="sm" class="truncate">{{ $crossword->title ?: __('Untitled Puzzle') }}</flux:heading>
-                            <flux:text size="sm" class="mt-1">
-                                {{ $crossword->width }}&times;{{ $crossword->height }}
-                                @if($crossword->puzzle_type !== App\Enums\PuzzleType::Standard)
-                                    &middot;
-                                    <span class="inline-flex items-center gap-0.5">
-                                        <flux:icon :name="$crossword->puzzle_type->icon()" class="size-3" />
-                                        {{ $crossword->puzzle_type->label() }}
-                                    </span>
-                                @endif
-                                &middot;
-                                {{ $crossword->updated_at->diffForHumans() }}
-                            </flux:text>
+                            <flux:heading size="sm" class="truncate">
+                                {{ $crossword->title ?: __('Untitled Puzzle') }}
+                            </flux:heading>
 
-                            {{-- Completeness bar --}}
-                            <div class="mt-2 flex items-center gap-2">
-                                <div class="h-1.5 flex-1 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-700">
-                                    <div
-                                        class="h-full rounded-full transition-all {{ $completeness['percentage'] === 100 ? 'bg-emerald-500' : ($completeness['percentage'] >= 60 ? 'bg-amber-500' : 'bg-zinc-400') }}"
-                                        style="width: {{ $completeness['percentage'] }}%"
-                                    ></div>
-                                </div>
-                                <span class="text-xs tabular-nums text-zinc-500">{{ $completeness['percentage'] }}%</span>
-                            </div>
+                            <x-puzzle-details :crossword="$crossword" />
+
+                            <x-puzzle-completeness-bar :crossword="$crossword" />
                         </a>
 
                         <div class="absolute top-2 right-2 opacity-0 transition-opacity group-hover:opacity-100">
@@ -364,7 +349,7 @@ new #[Title('My Puzzles')] class extends Component {
                                     wire:click="$set('selectedTemplate', {{ $index }})"
                                     class="border-line flex shrink-0 flex-col items-center gap-1.5 rounded-lg border-2 p-2 transition-colors {{ $selectedTemplate === $index ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' : ' hover:border-zinc-400 dark:hover:border-zinc-500' }}"
                                 >
-                                    <x-grid-thumbnail :grid="$template['grid']" :width="$newWidth" :height="$newHeight" :cell-size="6" :max-width="80" />
+                                    <x-grid-thumbnail :grid="$template['grid']" :styles="$template['styles'] ?? null" :width="$newWidth" :height="$newHeight" :cell-size="6" :max-width="80" />
                                     <span class="whitespace-nowrap text-xs text-zinc-700 dark:text-zinc-400">{{ $template['name'] }}</span>
                                 </button>
                             @endforeach

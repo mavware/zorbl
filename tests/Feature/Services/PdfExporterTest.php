@@ -310,6 +310,118 @@ it('renders circles on cells with shapebg style', function () {
     expect($html)->toContain('class="circle"');
 });
 
+it('renders bar-style word boundaries in PDF', function () {
+    $crossword = Crossword::factory()->make([
+        'title' => 'Barred Puzzle',
+        'width' => 3,
+        'height' => 3,
+        'grid' => [
+            [1, 2, 3],
+            [4, 0, 0],
+            [5, 0, 0],
+        ],
+        'solution' => [
+            ['C', 'A', 'T'],
+            ['A', 'R', 'E'],
+            ['B', 'O', 'W'],
+        ],
+        'styles' => [
+            '0,0' => ['bars' => ['right', 'bottom']],
+            '1,2' => ['bars' => ['left']],
+            '2,0' => ['bars' => ['top']],
+        ],
+        'clues_across' => [
+            ['number' => 1, 'clue' => 'Feline'],
+            ['number' => 4, 'clue' => 'Exist'],
+            ['number' => 5, 'clue' => 'Archery tool'],
+        ],
+        'clues_down' => [
+            ['number' => 1, 'clue' => 'Taxi'],
+            ['number' => 2, 'clue' => 'Mineral'],
+            ['number' => 3, 'clue' => 'Tower'],
+        ],
+    ]);
+
+    $exporter = app(PdfExporter::class);
+    $pdf = $exporter->export($crossword, includeSolution: true);
+
+    expect($pdf)->toStartWith('%PDF');
+
+    $html = view('exports.crossword-pdf', [
+        'title' => $crossword->title,
+        'author' => $crossword->author,
+        'copyright' => $crossword->copyright,
+        'numberedGrid' => $crossword->grid,
+        'solution' => $crossword->solution,
+        'cluesAcross' => $crossword->clues_across,
+        'cluesDown' => $crossword->clues_down,
+        'styles' => $crossword->styles ?? [],
+        'includeSolution' => true,
+        'cellSize' => 0.33,
+        'numberFontSize' => 6,
+        'letterFontSize' => 9,
+        'numberHeight' => 0.116,
+    ])->render();
+
+    expect($html)
+        ->toContain('bar-right')
+        ->toContain('bar-bottom')
+        ->toContain('bar-left')
+        ->toContain('bar-top')
+        ->toContain('Barred Puzzle');
+});
+
+it('renders bars on solution page too', function () {
+    $crossword = Crossword::factory()->make([
+        'title' => 'Barred Solution',
+        'width' => 2,
+        'height' => 2,
+        'grid' => [
+            [1, 2],
+            [3, 0],
+        ],
+        'solution' => [
+            ['A', 'B'],
+            ['C', 'D'],
+        ],
+        'styles' => [
+            '0,1' => ['bars' => ['bottom']],
+        ],
+        'clues_across' => [
+            ['number' => 1, 'clue' => 'AB'],
+            ['number' => 3, 'clue' => 'CD'],
+        ],
+        'clues_down' => [
+            ['number' => 1, 'clue' => 'AC'],
+            ['number' => 2, 'clue' => 'BD'],
+        ],
+    ]);
+
+    $exporter = app(PdfExporter::class);
+    $pdf = $exporter->export($crossword, includeSolution: true);
+
+    expect($pdf)->toStartWith('%PDF');
+
+    $html = view('exports.crossword-pdf', [
+        'title' => $crossword->title,
+        'author' => $crossword->author,
+        'copyright' => $crossword->copyright,
+        'numberedGrid' => $crossword->grid,
+        'solution' => $crossword->solution,
+        'cluesAcross' => $crossword->clues_across,
+        'cluesDown' => $crossword->clues_down,
+        'styles' => $crossword->styles ?? [],
+        'includeSolution' => true,
+        'cellSize' => 0.33,
+        'numberFontSize' => 6,
+        'letterFontSize' => 9,
+        'numberHeight' => 0.116,
+    ])->render();
+
+    // bar-bottom should appear in both grids (blank + solution) plus the CSS definition
+    expect(substr_count($html, 'bar-bottom'))->toBe(3);
+});
+
 it('uses untitled puzzle when title is empty', function () {
     $crossword = Crossword::factory()->make([
         'title' => null,
