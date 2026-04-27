@@ -3,6 +3,7 @@
 use App\Models\Crossword;
 use App\Models\CrosswordLike;
 use App\Models\PuzzleAttempt;
+use App\Models\Tag;
 use App\Models\User;
 use Livewire\Livewire;
 
@@ -507,4 +508,144 @@ test('discovery shows filter indicator when filters are active', function () {
 
     $component->set('search', 'test')
         ->assertSee('Clear');
+});
+
+// --- Tag Filtering ---
+
+test('discovery filters by tag slug', function () {
+    $user = User::factory()->create();
+    $creator = User::factory()->create();
+    $tag = Tag::factory()->create(['name' => 'Science', 'slug' => 'science']);
+
+    $tagged = Crossword::factory()->published()->for($creator)->create(['title' => 'Science Puzzle']);
+    $tagged->tags()->attach($tag);
+
+    Crossword::factory()->published()->for($creator)->create(['title' => 'Untagged Puzzle']);
+
+    Livewire::actingAs($user)
+        ->test('puzzle-discovery', ['excludeAttempted' => true])
+        ->set('tag', 'science')
+        ->assertSee('Science Puzzle')
+        ->assertDontSee('Untagged Puzzle');
+});
+
+test('discovery shows all puzzles when tag filter is empty', function () {
+    $user = User::factory()->create();
+    $creator = User::factory()->create();
+    $tag = Tag::factory()->create(['name' => 'History', 'slug' => 'history']);
+
+    $tagged = Crossword::factory()->published()->for($creator)->create(['title' => 'History Puzzle']);
+    $tagged->tags()->attach($tag);
+
+    Crossword::factory()->published()->for($creator)->create(['title' => 'Other Puzzle']);
+
+    Livewire::actingAs($user)
+        ->test('puzzle-discovery', ['excludeAttempted' => true])
+        ->set('tag', '')
+        ->assertSee('History Puzzle')
+        ->assertSee('Other Puzzle');
+});
+
+test('discovery clear filters resets tag', function () {
+    $user = User::factory()->create();
+    $creator = User::factory()->create();
+    Crossword::factory()->published()->for($creator)->create();
+
+    Livewire::actingAs($user)
+        ->test('puzzle-discovery', ['excludeAttempted' => true])
+        ->set('tag', 'science')
+        ->call('clearFilters')
+        ->assertSet('tag', '');
+});
+
+test('discovery shows tag filter indicator when tag is active', function () {
+    $user = User::factory()->create();
+    $creator = User::factory()->create();
+    Crossword::factory()->published()->for($creator)->create();
+    Tag::factory()->create(['name' => 'Music', 'slug' => 'music']);
+
+    Livewire::actingAs($user)
+        ->test('puzzle-discovery')
+        ->assertDontSee('Clear')
+        ->set('tag', 'music')
+        ->assertSee('Clear');
+});
+
+test('discovery displays tags on puzzle cards', function () {
+    $user = User::factory()->create();
+    $creator = User::factory()->create();
+    $tag = Tag::factory()->create(['name' => 'Pop Culture']);
+
+    $puzzle = Crossword::factory()->published()->for($creator)->create(['title' => 'Tagged Card Puzzle']);
+    $puzzle->tags()->attach($tag);
+
+    Livewire::actingAs($user)
+        ->test('puzzle-discovery', ['excludeAttempted' => true])
+        ->assertSee('Pop Culture');
+});
+
+// --- Blocked Tag Exclusion in Discovery ---
+
+test('discovery hides puzzles with blocked tags', function () {
+    $user = User::factory()->create();
+    $creator = User::factory()->create();
+    $tag = Tag::factory()->create(['name' => 'Cryptic']);
+
+    $blockedPuzzle = Crossword::factory()->published()->for($creator)->create(['title' => 'Blocked Discovery Puzzle']);
+    $blockedPuzzle->tags()->attach($tag);
+
+    Crossword::factory()->published()->for($creator)->create(['title' => 'Visible Discovery Puzzle']);
+
+    $user->blockedTags()->attach($tag);
+
+    Livewire::actingAs($user)
+        ->test('puzzle-discovery', ['excludeAttempted' => true])
+        ->assertDontSee('Blocked Discovery Puzzle')
+        ->assertSee('Visible Discovery Puzzle');
+});
+
+test('discovery hides puzzles if any tag is blocked', function () {
+    $user = User::factory()->create();
+    $creator = User::factory()->create();
+    $blockedTag = Tag::factory()->create(['name' => 'Blocked Tag']);
+    $safeTag = Tag::factory()->create(['name' => 'Safe Tag']);
+
+    $puzzle = Crossword::factory()->published()->for($creator)->create(['title' => 'Multi Tag Discovery']);
+    $puzzle->tags()->attach([$blockedTag->id, $safeTag->id]);
+
+    $user->blockedTags()->attach($blockedTag);
+
+    Livewire::actingAs($user)
+        ->test('puzzle-discovery', ['excludeAttempted' => true])
+        ->assertDontSee('Multi Tag Discovery');
+});
+
+test('discovery shows untagged puzzles when user has blocked tags', function () {
+    $user = User::factory()->create();
+    $creator = User::factory()->create();
+    $tag = Tag::factory()->create(['name' => 'Blocked']);
+
+    $user->blockedTags()->attach($tag);
+
+    Crossword::factory()->published()->for($creator)->create(['title' => 'No Tags Discovery']);
+
+    Livewire::actingAs($user)
+        ->test('puzzle-discovery', ['excludeAttempted' => true])
+        ->assertSee('No Tags Discovery');
+});
+
+test('discovery shows puzzles with non-blocked tags', function () {
+    $user = User::factory()->create();
+    $creator = User::factory()->create();
+    $blockedTag = Tag::factory()->create(['name' => 'Blocked']);
+    $safeTag = Tag::factory()->create(['name' => 'Safe']);
+
+    $user->blockedTags()->attach($blockedTag);
+
+    $puzzle = Crossword::factory()->published()->for($creator)->create(['title' => 'Safe Discovery Puzzle']);
+    $puzzle->tags()->attach($safeTag);
+
+    Livewire::actingAs($user)
+        ->test('puzzle-discovery', ['excludeAttempted' => true])
+        ->assertSee('Safe Discovery Puzzle');
 });

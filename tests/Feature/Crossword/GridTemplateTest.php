@@ -65,6 +65,37 @@ test('creating puzzle with selected template uses that grid', function () {
     }
 });
 
+test('creating puzzle with template carries the template bars onto the new crossword', function () {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    $template = Template::factory()->square(15)->create([
+        'name' => 'Barred Template',
+        'is_active' => true,
+        'sort_order' => -100,
+        'styles' => [
+            '0,4' => ['bars' => ['right']],
+            '14,10' => ['bars' => ['left']],
+        ],
+    ]);
+
+    $templates = app(GridTemplateProvider::class)->getTemplates(15, 15);
+    $index = collect($templates)->search(fn ($t) => $t['name'] === $template->name);
+    expect($index)->not->toBeFalse();
+
+    Livewire\Livewire::test('pages::crosswords.index')
+        ->set('newWidth', 15)
+        ->set('newHeight', 15)
+        ->set('selectedTemplate', $index)
+        ->call('createPuzzle');
+
+    $crossword = Crossword::latest()->first();
+    expect($crossword->styles)->toBe([
+        '0,4' => ['bars' => ['right']],
+        '14,10' => ['bars' => ['left']],
+    ]);
+});
+
 test('creating puzzle without template uses blank grid', function () {
     $user = User::factory()->create();
     $this->actingAs($user);

@@ -115,6 +115,51 @@ test('admin can update min_word_length on an existing template', function () {
     expect($template->fresh()->min_word_length)->toBe(5);
 });
 
+test('admin can save a template with bars in styles', function () {
+    Livewire::test(CreateTemplate::class)
+        ->fillForm([
+            'name' => 'Bars 5x5',
+            'width' => 5,
+            'height' => 5,
+            'grid' => TemplateFactory::openGrid(5, 5),
+            'styles' => [
+                '0,1' => ['bars' => ['right']],
+                '4,3' => ['bars' => ['left']],
+            ],
+            'min_word_length' => 1,
+            'sort_order' => 0,
+            'is_active' => true,
+        ])
+        ->call('create')
+        ->assertNotified()
+        ->assertHasNoFormErrors();
+
+    $template = Template::firstWhere('name', 'Bars 5x5');
+    expect($template)->not->toBeNull();
+    expect($template->styles)->toBe([
+        '0,1' => ['bars' => ['right']],
+        '4,3' => ['bars' => ['left']],
+    ]);
+});
+
+test('saving a template without bars stores null styles', function () {
+    Livewire::test(CreateTemplate::class)
+        ->fillForm([
+            'name' => 'No bars',
+            'width' => 5,
+            'height' => 5,
+            'grid' => TemplateFactory::openGrid(5, 5),
+            'styles' => [],
+            'min_word_length' => 1,
+            'sort_order' => 0,
+            'is_active' => true,
+        ])
+        ->call('create')
+        ->assertHasNoFormErrors();
+
+    expect(Template::firstWhere('name', 'No bars')->styles)->toBeNull();
+});
+
 test('admin can edit a template', function () {
     $template = Template::factory()->create(['name' => 'Old name']);
 
@@ -133,7 +178,7 @@ test('admin can delete a template', function () {
         ->callAction('delete')
         ->assertNotified();
 
-    $this->assertDatabaseMissing('templates', ['id' => $template->id]);
+    $this->assertSoftDeleted('templates', ['id' => $template->id]);
 });
 
 test('non-admin cannot access templates admin', function () {
