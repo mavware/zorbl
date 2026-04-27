@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Templates\Schemas;
 use App\Services\GridTemplateProvider;
 use Closure;
 use Database\Factories\TemplateFactory;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Components\ViewField;
@@ -43,6 +44,9 @@ class TemplateForm
                     ))
                     ->rules([self::gridRule()])
                     ->required(),
+                Hidden::make('styles')
+                    ->default(null)
+                    ->dehydrateStateUsing(fn ($state) => is_array($state) && count($state) > 0 ? $state : null),
                 TextInput::make('min_word_length')
                     ->label(__('Minimum word length'))
                     ->helperText(__('Shortest allowed run of open cells, enforced when validating the grid.'))
@@ -82,11 +86,11 @@ class TemplateForm
                     }
                 }
 
-//                if (! GridTemplateProvider::hasRotationalSymmetry($value, $width, $height)) {
-//                    $fail(__('Grid must have 180-degree rotational symmetry.'));
-//
-//                    return;
-//                }
+                //                if (! GridTemplateProvider::hasRotationalSymmetry($value, $width, $height)) {
+                //                    $fail(__('Grid must have 180-degree rotational symmetry.'));
+                //
+                //                    return;
+                //                }
 
                 if (! GridTemplateProvider::validateMinWordLength($value, $width, $height, $minWordLength)) {
                     $fail(__('Grid contains words shorter than the minimum length of :min.', ['min' => $minWordLength]));

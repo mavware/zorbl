@@ -8,6 +8,7 @@ use Eloquent;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Cache;
 
 /**
@@ -16,6 +17,7 @@ use Illuminate\Support\Facades\Cache;
  * @property int $width
  * @property int $height
  * @property array<int, array<int, int|string>> $grid
+ * @property array<string, array{bars?: list<string>}>|null $styles
  * @property int $min_word_length
  * @property int $sort_order
  * @property bool $is_active
@@ -27,12 +29,14 @@ use Illuminate\Support\Facades\Cache;
  * @mixin Eloquent
  */
 #[Fillable([
-    'name', 'width', 'height', 'grid', 'min_word_length', 'sort_order', 'is_active',
+    'name', 'width', 'height', 'grid', 'styles', 'min_word_length', 'sort_order', 'is_active',
 ])]
 class Template extends Model
 {
     /** @use HasFactory<TemplateFactory> */
     use HasFactory;
+
+    use SoftDeletes;
 
     /**
      * @return array<string, string>
@@ -43,6 +47,7 @@ class Template extends Model
             'width' => 'integer',
             'height' => 'integer',
             'grid' => 'array',
+            'styles' => 'array',
             'min_word_length' => 'integer',
             'sort_order' => 'integer',
             'is_active' => 'boolean',

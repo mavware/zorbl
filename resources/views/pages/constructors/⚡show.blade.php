@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Title;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 
 new #[Title('Constructor Profile')] class extends Component {
@@ -16,6 +17,12 @@ new #[Title('Constructor Profile')] class extends Component {
     public int $constructorId;
 
     public string $constructorName = '';
+
+    #[Url]
+    public string $sortBy = 'newest';
+
+    #[Url]
+    public string $difficulty = '';
 
     public function mount(User $constructor): void
     {
@@ -32,15 +39,36 @@ new #[Title('Constructor Profile')] class extends Component {
     #[Computed]
     public function publishedPuzzles()
     {
-        return Crossword::where('user_id', $this->constructorId)
+        $query = Crossword::where('user_id', $this->constructorId)
             ->where('is_published', true)
             ->withCount([
                 'likes',
                 'attempts',
                 'attempts as completed_attempts_count' => fn ($q) => $q->where('is_completed', true),
-            ])
-            ->latest()
-            ->get();
+            ]);
+
+        if ($this->difficulty !== '') {
+            $query->where('difficulty_label', $this->difficulty);
+        }
+
+        match ($this->sortBy) {
+            'oldest' => $query->oldest(),
+            'most_liked' => $query->orderByDesc('likes_count'),
+            'most_played' => $query->orderByDesc('attempts_count'),
+            default => $query->latest(),
+        };
+
+        return $query->get();
+    }
+
+    public function updatedSortBy(): void
+    {
+        unset($this->publishedPuzzles);
+    }
+
+    public function updatedDifficulty(): void
+    {
+        unset($this->publishedPuzzles);
     }
 
     #[Computed]
@@ -149,12 +177,37 @@ new #[Title('Constructor Profile')] class extends Component {
 
     {{-- Published Puzzles --}}
     <div>
-        <flux:heading size="lg" class="mb-4">{{ __('Published Puzzles') }}</flux:heading>
+        <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <flux:heading size="lg">{{ __('Published Puzzles') }}</flux:heading>
+
+            <div class="flex flex-wrap items-center gap-3">
+                <flux:radio.group wire:model.live="difficulty" variant="segmented" size="sm">
+                    <flux:radio value="" label="{{ __('All') }}" />
+                    <flux:radio value="Easy" label="{{ __('Easy') }}" />
+                    <flux:radio value="Medium" label="{{ __('Medium') }}" />
+                    <flux:radio value="Hard" label="{{ __('Hard') }}" />
+                    <flux:radio value="Expert" label="{{ __('Expert') }}" />
+                </flux:radio.group>
+
+                <flux:select wire:model.live="sortBy" size="sm" class="w-36">
+                    <flux:select.option value="newest">{{ __('Newest') }}</flux:select.option>
+                    <flux:select.option value="oldest">{{ __('Oldest') }}</flux:select.option>
+                    <flux:select.option value="most_liked">{{ __('Most Liked') }}</flux:select.option>
+                    <flux:select.option value="most_played">{{ __('Most Played') }}</flux:select.option>
+                </flux:select>
+            </div>
+        </div>
 
         @if($this->publishedPuzzles->isEmpty())
             <div class="border-line-strong flex flex-col items-center justify-center rounded-lg border border-dashed py-8">
                 <flux:icon name="puzzle-piece" class="mb-2 size-8 text-zinc-500" />
-                <flux:text size="sm" class="text-zinc-500">{{ __('No published puzzles yet.') }}</flux:text>
+                <flux:text size="sm" class="text-zinc-500">
+                    @if($this->difficulty !== '')
+                        {{ __('No puzzles match this difficulty.') }}
+                    @else
+                        {{ __('No published puzzles yet.') }}
+                    @endif
+                </flux:text>
             </div>
         @else
             <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

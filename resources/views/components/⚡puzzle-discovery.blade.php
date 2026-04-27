@@ -2,6 +2,7 @@
 
 use App\Models\Crossword;
 use App\Models\CrosswordLike;
+use App\Models\Tag;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Computed;
@@ -22,6 +23,8 @@ new class extends Component {
     public string $dateRange = '';
 
     public string $difficulty = '';
+
+    public string $tag = '';
 
     public string $sortBy = 'newest';
 
@@ -45,6 +48,7 @@ new class extends Component {
             'constructor' => ['except' => ''],
             'dateRange' => ['except' => ''],
             'difficulty' => ['except' => ''],
+            'tag' => ['except' => ''],
             'sortBy' => ['except' => 'newest'],
         ];
     }
@@ -71,7 +75,7 @@ new class extends Component {
     public function puzzles()
     {
         $query = Crossword::where('is_published', true)
-            ->with('user:id,name')
+            ->with('user:id,name', 'tags:id,name,slug')
             ->withCount('likes');
 
         $hasExplicitFilters = $this->search !== '' || $this->constructor !== '';
@@ -122,6 +126,18 @@ new class extends Component {
 
         if ($this->difficulty !== '') {
             $query->where('difficulty_label', $this->difficulty);
+        }
+
+        if ($this->tag !== '') {
+            $query->whereHas('tags', fn ($q) => $q->where('slug', $this->tag));
+        }
+
+        if (Auth::check()) {
+            $blockedTagIds = Auth::user()->blockedTags()->pluck('tags.id');
+
+            if ($blockedTagIds->isNotEmpty()) {
+                $query->whereDoesntHave('tags', fn ($q) => $q->whereIn('tags.id', $blockedTagIds));
+            }
         }
 
         if ($this->dateRange !== '') {
@@ -194,7 +210,7 @@ new class extends Component {
 
     public function clearFilters(): void
     {
-        $this->reset('search', 'gridSize', 'puzzleType', 'constructor', 'dateRange', 'difficulty', 'sortBy');
+        $this->reset('search', 'gridSize', 'puzzleType', 'constructor', 'dateRange', 'difficulty', 'tag', 'sortBy');
         $this->sortBy = 'newest';
         $this->resetPage();
         unset($this->puzzles);
@@ -225,9 +241,21 @@ new class extends Component {
         $this->resetPage();
     }
 
+    public function updatedTag(): void
+    {
+        $this->resetPage();
+    }
+
     public function updatedSortBy(): void
     {
         $this->resetPage();
+    }
+
+    /** @return \Illuminate\Database\Eloquent\Collection<int, Tag> */
+    #[Computed]
+    public function allTags(): \Illuminate\Database\Eloquent\Collection
+    {
+        return Tag::orderBy('name')->get(['id', 'name', 'slug']);
     }
 
     public function hasActiveFilters(): bool
@@ -238,6 +266,7 @@ new class extends Component {
             || $this->constructor !== ''
             || $this->dateRange !== ''
             || $this->difficulty !== ''
+            || $this->tag !== ''
             || $this->sortBy !== 'newest';
     }
 
@@ -333,6 +362,16 @@ new class extends Component {
                     <flux:select.option value="year">{{ __('This Year') }}</flux:select.option>
                 </flux:select>
             </flux:field>
+
+            <flux:field>
+                <flux:label>{{ __('Tag') }}</flux:label>
+                <flux:select wire:model.live="tag" size="sm">
+                    <flux:select.option value="">{{ __('All Tags') }}</flux:select.option>
+                    @foreach($this->allTags as $t)
+                        <flux:select.option value="{{ $t->slug }}">{{ $t->name }}</flux:select.option>
+                    @endforeach
+                </flux:select>
+            </flux:field>
         </div>
     @endif
 
@@ -373,7 +412,7 @@ new class extends Component {
                         {{ $crossword->width }}&times;{{ $crossword->height }}
                     </flux:text>
 
-                    <div class="mt-1.5 flex items-center gap-2">
+                    <div class="mt-1.5 flex flex-wrap items-center gap-1.5">
                         <flux:badge size="sm" variant="outline">{{ __($crossword->puzzleTypeLabel()) }}</flux:badge>
                         @if($crossword->difficulty_label)
                             <flux:badge
@@ -381,6 +420,9 @@ new class extends Component {
                                 :color="match($crossword->difficulty_label) { 'Easy' => 'green', 'Medium' => 'amber', 'Hard' => 'orange', 'Expert' => 'red', default => 'zinc' }"
                             >{{ __($crossword->difficulty_label) }}</flux:badge>
                         @endif
+                        @foreach($crossword->tags as $crosswordTag)
+                            <flux:badge size="sm" color="blue">{{ $crosswordTag->name }}</flux:badge>
+                        @endforeach
                     </div>
 
                     <div class="mt-3 flex items-center justify-between">

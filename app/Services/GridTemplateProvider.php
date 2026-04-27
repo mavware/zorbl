@@ -11,7 +11,7 @@ class GridTemplateProvider
     /**
      * Get available grid templates for the given dimensions.
      *
-     * @return array<int, array{name: string, grid: array<int, array<int, int|string>>}>
+     * @return array<int, array{name: string, grid: array<int, array<int, int|string>>, styles: array<string, array<string, mixed>>|null}>
      */
     public function getTemplates(int $width, int $height): array
     {
@@ -65,7 +65,7 @@ class GridTemplateProvider
     /**
      * Fetch admin-curated templates for the requested dimensions.
      *
-     * @return array<int, array{name: string, grid: array<int, array<int, int|string>>}>
+     * @return array<int, array{name: string, grid: array<int, array<int, int|string>>, styles: array<string, array<string, mixed>>|null}>
      */
     private function templatesFromAdmin(int $width, int $height): array
     {
@@ -75,10 +75,11 @@ class GridTemplateProvider
             ->where('height', $height)
             ->orderBy('sort_order')
             ->orderBy('id')
-            ->get(['name', 'grid'])
+            ->get(['name', 'grid', 'styles'])
             ->map(fn (Template $template): array => [
                 'name' => $template->name,
                 'grid' => $template->grid,
+                'styles' => $template->styles,
             ])
             ->all();
     }
@@ -86,7 +87,7 @@ class GridTemplateProvider
     /**
      * Extract unique grid layouts from published crosswords in the database.
      *
-     * @return array<int, array{name: string, grid: array<int, array<int, int|string>>}>
+     * @return array<int, array{name: string, grid: array<int, array<int, int|string>>, styles: array<string, array<string, mixed>>|null}>
      */
     private function templatesFromDatabase(int $width, int $height): array
     {
@@ -179,7 +180,7 @@ class GridTemplateProvider
                     $nameCounts[$baseName] = 1;
                 }
 
-                $result[] = ['name' => $t['name'], 'grid' => $t['grid']];
+                $result[] = ['name' => $t['name'], 'grid' => $t['grid'], 'styles' => null];
             }
 
             return $result;
@@ -362,7 +363,7 @@ class GridTemplateProvider
     /**
      * Generate templates parametrically for sizes without enough database examples.
      *
-     * @return array<int, array{name: string, grid: array<int, array<int, int|string>>}>
+     * @return array<int, array{name: string, grid: array<int, array<int, int|string>>, styles: array<string, array<string, mixed>>|null}>
      */
     public function generateTemplates(int $width, int $height): array
     {
@@ -416,7 +417,7 @@ class GridTemplateProvider
             $grid = $this->buildGrid($n, $n, $blocks);
 
             if (self::validateMinWordLength($grid, $n, $n)) {
-                $templates[] = ['name' => $candidate['name'], 'grid' => $grid];
+                $templates[] = ['name' => $candidate['name'], 'grid' => $grid, 'styles' => null];
             }
 
             if (count($templates) >= 5) {
