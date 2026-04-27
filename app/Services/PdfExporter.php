@@ -32,24 +32,58 @@ class PdfExporter
         $letterFontSize = round(max(6, $cellSize * 28), 1);
         $numberHeight = round($cellSize * 0.35, 3);
 
+        $cluesAcross = $crossword->clues_across ?? [];
+        $cluesDown = $crossword->clues_down ?? [];
+
+        $forceCluePageBreak = $this->shouldBreakBeforeClues(
+            $crossword->height,
+            $cellSize,
+            count($cluesAcross),
+            count($cluesDown),
+        );
+
         $pdf = Pdf::loadView('exports.crossword-pdf', [
             'title' => $crossword->title ?: 'Untitled Puzzle',
             'author' => $crossword->author,
             'copyright' => $crossword->copyright,
             'numberedGrid' => $result['grid'],
             'solution' => $crossword->solution,
-            'cluesAcross' => $crossword->clues_across ?? [],
-            'cluesDown' => $crossword->clues_down ?? [],
+            'cluesAcross' => $cluesAcross,
+            'cluesDown' => $cluesDown,
             'styles' => $crossword->styles ?? [],
             'includeSolution' => $includeSolution,
             'cellSize' => $cellSize,
             'numberFontSize' => $numberFontSize,
             'letterFontSize' => $letterFontSize,
             'numberHeight' => $numberHeight,
+            'forceCluePageBreak' => $forceCluePageBreak,
         ]);
 
         $pdf->setPaper('letter');
 
         return $pdf->output();
+    }
+
+    /**
+     * Determine whether clues should be forced onto a separate page.
+     *
+     * For small puzzles, grid and clues fit together on one page.
+     * For larger puzzles, a page break prevents awkward mid-clue splits.
+     */
+    public function shouldBreakBeforeClues(int $gridHeight, float $cellSize, int $acrossCount, int $downCount): bool
+    {
+        $availableHeight = 9.5; // letter height minus margins
+        $headerHeight = 0.5;
+        $gridTotalHeight = $gridHeight * $cellSize + 0.17; // grid + header margin
+
+        // Each clue section: heading (~0.5") + ceil(clueCount / 2) rows at ~0.20" each
+        $clueLineHeight = 0.20;
+        $sectionHeaderHeight = 0.5;
+        $acrossHeight = $acrossCount > 0 ? $sectionHeaderHeight + ceil($acrossCount / 2) * $clueLineHeight : 0;
+        $downHeight = $downCount > 0 ? $sectionHeaderHeight + ceil($downCount / 2) * $clueLineHeight : 0;
+
+        $totalHeight = $headerHeight + $gridTotalHeight + $acrossHeight + $downHeight;
+
+        return $totalHeight > $availableHeight;
     }
 }

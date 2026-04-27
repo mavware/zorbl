@@ -179,8 +179,10 @@
         </table>
     </div>
 
-    {{-- Clues page --}}
-    <div class="page-break"></div>
+    {{-- Clues: separate page for large puzzles, inline for small ones --}}
+    @if ($forceCluePageBreak)
+        <div class="page-break"></div>
+    @endif
 
     @if (!empty($cluesAcross))
         <div class="clues-section">

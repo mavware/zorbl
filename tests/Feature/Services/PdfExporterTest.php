@@ -190,6 +190,7 @@ it('exports freestyle puzzle with void cells as removed squares', function () {
         'numberFontSize' => 6,
         'letterFontSize' => 9,
         'numberHeight' => 0.116,
+        'forceCluePageBreak' => false,
     ])->render();
 
     expect($html)
@@ -247,6 +248,7 @@ it('renders cell background colors in PDF', function () {
         'numberFontSize' => 6,
         'letterFontSize' => 9,
         'numberHeight' => 0.116,
+        'forceCluePageBreak' => false,
     ])->render();
 
     expect($html)
@@ -305,9 +307,74 @@ it('renders circles on cells with shapebg style', function () {
         'numberFontSize' => 6,
         'letterFontSize' => 9,
         'numberHeight' => 0.116,
+        'forceCluePageBreak' => false,
     ])->render();
 
     expect($html)->toContain('class="circle"');
+});
+
+it('keeps grid and clues on one page for small puzzles', function () {
+    $crossword = Crossword::factory()->make([
+        'title' => 'Small Puzzle',
+        'author' => 'Tester',
+        'width' => 5,
+        'height' => 5,
+        'grid' => Crossword::emptyGrid(5, 5),
+        'solution' => Crossword::emptySolution(5, 5),
+        'clues_across' => [
+            ['number' => 1, 'clue' => 'First'],
+            ['number' => 4, 'clue' => 'Second'],
+        ],
+        'clues_down' => [
+            ['number' => 1, 'clue' => 'Down one'],
+            ['number' => 2, 'clue' => 'Down two'],
+        ],
+    ]);
+
+    $exporter = app(PdfExporter::class);
+
+    expect($exporter->shouldBreakBeforeClues(5, 0.33, 2, 2))->toBeFalse();
+
+    $pdf = $exporter->export($crossword, includeSolution: false);
+    expect($pdf)->toStartWith('%PDF');
+});
+
+it('forces clues to separate page for large puzzles', function () {
+    $exporter = app(PdfExporter::class);
+
+    // 15x15 grid with ~30 clues each direction
+    expect($exporter->shouldBreakBeforeClues(15, 0.33, 30, 30))->toBeTrue();
+
+    // 21x21 grid
+    expect($exporter->shouldBreakBeforeClues(21, 0.33, 40, 40))->toBeTrue();
+});
+
+it('renders page-break div only when forced', function () {
+    $baseData = [
+        'title' => 'Test',
+        'author' => null,
+        'copyright' => null,
+        'numberedGrid' => [[1, 2], [3, 0]],
+        'solution' => [['A', 'B'], ['C', 'D']],
+        'cluesAcross' => [['number' => 1, 'clue' => 'AB']],
+        'cluesDown' => [['number' => 1, 'clue' => 'AC']],
+        'styles' => [],
+        'includeSolution' => false,
+        'cellSize' => 0.33,
+        'numberFontSize' => 6,
+        'letterFontSize' => 9,
+        'numberHeight' => 0.116,
+    ];
+
+    $htmlInline = view('exports.crossword-pdf', array_merge($baseData, ['forceCluePageBreak' => false]))->render();
+    $htmlPaged = view('exports.crossword-pdf', array_merge($baseData, ['forceCluePageBreak' => true]))->render();
+
+    // The inline version should NOT have the page-break div before clues
+    expect($htmlInline)->not->toContain('class="page-break"');
+
+    // The paged version should have a page-break div before clues
+    // (one from grid→clues, solution is excluded)
+    expect($htmlPaged)->toContain('class="page-break"');
 });
 
 it('uses untitled puzzle when title is empty', function () {
