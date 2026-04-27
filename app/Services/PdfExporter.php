@@ -46,7 +46,6 @@ class PdfExporter
             'numberFontSize' => $numberFontSize,
             'letterFontSize' => $letterFontSize,
             'numberHeight' => $numberHeight,
-            'styles' => $crossword->styles ?? [],
         ]);
 
         $pdf->setPaper('letter');

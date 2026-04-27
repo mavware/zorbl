@@ -249,23 +249,6 @@ class extends Component {
         return Tag::orderBy('name')->get(['id', 'name', 'slug']);
     }
 
-    public function puzzleTypeLabel(Crossword $crossword): string
-    {
-        if ($crossword->puzzle_type !== \App\Enums\PuzzleType::Standard) {
-            return __($crossword->puzzle_type->label());
-        }
-
-        if ($crossword->grid && collect($crossword->grid)->flatten()->contains(fn ($v) => $v === null)) {
-            return __('Shaped');
-        }
-
-        if ($crossword->styles && collect($crossword->styles)->contains(fn ($s) => ! empty($s['bars'] ?? []))) {
-            return __('Barred');
-        }
-
-        return __('Standard');
-    }
-
     public function hasActiveFilters(): bool
     {
         return $this->search !== ''
@@ -427,7 +410,7 @@ class extends Component {
                     </flux:text>
 
                     <div class="mt-1.5 flex flex-wrap items-center gap-1.5">
-                        <flux:badge size="sm" variant="outline">{{ $this->puzzleTypeLabel($crossword) }}</flux:badge>
+                        <flux:badge size="sm" variant="outline">{{ __($crossword->puzzleTypeLabel()) }}</flux:badge>
                         @if($crossword->difficulty_label)
                             <flux:badge
                                 size="sm"
