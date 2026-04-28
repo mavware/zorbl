@@ -26,6 +26,9 @@ class UserForm
                     ->required(fn (string $operation): bool => $operation === 'create')
                     ->dehydrated(fn (?string $state): bool => filled($state)),
                 TextInput::make('copyright_name'),
+                Textarea::make('bio')
+                    ->maxLength(500)
+                    ->columnSpanFull(),
                 CheckboxList::make('roles')
                     ->relationship('roles', 'name')
                     ->columns(2)
