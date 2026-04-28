@@ -30,6 +30,8 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [x] ability to change color of cell background
 - [x] Render bar-style word boundaries in PDF exports (bars are used for numbering but not visually drawn in the PDF)
 - [ ] Ask Claude to find an algorithm to generate a template based on existing template data
+- [ ] Add a rating trend chart or sparkline to the constructor analytics page showing how ratings change over time
+- [ ] Add pagination to the solve history table on the stats page to handle users with many completed puzzles
 
 ## Done
 
