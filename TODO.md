@@ -30,6 +30,8 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [x] ability to change color of cell background
 - [x] Render bar-style word boundaries in PDF exports (bars are used for numbering but not visually drawn in the PDF)
 - [ ] Ask Claude to find an algorithm to generate a template based on existing template data
+- [ ] Add a notification preferences page so users can opt out of specific notification types (e.g. new puzzle published, likes, comments)
+- [ ] Add email channel option for puzzle-published notifications (alongside the existing database channel)
 
 ## Done
 
