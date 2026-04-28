@@ -2,6 +2,7 @@
 
 use App\Models\Crossword;
 use App\Models\PuzzleAttempt;
+use App\Models\PuzzleComment;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Computed;
@@ -26,10 +27,12 @@ new #[Title('Constructor Analytics')] class extends Component {
                 'attempts',
                 'attempts as completed_attempts_count' => fn ($q) => $q->where('is_completed', true),
                 'likes',
+                'comments as reviews_count' => fn ($q) => $q->whereNotNull('rating'),
             ])
-            ->withAvg('attempts as avg_solve_time', 'solve_time_seconds');
+            ->withAvg('attempts as avg_solve_time', 'solve_time_seconds')
+            ->withAvg('comments as avg_rating', 'rating');
 
-        $allowed = ['title', 'attempts_count', 'completed_attempts_count', 'avg_solve_time', 'likes_count'];
+        $allowed = ['title', 'attempts_count', 'completed_attempts_count', 'avg_solve_time', 'likes_count', 'avg_rating'];
         if ($this->sortField !== '' && in_array($this->sortField, $allowed)) {
             $direction = $this->sortDirection === 'desc' ? 'desc' : 'asc';
             $query->orderBy($this->sortField, $direction);
@@ -90,6 +93,30 @@ new #[Title('Constructor Analytics')] class extends Component {
                 'crossword_id',
                 Auth::user()->crosswords()->where('is_published', true)->select('id')
             )
+            ->count();
+    }
+
+    #[Computed]
+    public function overallAvgRating(): ?float
+    {
+        $avg = PuzzleComment::whereIn(
+            'crossword_id',
+            Auth::user()->crosswords()->where('is_published', true)->select('id')
+        )
+            ->whereNotNull('rating')
+            ->avg('rating');
+
+        return $avg ? round((float) $avg, 1) : null;
+    }
+
+    #[Computed]
+    public function totalReviews(): int
+    {
+        return PuzzleComment::whereIn(
+            'crossword_id',
+            Auth::user()->crosswords()->where('is_published', true)->select('id')
+        )
+            ->whereNotNull('rating')
             ->count();
     }
 
@@ -190,8 +217,8 @@ new #[Title('Constructor Analytics')] class extends Component {
         <div class="relative">
             {{-- Blurred preview --}}
             <div class="pointer-events-none select-none blur-sm">
-                <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                    @for ($i = 0; $i < 4; $i++)
+                <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+                    @for ($i = 0; $i < 5; $i++)
                         <div class="border-line rounded-xl border p-5">
                             <div class="flex items-center gap-3">
                                 <div class="size-10 rounded-lg bg-page"></div>
@@ -219,7 +246,7 @@ new #[Title('Constructor Analytics')] class extends Component {
         </div>
     @else
     {{-- Overview Cards --}}
-    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <div class="border-line rounded-xl border p-5">
             <div class="flex items-center gap-3">
                 <div class="flex size-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/30">
@@ -267,6 +294,21 @@ new #[Title('Constructor Analytics')] class extends Component {
                 </div>
             </div>
         </div>
+
+        <div class="border-line rounded-xl border p-5">
+            <div class="flex items-center gap-3">
+                <div class="flex size-10 items-center justify-center rounded-lg bg-yellow-100 dark:bg-yellow-900/30">
+                    <flux:icon name="star" class="size-5 text-yellow-500 dark:text-yellow-400" />
+                </div>
+                <div>
+                    <flux:text size="sm" class="text-zinc-600">{{ __('Avg Rating') }}</flux:text>
+                    <div class="text-2xl font-bold text-fg">{{ $this->overallAvgRating ?? '—' }}</div>
+                    @if($this->totalReviews > 0)
+                        <flux:text size="sm" class="text-zinc-500">{{ trans_choice(':count review|:count reviews', $this->totalReviews) }}</flux:text>
+                    @endif
+                </div>
+            </div>
+        </div>
     </div>
 
     {{-- Puzzle Performance Table --}}
@@ -287,6 +329,7 @@ new #[Title('Constructor Analytics')] class extends Component {
                     <flux:table.column align="center">{{ __('Completion Rate') }}</flux:table.column>
                     <flux:table.column sortable :sorted="$sortField === 'avg_solve_time'" :direction="$sortDirection" wire:click="sortBy('avg_solve_time')" align="center">{{ __('Avg Time') }}</flux:table.column>
                     <flux:table.column sortable :sorted="$sortField === 'likes_count'" :direction="$sortDirection" wire:click="sortBy('likes_count')" align="center">{{ __('Likes') }}</flux:table.column>
+                    <flux:table.column sortable :sorted="$sortField === 'avg_rating'" :direction="$sortDirection" wire:click="sortBy('avg_rating')" align="center">{{ __('Rating') }}</flux:table.column>
                 </flux:table.columns>
 
                 <flux:table.rows>
@@ -314,6 +357,19 @@ new #[Title('Constructor Analytics')] class extends Component {
                                     <svg xmlns="http://www.w3.org/2000/svg" class="size-3.5 text-red-400" viewBox="0 0 24 24" fill="currentColor"><path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 01-.383-.218 25.18 25.18 0 01-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0112 5.052 5.5 5.5 0 0116.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 01-4.244 3.17 15.247 15.247 0 01-.383.219l-.022.012-.007.004-.003.001a.752.752 0 01-.704 0l-.003-.001z"/></svg>
                                     {{ $puzzle->likes_count }}
                                 </span>
+                            </flux:table.cell>
+                            <flux:table.cell align="center">
+                                @if($puzzle->avg_rating)
+                                    <span class="inline-flex items-center gap-1">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="size-3.5 text-yellow-400" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.006 5.404.434c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.434 2.082-5.005Z" clip-rule="evenodd"/></svg>
+                                        {{ round($puzzle->avg_rating, 1) }}
+                                    </span>
+                                    @if($puzzle->reviews_count > 0)
+                                        <div class="text-xs text-zinc-500">({{ $puzzle->reviews_count }})</div>
+                                    @endif
+                                @else
+                                    <span class="text-zinc-400">—</span>
+                                @endif
                             </flux:table.cell>
                         </flux:table.row>
                     @endforeach

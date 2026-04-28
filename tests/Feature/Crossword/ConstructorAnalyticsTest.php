@@ -3,6 +3,7 @@
 use App\Models\Crossword;
 use App\Models\CrosswordLike;
 use App\Models\PuzzleAttempt;
+use App\Models\PuzzleComment;
 use App\Models\User;
 use Laravel\Cashier\Subscription;
 use Livewire\Livewire;
@@ -529,4 +530,159 @@ test('sorting by a new field resets direction to ascending', function () {
     $component->call('sortBy', 'likes_count');
     expect($component->get('sortDirection'))->toBe('asc')
         ->and($component->get('sortField'))->toBe('likes_count');
+});
+
+test('overall average rating computes from published puzzle comments', function () {
+    $constructor = makeAnalyticsProUser();
+    $solver1 = User::factory()->create();
+    $solver2 = User::factory()->create();
+
+    $puzzle = Crossword::factory()->published()->for($constructor)->create([
+        'width' => 2,
+        'height' => 2,
+        'grid' => [[1, 2], [3, 0]],
+    ]);
+
+    PuzzleComment::create(['user_id' => $solver1->id, 'crossword_id' => $puzzle->id, 'body' => 'Great!', 'rating' => 5]);
+    PuzzleComment::create(['user_id' => $solver2->id, 'crossword_id' => $puzzle->id, 'body' => 'OK', 'rating' => 3]);
+
+    $component = Livewire::actingAs($constructor)->test('pages::crosswords.analytics');
+
+    expect($component->get('overallAvgRating'))->toBe(4.0);
+});
+
+test('overall average rating excludes draft puzzle comments', function () {
+    $constructor = makeAnalyticsProUser();
+    $solver = User::factory()->create();
+
+    $published = Crossword::factory()->published()->for($constructor)->create([
+        'width' => 2,
+        'height' => 2,
+        'grid' => [[1, 2], [3, 0]],
+    ]);
+    $draft = Crossword::factory()->for($constructor)->create([
+        'width' => 2,
+        'height' => 2,
+        'grid' => [[1, 2], [3, 0]],
+        'is_published' => false,
+    ]);
+
+    PuzzleComment::create(['user_id' => $solver->id, 'crossword_id' => $published->id, 'body' => 'Nice', 'rating' => 4]);
+    PuzzleComment::create(['user_id' => User::factory()->create()->id, 'crossword_id' => $draft->id, 'body' => 'Meh', 'rating' => 1]);
+
+    $component = Livewire::actingAs($constructor)->test('pages::crosswords.analytics');
+
+    expect($component->get('overallAvgRating'))->toBe(4.0);
+});
+
+test('overall average rating is null when no reviews exist', function () {
+    $constructor = makeAnalyticsProUser();
+
+    Crossword::factory()->published()->for($constructor)->create([
+        'width' => 2,
+        'height' => 2,
+        'grid' => [[1, 2], [3, 0]],
+    ]);
+
+    $component = Livewire::actingAs($constructor)->test('pages::crosswords.analytics');
+
+    expect($component->get('overallAvgRating'))->toBeNull();
+});
+
+test('total reviews counts only comments with ratings on published puzzles', function () {
+    $constructor = makeAnalyticsProUser();
+    $solver1 = User::factory()->create();
+    $solver2 = User::factory()->create();
+
+    $published = Crossword::factory()->published()->for($constructor)->create([
+        'width' => 2,
+        'height' => 2,
+        'grid' => [[1, 2], [3, 0]],
+    ]);
+    $draft = Crossword::factory()->for($constructor)->create([
+        'width' => 2,
+        'height' => 2,
+        'grid' => [[1, 2], [3, 0]],
+        'is_published' => false,
+    ]);
+
+    PuzzleComment::create(['user_id' => $solver1->id, 'crossword_id' => $published->id, 'body' => 'Good', 'rating' => 4]);
+    PuzzleComment::create(['user_id' => $solver2->id, 'crossword_id' => $published->id, 'body' => 'Nice', 'rating' => 5]);
+    PuzzleComment::create(['user_id' => $solver1->id, 'crossword_id' => $draft->id, 'body' => 'Draft', 'rating' => 2]);
+
+    $component = Livewire::actingAs($constructor)->test('pages::crosswords.analytics');
+
+    expect($component->get('totalReviews'))->toBe(2);
+});
+
+test('published puzzles table includes review count and average rating', function () {
+    $constructor = makeAnalyticsProUser();
+    $solver1 = User::factory()->create();
+    $solver2 = User::factory()->create();
+
+    $puzzle = Crossword::factory()->published()->for($constructor)->create([
+        'title' => 'Rated Puzzle',
+        'width' => 2,
+        'height' => 2,
+        'grid' => [[1, 2], [3, 0]],
+    ]);
+
+    PuzzleComment::create(['user_id' => $solver1->id, 'crossword_id' => $puzzle->id, 'body' => 'Loved it', 'rating' => 5]);
+    PuzzleComment::create(['user_id' => $solver2->id, 'crossword_id' => $puzzle->id, 'body' => 'Fun', 'rating' => 3]);
+
+    $component = Livewire::actingAs($constructor)->test('pages::crosswords.analytics');
+    $puzzles = $component->get('publishedPuzzles');
+
+    expect($puzzles)->toHaveCount(1)
+        ->and($puzzles->first()->reviews_count)->toBe(2)
+        ->and(round((float) $puzzles->first()->avg_rating, 1))->toBe(4.0);
+});
+
+test('sorting by average rating orders correctly', function () {
+    $constructor = makeAnalyticsProUser();
+    $solver = User::factory()->create();
+
+    $lowRated = Crossword::factory()->published()->for($constructor)->create([
+        'title' => 'Low Rated',
+        'width' => 2,
+        'height' => 2,
+        'grid' => [[1, 2], [3, 0]],
+    ]);
+    $highRated = Crossword::factory()->published()->for($constructor)->create([
+        'title' => 'High Rated',
+        'width' => 2,
+        'height' => 2,
+        'grid' => [[1, 2], [3, 0]],
+    ]);
+
+    PuzzleComment::create(['user_id' => $solver->id, 'crossword_id' => $lowRated->id, 'body' => 'Meh', 'rating' => 2]);
+    PuzzleComment::create(['user_id' => User::factory()->create()->id, 'crossword_id' => $highRated->id, 'body' => 'Amazing', 'rating' => 5]);
+
+    $component = Livewire::actingAs($constructor)->test('pages::crosswords.analytics');
+
+    $component->call('sortBy', 'avg_rating');
+    expect($component->get('publishedPuzzles')->first()->title)->toBe('Low Rated');
+
+    $component->call('sortBy', 'avg_rating');
+    expect($component->get('publishedPuzzles')->first()->title)->toBe('High Rated');
+});
+
+test('rating displays on analytics page for pro users', function () {
+    $constructor = makeAnalyticsProUser();
+    $solver = User::factory()->create();
+
+    $puzzle = Crossword::factory()->published()->for($constructor)->create([
+        'title' => 'Reviewed Puzzle',
+        'width' => 2,
+        'height' => 2,
+        'grid' => [[1, 2], [3, 0]],
+    ]);
+
+    PuzzleComment::create(['user_id' => $solver->id, 'crossword_id' => $puzzle->id, 'body' => 'Excellent', 'rating' => 5]);
+
+    $this->actingAs($constructor)
+        ->get(route('crosswords.analytics'))
+        ->assertOk()
+        ->assertSee('Avg Rating')
+        ->assertSee('1 review');
 });
