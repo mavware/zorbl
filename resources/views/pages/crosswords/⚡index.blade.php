@@ -12,7 +12,9 @@ use Zorbl\CrosswordIO\ImportDetector;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
+use Livewire\Attributes\Url;
 use Livewire\Component;
+use Flux\Flux;
 use Livewire\WithFileUploads;
 
 new #[Title('My Puzzles')] class extends Component {
@@ -27,10 +29,43 @@ new #[Title('My Puzzles')] class extends Component {
     public $importFile;
     public string $importError = '';
 
+    #[Url]
+    public string $search = '';
+
+    #[Url]
+    public string $status = '';
+
+    #[Url]
+    public string $sortBy = 'newest';
+
     #[Computed]
     public function crosswords()
     {
-        return Auth::user()->crosswords()->latest()->get();
+        $query = Auth::user()->crosswords();
+
+        if ($this->search !== '') {
+            $term = $this->search;
+            $query->where(function ($q) use ($term) {
+                $q->whereLike('title', "%{$term}%")
+                    ->orWhereLike('author', "%{$term}%");
+            });
+        }
+
+        if ($this->status === 'published') {
+            $query->where('is_published', true);
+        } elseif ($this->status === 'draft') {
+            $query->where('is_published', false);
+        }
+
+        match ($this->sortBy) {
+            'oldest' => $query->oldest(),
+            'alpha' => $query->orderBy('title'),
+            'largest' => $query->orderByRaw('width * height DESC'),
+            'smallest' => $query->orderByRaw('width * height ASC'),
+            default => $query->latest(),
+        };
+
+        return $query->get();
     }
 
     #[Computed]
@@ -182,6 +217,36 @@ new #[Title('My Puzzles')] class extends Component {
         }
     }
 
+    public function duplicatePuzzle(int $id): void
+    {
+        $crossword = Crossword::findOrFail($id);
+        $this->authorize('view', $crossword);
+
+        $user = Auth::user();
+        $limits = $user->planLimits();
+
+        if ($user->crosswords()->count() >= $limits->maxPuzzles()) {
+            Flux::toast(
+                text: $user->isPro()
+                    ? __('You have reached your puzzle limit.')
+                    : __('Free accounts can create up to :count puzzles. Upgrade to Pro for unlimited.', ['count' => $limits->maxPuzzles()]),
+                variant: 'danger',
+            );
+
+            return;
+        }
+
+        $copy = $crossword->replicate(['is_published']);
+        $copy->title = __(':title (Copy)', ['title' => $crossword->title ?? __('Untitled Puzzle')]);
+        $copy->is_published = false;
+        $copy->user_id = $user->id;
+        $copy->save();
+
+        unset($this->crosswords);
+
+        Flux::toast(text: __('Puzzle duplicated.'), variant: 'success');
+    }
+
     public function deletePuzzle(int $id): void
     {
         $crossword = Crossword::findOrFail($id);
@@ -208,19 +273,49 @@ new #[Title('My Puzzles')] class extends Component {
             </div>
         </div>
 
+        {{-- Search & Filters --}}
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div class="flex-1">
+                <flux:input
+                    icon="magnifying-glass"
+                    placeholder="{{ __('Search puzzles...') }}"
+                    wire:model.live.debounce.300ms="search"
+                />
+            </div>
+            <div class="flex items-center gap-2">
+                <flux:radio.group wire:model.live="status" variant="segmented" size="sm">
+                    <flux:radio value="" label="{{ __('All') }}" />
+                    <flux:radio value="published" label="{{ __('Published') }}" />
+                    <flux:radio value="draft" label="{{ __('Drafts') }}" />
+                </flux:radio.group>
+                <flux:select wire:model.live="sortBy" size="sm" class="w-36">
+                    <flux:select.option value="newest">{{ __('Newest') }}</flux:select.option>
+                    <flux:select.option value="oldest">{{ __('Oldest') }}</flux:select.option>
+                    <flux:select.option value="alpha">{{ __('A–Z') }}</flux:select.option>
+                    <flux:select.option value="largest">{{ __('Largest') }}</flux:select.option>
+                    <flux:select.option value="smallest">{{ __('Smallest') }}</flux:select.option>
+                </flux:select>
+            </div>
+        </div>
+
         @if($this->crosswords->isEmpty())
             <div class="border-line-strong flex flex-col items-center justify-center rounded-xl border border-dashed py-16">
                 <flux:icon name="puzzle-piece" class="mb-4 size-12 text-zinc-500" />
-                <flux:heading size="lg" class="mb-2">{{ __('No puzzles yet') }}</flux:heading>
-                <flux:text class="mb-6">{{ __('Create a new crossword or import an existing puzzle file.') }}</flux:text>
-                <div class="flex gap-2">
-                    <flux:button variant="primary" icon="plus" wire:click="$set('showNewModal', true)">
-                        {{ __('New Puzzle') }}
-                    </flux:button>
-                    <flux:button icon="arrow-up-tray" wire:click="$set('showImportModal', true)">
-                        {{ __('Import Puzzle') }}
-                    </flux:button>
-                </div>
+                @if($search !== '' || $status !== '')
+                    <flux:heading size="lg" class="mb-2">{{ __('No matching puzzles') }}</flux:heading>
+                    <flux:text class="text-zinc-500">{{ __('Try adjusting your search or filters.') }}</flux:text>
+                @else
+                    <flux:heading size="lg" class="mb-2">{{ __('No puzzles yet') }}</flux:heading>
+                    <flux:text class="mb-6">{{ __('Create a new crossword or import an existing puzzle file.') }}</flux:text>
+                    <div class="flex gap-2">
+                        <flux:button variant="primary" icon="plus" wire:click="$set('showNewModal', true)">
+                            {{ __('New Puzzle') }}
+                        </flux:button>
+                        <flux:button icon="arrow-up-tray" wire:click="$set('showImportModal', true)">
+                            {{ __('Import Puzzle') }}
+                        </flux:button>
+                    </div>
+                @endif
             </div>
         @else
             <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -234,9 +329,16 @@ new #[Title('My Puzzles')] class extends Component {
                                 <x-grid-thumbnail :grid="$crossword->grid" :width="$crossword->width" :height="$crossword->height" />
                             </div>
 
-                            <flux:heading size="sm" class="truncate">
-                                {{ $crossword->title ?: __('Untitled Puzzle') }}
-                            </flux:heading>
+                            <div class="flex items-center gap-2">
+                                <flux:heading size="sm" class="truncate">
+                                    {{ $crossword->title ?: __('Untitled Puzzle') }}
+                                </flux:heading>
+                                @if($crossword->is_published)
+                                    <flux:badge size="sm" color="green">{{ __('Published') }}</flux:badge>
+                                @else
+                                    <flux:badge size="sm" color="zinc">{{ __('Draft') }}</flux:badge>
+                                @endif
+                            </div>
 
                             <x-puzzle-details :crossword="$crossword" />
 
@@ -247,6 +349,9 @@ new #[Title('My Puzzles')] class extends Component {
                             <flux:dropdown position="bottom" align="end">
                                 <flux:button variant="ghost" size="sm" icon="ellipsis-vertical" />
                                 <flux:menu>
+                                    <flux:menu.item icon="document-duplicate" wire:click="duplicatePuzzle({{ $crossword->id }})">
+                                        {{ __('Duplicate') }}
+                                    </flux:menu.item>
                                     <flux:menu.item icon="trash" variant="danger" wire:click="deletePuzzle({{ $crossword->id }})" wire:confirm="{{ __('Are you sure you want to delete this puzzle?') }}">
                                         {{ __('Delete') }}
                                     </flux:menu.item>
