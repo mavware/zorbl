@@ -5,6 +5,7 @@ use App\Models\CrosswordLike;
 use App\Models\FavoriteList;
 use App\Models\PuzzleAttempt;
 use App\Models\PuzzleComment;
+use App\Notifications\PuzzleCompleted;
 use App\Services\AchievementService;
 use App\Services\ContestService;
 use App\Livewire\Concerns\ExportsCrossword;
@@ -305,6 +306,13 @@ new #[Title('Solve Crossword')] class extends Component {
             $crossword = Crossword::find($this->crosswordId);
             if ($crossword && $crossword->contests()->exists()) {
                 app(ContestService::class)->processContestSolve(Auth::user(), $crossword);
+            }
+
+            $crossword ??= Crossword::find($this->crosswordId);
+            $constructor = $crossword?->user;
+
+            if ($constructor && $constructor->id !== Auth::id()) {
+                $constructor->notify(new PuzzleCompleted($crossword, Auth::user(), $elapsedSeconds));
             }
         }
 
