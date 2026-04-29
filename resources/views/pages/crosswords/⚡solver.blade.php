@@ -82,6 +82,56 @@ new #[Title('Solve Crossword')] class extends Component {
     }
 
     #[Computed]
+    public function leaderboard(): array
+    {
+        return PuzzleAttempt::where('crossword_id', $this->crosswordId)
+            ->where('is_completed', true)
+            ->whereNotNull('solve_time_seconds')
+            ->with('user:id,name')
+            ->orderBy('solve_time_seconds')
+            ->limit(10)
+            ->get()
+            ->map(fn (PuzzleAttempt $a) => [
+                'user_id' => $a->user_id,
+                'name' => $a->user->name,
+                'initials' => $a->user->initials(),
+                'time' => $a->formattedSolveTime(),
+                'seconds' => $a->solve_time_seconds,
+            ])
+            ->values()
+            ->all();
+    }
+
+    #[Computed]
+    public function solverRank(): ?int
+    {
+        $userId = Auth::id();
+        $attempt = PuzzleAttempt::where('crossword_id', $this->crosswordId)
+            ->where('user_id', $userId)
+            ->where('is_completed', true)
+            ->first();
+
+        if (! $attempt || $attempt->solve_time_seconds === null) {
+            return null;
+        }
+
+        return PuzzleAttempt::where('crossword_id', $this->crosswordId)
+            ->where('is_completed', true)
+            ->whereNotNull('solve_time_seconds')
+            ->where('solve_time_seconds', '<', $attempt->solve_time_seconds)
+            ->count() + 1;
+    }
+
+    #[Computed]
+    public function totalSolvers(): int
+    {
+        return PuzzleAttempt::where('crossword_id', $this->crosswordId)
+            ->where('is_completed', true)
+            ->whereNotNull('solve_time_seconds')
+            ->count();
+    }
+
+    #[Computed]
     public function averageRating(): ?float
     {
         $avg = PuzzleComment::where('crossword_id', $this->crosswordId)
@@ -735,6 +785,34 @@ new #[Title('Solve Crossword')] class extends Component {
         </div>
     </div>
 
+    {{-- Leaderboard (visible when solved) --}}
+    @if($isSolved && count($this->leaderboard) > 1)
+        <div class="border-line mt-6 rounded-xl border p-5" wire:key="leaderboard-section">
+            <div class="mb-4 flex items-center justify-between">
+                <flux:heading size="lg">{{ __('Fastest Solvers') }}</flux:heading>
+                @if($this->solverRank && $this->totalSolvers > 0)
+                    <flux:text size="sm" class="text-zinc-500">
+                        {{ __('Your rank:') }} <span class="font-semibold text-fg">#{{ $this->solverRank }}</span> {{ __('of') }} {{ $this->totalSolvers }}
+                    </flux:text>
+                @endif
+            </div>
+            <div class="space-y-1">
+                @foreach($this->leaderboard as $index => $entry)
+                    <div class="flex items-center gap-3 rounded-lg px-3 py-2 {{ $entry['user_id'] === Auth::id() ? 'bg-emerald-50 dark:bg-emerald-900/20' : ($index % 2 === 0 ? 'bg-zinc-50 dark:bg-zinc-800/50' : '') }}">
+                        <span class="w-6 text-right text-sm font-bold tabular-nums {{ match(true) { $index === 0 => 'text-amber-500', $index === 1 => 'text-zinc-400', $index === 2 => 'text-amber-700 dark:text-amber-600', default => 'text-zinc-400 dark:text-zinc-500' } }}">{{ $index + 1 }}</span>
+                        <div class="flex size-8 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-xs font-bold text-zinc-700 dark:bg-zinc-700 dark:text-zinc-300">
+                            {{ $entry['initials'] }}
+                        </div>
+                        <span class="flex-1 truncate text-sm {{ $entry['user_id'] === Auth::id() ? 'font-semibold text-fg' : 'text-zinc-700 dark:text-zinc-300' }}">
+                            {{ $entry['user_id'] === Auth::id() ? __('You') : $entry['name'] }}
+                        </span>
+                        <span class="text-sm font-medium tabular-nums text-zinc-600 dark:text-zinc-400">{{ $entry['time'] }}</span>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
     {{-- Comments & Ratings (visible when solved) --}}
     @if($isSolved)
         <div class="border-line mt-6 rounded-xl border p-5" wire:key="comments-section">
@@ -878,13 +956,39 @@ new #[Title('Solve Crossword')] class extends Component {
 
             {{-- Content --}}
             <div class="space-y-4 px-6 pt-5 pb-6">
-                {{-- Solve time --}}
+                {{-- Solve time & rank --}}
                 <div class="flex items-center justify-center gap-2 rounded-xl bg-zinc-50 px-4 py-3 dark:bg-zinc-700/50">
                     <svg xmlns="http://www.w3.org/2000/svg" class="size-5 text-emerald-500" viewBox="0 0 20 20" fill="currentColor">
                         <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 000-1.5h-3.25V5z" clip-rule="evenodd" />
                     </svg>
                     <span class="text-lg font-semibold tabular-nums text-fg" x-text="celebrationTime"></span>
+                    @if($this->solverRank && $this->totalSolvers > 0)
+                        <span class="text-sm text-zinc-500 dark:text-zinc-400">
+                            &middot; #{{ $this->solverRank }} {{ __('of') }} {{ $this->totalSolvers }}
+                        </span>
+                    @endif
                 </div>
+
+                {{-- Leaderboard --}}
+                @if(count($this->leaderboard) > 1)
+                    <div>
+                        <h3 class="mb-2 text-center text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">{{ __('Fastest Solvers') }}</h3>
+                        <div class="max-h-48 space-y-1 overflow-y-auto">
+                            @foreach($this->leaderboard as $index => $entry)
+                                <div class="flex items-center gap-2 rounded-lg px-2 py-1.5 {{ $entry['user_id'] === Auth::id() ? 'bg-emerald-50 dark:bg-emerald-900/20' : '' }}">
+                                    <span class="w-5 text-right text-xs font-bold tabular-nums {{ $index < 3 ? 'text-amber-500' : 'text-zinc-400 dark:text-zinc-500' }}">{{ $index + 1 }}</span>
+                                    <div class="flex size-6 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-[10px] font-bold text-zinc-700 dark:bg-zinc-700 dark:text-zinc-300">
+                                        {{ $entry['initials'] }}
+                                    </div>
+                                    <span class="flex-1 truncate text-sm {{ $entry['user_id'] === Auth::id() ? 'font-semibold text-fg' : 'text-zinc-700 dark:text-zinc-300' }}">
+                                        {{ $entry['user_id'] === Auth::id() ? __('You') : $entry['name'] }}
+                                    </span>
+                                    <span class="text-sm font-medium tabular-nums text-zinc-600 dark:text-zinc-400">{{ $entry['time'] }}</span>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
 
                 {{-- Buttons --}}
                 <div class="flex flex-col gap-2">
