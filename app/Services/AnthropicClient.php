@@ -22,7 +22,7 @@ class AnthropicClient
      * Send a full message thread with optional tool-use, temperature, and thinking.
      *
      * @param  list<array{role: string, content: mixed}>  $messages
-     * @param  array{tools?: list<array<string, mixed>>, tool_choice?: array<string, mixed>, temperature?: float, thinking?: array<string, mixed>, max_tokens?: int}  $options
+     * @param  array{model?: string, tools?: list<array<string, mixed>>, tool_choice?: array<string, mixed>, temperature?: float, thinking?: array<string, mixed>, max_tokens?: int, timeout?: int}  $options
      * @return array{success: true, data: array<string, mixed>}|array{success: false, status: int|null, body: string}
      */
     public function send(string $systemPrompt, array $messages, array $options = []): array
@@ -34,7 +34,7 @@ class AnthropicClient
         }
 
         $payload = [
-            'model' => config('services.anthropic.model', 'claude-sonnet-4-6'),
+            'model' => $options['model'] ?? config('services.anthropic.model', 'claude-sonnet-4-6'),
             'max_tokens' => $options['max_tokens'] ?? 4096,
             'system' => $systemPrompt,
             'messages' => $messages,
@@ -50,7 +50,7 @@ class AnthropicClient
             'x-api-key' => $apiKey,
             'anthropic-version' => '2023-06-01',
         ])
-            ->timeout(120)
+            ->timeout($options['timeout'] ?? 120)
             ->post('https://api.anthropic.com/v1/messages', $payload);
 
         if (! $response->successful()) {
