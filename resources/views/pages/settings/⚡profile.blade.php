@@ -13,6 +13,7 @@ new #[Title('Profile settings')] class extends Component {
 
     public string $name = '';
     public string $copyrightName = '';
+    public string $bio = '';
     public string $email = '';
 
     /**
@@ -22,6 +23,7 @@ new #[Title('Profile settings')] class extends Component {
     {
         $this->name = Auth::user()->name;
         $this->copyrightName = Auth::user()->copyright_name ?? '';
+        $this->bio = Auth::user()->bio ?? '';
         $this->email = Auth::user()->email;
     }
 
@@ -38,6 +40,7 @@ new #[Title('Profile settings')] class extends Component {
             'name' => $validated['name'],
             'email' => $validated['email'],
             'copyright_name' => $validated['copyrightName'] ?: null,
+            'bio' => $validated['bio'] ?: null,
         ]);
 
         if ($user->isDirty('email')) {
@@ -95,6 +98,13 @@ new #[Title('Profile settings')] class extends Component {
                 <flux:input wire:model="copyrightName" type="text" :placeholder="Auth::user()->name" />
                 <flux:description>{{ __('Used as the default copyright holder on your puzzles. Defaults to your name if blank.') }}</flux:description>
                 <flux:error name="copyrightName" />
+            </flux:field>
+
+            <flux:field>
+                <flux:label>{{ __('Bio') }}</flux:label>
+                <flux:textarea wire:model="bio" rows="3" :placeholder="__('Tell solvers a little about yourself…')" />
+                <flux:description>{{ __('Displayed on your public constructor profile. Max 500 characters.') }}</flux:description>
+                <flux:error name="bio" />
             </flux:field>
 
             <div>

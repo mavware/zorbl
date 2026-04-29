@@ -21,6 +21,25 @@ test('constructor profile page displays user info and puzzles', function () {
         ->assertSee('My Great Puzzle');
 });
 
+test('constructor profile displays bio when set', function () {
+    $constructor = User::factory()->withBio('Crossword enthusiast since 2010.')->create();
+    $viewer = User::factory()->create();
+
+    $this->actingAs($viewer)
+        ->get(route('constructors.show', $constructor))
+        ->assertOk()
+        ->assertSee('Crossword enthusiast since 2010.');
+});
+
+test('constructor profile hides bio section when bio is null', function () {
+    $constructor = User::factory()->create(['bio' => null]);
+    $viewer = User::factory()->create();
+
+    Livewire\Livewire::actingAs($viewer)
+        ->test('pages::constructors.show', ['constructor' => $constructor])
+        ->assertDontSee('Tell solvers a little about yourself');
+});
+
 test('constructor profile shows empty state when no puzzles', function () {
     $constructor = User::factory()->create();
     $viewer = User::factory()->create();
