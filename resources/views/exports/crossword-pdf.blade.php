@@ -96,6 +96,10 @@
             padding: 0;
         }
 
+        .cell-letter.prefilled {
+            color: #555;
+        }
+
         /* Clues section */
         .clues-section {
             margin-top: 16pt;
@@ -134,6 +138,13 @@
             color: #333;
         }
 
+        .header .notes {
+            font-size: 9pt;
+            font-style: italic;
+            color: #333;
+            margin: 4pt 0 0 0;
+        }
+
         .grid-wrapper {
             text-align: center;
         }
@@ -148,6 +159,9 @@
         @endif
         @if ($copyright)
             <p class="meta">&copy; {{ $copyright }}</p>
+        @endif
+        @if ($notes)
+            <p class="notes">{{ $notes }}</p>
         @endif
     </div>
 
@@ -173,6 +187,7 @@
                                 foreach ($cellStyle['bars'] ?? [] as $bar) {
                                     $classes[] = 'bar-' . $bar;
                                 }
+                                $prefilledLetter = $prefilled[$r][$c] ?? '';
                             @endphp
                             <td class="{{ implode(' ', $classes) }}" @if ($inlineStyle) style="{{ $inlineStyle }}" @endif>
                                 @if ($hasCircle)<div class="circle-indicator">@endif
@@ -181,7 +196,11 @@
                                 @else
                                     <div class="cell-number">&nbsp;</div>
                                 @endif
-                                <div class="cell-letter">&nbsp;</div>
+                                @if (filled($prefilledLetter))
+                                    <div class="cell-letter prefilled">{{ strtoupper($prefilledLetter) }}</div>
+                                @else
+                                    <div class="cell-letter">&nbsp;</div>
+                                @endif
                                 @if ($hasCircle)</div>@endif
                             </td>
                         @endif

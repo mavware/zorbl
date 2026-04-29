@@ -185,6 +185,8 @@ it('exports freestyle puzzle with void cells as removed squares', function () {
         'cluesAcross' => $crossword->clues_across,
         'cluesDown' => $crossword->clues_down,
         'styles' => $crossword->styles ?? [],
+        'prefilled' => $crossword->prefilled,
+        'notes' => $crossword->notes,
         'includeSolution' => true,
         'cellSize' => 0.33,
         'numberFontSize' => 6,
@@ -242,6 +244,8 @@ it('renders cell background colors in PDF', function () {
         'cluesAcross' => $crossword->clues_across,
         'cluesDown' => $crossword->clues_down,
         'styles' => $crossword->styles ?? [],
+        'prefilled' => $crossword->prefilled,
+        'notes' => $crossword->notes,
         'includeSolution' => false,
         'cellSize' => 0.33,
         'numberFontSize' => 6,
@@ -300,6 +304,8 @@ it('renders circles on cells with shapebg style', function () {
         'cluesAcross' => $crossword->clues_across,
         'cluesDown' => $crossword->clues_down,
         'styles' => $crossword->styles ?? [],
+        'prefilled' => $crossword->prefilled,
+        'notes' => $crossword->notes,
         'includeSolution' => true,
         'cellSize' => 0.33,
         'numberFontSize' => 6,
@@ -356,6 +362,8 @@ it('renders bar-style word boundaries in PDF', function () {
         'cluesAcross' => $crossword->clues_across,
         'cluesDown' => $crossword->clues_down,
         'styles' => $crossword->styles ?? [],
+        'prefilled' => $crossword->prefilled,
+        'notes' => $crossword->notes,
         'includeSolution' => true,
         'cellSize' => 0.33,
         'numberFontSize' => 6,
@@ -411,6 +419,8 @@ it('renders bars on solution page too', function () {
         'cluesAcross' => $crossword->clues_across,
         'cluesDown' => $crossword->clues_down,
         'styles' => $crossword->styles ?? [],
+        'prefilled' => $crossword->prefilled,
+        'notes' => $crossword->notes,
         'includeSolution' => true,
         'cellSize' => 0.33,
         'numberFontSize' => 6,
@@ -454,4 +464,199 @@ it('uses untitled puzzle when title is empty', function () {
     $pdf = $exporter->export($crossword);
 
     expect($pdf)->toStartWith('%PDF');
+});
+
+it('renders prefilled cells in the blank grid', function () {
+    $crossword = Crossword::factory()->make([
+        'title' => 'Prefilled PDF',
+        'width' => 3,
+        'height' => 3,
+        'grid' => [
+            [1, 2, '#'],
+            [3, 0, 4],
+            ['#', 5, 0],
+        ],
+        'solution' => [
+            ['C', 'A', '#'],
+            ['B', 'O', 'T'],
+            ['#', 'L', 'O'],
+        ],
+        'prefilled' => [
+            ['C', '', '#'],
+            ['', '', ''],
+            ['#', 'L', ''],
+        ],
+        'clues_across' => [
+            ['number' => 1, 'clue' => 'CA'],
+            ['number' => 3, 'clue' => 'BOT'],
+            ['number' => 5, 'clue' => 'LO'],
+        ],
+        'clues_down' => [
+            ['number' => 1, 'clue' => 'CB'],
+            ['number' => 2, 'clue' => 'AOL'],
+            ['number' => 4, 'clue' => 'TO'],
+        ],
+    ]);
+
+    $exporter = app(PdfExporter::class);
+    $pdf = $exporter->export($crossword, includeSolution: false);
+
+    expect($pdf)->toStartWith('%PDF');
+
+    $html = view('exports.crossword-pdf', [
+        'title' => $crossword->title,
+        'author' => $crossword->author,
+        'copyright' => $crossword->copyright,
+        'notes' => $crossword->notes,
+        'numberedGrid' => $crossword->grid,
+        'solution' => $crossword->solution,
+        'prefilled' => $crossword->prefilled,
+        'cluesAcross' => $crossword->clues_across,
+        'cluesDown' => $crossword->clues_down,
+        'styles' => $crossword->styles ?? [],
+        'includeSolution' => false,
+        'cellSize' => 0.33,
+        'numberFontSize' => 6,
+        'letterFontSize' => 9,
+        'numberHeight' => 0.116,
+    ])->render();
+
+    expect($html)
+        ->toContain('class="cell-letter prefilled"')
+        ->toContain('C</div>')
+        ->toContain('L</div>');
+});
+
+it('renders notes in the PDF header', function () {
+    $crossword = Crossword::factory()->make([
+        'title' => 'Notes Puzzle',
+        'notes' => 'All theme answers relate to astronomy.',
+        'width' => 3,
+        'height' => 3,
+        'grid' => [
+            [1, 2, '#'],
+            [3, 0, 4],
+            ['#', 5, 0],
+        ],
+        'solution' => [
+            ['C', 'A', '#'],
+            ['B', 'O', 'T'],
+            ['#', 'L', 'O'],
+        ],
+        'clues_across' => [
+            ['number' => 1, 'clue' => 'CA'],
+            ['number' => 3, 'clue' => 'BOT'],
+            ['number' => 5, 'clue' => 'LO'],
+        ],
+        'clues_down' => [
+            ['number' => 1, 'clue' => 'CB'],
+            ['number' => 2, 'clue' => 'AOL'],
+            ['number' => 4, 'clue' => 'TO'],
+        ],
+    ]);
+
+    $exporter = app(PdfExporter::class);
+    $pdf = $exporter->export($crossword);
+
+    expect($pdf)->toStartWith('%PDF');
+
+    $html = view('exports.crossword-pdf', [
+        'title' => $crossword->title,
+        'author' => $crossword->author,
+        'copyright' => $crossword->copyright,
+        'notes' => $crossword->notes,
+        'numberedGrid' => $crossword->grid,
+        'solution' => $crossword->solution,
+        'prefilled' => $crossword->prefilled,
+        'cluesAcross' => $crossword->clues_across,
+        'cluesDown' => $crossword->clues_down,
+        'styles' => $crossword->styles ?? [],
+        'includeSolution' => true,
+        'cellSize' => 0.33,
+        'numberFontSize' => 6,
+        'letterFontSize' => 9,
+        'numberHeight' => 0.116,
+    ])->render();
+
+    expect($html)
+        ->toContain('class="notes"')
+        ->toContain('All theme answers relate to astronomy.');
+});
+
+it('does not render notes when null', function () {
+    $crossword = Crossword::factory()->make([
+        'title' => 'No Notes',
+        'notes' => null,
+        'width' => 2,
+        'height' => 2,
+        'grid' => [[1, 2], [3, 0]],
+        'solution' => [['A', 'B'], ['C', 'D']],
+        'clues_across' => [
+            ['number' => 1, 'clue' => 'AB'],
+            ['number' => 3, 'clue' => 'CD'],
+        ],
+        'clues_down' => [
+            ['number' => 1, 'clue' => 'AC'],
+            ['number' => 2, 'clue' => 'BD'],
+        ],
+    ]);
+
+    $html = view('exports.crossword-pdf', [
+        'title' => $crossword->title,
+        'author' => $crossword->author,
+        'copyright' => $crossword->copyright,
+        'notes' => $crossword->notes,
+        'numberedGrid' => $crossword->grid,
+        'solution' => $crossword->solution,
+        'prefilled' => $crossword->prefilled,
+        'cluesAcross' => $crossword->clues_across,
+        'cluesDown' => $crossword->clues_down,
+        'styles' => $crossword->styles ?? [],
+        'includeSolution' => false,
+        'cellSize' => 0.33,
+        'numberFontSize' => 6,
+        'letterFontSize' => 9,
+        'numberHeight' => 0.116,
+    ])->render();
+
+    expect($html)->not->toContain('class="notes"');
+});
+
+it('does not show prefilled styling when prefilled is null', function () {
+    $crossword = Crossword::factory()->make([
+        'title' => 'No Prefill',
+        'width' => 2,
+        'height' => 2,
+        'grid' => [[1, 2], [3, 0]],
+        'solution' => [['A', 'B'], ['C', 'D']],
+        'prefilled' => null,
+        'clues_across' => [
+            ['number' => 1, 'clue' => 'AB'],
+            ['number' => 3, 'clue' => 'CD'],
+        ],
+        'clues_down' => [
+            ['number' => 1, 'clue' => 'AC'],
+            ['number' => 2, 'clue' => 'BD'],
+        ],
+    ]);
+
+    $html = view('exports.crossword-pdf', [
+        'title' => $crossword->title,
+        'author' => $crossword->author,
+        'copyright' => $crossword->copyright,
+        'notes' => $crossword->notes,
+        'numberedGrid' => $crossword->grid,
+        'solution' => $crossword->solution,
+        'prefilled' => $crossword->prefilled,
+        'cluesAcross' => $crossword->clues_across,
+        'cluesDown' => $crossword->clues_down,
+        'styles' => $crossword->styles ?? [],
+        'includeSolution' => false,
+        'cellSize' => 0.33,
+        'numberFontSize' => 6,
+        'letterFontSize' => 9,
+        'numberHeight' => 0.116,
+    ])->render();
+
+    expect($html)->not->toContain('class="cell-letter prefilled"');
 });
