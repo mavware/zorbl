@@ -252,7 +252,7 @@ it('renders cell background colors in PDF', function () {
     expect($html)
         ->toContain('background-color: #BAE6FD;')
         ->toContain('background-color: #E9D5FF;')
-        ->toContain('class="circle"');
+        ->toContain('class="circle-indicator"');
 });
 
 it('renders circles on cells with shapebg style', function () {
@@ -307,7 +307,7 @@ it('renders circles on cells with shapebg style', function () {
         'numberHeight' => 0.116,
     ])->render();
 
-    expect($html)->toContain('class="circle"');
+    expect($html)->toContain('class="circle-indicator"');
 });
 
 it('renders bar-style word boundaries in PDF', function () {
