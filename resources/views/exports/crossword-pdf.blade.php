@@ -63,8 +63,12 @@
             border: none;
         }
 
-        .grid-table td.circle {
+        .circle-indicator {
+            width: {{ round($cellSize * 0.82, 3) }}in;
+            height: {{ round($cellSize * 0.82, 3) }}in;
+            border: 0.7pt solid #555;
             border-radius: 50%;
+            margin: 0 auto;
         }
 
         .grid-table td.bar-top { border-top: 2.5pt solid #000; }
@@ -176,9 +180,7 @@
                                 $cellStyle = $styles[$styleKey] ?? [];
                                 $classes = [];
                                 $inlineStyle = '';
-                                if (!empty($cellStyle['shapebg']) && $cellStyle['shapebg'] === 'circle') {
-                                    $classes[] = 'circle';
-                                }
+                                $hasCircle = !empty($cellStyle['shapebg']) && $cellStyle['shapebg'] === 'circle';
                                 if (!empty($cellStyle['color'])) {
                                     $inlineStyle = 'background-color: ' . e($cellStyle['color']) . ';';
                                 }
@@ -188,6 +190,7 @@
                                 $prefilledLetter = $prefilled[$r][$c] ?? '';
                             @endphp
                             <td class="{{ implode(' ', $classes) }}" @if ($inlineStyle) style="{{ $inlineStyle }}" @endif>
+                                @if ($hasCircle)<div class="circle-indicator">@endif
                                 @if (is_int($cell) && $cell > 0)
                                     <div class="cell-number">{{ $cell }}</div>
                                 @else
@@ -198,6 +201,7 @@
                                 @else
                                     <div class="cell-letter">&nbsp;</div>
                                 @endif
+                                @if ($hasCircle)</div>@endif
                             </td>
                         @endif
                     @endforeach
@@ -258,9 +262,7 @@
                                     $cellStyle = $styles[$styleKey] ?? [];
                                     $classes = [];
                                     $inlineStyle = '';
-                                    if (!empty($cellStyle['shapebg']) && $cellStyle['shapebg'] === 'circle') {
-                                        $classes[] = 'circle';
-                                    }
+                                    $hasCircle = !empty($cellStyle['shapebg']) && $cellStyle['shapebg'] === 'circle';
                                     if (!empty($cellStyle['color'])) {
                                         $inlineStyle = 'background-color: ' . e($cellStyle['color']) . ';';
                                     }
@@ -269,12 +271,14 @@
                                     }
                                 @endphp
                                 <td class="{{ implode(' ', $classes) }}" @if ($inlineStyle) style="{{ $inlineStyle }}" @endif>
+                                    @if ($hasCircle)<div class="circle-indicator">@endif
                                     @if (is_int($cell) && $cell > 0)
                                         <div class="cell-number">{{ $cell }}</div>
                                     @else
                                         <div class="cell-number">&nbsp;</div>
                                     @endif
                                     <div class="cell-letter">{{ strtoupper($solution[$r][$c] ?? '') }}</div>
+                                    @if ($hasCircle)</div>@endif
                                 </td>
                             @endif
                         @endforeach
