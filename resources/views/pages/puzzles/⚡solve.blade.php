@@ -125,9 +125,10 @@ class extends Component {
                 initialSolved: saved?.isCompleted ?? false,
                 initialPencilCells: saved?.pencilCells ?? [],
                 persistence: window.zorblGuestPersistence,
+                puzzleTitle: @js($title),
             });
         })()"
-        x-init="$watch('solved', val => { if (val) $dispatch('show-guest-signup') })"
+        x-init="$watch('solved', val => { if (val) $dispatch('show-guest-signup', { time: formattedTime() }) })"
         class="relative flex h-full flex-col"
     >
         {{-- Skip to content link --}}
@@ -426,8 +427,28 @@ class extends Component {
 
     {{-- Signup Prompt Modal (shown on solve completion) --}}
     <div
-        x-data="{ showSignup: false }"
-        x-on:show-guest-signup.window="showSignup = true"
+        x-data="{
+            showSignup: false,
+            solveTime: '',
+            copyLabel: '{{ __('Copy Result') }}',
+            _shareText() {
+                return '🧩 {{ str_replace("'", "\\'", $title) }} — Zorbl\n⏱️ ' + this.solveTime + ' | {{ $width }}×{{ $height }}\n{{ route('puzzles.solve', $crosswordId) }}';
+            },
+            async shareResult() {
+                try { await navigator.share({ text: this._shareText() }); } catch {}
+            },
+            async copyShareText() {
+                try {
+                    await navigator.clipboard.writeText(this._shareText());
+                    this.copyLabel = '{{ __('Copied!') }}';
+                    setTimeout(() => { this.copyLabel = '{{ __('Copy Result') }}'; }, 2000);
+                } catch {}
+            },
+            twitterShareUrl() {
+                return 'https://x.com/intent/post?text=' + encodeURIComponent(this._shareText());
+            },
+        }"
+        x-on:show-guest-signup.window="showSignup = true; solveTime = $event.detail.time"
     >
         <template x-teleport="body">
             <div
@@ -447,6 +468,34 @@ class extends Component {
                     <p class="mt-2 text-sm text-fg-muted">
                         {{ __('Great solve! Create a free account to save your progress across devices, track your stats, and access unlimited puzzles.') }}
                     </p>
+
+                    {{-- Share buttons --}}
+                    <div class="mt-4 flex items-center justify-center gap-2">
+                        <button
+                            x-on:click="shareResult()"
+                            x-show="typeof navigator.share === 'function'"
+                            class="inline-flex items-center gap-1.5 rounded-lg bg-zinc-100 px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-200 dark:bg-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-600"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" class="size-4" viewBox="0 0 20 20" fill="currentColor"><path d="M13 4.5a2.5 2.5 0 11.702 1.737L6.97 9.604a2.518 2.518 0 010 .799l6.733 3.366a2.5 2.5 0 11-.671 1.341l-6.733-3.366a2.5 2.5 0 110-3.482l6.733-3.366A2.52 2.52 0 0113 4.5z"/></svg>
+                            {{ __('Share') }}
+                        </button>
+                        <button
+                            x-on:click="copyShareText()"
+                            class="inline-flex items-center gap-1.5 rounded-lg bg-zinc-100 px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-200 dark:bg-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-600"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" class="size-4" viewBox="0 0 20 20" fill="currentColor"><path d="M7 3.5A1.5 1.5 0 018.5 2h3.879a1.5 1.5 0 011.06.44l3.122 3.12A1.5 1.5 0 0117 6.622V12.5a1.5 1.5 0 01-1.5 1.5h-1v-3.379a3 3 0 00-.879-2.121L10.5 5.379A3 3 0 008.379 4.5H7v-1z"/><path d="M4.5 6A1.5 1.5 0 003 7.5v9A1.5 1.5 0 004.5 18h7a1.5 1.5 0 001.5-1.5v-5.879a1.5 1.5 0 00-.44-1.06L9.44 6.439A1.5 1.5 0 008.378 6H4.5z"/></svg>
+                            <span x-text="copyLabel"></span>
+                        </button>
+                        <a
+                            x-bind:href="twitterShareUrl()"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="inline-flex items-center gap-1.5 rounded-lg bg-zinc-100 px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-200 dark:bg-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-600"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" class="size-4" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                        </a>
+                    </div>
+
                     <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
                         <a href="{{ route('register') }}" class="rounded-xl bg-amber-500 px-6 py-2.5 text-sm font-semibold text-zinc-950 hover:bg-amber-400 transition">
                             {{ __('Create Free Account') }}

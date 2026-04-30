@@ -21,6 +21,7 @@ import { cloneForWire, createAutosave } from './grid/persistence.js';
 export function crosswordSolver({
     width, height, grid, solution, progress, styles, prefilled,
     cluesAcross, cluesDown, initialElapsed, initialSolved, initialPencilCells, persistence,
+    puzzleTitle,
 }) {
     return {
         width,
@@ -28,6 +29,7 @@ export function crosswordSolver({
         grid,
         solution,
         progress,
+        puzzleTitle: puzzleTitle || '',
         styles: (styles && !Array.isArray(styles)) ? styles : {},
         prefilled: prefilled || null,
         cluesAcross: cluesAcross || [],
@@ -562,6 +564,43 @@ export function crosswordSolver({
 
         // Templates call onSaved() from a Livewire-dispatched event.
         onSaved() { this._autosave?.acknowledge(); },
+
+        _buildShareText(puzzleUrl) {
+            return `🧩 ${this.puzzleTitle || 'a crossword'} — Zorbl\n⏱️ ${this.celebrationTime} | ${this.width}×${this.height}\n${puzzleUrl}`;
+        },
+
+        canNativeShare() {
+            return typeof navigator.share === 'function';
+        },
+
+        async shareResult(puzzleUrl) {
+            const text = this._buildShareText(puzzleUrl);
+            try {
+                await navigator.share({ text });
+            } catch (e) {
+                if (e.name !== 'AbortError') {
+                    await navigator.clipboard.writeText(text);
+                }
+            }
+        },
+
+        async copyShareText(puzzleUrl, buttonEl) {
+            const text = this._buildShareText(puzzleUrl);
+            try {
+                await navigator.clipboard.writeText(text);
+                const label = buttonEl.querySelector('[x-ref="copyLabel"]');
+                if (label) {
+                    const original = label.textContent;
+                    label.textContent = 'Copied!';
+                    setTimeout(() => { label.textContent = original; }, 2000);
+                }
+            } catch {}
+        },
+
+        twitterShareUrl(puzzleUrl) {
+            const text = this._buildShareText(puzzleUrl);
+            return 'https://x.com/intent/post?text=' + encodeURIComponent(text);
+        },
 
         showAchievements(achievements) {
             if (!achievements || achievements.length === 0) return;
