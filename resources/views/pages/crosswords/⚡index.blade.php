@@ -9,6 +9,7 @@ use App\Models\Crossword;
 use App\Services\GridTemplateProvider;
 use Zorbl\CrosswordIO\GridNumberer;
 use Zorbl\CrosswordIO\ImportDetector;
+use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
@@ -182,6 +183,50 @@ new #[Title('My Puzzles')] class extends Component {
         }
     }
 
+    public function duplicatePuzzle(int $id): void
+    {
+        $crossword = Crossword::findOrFail($id);
+        $this->authorize('view', $crossword);
+
+        $user = Auth::user();
+        $limits = $user->planLimits();
+
+        if ($user->crosswords()->count() >= $limits->maxPuzzles()) {
+            Flux::toast(
+                text: $user->isPro()
+                    ? __('You have reached your puzzle limit.')
+                    : __('Free accounts can create up to :count puzzles. Upgrade to Pro for unlimited.', ['count' => $limits->maxPuzzles()]),
+                variant: 'danger',
+            );
+
+            return;
+        }
+
+        $duplicate = $user->crosswords()->create([
+            'title' => __('Copy of :title', ['title' => $crossword->title ?? __('Untitled Puzzle')]),
+            'author' => $user->name,
+            'copyright' => copyright($user->copyright_name ?? $user->name ?? ''),
+            'notes' => $crossword->notes,
+            'secret_theme' => $crossword->secret_theme,
+            'layout' => $crossword->layout,
+            'puzzle_type' => $crossword->puzzle_type,
+            'freestyle_locked' => false,
+            'width' => $crossword->width,
+            'height' => $crossword->height,
+            'kind' => $crossword->kind,
+            'grid' => $crossword->grid,
+            'solution' => $crossword->solution,
+            'prefilled' => $crossword->prefilled,
+            'clues_across' => $crossword->clues_across,
+            'clues_down' => $crossword->clues_down,
+            'styles' => $crossword->styles,
+            'metadata' => $crossword->metadata,
+            'is_published' => false,
+        ]);
+
+        $this->redirect(route('crosswords.editor', $duplicate), navigate: true);
+    }
+
     public function deletePuzzle(int $id): void
     {
         $crossword = Crossword::findOrFail($id);
@@ -247,6 +292,9 @@ new #[Title('My Puzzles')] class extends Component {
                             <flux:dropdown position="bottom" align="end">
                                 <flux:button variant="ghost" size="sm" icon="ellipsis-vertical" />
                                 <flux:menu>
+                                    <flux:menu.item icon="document-duplicate" wire:click="duplicatePuzzle({{ $crossword->id }})">
+                                        {{ __('Duplicate') }}
+                                    </flux:menu.item>
                                     <flux:menu.item icon="trash" variant="danger" wire:click="deletePuzzle({{ $crossword->id }})" wire:confirm="{{ __('Are you sure you want to delete this puzzle?') }}">
                                         {{ __('Delete') }}
                                     </flux:menu.item>
