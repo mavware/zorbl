@@ -81,6 +81,37 @@ class PuzzleAttempt extends Model
         return sprintf('%d:%02d', $minutes, $secs);
     }
 
+    /**
+     * What percentage of solvers this attempt was faster than.
+     *
+     * @return int|null 0–100, or null if no other solvers
+     */
+    public function fasterThanPercent(): ?int
+    {
+        if ($this->solve_time_seconds === null || ! $this->is_completed) {
+            return null;
+        }
+
+        $totalSolvers = self::where('crossword_id', $this->crossword_id)
+            ->where('is_completed', true)
+            ->whereNotNull('solve_time_seconds')
+            ->where('id', '!=', $this->id)
+            ->count();
+
+        if ($totalSolvers === 0) {
+            return null;
+        }
+
+        $slowerCount = self::where('crossword_id', $this->crossword_id)
+            ->where('is_completed', true)
+            ->whereNotNull('solve_time_seconds')
+            ->where('id', '!=', $this->id)
+            ->where('solve_time_seconds', '>', $this->solve_time_seconds)
+            ->count();
+
+        return (int) round(($slowerCount / $totalSolvers) * 100);
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

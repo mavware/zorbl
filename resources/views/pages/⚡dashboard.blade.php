@@ -177,8 +177,17 @@ new #[Title('Dashboard')] class extends Component {
                                     &middot;
                                     {{ $attempt->updated_at->diffForHumans() }}
                                 </flux:text>
+                                @php($solveProgress = $attempt->solveProgress())
+                                <div class="mt-1.5 flex items-center gap-2">
+                                    <div class="h-1.5 flex-1 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-700">
+                                        <div
+                                            class="h-full rounded-full {{ $solveProgress >= 50 ? 'bg-sky-500' : 'bg-zinc-400' }}"
+                                            style="width: {{ $solveProgress }}%"
+                                        ></div>
+                                    </div>
+                                    <span class="text-xs tabular-nums text-zinc-500">{{ $solveProgress }}%</span>
+                                </div>
                             </div>
-                            <flux:icon name="chevron-right" class="size-4 shrink-0 text-zinc-500" />
                         </a>
                     @endforeach
                 </div>
