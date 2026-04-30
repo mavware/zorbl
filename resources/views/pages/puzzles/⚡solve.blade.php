@@ -125,6 +125,8 @@ class extends Component {
                 initialSolved: saved?.isCompleted ?? false,
                 initialPencilCells: saved?.pencilCells ?? [],
                 persistence: window.zorblGuestPersistence,
+                shareTitle: @js($title),
+                shareUrl: @js(route('puzzles.solve', $crosswordId)),
             });
         })()"
         x-init="$watch('solved', val => { if (val) $dispatch('show-guest-signup') })"
@@ -210,6 +212,15 @@ class extends Component {
                     </template>
                     <template x-if="solved">
                         <span class="font-semibold text-emerald-500">{{ __('Solved!') }}</span>
+                    </template>
+                    <template x-if="solved">
+                        <button
+                            x-on:click="shareResults()"
+                            class="ml-1 inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-xs font-medium text-blue-600 transition-colors hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/30"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z" /></svg>
+                            <span x-text="shareCopied ? '{{ __('Copied!') }}' : '{{ __('Share') }}'"></span>
+                        </button>
                     </template>
                 </div>
             </div>
