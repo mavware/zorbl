@@ -372,6 +372,19 @@ class Crossword extends Model
     }
 
     /**
+     * Average solve time in seconds across all completed attempts.
+     */
+    public function averageSolveTimeSeconds(): ?int
+    {
+        $avg = $this->attempts()
+            ->where('is_completed', true)
+            ->whereNotNull('solve_time_seconds')
+            ->avg('solve_time_seconds');
+
+        return $avg !== null ? (int) round($avg) : null;
+    }
+
+    /**
      * Obfuscate the solution using XOR cipher + base64 encoding.
      * Prevents casual view-source cheating while keeping implementation simple.
      */
