@@ -30,6 +30,9 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [x] ability to change color of cell background
 - [x] Render bar-style word boundaries in PDF exports (bars are used for numbering but not visually drawn in the PDF)
 - [ ] Ask Claude to find an algorithm to generate a template based on existing template data
+- [ ] Add an Artisan command to bulk-schedule daily puzzles for a date range
+- [ ] Show a "solved" badge on the daily puzzle card if the user has already completed it
+- [ ] Add a daily puzzle history page so users can catch up on missed days
 
 ## Done
 
