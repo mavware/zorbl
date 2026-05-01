@@ -30,6 +30,9 @@
                     <flux:sidebar.item icon="language" :href="route('words.index')" :current="request()->routeIs('words.*')" wire:navigate>
                         {{ __('Word Catalog') }}
                     </flux:sidebar.item>
+                    <flux:sidebar.item icon="trophy" :href="route('leaderboard')" :current="request()->routeIs('leaderboard')" wire:navigate>
+                        {{ __('Leaderboard') }}
+                    </flux:sidebar.item>
                 </flux:sidebar.group>
 
                 @if (auth()->user()->hasRole('Admin'))

@@ -38,6 +38,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::livewire('constructors/{constructor}', 'pages::constructors.show')->name('constructors.show');
 
+    Route::livewire('leaderboard', 'pages::leaderboard')->name('leaderboard');
+
     Route::livewire('roadmap', 'pages::roadmap.index')->name('roadmap.index');
 
     Route::livewire('contests', 'pages::contests.index')->name('contests.index');
