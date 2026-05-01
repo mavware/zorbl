@@ -2,6 +2,7 @@
 
 use App\Models\Crossword;
 use App\Models\CrosswordLike;
+use App\Models\DailyPuzzle;
 use App\Models\Tag;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
@@ -42,6 +43,12 @@ class extends Component {
     public string $sortBy = 'newest';
 
     public bool $showFilters = false;
+
+    #[Computed]
+    public function dailyPuzzle(): ?Crossword
+    {
+        return DailyPuzzle::todayOrAuto();
+    }
 
     #[Computed]
     public function puzzles()
@@ -272,6 +279,41 @@ class extends Component {
         <flux:heading size="xl">{{ __('Browse Puzzles') }}</flux:heading>
         <flux:text class="mt-1 text-zinc-600">{{ __('Discover and solve crosswords from the community.') }}</flux:text>
     </div>
+
+    {{-- Puzzle of the Day --}}
+    @if($dailyPuzzle = $this->dailyPuzzle)
+        <div class="relative overflow-hidden rounded-xl border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 p-5 dark:border-amber-800/50 dark:from-amber-950/30 dark:to-orange-950/30">
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-center">
+                <div class="flex shrink-0 justify-center sm:justify-start">
+                    <x-grid-thumbnail :grid="$dailyPuzzle->grid" :width="$dailyPuzzle->width" :height="$dailyPuzzle->height" :cell-size="5" :max-width="64" />
+                </div>
+                <div class="min-w-0 flex-1">
+                    <div class="flex items-center gap-2">
+                        <flux:icon name="star" class="size-5 text-amber-500" />
+                        <flux:heading size="lg">{{ __('Puzzle of the Day') }}</flux:heading>
+                        <flux:badge size="sm" color="amber">{{ today()->format('M j') }}</flux:badge>
+                    </div>
+                    <div class="mt-1">
+                        <span class="font-medium text-fg">{{ $dailyPuzzle->title ?: __('Untitled Puzzle') }}</span>
+                        <flux:text size="sm" class="mt-0.5 text-zinc-600 dark:text-zinc-400">
+                            {{ __('by :author', ['author' => $dailyPuzzle->user->name ?? __('Unknown')]) }}
+                            &middot;
+                            {{ $dailyPuzzle->width }}&times;{{ $dailyPuzzle->height }}
+                            @if($dailyPuzzle->difficulty_label)
+                                &middot;
+                                {{ __($dailyPuzzle->difficulty_label) }}
+                            @endif
+                        </flux:text>
+                    </div>
+                </div>
+                <div class="shrink-0">
+                    <flux:button variant="primary" size="sm" wire:click="startSolving({{ $dailyPuzzle->id }})" icon="play">
+                        {{ __('Solve Now') }}
+                    </flux:button>
+                </div>
+            </div>
+        </div>
+    @endif
 
     {{-- Search Bar --}}
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
