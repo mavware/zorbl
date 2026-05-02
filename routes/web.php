@@ -36,6 +36,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::livewire('favorites', 'pages::favorites.index')->name('favorites.index');
 
+    Route::livewire('constructors', 'pages::constructors.index')->name('constructors.index');
     Route::livewire('constructors/{constructor}', 'pages::constructors.show')->name('constructors.show');
 
     Route::livewire('roadmap', 'pages::roadmap.index')->name('roadmap.index');
