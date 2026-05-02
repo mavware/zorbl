@@ -209,7 +209,14 @@ class extends Component {
                         <span class="mr-1 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">{{ __('Pencil') }}</span>
                     </template>
                     <template x-if="solved">
-                        <span class="font-semibold text-emerald-500">{{ __('Solved!') }}</span>
+                        <span class="flex items-center gap-1.5">
+                            <span class="font-semibold text-emerald-500">{{ __('Solved!') }}</span>
+                            <button
+                                x-on:click="shareResults()"
+                                class="rounded-md px-2 py-0.5 text-xs font-medium text-emerald-600 transition-colors hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/30"
+                                x-text="shareButtonLabel"
+                            ></button>
+                        </span>
                     </template>
                 </div>
             </div>

@@ -533,7 +533,14 @@ new #[Title('Solve Crossword')] class extends Component {
                     </span>
                 </template>
                 <template x-if="solved">
-                    <span class="font-semibold text-emerald-500">{{ __('Solved!') }}</span>
+                    <span class="flex items-center gap-1.5">
+                        <span class="font-semibold text-emerald-500">{{ __('Solved!') }}</span>
+                        <button
+                            x-on:click="shareResults()"
+                            class="rounded-md px-2 py-0.5 text-xs font-medium text-emerald-600 transition-colors hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/30"
+                            x-text="shareButtonLabel"
+                        ></button>
+                    </span>
                 </template>
             </div>
         </div>
@@ -888,10 +895,19 @@ new #[Title('Solve Crossword')] class extends Component {
 
                 {{-- Buttons --}}
                 <div class="flex flex-col gap-2">
+                    <button
+                        x-on:click="shareResults()"
+                        class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:bg-emerald-600 dark:hover:bg-emerald-500 dark:focus:ring-offset-zinc-800"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="size-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M13 4.5a2.5 2.5 0 11.702 4.89L8.839 12.11a2.5 2.5 0 11-.399-.964l4.863-2.72A2.5 2.5 0 0113 4.5zM6.5 10a1.5 1.5 0 100 3 1.5 1.5 0 000-3z"/>
+                        </svg>
+                        <span x-text="shareButtonLabel"></span>
+                    </button>
                     <a
                         href="{{ route('crosswords.solving') }}"
                         wire:navigate
-                        class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:bg-emerald-600 dark:hover:bg-emerald-500 dark:focus:ring-offset-zinc-800"
+                        class="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-700 shadow-sm transition hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:ring-offset-2 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700 dark:focus:ring-offset-zinc-800"
                     >
                         {{ __('Browse More Puzzles') }}
                     </a>

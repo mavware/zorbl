@@ -54,6 +54,7 @@ export function crosswordSolver({
         achievementToasts: [],
         showCelebration: false,
         celebrationTime: '',
+        shareButtonLabel: 'Share Results',
         persistence: persistence || null,
 
         init() {
@@ -578,6 +579,28 @@ export function crosswordSolver({
                 }, i * 800);
                 this._achievementTimers.push(stagger);
             });
+        },
+
+        async shareResults() {
+            const title = this.$wire?.title || document.title;
+            const time = this.formattedTime();
+            const size = `${this.width}×${this.height}`;
+            const url = window.location.href.split('?')[0];
+
+            const text = `\u{1f9e9} Zorbl — ${title}\n⏱️ ${time} | ${size}\n\n${url}`;
+
+            if (navigator.share) {
+                try {
+                    await navigator.share({ text });
+                    return;
+                } catch (e) {
+                    if (e.name === 'AbortError') return;
+                }
+            }
+
+            await navigator.clipboard.writeText(text);
+            this.shareButtonLabel = 'Copied!';
+            setTimeout(() => { this.shareButtonLabel = 'Share Results'; }, 2000);
         },
     };
 }
