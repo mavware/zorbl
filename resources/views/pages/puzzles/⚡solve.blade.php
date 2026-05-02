@@ -125,6 +125,7 @@ class extends Component {
                 initialSolved: saved?.isCompleted ?? false,
                 initialPencilCells: saved?.pencilCells ?? [],
                 persistence: window.zorblGuestPersistence,
+                puzzleTitle: @js($title),
             });
         })()"
         x-init="$watch('solved', val => { if (val) $dispatch('show-guest-signup') })"
@@ -202,6 +203,20 @@ class extends Component {
                         <flux:menu.item x-on:click="clearErrors()" class="text-amber-600 dark:text-amber-400">{{ __('Clear incorrect letters') }}</flux:menu.item>
                     </flux:menu>
                 </flux:dropdown>
+
+                {{-- Share button (solved state) --}}
+                <template x-if="solved">
+                    <flux:tooltip content="{{ __('Share results') }}">
+                        <button
+                            x-on:click="shareResults()"
+                            class="text-fg-muted rounded-lg p-1.5 transition-colors hover:text-blue-600 dark:hover:text-blue-400"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M13 4.5a2.5 2.5 0 11.702 4.897L8.97 12.03a2.5 2.5 0 11-.884-.884l4.733-2.633a2.5 2.5 0 01-.096-.386L8.05 10.759a2.5 2.5 0 11-.884-.884l4.673-2.601A2.5 2.5 0 0113 4.5z"/>
+                            </svg>
+                        </button>
+                    </flux:tooltip>
+                </template>
 
                 {{-- Status --}}
                 <div class="flex items-center gap-1 pl-2 text-sm text-zinc-500">

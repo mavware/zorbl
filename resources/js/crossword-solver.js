@@ -21,6 +21,7 @@ import { cloneForWire, createAutosave } from './grid/persistence.js';
 export function crosswordSolver({
     width, height, grid, solution, progress, styles, prefilled,
     cluesAcross, cluesDown, initialElapsed, initialSolved, initialPencilCells, persistence,
+    puzzleTitle,
 }) {
     return {
         width,
@@ -28,6 +29,7 @@ export function crosswordSolver({
         grid,
         solution,
         progress,
+        puzzleTitle: puzzleTitle || '',
         styles: (styles && !Array.isArray(styles)) ? styles : {},
         prefilled: prefilled || null,
         cluesAcross: cluesAcross || [],
@@ -562,6 +564,52 @@ export function crosswordSolver({
 
         // Templates call onSaved() from a Livewire-dispatched event.
         onSaved() { this._autosave?.acknowledge(); },
+
+        shareResults() {
+            const title = this.puzzleTitle || 'Crossword';
+            const time = this.celebrationTime || this.formattedTime();
+            const miniGrid = this._buildMiniGrid();
+
+            const text = `${title}\n${this.width}×${this.height} | ⏱ ${time}\n\n${miniGrid}\n\nzorbl.com`;
+
+            if (navigator.share) {
+                navigator.share({ text }).catch(() => {
+                    this._copyToClipboard(text);
+                });
+            } else {
+                this._copyToClipboard(text);
+            }
+        },
+
+        _copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                this.shareButtonLabel = 'Copied!';
+                setTimeout(() => { this.shareButtonLabel = ''; }, 2000);
+            });
+        },
+
+        _buildMiniGrid() {
+            const maxCols = 14;
+            const step = this.width > maxCols ? Math.ceil(this.width / maxCols) : 1;
+            const sampledWidth = Math.ceil(this.width / step);
+            const sampledHeight = Math.ceil(this.height / step);
+            const lines = [];
+
+            for (let r = 0; r < this.height; r += step) {
+                let line = '';
+                for (let c = 0; c < this.width; c += step) {
+                    if (this.grid[r][c] === '#' || this.grid[r][c] === null) {
+                        line += '⬛';
+                    } else {
+                        line += '🟩';
+                    }
+                }
+                lines.push(line);
+            }
+            return lines.join('\n');
+        },
+
+        shareButtonLabel: '',
 
         showAchievements(achievements) {
             if (!achievements || achievements.length === 0) return;

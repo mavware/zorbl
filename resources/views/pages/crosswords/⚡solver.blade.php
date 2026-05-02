@@ -337,6 +337,7 @@ new #[Title('Solve Crossword')] class extends Component {
         initialElapsed: @js($elapsedSeconds),
         initialSolved: @js($isSolved),
         initialPencilCells: @js($pencilCells),
+        puzzleTitle: @js($title),
     })"
     x-on:progress-saved.window="onSaved()"
     x-on:achievements-earned.window="showAchievements($event.detail.achievements)"
@@ -517,6 +518,20 @@ new #[Title('Solve Crossword')] class extends Component {
                     </template>
                 </div>
             @endif
+
+            {{-- Share button (solved state) --}}
+            <template x-if="solved">
+                <flux:tooltip content="{{ __('Share results') }}">
+                    <button
+                        x-on:click="shareResults()"
+                        class="text-fg-muted rounded-lg p-1.5 transition-colors hover:text-blue-600 dark:hover:text-blue-400"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M13 4.5a2.5 2.5 0 11.702 4.897L8.97 12.03a2.5 2.5 0 11-.884-.884l4.733-2.633a2.5 2.5 0 01-.096-.386L8.05 10.759a2.5 2.5 0 11-.884-.884l4.673-2.601A2.5 2.5 0 0113 4.5z"/>
+                        </svg>
+                    </button>
+                </flux:tooltip>
+            </template>
 
             {{-- Save status --}}
             <div class="flex items-center gap-1 pl-2 text-sm text-zinc-500">
@@ -888,6 +903,15 @@ new #[Title('Solve Crossword')] class extends Component {
 
                 {{-- Buttons --}}
                 <div class="flex flex-col gap-2">
+                    <button
+                        x-on:click="shareResults()"
+                        class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-blue-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:bg-blue-600 dark:hover:bg-blue-500 dark:focus:ring-offset-zinc-800"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="size-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M13 4.5a2.5 2.5 0 11.702 4.897L8.97 12.03a2.5 2.5 0 11-.884-.884l4.733-2.633a2.5 2.5 0 01-.096-.386L8.05 10.759a2.5 2.5 0 11-.884-.884l4.673-2.601A2.5 2.5 0 0113 4.5z"/>
+                        </svg>
+                        <span x-text="shareButtonLabel || '{{ __('Share Results') }}'"></span>
+                    </button>
                     <a
                         href="{{ route('crosswords.solving') }}"
                         wire:navigate
