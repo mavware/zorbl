@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Contest;
 use App\Models\Crossword;
 use App\Models\CrosswordLike;
 use App\Models\Follow;
@@ -265,4 +266,77 @@ test('following feed shows empty state when followed constructors have no publis
         ->test('pages::dashboard')
         ->assertSee('From People You Follow')
         ->assertSee('No new puzzles from people you follow yet.');
+});
+
+test('dashboard shows active contests', function () {
+    $user = User::factory()->create();
+    Contest::factory()->active()->create(['title' => 'Spring Crossword Challenge']);
+
+    Livewire::actingAs($user)
+        ->test('pages::dashboard')
+        ->assertSee('Contests')
+        ->assertSee('Spring Crossword Challenge')
+        ->assertSee('Active');
+});
+
+test('dashboard shows upcoming contests', function () {
+    $user = User::factory()->create();
+    Contest::factory()->upcoming()->create(['title' => 'Summer Puzzle Fest']);
+
+    Livewire::actingAs($user)
+        ->test('pages::dashboard')
+        ->assertSee('Contests')
+        ->assertSee('Summer Puzzle Fest')
+        ->assertSee('Upcoming');
+});
+
+test('dashboard hides contests section when none are active or upcoming', function () {
+    $user = User::factory()->create();
+    Contest::factory()->ended()->create(['title' => 'Old Contest']);
+    Contest::factory()->draft()->create(['title' => 'Draft Contest']);
+
+    Livewire::actingAs($user)
+        ->test('pages::dashboard')
+        ->assertDontSee('Contests')
+        ->assertDontSee('Old Contest')
+        ->assertDontSee('Draft Contest');
+});
+
+test('dashboard limits active contests to 3', function () {
+    $user = User::factory()->create();
+    Contest::factory()->count(5)->active()->create();
+
+    $component = Livewire::actingAs($user)->test('pages::dashboard');
+
+    expect($component->get('activeContests'))->toHaveCount(3);
+});
+
+test('dashboard limits upcoming contests to 3', function () {
+    $user = User::factory()->create();
+    Contest::factory()->count(5)->upcoming()->create();
+
+    $component = Livewire::actingAs($user)->test('pages::dashboard');
+
+    expect($component->get('upcomingContests'))->toHaveCount(3);
+});
+
+test('dashboard shows featured badge on featured contests', function () {
+    $user = User::factory()->create();
+    Contest::factory()->active()->featured()->create(['title' => 'Featured Contest']);
+
+    Livewire::actingAs($user)
+        ->test('pages::dashboard')
+        ->assertSee('Featured Contest')
+        ->assertSee('Featured');
+});
+
+test('dashboard shows contest participant and puzzle counts', function () {
+    $user = User::factory()->create();
+    $contest = Contest::factory()->active()->create();
+    $crosswords = Crossword::factory()->count(3)->published()->create();
+    $contest->crosswords()->attach($crosswords->pluck('id')->mapWithKeys(fn ($id, $i) => [$id => ['sort_order' => $i]]));
+
+    $component = Livewire::actingAs($user)->test('pages::dashboard');
+
+    expect($component->get('activeContests')->first()->crosswords_count)->toBe(3);
 });

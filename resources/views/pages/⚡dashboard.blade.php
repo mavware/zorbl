@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Contest;
 use App\Models\Crossword;
 use App\Models\CrosswordLike;
 use App\Models\Follow;
@@ -137,6 +138,26 @@ new #[Title('Dashboard')] class extends Component {
     {
         return Auth::user()->crosswordLikes()->count();
     }
+
+    #[Computed]
+    public function activeContests()
+    {
+        return Contest::active()
+            ->withCount(['entries', 'crosswords'])
+            ->latest('starts_at')
+            ->limit(3)
+            ->get();
+    }
+
+    #[Computed]
+    public function upcomingContests()
+    {
+        return Contest::upcoming()
+            ->withCount(['entries', 'crosswords'])
+            ->orderBy('starts_at')
+            ->limit(3)
+            ->get();
+    }
 }
 ?>
 
@@ -227,6 +248,78 @@ new #[Title('Dashboard')] class extends Component {
             @endif
         </div>
     </div>
+
+    {{-- Active & Upcoming Contests --}}
+    @if($this->activeContests->isNotEmpty() || $this->upcomingContests->isNotEmpty())
+        <div class="border-line rounded-xl border p-5">
+            <div class="mb-4 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <flux:heading size="lg">{{ __('Contests') }}</flux:heading>
+                </div>
+                <flux:button variant="ghost" size="sm" :href="route('contests.index')" wire:navigate>
+                    {{ __('View All') }}
+                </flux:button>
+            </div>
+
+            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                @foreach($this->activeContests as $contest)
+                    <a
+                        href="{{ route('contests.show', $contest) }}"
+                        wire:navigate
+                        wire:key="contest-active-{{ $contest->id }}"
+                        class="border-line group rounded-xl border p-4 transition-colors hover:border-zinc-400 dark:hover:border-zinc-600"
+                    >
+                        <div class="mb-2 flex items-center gap-2">
+                            <flux:badge color="green" size="sm">{{ __('Active') }}</flux:badge>
+                            @if($contest->is_featured)
+                                <flux:badge color="amber" size="sm">{{ __('Featured') }}</flux:badge>
+                            @endif
+                        </div>
+                        <flux:heading size="sm" class="truncate group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                            {{ $contest->title }}
+                        </flux:heading>
+                        <flux:text size="sm" class="mt-1 text-zinc-500">
+                            {{ $contest->crosswords_count }} {{ __('puzzles') }}
+                            &middot;
+                            {{ $contest->entries_count }} {{ __('participants') }}
+                        </flux:text>
+                        @if($contest->ends_at->isFuture())
+                            <flux:text size="xs" class="mt-1.5 text-amber-600 dark:text-amber-400">
+                                {{ __('Ends :time', ['time' => $contest->ends_at->diffForHumans()]) }}
+                            </flux:text>
+                        @endif
+                    </a>
+                @endforeach
+
+                @foreach($this->upcomingContests as $contest)
+                    <a
+                        href="{{ route('contests.show', $contest) }}"
+                        wire:navigate
+                        wire:key="contest-upcoming-{{ $contest->id }}"
+                        class="border-line group rounded-xl border p-4 transition-colors hover:border-zinc-400 dark:hover:border-zinc-600"
+                    >
+                        <div class="mb-2 flex items-center gap-2">
+                            <flux:badge color="blue" size="sm">{{ __('Upcoming') }}</flux:badge>
+                            @if($contest->is_featured)
+                                <flux:badge color="amber" size="sm">{{ __('Featured') }}</flux:badge>
+                            @endif
+                        </div>
+                        <flux:heading size="sm" class="truncate group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                            {{ $contest->title }}
+                        </flux:heading>
+                        <flux:text size="sm" class="mt-1 text-zinc-500">
+                            {{ $contest->crosswords_count }} {{ __('puzzles') }}
+                            &middot;
+                            {{ $contest->entries_count }} {{ __('participants') }}
+                        </flux:text>
+                        <flux:text size="xs" class="mt-1.5 text-blue-600 dark:text-blue-400">
+                            {{ __('Starts :time', ['time' => $contest->starts_at->diffForHumans()]) }}
+                        </flux:text>
+                    </a>
+                @endforeach
+            </div>
+        </div>
+    @endif
 
     {{-- From People You Follow --}}
     @if($this->followingCount > 0)
