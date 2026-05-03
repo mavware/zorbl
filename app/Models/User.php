@@ -41,6 +41,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property string|null $two_factor_confirmed_at
  * @property string|null $copyright_name
  * @property string|null $bio
+ * @property string|null $google_id
  * @property int $current_streak
  * @property int $longest_streak
  * @property string|null $last_solve_date
@@ -80,7 +81,7 @@ use Spatie\Permission\Traits\HasRoles;
  *
  * @mixin Eloquent
  */
-#[Fillable(['name', 'email', 'password', 'copyright_name', 'bio', 'current_streak', 'longest_streak', 'last_solve_date', 'grandfathered_at'])]
+#[Fillable(['name', 'email', 'password', 'copyright_name', 'bio', 'google_id', 'current_streak', 'longest_streak', 'last_solve_date', 'grandfathered_at'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements FilamentUser
 {
