@@ -30,6 +30,8 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [x] ability to change color of cell background
 - [x] Render bar-style word boundaries in PDF exports (bars are used for numbering but not visually drawn in the PDF)
 - [ ] Ask Claude to find an algorithm to generate a template based on existing template data
+- [ ] Add a minimum-rating filter to the puzzle discovery secondary filter panel (e.g. "4+ stars only")
+- [ ] Show completion rate percentage on puzzle discovery cards (requires withCount for completed attempts)
 
 ## Done
 
