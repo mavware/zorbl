@@ -3,6 +3,7 @@
 use App\Models\Crossword;
 use App\Models\CrosswordLike;
 use App\Models\PuzzleAttempt;
+use App\Models\PuzzleComment;
 use App\Models\Tag;
 use App\Models\User;
 use Livewire\Livewire;
@@ -648,4 +649,106 @@ test('discovery shows puzzles with non-blocked tags', function () {
     Livewire::actingAs($user)
         ->test('puzzle-discovery', ['excludeAttempted' => true])
         ->assertSee('Safe Discovery Puzzle');
+});
+
+// --- Rating & Play Count ---
+
+test('discovery sorts by highest rated', function () {
+    $user = User::factory()->create();
+    $creator = User::factory()->create();
+
+    $lowRated = Crossword::factory()->published()->for($creator)->create(['title' => 'Low Rated']);
+    $highRated = Crossword::factory()->published()->for($creator)->create(['title' => 'High Rated']);
+
+    PuzzleComment::factory()->create(['crossword_id' => $lowRated->id, 'rating' => 2]);
+    PuzzleComment::factory()->create(['crossword_id' => $highRated->id, 'rating' => 5]);
+
+    Livewire::actingAs($user)
+        ->test('puzzle-discovery', ['excludeAttempted' => true])
+        ->set('sortBy', 'highest_rated')
+        ->assertSeeInOrder(['High Rated', 'Low Rated']);
+});
+
+test('discovery sorts by most played', function () {
+    $user = User::factory()->create();
+    $creator = User::factory()->create();
+
+    $lessPlayed = Crossword::factory()->published()->for($creator)->create(['title' => 'Less Played']);
+    $morePlayed = Crossword::factory()->published()->for($creator)->create(['title' => 'More Played']);
+
+    PuzzleAttempt::factory()->count(1)->create(['crossword_id' => $lessPlayed->id]);
+    PuzzleAttempt::factory()->count(5)->create(['crossword_id' => $morePlayed->id]);
+
+    Livewire::actingAs($user)
+        ->test('puzzle-discovery', ['excludeAttempted' => true])
+        ->set('sortBy', 'most_played')
+        ->assertSeeInOrder(['More Played', 'Less Played']);
+});
+
+test('discovery shows average rating stars on puzzle cards', function () {
+    $user = User::factory()->create();
+    $creator = User::factory()->create();
+
+    $puzzle = Crossword::factory()->published()->for($creator)->create(['title' => 'Rated Puzzle']);
+    PuzzleComment::factory()->create(['crossword_id' => $puzzle->id, 'rating' => 4]);
+
+    Livewire::actingAs($user)
+        ->test('puzzle-discovery', ['excludeAttempted' => true])
+        ->assertSee('Rated Puzzle')
+        ->assertSee('out of 5');
+});
+
+test('discovery shows play count on puzzle cards', function () {
+    $user = User::factory()->create();
+    $creator = User::factory()->create();
+
+    $puzzle = Crossword::factory()->published()->for($creator)->create(['title' => 'Popular Puzzle']);
+    PuzzleAttempt::factory()->count(3)->create(['crossword_id' => $puzzle->id]);
+
+    Livewire::actingAs($user)
+        ->test('puzzle-discovery', ['excludeAttempted' => true])
+        ->assertSee('Popular Puzzle')
+        ->assertSee('3 plays');
+});
+
+test('discovery hides rating stars when puzzle has no ratings', function () {
+    $user = User::factory()->create();
+    $creator = User::factory()->create();
+
+    Crossword::factory()->published()->for($creator)->create(['title' => 'Unrated Puzzle']);
+
+    Livewire::actingAs($user)
+        ->test('puzzle-discovery', ['excludeAttempted' => true])
+        ->assertSee('Unrated Puzzle')
+        ->assertDontSee('out of 5');
+});
+
+test('discovery hides play count when puzzle has no attempts', function () {
+    $user = User::factory()->create();
+    $creator = User::factory()->create();
+
+    Crossword::factory()->published()->for($creator)->create(['title' => 'Fresh Puzzle']);
+
+    Livewire::actingAs($user)
+        ->test('puzzle-discovery', ['excludeAttempted' => true])
+        ->assertSee('Fresh Puzzle')
+        ->assertDontSee('plays');
+});
+
+test('discovery clear filters resets new sort options', function () {
+    $user = User::factory()->create();
+    $creator = User::factory()->create();
+    Crossword::factory()->published()->for($creator)->create();
+
+    Livewire::actingAs($user)
+        ->test('puzzle-discovery', ['excludeAttempted' => true])
+        ->set('sortBy', 'highest_rated')
+        ->call('clearFilters')
+        ->assertSet('sortBy', 'newest');
+
+    Livewire::actingAs($user)
+        ->test('puzzle-discovery', ['excludeAttempted' => true])
+        ->set('sortBy', 'most_played')
+        ->call('clearFilters')
+        ->assertSet('sortBy', 'newest');
 });
