@@ -649,3 +649,85 @@ test('discovery shows puzzles with non-blocked tags', function () {
         ->test('puzzle-discovery', ['excludeAttempted' => true])
         ->assertSee('Safe Discovery Puzzle');
 });
+
+// --- Solve Stats on Discovery Cards ---
+
+test('discovery cards show solve count for completed attempts', function () {
+    $user = User::factory()->create();
+    $creator = User::factory()->create();
+    $crossword = Crossword::factory()->published()->for($creator)->create(['title' => 'Stats Puzzle']);
+
+    PuzzleAttempt::factory()->completed()->count(3)->create(['crossword_id' => $crossword->id]);
+    PuzzleAttempt::factory()->create(['crossword_id' => $crossword->id]);
+
+    Livewire::actingAs($user)
+        ->test('puzzle-discovery')
+        ->assertSee('3 solves');
+});
+
+test('discovery cards show singular solve label for one completion', function () {
+    $user = User::factory()->create();
+    $creator = User::factory()->create();
+    $crossword = Crossword::factory()->published()->for($creator)->create(['title' => 'Single Solve']);
+
+    PuzzleAttempt::factory()->completed()->create(['crossword_id' => $crossword->id]);
+
+    Livewire::actingAs($user)
+        ->test('puzzle-discovery')
+        ->assertSee('1 solve');
+});
+
+test('discovery cards show zero solves when no completions exist', function () {
+    $user = User::factory()->create();
+    $creator = User::factory()->create();
+    Crossword::factory()->published()->for($creator)->create(['title' => 'Unsolved Puzzle']);
+
+    Livewire::actingAs($user)
+        ->test('puzzle-discovery')
+        ->assertSee('0 solves');
+});
+
+test('discovery cards show average solve time for completed attempts', function () {
+    $user = User::factory()->create();
+    $creator = User::factory()->create();
+    $crossword = Crossword::factory()->published()->for($creator)->create(['title' => 'Timed Puzzle']);
+
+    PuzzleAttempt::factory()->completed()->create([
+        'crossword_id' => $crossword->id,
+        'solve_time_seconds' => 300,
+    ]);
+    PuzzleAttempt::factory()->completed()->create([
+        'crossword_id' => $crossword->id,
+        'solve_time_seconds' => 600,
+    ]);
+
+    Livewire::actingAs($user)
+        ->test('puzzle-discovery')
+        ->assertSee('avg 7:30');
+});
+
+test('discovery cards hide average time when no completed attempts exist', function () {
+    $user = User::factory()->create();
+    $creator = User::factory()->create();
+    Crossword::factory()->published()->for($creator)->create(['title' => 'No Times Puzzle']);
+
+    Livewire::actingAs($user)
+        ->test('puzzle-discovery')
+        ->assertDontSee('avg');
+});
+
+test('discovery sorts by most solved', function () {
+    $user = User::factory()->create();
+    $creator = User::factory()->create();
+
+    $lessSolved = Crossword::factory()->published()->for($creator)->create(['title' => 'Less Solved']);
+    $moreSolved = Crossword::factory()->published()->for($creator)->create(['title' => 'More Solved']);
+
+    PuzzleAttempt::factory()->completed()->count(5)->create(['crossword_id' => $moreSolved->id]);
+    PuzzleAttempt::factory()->completed()->count(1)->create(['crossword_id' => $lessSolved->id]);
+
+    Livewire::actingAs($user)
+        ->test('puzzle-discovery')
+        ->set('sortBy', 'most_solved')
+        ->assertSeeInOrder(['More Solved', 'Less Solved']);
+});

@@ -76,7 +76,11 @@ new class extends Component {
     {
         $query = Crossword::where('is_published', true)
             ->with('user:id,name', 'tags:id,name,slug')
-            ->withCount('likes');
+            ->withCount([
+                'likes',
+                'attempts as completed_attempts_count' => fn ($q) => $q->where('is_completed', true),
+            ])
+            ->withAvg(['attempts as avg_solve_time' => fn ($q) => $q->where('is_completed', true)], 'solve_time_seconds');
 
         $hasExplicitFilters = $this->search !== '' || $this->constructor !== '';
 
@@ -153,6 +157,7 @@ new class extends Component {
         match ($this->sortBy) {
             'oldest' => $query->oldest(),
             'most_liked' => $query->orderByDesc('likes_count'),
+            'most_solved' => $query->orderByDesc('completed_attempts_count'),
             'largest' => $query->orderByRaw('width * height DESC'),
             'smallest' => $query->orderByRaw('width * height ASC'),
             default => $query->latest(),
@@ -288,6 +293,7 @@ new class extends Component {
                 <flux:select.option value="newest">{{ __('Newest') }}</flux:select.option>
                 <flux:select.option value="oldest">{{ __('Oldest') }}</flux:select.option>
                 <flux:select.option value="most_liked">{{ __('Most Liked') }}</flux:select.option>
+                <flux:select.option value="most_solved">{{ __('Most Solved') }}</flux:select.option>
                 <flux:select.option value="largest">{{ __('Largest') }}</flux:select.option>
                 <flux:select.option value="smallest">{{ __('Smallest') }}</flux:select.option>
             </flux:select>
@@ -423,6 +429,28 @@ new class extends Component {
                         @foreach($crossword->tags as $crosswordTag)
                             <flux:badge size="sm" color="blue">{{ $crosswordTag->name }}</flux:badge>
                         @endforeach
+                    </div>
+
+                    <div class="mt-2 flex items-center gap-3 text-xs text-zinc-500">
+                        <span class="flex items-center gap-0.5">
+                            <flux:icon name="check-circle" class="size-3.5" />
+                            {{ trans_choice(':count solve|:count solves', $crossword->completed_attempts_count) }}
+                        </span>
+                        @if($crossword->avg_solve_time)
+                            <span class="flex items-center gap-0.5">
+                                <flux:icon name="clock" class="size-3.5" />
+                                @php
+                                    $avgSeconds = (int) round($crossword->avg_solve_time);
+                                    $avgHours = intdiv($avgSeconds, 3600);
+                                    $avgMinutes = intdiv($avgSeconds % 3600, 60);
+                                    $avgSecs = $avgSeconds % 60;
+                                    $formattedAvg = $avgHours > 0
+                                        ? sprintf('%d:%02d:%02d', $avgHours, $avgMinutes, $avgSecs)
+                                        : sprintf('%d:%02d', $avgMinutes, $avgSecs);
+                                @endphp
+                                {{ __('avg :time', ['time' => $formattedAvg]) }}
+                            </span>
+                        @endif
                     </div>
 
                     <div class="mt-3 flex items-center justify-between">
