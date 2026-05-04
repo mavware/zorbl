@@ -30,6 +30,8 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [x] ability to change color of cell background
 - [x] Render bar-style word boundaries in PDF exports (bars are used for numbering but not visually drawn in the PDF)
 - [ ] Ask Claude to find an algorithm to generate a template based on existing template data
+- [ ] Add completed_attempts_count and avg_solve_time to the crosswords API resource meta for parity with the UI
+- [ ] Consider caching per-puzzle solve stats for high-traffic discovery pages
 
 ## Done
 
