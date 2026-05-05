@@ -9,6 +9,7 @@ use App\Http\Resources\Api\V1\PuzzleAttemptResource;
 use App\Jobs\DispatchWebhooks;
 use App\Models\Crossword;
 use App\Models\PuzzleAttempt;
+use App\Notifications\PuzzleCompleted;
 use App\Services\AchievementService;
 use App\Services\ContestService;
 use Illuminate\Http\JsonResponse;
@@ -92,6 +93,12 @@ class PuzzleAttemptController extends Controller
 
             if ($crossword->contests()->exists()) {
                 app(ContestService::class)->processContestSolve($user, $crossword);
+            }
+
+            $constructor = $crossword->user;
+
+            if ($constructor && $constructor->id !== $user->id) {
+                $constructor->notify(new PuzzleCompleted($crossword, $user, $data['solve_time_seconds'] ?? null));
             }
 
             DispatchWebhooks::dispatch(WebhookEvent::PuzzleCompleted, $crossword->user_id, [

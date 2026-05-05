@@ -2,6 +2,7 @@
 
 use App\Models\Crossword;
 use App\Models\CrosswordLike;
+use App\Models\DailyPuzzle;
 use App\Models\Follow;
 use App\Models\PuzzleAttempt;
 use Illuminate\Support\Facades\Auth;
@@ -11,6 +12,12 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 
 new #[Title('Dashboard')] class extends Component {
+    #[Computed]
+    public function dailyPuzzle(): ?Crossword
+    {
+        return DailyPuzzle::todayOrAuto();
+    }
+
     #[Computed]
     public function publishedCount(): int
     {
@@ -143,6 +150,35 @@ new #[Title('Dashboard')] class extends Component {
 <div class="space-y-6">
     <flux:heading size="xl">{{ __('Dashboard') }}</flux:heading>
 
+    {{-- Puzzle of the Day --}}
+    @if($dailyPuzzle = $this->dailyPuzzle)
+        <div class="relative overflow-hidden rounded-xl border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 p-5 dark:border-amber-800/50 dark:from-amber-950/30 dark:to-orange-950/30">
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div class="flex items-center gap-4">
+                    <div class="flex size-12 shrink-0 items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-900/50">
+                        <flux:icon name="star" class="size-6 text-amber-600 dark:text-amber-400" />
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <flux:heading size="lg">{{ __('Puzzle of the Day') }}</flux:heading>
+                            <flux:badge size="sm" color="amber">{{ today()->format('M j') }}</flux:badge>
+                        </div>
+                        <flux:text size="sm" class="mt-0.5 text-zinc-600 dark:text-zinc-400">
+                            <span class="font-medium text-fg">{{ $dailyPuzzle->title ?: __('Untitled Puzzle') }}</span>
+                            &middot;
+                            {{ __('by :author', ['author' => $dailyPuzzle->user->name ?? __('Unknown')]) }}
+                            &middot;
+                            {{ $dailyPuzzle->width }}&times;{{ $dailyPuzzle->height }}
+                        </flux:text>
+                    </div>
+                </div>
+                <flux:button variant="primary" size="sm" :href="route('crosswords.solver', $dailyPuzzle)" wire:navigate icon="play">
+                    {{ __('Solve Today\'s Puzzle') }}
+                </flux:button>
+            </div>
+        </div>
+    @endif
+
     <div class="grid gap-6 lg:grid-cols-2">
         {{-- In Progress --}}
         <div class="border-line rounded-xl border p-5">
@@ -177,8 +213,17 @@ new #[Title('Dashboard')] class extends Component {
                                     &middot;
                                     {{ $attempt->updated_at->diffForHumans() }}
                                 </flux:text>
+                                @php($solveProgress = $attempt->solveProgress())
+                                <div class="mt-1.5 flex items-center gap-2">
+                                    <div class="h-1.5 flex-1 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-700">
+                                        <div
+                                            class="h-full rounded-full {{ $solveProgress >= 50 ? 'bg-sky-500' : 'bg-zinc-400' }}"
+                                            style="width: {{ $solveProgress }}%"
+                                        ></div>
+                                    </div>
+                                    <span class="text-xs tabular-nums text-zinc-500">{{ $solveProgress }}%</span>
+                                </div>
                             </div>
-                            <flux:icon name="chevron-right" class="size-4 shrink-0 text-zinc-500" />
                         </a>
                     @endforeach
                 </div>
