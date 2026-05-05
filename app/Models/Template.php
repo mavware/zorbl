@@ -6,8 +6,11 @@ use Carbon\CarbonImmutable;
 use Database\Factories\TemplateFactory;
 use Eloquent;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Cache;
 
@@ -23,6 +26,8 @@ use Illuminate\Support\Facades\Cache;
  * @property bool $is_active
  * @property CarbonImmutable|null $created_at
  * @property CarbonImmutable|null $updated_at
+ * @property-read Collection<int, TemplateTag> $templateTags
+ * @property-read TemplateAnnotation|null $annotation
  *
  * @method static TemplateFactory factory($count = null, $state = [])
  *
@@ -58,5 +63,21 @@ class Template extends Model
     {
         static::saved(fn (self $template) => Cache::forget("grid_templates_{$template->width}x{$template->height}"));
         static::deleted(fn (self $template) => Cache::forget("grid_templates_{$template->width}x{$template->height}"));
+    }
+
+    /**
+     * @return HasMany<TemplateTag, $this>
+     */
+    public function templateTags(): HasMany
+    {
+        return $this->hasMany(TemplateTag::class);
+    }
+
+    /**
+     * @return HasOne<TemplateAnnotation, $this>
+     */
+    public function annotation(): HasOne
+    {
+        return $this->hasOne(TemplateAnnotation::class);
     }
 }
