@@ -125,9 +125,12 @@ class extends Component {
                 initialSolved: saved?.isCompleted ?? false,
                 initialPencilCells: saved?.pencilCells ?? [],
                 persistence: window.zorblGuestPersistence,
+                puzzleTitle: @js($title),
+                shareTitle: @js($title),
+                shareUrl: @js(route('puzzles.solve', $crosswordId)),
             });
         })()"
-        x-init="$watch('solved', val => { if (val) $dispatch('show-guest-signup') })"
+        x-init="$watch('solved', val => { if (val) $dispatch('show-guest-signup', { time: formattedTime() }) })"
         class="relative flex h-full flex-col"
     >
         {{-- Skip to content link --}}
@@ -138,7 +141,7 @@ class extends Component {
         {{-- Toolbar --}}
         <div class="mb-4 flex flex-wrap items-center gap-2">
             <div class="flex flex-1 items-center gap-3">
-                <flux:heading size="lg">{{ $title }}</flux:heading>
+                <flux:heading size="lg" data-puzzle-title>{{ $title }}</flux:heading>
                 @if($authorName)
                     <flux:text size="sm" class="text-zinc-500">
                         {{ __('by') }} {{ $authorName }}
@@ -203,13 +206,40 @@ class extends Component {
                     </flux:menu>
                 </flux:dropdown>
 
+                {{-- Share button (visible when solved) --}}
+                <template x-if="solved">
+                    <button
+                        x-on:click="shareResults()"
+                        :title="shareCopied ? '{{ __('Copied!') }}' : '{{ __('Share results') }}'"
+                        class="rounded-lg p-1.5 text-emerald-500 transition-colors hover:text-emerald-600 dark:hover:text-emerald-400"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 20 20" fill="currentColor"><path d="M13 4.5a2.5 2.5 0 11.702 4.89L8.45 12.3a2.5 2.5 0 11-.36-.891l5.252-2.91A2.5 2.5 0 0113 4.5zm-8 6a1 1 0 100 2 1 1 0 000-2zm8-5a1 1 0 100 2 1 1 0 000-2z"/></svg>
+                    </button>
+                </template>
+
                 {{-- Status --}}
                 <div class="flex items-center gap-1 pl-2 text-sm text-zinc-500">
                     <template x-if="pencilMode && !solved">
                         <span class="mr-1 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">{{ __('Pencil') }}</span>
                     </template>
                     <template x-if="solved">
-                        <span class="font-semibold text-emerald-500">{{ __('Solved!') }}</span>
+                        <span class="flex items-center gap-1.5">
+                            <span class="font-semibold text-emerald-500">{{ __('Solved!') }}</span>
+                            <button
+                                x-on:click="shareResults()"
+                                class="rounded-md px-2 py-0.5 text-xs font-medium text-emerald-600 transition-colors hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/30"
+                                x-text="shareCopied ? '{{ __('Copied!') }}' : '{{ __('Share Results') }}'"
+                            ></button>
+                        </span>
+                    </template>
+                    <template x-if="solved">
+                        <button
+                            x-on:click="shareResults()"
+                            class="ml-1 inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-xs font-medium text-blue-600 transition-colors hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/30"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z" /></svg>
+                            <span x-text="shareCopied ? '{{ __('Copied!') }}' : '{{ __('Share') }}'"></span>
+                        </button>
                     </template>
                 </div>
             </div>
@@ -426,8 +456,28 @@ class extends Component {
 
     {{-- Signup Prompt Modal (shown on solve completion) --}}
     <div
-        x-data="{ showSignup: false }"
-        x-on:show-guest-signup.window="showSignup = true"
+        x-data="{
+            showSignup: false,
+            solveTime: '',
+            copyLabel: '{{ __('Copy Result') }}',
+            _shareText() {
+                return '🧩 {{ str_replace("'", "\\'", $title) }} — Zorbl\n⏱️ ' + this.solveTime + ' | {{ $width }}×{{ $height }}\n{{ route('puzzles.solve', $crosswordId) }}';
+            },
+            async shareResult() {
+                try { await navigator.share({ text: this._shareText() }); } catch {}
+            },
+            async copyShareText() {
+                try {
+                    await navigator.clipboard.writeText(this._shareText());
+                    this.copyLabel = '{{ __('Copied!') }}';
+                    setTimeout(() => { this.copyLabel = '{{ __('Copy Result') }}'; }, 2000);
+                } catch {}
+            },
+            twitterShareUrl() {
+                return 'https://x.com/intent/post?text=' + encodeURIComponent(this._shareText());
+            },
+        }"
+        x-on:show-guest-signup.window="showSignup = true; solveTime = $event.detail.time"
     >
         <template x-teleport="body">
             <div
@@ -447,6 +497,34 @@ class extends Component {
                     <p class="mt-2 text-sm text-fg-muted">
                         {{ __('Great solve! Create a free account to save your progress across devices, track your stats, and access unlimited puzzles.') }}
                     </p>
+
+                    {{-- Share buttons --}}
+                    <div class="mt-4 flex items-center justify-center gap-2">
+                        <button
+                            x-on:click="shareResult()"
+                            x-show="typeof navigator.share === 'function'"
+                            class="inline-flex items-center gap-1.5 rounded-lg bg-zinc-100 px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-200 dark:bg-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-600"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" class="size-4" viewBox="0 0 20 20" fill="currentColor"><path d="M13 4.5a2.5 2.5 0 11.702 1.737L6.97 9.604a2.518 2.518 0 010 .799l6.733 3.366a2.5 2.5 0 11-.671 1.341l-6.733-3.366a2.5 2.5 0 110-3.482l6.733-3.366A2.52 2.52 0 0113 4.5z"/></svg>
+                            {{ __('Share') }}
+                        </button>
+                        <button
+                            x-on:click="copyShareText()"
+                            class="inline-flex items-center gap-1.5 rounded-lg bg-zinc-100 px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-200 dark:bg-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-600"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" class="size-4" viewBox="0 0 20 20" fill="currentColor"><path d="M7 3.5A1.5 1.5 0 018.5 2h3.879a1.5 1.5 0 011.06.44l3.122 3.12A1.5 1.5 0 0117 6.622V12.5a1.5 1.5 0 01-1.5 1.5h-1v-3.379a3 3 0 00-.879-2.121L10.5 5.379A3 3 0 008.379 4.5H7v-1z"/><path d="M4.5 6A1.5 1.5 0 003 7.5v9A1.5 1.5 0 004.5 18h7a1.5 1.5 0 001.5-1.5v-5.879a1.5 1.5 0 00-.44-1.06L9.44 6.439A1.5 1.5 0 008.378 6H4.5z"/></svg>
+                            <span x-text="copyLabel"></span>
+                        </button>
+                        <a
+                            x-bind:href="twitterShareUrl()"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="inline-flex items-center gap-1.5 rounded-lg bg-zinc-100 px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-200 dark:bg-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-600"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" class="size-4" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                        </a>
+                    </div>
+
                     <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
                         <a href="{{ route('register') }}" class="rounded-xl bg-amber-500 px-6 py-2.5 text-sm font-semibold text-zinc-950 hover:bg-amber-400 transition">
                             {{ __('Create Free Account') }}

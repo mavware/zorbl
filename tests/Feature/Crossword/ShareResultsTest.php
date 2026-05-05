@@ -76,10 +76,13 @@ test('share results banner is not visible when puzzle is not solved', function (
     $user = User::factory()->create();
     $crossword = Crossword::factory()->for($user)->create();
 
+    // "You solved it!" is unique to the celebration banner inside an @if($isSolved)
+    // server-side guard, so it's the right canary here. Other UI strings like
+    // "Share Results" appear in always-rendered Alpine templates (toolbars,
+    // x-show modals) even when hidden, so they're too broad to assert against.
     Livewire::actingAs($user)
         ->test('pages::crosswords.solver', ['crossword' => $crossword])
-        ->assertDontSee('You solved it!')
-        ->assertDontSee('Share Results');
+        ->assertDontSee('You solved it!');
 });
 
 test('share text uses public puzzle route for sharing', function () {

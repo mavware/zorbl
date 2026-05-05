@@ -22,6 +22,7 @@ class TemplateFactory extends Factory
             'width' => $size,
             'height' => $size,
             'grid' => self::openGrid($size, $size),
+            'styles' => null,
             'min_word_length' => 3,
             'sort_order' => 0,
             'is_active' => true,

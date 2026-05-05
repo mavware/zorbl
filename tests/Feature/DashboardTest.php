@@ -1,7 +1,9 @@
 <?php
 
+use App\Models\Contest;
 use App\Models\Crossword;
 use App\Models\CrosswordLike;
+use App\Models\Follow;
 use App\Models\PuzzleAttempt;
 use App\Models\User;
 use Livewire\Livewire;
@@ -158,4 +160,183 @@ test('dashboard shows empty states when user has no activity', function () {
         ->test('pages::dashboard')
         ->assertSee('No puzzles in progress')
         ->assertSee('No drafts in progress');
+});
+
+test('dashboard shows following feed when user follows constructors', function () {
+    $user = User::factory()->create();
+    $constructor = User::factory()->create();
+    Follow::create(['follower_id' => $user->id, 'following_id' => $constructor->id]);
+
+    Crossword::factory()->published()->create([
+        'user_id' => $constructor->id,
+        'title' => 'Followed Constructor Puzzle',
+    ]);
+
+    Livewire::actingAs($user)
+        ->test('pages::dashboard')
+        ->assertSee('From People You Follow')
+        ->assertSee('Followed Constructor Puzzle');
+});
+
+test('dashboard hides following feed when user follows nobody', function () {
+    $user = User::factory()->create();
+
+    Livewire::actingAs($user)
+        ->test('pages::dashboard')
+        ->assertDontSee('From People You Follow');
+});
+
+test('following feed only includes published puzzles', function () {
+    $user = User::factory()->create();
+    $constructor = User::factory()->create();
+    Follow::create(['follower_id' => $user->id, 'following_id' => $constructor->id]);
+
+    Crossword::factory()->create([
+        'user_id' => $constructor->id,
+        'title' => 'Draft From Follow',
+        'is_published' => false,
+    ]);
+
+    $component = Livewire::actingAs($user)->test('pages::dashboard');
+
+    expect($component->get('followingPuzzles'))->toHaveCount(0);
+});
+
+test('following feed limits to 6 puzzles', function () {
+    $user = User::factory()->create();
+    $constructor = User::factory()->create();
+    Follow::create(['follower_id' => $user->id, 'following_id' => $constructor->id]);
+
+    Crossword::factory()->count(8)->published()->create(['user_id' => $constructor->id]);
+
+    $component = Livewire::actingAs($user)->test('pages::dashboard');
+
+    expect($component->get('followingPuzzles'))->toHaveCount(6);
+});
+
+test('following feed shows puzzles from multiple followed constructors', function () {
+    $user = User::factory()->create();
+    $constructor1 = User::factory()->create();
+    $constructor2 = User::factory()->create();
+    Follow::create(['follower_id' => $user->id, 'following_id' => $constructor1->id]);
+    Follow::create(['follower_id' => $user->id, 'following_id' => $constructor2->id]);
+
+    Crossword::factory()->published()->create(['user_id' => $constructor1->id, 'title' => 'Puzzle From First']);
+    Crossword::factory()->published()->create(['user_id' => $constructor2->id, 'title' => 'Puzzle From Second']);
+
+    Livewire::actingAs($user)
+        ->test('pages::dashboard')
+        ->assertSee('Puzzle From First')
+        ->assertSee('Puzzle From Second');
+});
+
+test('following count badge shows correct number', function () {
+    $user = User::factory()->create();
+    Follow::create(['follower_id' => $user->id, 'following_id' => User::factory()->create()->id]);
+    Follow::create(['follower_id' => $user->id, 'following_id' => User::factory()->create()->id]);
+    Follow::create(['follower_id' => $user->id, 'following_id' => User::factory()->create()->id]);
+
+    $component = Livewire::actingAs($user)->test('pages::dashboard');
+
+    expect($component->get('followingCount'))->toBe(3);
+});
+
+test('following feed does not include unfollowed constructors puzzles', function () {
+    $user = User::factory()->create();
+    $followed = User::factory()->create();
+    $notFollowed = User::factory()->create();
+    Follow::create(['follower_id' => $user->id, 'following_id' => $followed->id]);
+
+    Crossword::factory()->published()->create(['user_id' => $followed->id, 'title' => 'Should See This']);
+    Crossword::factory()->published()->create(['user_id' => $notFollowed->id, 'title' => 'Should Not See This']);
+
+    $component = Livewire::actingAs($user)->test('pages::dashboard');
+    $titles = $component->get('followingPuzzles')->pluck('title')->all();
+
+    expect($titles)->toContain('Should See This')
+        ->and($titles)->not->toContain('Should Not See This');
+});
+
+test('following feed shows empty state when followed constructors have no published puzzles', function () {
+    $user = User::factory()->create();
+    $constructor = User::factory()->create();
+    Follow::create(['follower_id' => $user->id, 'following_id' => $constructor->id]);
+
+    Livewire::actingAs($user)
+        ->test('pages::dashboard')
+        ->assertSee('From People You Follow')
+        ->assertSee('No new puzzles from people you follow yet.');
+});
+
+test('dashboard shows active contests', function () {
+    $user = User::factory()->create();
+    Contest::factory()->active()->create(['title' => 'Spring Crossword Challenge']);
+
+    Livewire::actingAs($user)
+        ->test('pages::dashboard')
+        ->assertSee('Contests')
+        ->assertSee('Spring Crossword Challenge')
+        ->assertSee('Active');
+});
+
+test('dashboard shows upcoming contests', function () {
+    $user = User::factory()->create();
+    Contest::factory()->upcoming()->create(['title' => 'Summer Puzzle Fest']);
+
+    Livewire::actingAs($user)
+        ->test('pages::dashboard')
+        ->assertSee('Contests')
+        ->assertSee('Summer Puzzle Fest')
+        ->assertSee('Upcoming');
+});
+
+test('dashboard hides contests section when none are active or upcoming', function () {
+    $user = User::factory()->create();
+    Contest::factory()->ended()->create(['title' => 'Old Contest']);
+    Contest::factory()->draft()->create(['title' => 'Draft Contest']);
+
+    Livewire::actingAs($user)
+        ->test('pages::dashboard')
+        ->assertDontSee('Contests')
+        ->assertDontSee('Old Contest')
+        ->assertDontSee('Draft Contest');
+});
+
+test('dashboard limits active contests to 3', function () {
+    $user = User::factory()->create();
+    Contest::factory()->count(5)->active()->create();
+
+    $component = Livewire::actingAs($user)->test('pages::dashboard');
+
+    expect($component->get('activeContests'))->toHaveCount(3);
+});
+
+test('dashboard limits upcoming contests to 3', function () {
+    $user = User::factory()->create();
+    Contest::factory()->count(5)->upcoming()->create();
+
+    $component = Livewire::actingAs($user)->test('pages::dashboard');
+
+    expect($component->get('upcomingContests'))->toHaveCount(3);
+});
+
+test('dashboard shows featured badge on featured contests', function () {
+    $user = User::factory()->create();
+    Contest::factory()->active()->featured()->create(['title' => 'Featured Contest']);
+
+    Livewire::actingAs($user)
+        ->test('pages::dashboard')
+        ->assertSee('Featured Contest')
+        ->assertSee('Featured');
+});
+
+test('dashboard shows contest participant and puzzle counts', function () {
+    $user = User::factory()->create();
+    $contest = Contest::factory()->active()->create();
+    $crosswords = Crossword::factory()->count(3)->published()->create();
+    $contest->crosswords()->attach($crosswords->pluck('id')->mapWithKeys(fn ($id, $i) => [$id => ['sort_order' => $i]]));
+
+    $component = Livewire::actingAs($user)->test('pages::dashboard');
+
+    expect($component->get('activeContests')->first()->crosswords_count)->toBe(3);
 });
