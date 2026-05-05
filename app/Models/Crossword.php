@@ -351,6 +351,27 @@ class Crossword extends Model
     }
 
     /**
+     * Human-readable puzzle type label, including sub-types like Shaped and Barred
+     * that are inferred from the grid structure rather than stored explicitly.
+     */
+    public function puzzleTypeLabel(): string
+    {
+        if ($this->puzzle_type !== PuzzleType::Standard) {
+            return $this->puzzle_type->label();
+        }
+
+        if ($this->grid && collect($this->grid)->flatten()->contains(fn ($v) => $v === null)) {
+            return 'Shaped';
+        }
+
+        if ($this->styles && collect($this->styles)->contains(fn ($s) => ! empty($s['bars'] ?? []))) {
+            return 'Barred';
+        }
+
+        return 'Standard';
+    }
+
+    /**
      * Obfuscate the solution using XOR cipher + base64 encoding.
      * Prevents casual view-source cheating while keeping implementation simple.
      */

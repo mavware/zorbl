@@ -63,9 +63,18 @@
             border: none;
         }
 
-        .grid-table td.circle {
+        .circle-indicator {
+            width: {{ round($cellSize * 0.82, 3) }}in;
+            height: {{ round($cellSize * 0.82, 3) }}in;
+            border: 0.7pt solid #555;
             border-radius: 50%;
+            margin: 0 auto;
         }
+
+        .grid-table td.bar-top { border-top: 2.5pt solid #000; }
+        .grid-table td.bar-right { border-right: 2.5pt solid #000; }
+        .grid-table td.bar-bottom { border-bottom: 2.5pt solid #000; }
+        .grid-table td.bar-left { border-left: 2.5pt solid #000; }
 
         .cell-number {
             font-size: {{ $numberFontSize }}pt;
@@ -85,6 +94,10 @@
             line-height: 1;
             margin: 0;
             padding: 0;
+        }
+
+        .cell-letter.prefilled {
+            color: #555;
         }
 
         /* Clues section */
@@ -125,6 +138,13 @@
             color: #333;
         }
 
+        .header .notes {
+            font-size: 9pt;
+            font-style: italic;
+            color: #333;
+            margin: 4pt 0 0 0;
+        }
+
         .grid-wrapper {
             text-align: center;
         }
@@ -139,6 +159,9 @@
         @endif
         @if ($copyright)
             <p class="meta">&copy; {{ $copyright }}</p>
+        @endif
+        @if ($notes)
+            <p class="notes">{{ $notes }}</p>
         @endif
     </div>
 
@@ -157,20 +180,28 @@
                                 $cellStyle = $styles[$styleKey] ?? [];
                                 $classes = [];
                                 $inlineStyle = '';
-                                if (!empty($cellStyle['shapebg']) && $cellStyle['shapebg'] === 'circle') {
-                                    $classes[] = 'circle';
-                                }
+                                $hasCircle = !empty($cellStyle['shapebg']) && $cellStyle['shapebg'] === 'circle';
                                 if (!empty($cellStyle['color'])) {
                                     $inlineStyle = 'background-color: ' . e($cellStyle['color']) . ';';
                                 }
+                                foreach ($cellStyle['bars'] ?? [] as $bar) {
+                                    $classes[] = 'bar-' . $bar;
+                                }
+                                $prefilledLetter = $prefilled[$r][$c] ?? '';
                             @endphp
                             <td class="{{ implode(' ', $classes) }}" @if ($inlineStyle) style="{{ $inlineStyle }}" @endif>
+                                @if ($hasCircle)<div class="circle-indicator">@endif
                                 @if (is_int($cell) && $cell > 0)
                                     <div class="cell-number">{{ $cell }}</div>
                                 @else
                                     <div class="cell-number">&nbsp;</div>
                                 @endif
-                                <div class="cell-letter">&nbsp;</div>
+                                @if (filled($prefilledLetter))
+                                    <div class="cell-letter prefilled">{{ strtoupper($prefilledLetter) }}</div>
+                                @else
+                                    <div class="cell-letter">&nbsp;</div>
+                                @endif
+                                @if ($hasCircle)</div>@endif
                             </td>
                         @endif
                     @endforeach
@@ -233,20 +264,23 @@
                                     $cellStyle = $styles[$styleKey] ?? [];
                                     $classes = [];
                                     $inlineStyle = '';
-                                    if (!empty($cellStyle['shapebg']) && $cellStyle['shapebg'] === 'circle') {
-                                        $classes[] = 'circle';
-                                    }
+                                    $hasCircle = !empty($cellStyle['shapebg']) && $cellStyle['shapebg'] === 'circle';
                                     if (!empty($cellStyle['color'])) {
                                         $inlineStyle = 'background-color: ' . e($cellStyle['color']) . ';';
                                     }
+                                    foreach ($cellStyle['bars'] ?? [] as $bar) {
+                                        $classes[] = 'bar-' . $bar;
+                                    }
                                 @endphp
                                 <td class="{{ implode(' ', $classes) }}" @if ($inlineStyle) style="{{ $inlineStyle }}" @endif>
+                                    @if ($hasCircle)<div class="circle-indicator">@endif
                                     @if (is_int($cell) && $cell > 0)
                                         <div class="cell-number">{{ $cell }}</div>
                                     @else
                                         <div class="cell-number">&nbsp;</div>
                                     @endif
                                     <div class="cell-letter">{{ strtoupper($solution[$r][$c] ?? '') }}</div>
+                                    @if ($hasCircle)</div>@endif
                                 </td>
                             @endif
                         @endforeach
