@@ -97,7 +97,7 @@ test('user can duplicate their own puzzle', function () {
     expect($user->crosswords()->count())->toBe(2);
 
     $copy = $user->crosswords()->where('id', '!=', $crossword->id)->first();
-    expect($copy->title)->toBe('Original (Copy)')
+    expect($copy->title)->toBe('Copy of Original')
         ->and($copy->width)->toBe(5)
         ->and($copy->height)->toBe(5)
         ->and($copy->is_published)->toBeFalse();

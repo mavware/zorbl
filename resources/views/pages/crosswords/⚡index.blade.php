@@ -9,12 +9,12 @@ use App\Models\Crossword;
 use App\Services\GridTemplateProvider;
 use Zorbl\CrosswordIO\GridNumberer;
 use Zorbl\CrosswordIO\ImportDetector;
+use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
-use Flux\Flux;
 use Livewire\WithFileUploads;
 
 new #[Title('My Puzzles')] class extends Component {
@@ -236,15 +236,29 @@ new #[Title('My Puzzles')] class extends Component {
             return;
         }
 
-        $copy = $crossword->replicate(['is_published']);
-        $copy->title = __(':title (Copy)', ['title' => $crossword->title ?? __('Untitled Puzzle')]);
-        $copy->is_published = false;
-        $copy->user_id = $user->id;
-        $copy->save();
+        $duplicate = $user->crosswords()->create([
+            'title' => __('Copy of :title', ['title' => $crossword->title ?? __('Untitled Puzzle')]),
+            'author' => $user->name,
+            'copyright' => copyright($user->copyright_name ?? $user->name ?? ''),
+            'notes' => $crossword->notes,
+            'secret_theme' => $crossword->secret_theme,
+            'layout' => $crossword->layout,
+            'puzzle_type' => $crossword->puzzle_type,
+            'freestyle_locked' => false,
+            'width' => $crossword->width,
+            'height' => $crossword->height,
+            'kind' => $crossword->kind,
+            'grid' => $crossword->grid,
+            'solution' => $crossword->solution,
+            'prefilled' => $crossword->prefilled,
+            'clues_across' => $crossword->clues_across,
+            'clues_down' => $crossword->clues_down,
+            'styles' => $crossword->styles,
+            'metadata' => $crossword->metadata,
+            'is_published' => false,
+        ]);
 
-        unset($this->crosswords);
-
-        Flux::toast(text: __('Puzzle duplicated.'), variant: 'success');
+        $this->redirect(route('crosswords.editor', $duplicate), navigate: true);
     }
 
     public function deletePuzzle(int $id): void
