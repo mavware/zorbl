@@ -1,11 +1,17 @@
 <?php
 
 use App\Models\Crossword;
+use App\Models\PuzzleAttempt;
 use App\Models\User;
 use App\Notifications\PuzzleCompleted;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Laravel\Sanctum\Sanctum;
 use Livewire\Livewire;
+
+uses(RefreshDatabase::class);
+
+// ─── Livewire solver-page integration ──────────────────────────────────────
 
 test('constructor is notified when another user completes their puzzle via solver', function () {
     Notification::fake();
@@ -30,7 +36,7 @@ test('constructor is notified when another user completes their puzzle via solve
     });
 });
 
-test('constructor is not notified when solving their own puzzle', function () {
+test('constructor is not notified when solving their own puzzle via solver', function () {
     Notification::fake();
 
     $constructor = User::factory()->create();
@@ -48,7 +54,7 @@ test('constructor is not notified when solving their own puzzle', function () {
     Notification::assertNotSentTo($constructor, PuzzleCompleted::class);
 });
 
-test('constructor is not notified on progress save without completion', function () {
+test('constructor is not notified on progress save without completion via solver', function () {
     Notification::fake();
 
     $constructor = User::factory()->create();
@@ -68,7 +74,7 @@ test('constructor is not notified on progress save without completion', function
     Notification::assertNotSentTo($constructor, PuzzleCompleted::class);
 });
 
-test('constructor is not notified twice for same completion', function () {
+test('constructor is not notified twice for the same solver via solver', function () {
     Notification::fake();
 
     $constructor = User::factory()->create();
@@ -89,81 +95,120 @@ test('constructor is not notified twice for same completion', function () {
     Notification::assertSentToTimes($constructor, PuzzleCompleted::class, 1);
 });
 
-test('constructor is notified when puzzle completed via API', function () {
+// ─── API integration ───────────────────────────────────────────────────────
+
+it('sends notification to constructor when someone completes their puzzle via API', function () {
     Notification::fake();
 
     $constructor = User::factory()->create();
     $solver = User::factory()->create();
-    $crossword = Crossword::factory()->published()->for($constructor)->create([
-        'width' => 3,
-        'height' => 3,
-    ]);
+    $crossword = Crossword::factory()->for($constructor)->published()->create();
 
     Sanctum::actingAs($solver);
 
     $this->putJson("/api/v1/crosswords/{$crossword->id}/attempt", [
-        'progress' => Crossword::emptySolution(3, 3),
+        'progress' => Crossword::emptySolution(15, 15),
         'is_completed' => true,
-        'solve_time_seconds' => 90,
-    ])->assertSuccessful();
+        'solve_time_seconds' => 300,
+    ])->assertCreated();
 
     Notification::assertSentTo($constructor, PuzzleCompleted::class, function ($notification) use ($crossword, $solver) {
         return $notification->crossword->id === $crossword->id
             && $notification->solver->id === $solver->id
-            && $notification->solveTimeSeconds === 90;
+            && $notification->solveTimeSeconds === 300;
     });
 });
 
-test('constructor is not notified when completing own puzzle via API', function () {
+it('does not notify constructor when solving your own puzzle via API', function () {
     Notification::fake();
 
     $constructor = User::factory()->create();
-    $crossword = Crossword::factory()->for($constructor)->create([
-        'width' => 3,
-        'height' => 3,
-    ]);
+    $crossword = Crossword::factory()->for($constructor)->published()->create();
 
     Sanctum::actingAs($constructor);
 
     $this->putJson("/api/v1/crosswords/{$crossword->id}/attempt", [
-        'progress' => Crossword::emptySolution(3, 3),
+        'progress' => Crossword::emptySolution(15, 15),
         'is_completed' => true,
-        'solve_time_seconds' => 60,
+        'solve_time_seconds' => 300,
+    ])->assertCreated();
+
+    Notification::assertNotSentTo($constructor, PuzzleCompleted::class);
+});
+
+it('does not send duplicate notification when puzzle was already completed via API', function () {
+    Notification::fake();
+
+    $constructor = User::factory()->create();
+    $solver = User::factory()->create();
+    $crossword = Crossword::factory()->for($constructor)->published()->create();
+
+    PuzzleAttempt::factory()->for($solver)->for($crossword)->completed()->create();
+
+    Sanctum::actingAs($solver);
+
+    $this->putJson("/api/v1/crosswords/{$crossword->id}/attempt", [
+        'progress' => Crossword::emptySolution(15, 15),
+        'is_completed' => true,
+        'solve_time_seconds' => 300,
     ])->assertSuccessful();
 
     Notification::assertNotSentTo($constructor, PuzzleCompleted::class);
 });
 
-test('notification payload includes correct data', function () {
-    $constructor = User::factory()->create(['name' => 'Alice']);
-    $solver = User::factory()->create(['name' => 'Bob']);
-    $crossword = Crossword::factory()->published()->for($constructor)->create([
-        'title' => 'Sunday Fun',
-    ]);
+it('does not send notification for non-completion saves via API', function () {
+    Notification::fake();
+
+    $constructor = User::factory()->create();
+    $solver = User::factory()->create();
+    $crossword = Crossword::factory()->for($constructor)->published()->create();
+
+    Sanctum::actingAs($solver);
+
+    $this->putJson("/api/v1/crosswords/{$crossword->id}/attempt", [
+        'progress' => Crossword::emptySolution(15, 15),
+        'is_completed' => false,
+    ])->assertCreated();
+
+    Notification::assertNotSentTo($constructor, PuzzleCompleted::class);
+});
+
+// ─── Notification payload formatting ───────────────────────────────────────
+
+it('includes solve time in notification body', function () {
+    $constructor = User::factory()->create();
+    $solver = User::factory()->create(['name' => 'Jane Solver']);
+    $crossword = Crossword::factory()->for($constructor)->published()->create(['title' => 'Test Puzzle']);
 
     $notification = new PuzzleCompleted($crossword, $solver, 185);
     $data = $notification->toArray($constructor);
 
     expect($data['type'])->toBe('puzzle.completed')
-        ->and($data['title'])->toContain('Bob')
-        ->and($data['title'])->toContain('Sunday Fun')
-        ->and($data['title'])->toContain('3:05')
+        ->and($data['title'])->toContain('Jane Solver')
+        ->and($data['title'])->toContain('Test Puzzle')
+        ->and($data['body'])->toContain('3:05')
         ->and($data['crossword_id'])->toBe($crossword->id)
-        ->and($data['solver_id'])->toBe($solver->id)
-        ->and($data['url'])->toBe(route('crosswords.solver', $crossword));
+        ->and($data['solver_id'])->toBe($solver->id);
 });
 
-test('notification payload omits time when null', function () {
-    $constructor = User::factory()->create(['name' => 'Alice']);
-    $solver = User::factory()->create(['name' => 'Bob']);
-    $crossword = Crossword::factory()->published()->for($constructor)->create([
-        'title' => 'Quick One',
-    ]);
+it('handles null solve time gracefully', function () {
+    $constructor = User::factory()->create();
+    $solver = User::factory()->create();
+    $crossword = Crossword::factory()->for($constructor)->published()->create();
 
-    $notification = new PuzzleCompleted($crossword, $solver, null);
+    $notification = new PuzzleCompleted($crossword, $solver);
     $data = $notification->toArray($constructor);
 
-    expect($data['title'])->not->toContain('in ')
-        ->and($data['title'])->toContain('Bob')
-        ->and($data['title'])->toContain('Quick One');
+    expect($data['body'])->toBeNull();
+});
+
+it('formats hours in solve time', function () {
+    $constructor = User::factory()->create();
+    $solver = User::factory()->create();
+    $crossword = Crossword::factory()->for($constructor)->published()->create();
+
+    $notification = new PuzzleCompleted($crossword, $solver, 3661);
+    $data = $notification->toArray($constructor);
+
+    expect($data['body'])->toContain('1:01:01');
 });

@@ -1,6 +1,8 @@
 <?php
 
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Cashier\Subscription;
 use Tests\TestCase;
 
 /*
@@ -54,4 +56,22 @@ expect()->extend('toBeOne', function () {
 function something()
 {
     // ..
+}
+
+/**
+ * Create a User with an active Stripe subscription so `$user->isPro()` returns true.
+ * Shared across tests that need a Pro-tier user.
+ */
+function makeProUser(): User
+{
+    $user = User::factory()->create(['stripe_id' => 'cus_test_'.uniqid()]);
+    Subscription::create([
+        'user_id' => $user->id,
+        'type' => 'default',
+        'stripe_id' => 'sub_test_'.uniqid(),
+        'stripe_status' => 'active',
+        'stripe_price' => 'price_fake',
+    ]);
+
+    return $user;
 }

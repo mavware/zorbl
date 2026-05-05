@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Enums\WebhookEvent;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\StorePuzzleCommentRequest;
 use App\Http\Resources\Api\V1\PuzzleCommentResource;
+use App\Jobs\DispatchWebhooks;
 use App\Models\Crossword;
 use App\Models\PuzzleComment;
 use App\Notifications\NewPuzzleComment;
@@ -39,6 +41,14 @@ class PuzzleCommentController extends Controller
         if ($crosswordOwner && $crosswordOwner->id !== $request->user()->id) {
             $crosswordOwner->notify(new NewPuzzleComment($comment, $request->user()));
         }
+
+        DispatchWebhooks::dispatch(WebhookEvent::PuzzleCommented, $crossword->user_id, [
+            'puzzle_id' => $crossword->id,
+            'puzzle_title' => $crossword->title,
+            'commenter_id' => $request->user()->id,
+            'commenter_name' => $request->user()->name,
+            'comment_body' => $comment->body,
+        ]);
 
         return (new PuzzleCommentResource($comment->load('user:id,name')))
             ->response()

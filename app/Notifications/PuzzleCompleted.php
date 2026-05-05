@@ -36,31 +36,31 @@ class PuzzleCompleted extends Notification implements ShouldQueue
             'puzzle' => $this->crossword->title ?: __('Untitled Puzzle'),
         ]);
 
-        if ($this->solveTimeSeconds !== null) {
-            $title .= ' '.__('in :time', ['time' => $this->formattedSolveTime()]);
-        }
-
         return [
             'type' => 'puzzle.completed',
             'title' => $title,
-            'body' => null,
+            'body' => $this->formattedSolveTime(),
             'url' => route('crosswords.solver', $this->crossword),
             'crossword_id' => $this->crossword->id,
             'solver_id' => $this->solver->id,
         ];
     }
 
-    private function formattedSolveTime(): string
+    private function formattedSolveTime(): ?string
     {
+        if ($this->solveTimeSeconds === null) {
+            return null;
+        }
+
         $seconds = $this->solveTimeSeconds;
         $hours = intdiv($seconds, 3600);
         $minutes = intdiv($seconds % 3600, 60);
         $secs = $seconds % 60;
 
         if ($hours > 0) {
-            return sprintf('%d:%02d:%02d', $hours, $minutes, $secs);
+            return __('Solved in :time', ['time' => sprintf('%d:%02d:%02d', $hours, $minutes, $secs)]);
         }
 
-        return sprintf('%d:%02d', $minutes, $secs);
+        return __('Solved in :time', ['time' => sprintf('%d:%02d', $minutes, $secs)]);
     }
 }

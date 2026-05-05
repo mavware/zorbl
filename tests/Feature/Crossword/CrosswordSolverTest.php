@@ -213,3 +213,35 @@ test('solver loads cell background colors from styles', function () {
         ->assertOk()
         ->assertSet('styles', $styles);
 });
+
+test('solver renders share button when puzzle is solved', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create(['width' => 3, 'height' => 3]);
+
+    PuzzleAttempt::factory()->for($user)->create([
+        'crossword_id' => $crossword->id,
+        'is_completed' => true,
+        'solve_time_seconds' => 120,
+        'completed_at' => now(),
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::crosswords.solver', ['crossword' => $crossword])
+        ->assertOk()
+        ->assertSet('isSolved', true)
+        ->assertSeeHtml('shareResults()')
+        ->assertSeeHtml('shareCopied');
+});
+
+test('solver renders share button in celebration modal', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->published()->for($user)->create(['width' => 3, 'height' => 3]);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::crosswords.solver', ['crossword' => $crossword])
+        ->assertOk()
+        ->assertSeeHtml('shareCopied ?')
+        ->assertSeeHtml('shareResults()');
+});
