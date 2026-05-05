@@ -58,6 +58,49 @@ test('blank copyright name is stored as null', function () {
     expect($user->refresh()->copyright_name)->toBeNull();
 });
 
+test('bio can be updated', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::settings.profile')
+        ->set('bio', 'I love building crossword puzzles!')
+        ->set('name', $user->name)
+        ->set('email', $user->email)
+        ->call('updateProfileInformation')
+        ->assertHasNoErrors();
+
+    expect($user->refresh()->bio)->toBe('I love building crossword puzzles!');
+});
+
+test('blank bio is stored as null', function () {
+    $user = User::factory()->create(['bio' => 'Old bio']);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::settings.profile')
+        ->set('bio', '')
+        ->set('name', $user->name)
+        ->set('email', $user->email)
+        ->call('updateProfileInformation')
+        ->assertHasNoErrors();
+
+    expect($user->refresh()->bio)->toBeNull();
+});
+
+test('bio cannot exceed 500 characters', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::settings.profile')
+        ->set('bio', str_repeat('a', 501))
+        ->set('name', $user->name)
+        ->set('email', $user->email)
+        ->call('updateProfileInformation')
+        ->assertHasErrors(['bio' => 'max']);
+});
+
 test('email verification status is unchanged when email address is unchanged', function () {
     $user = User::factory()->create();
 
