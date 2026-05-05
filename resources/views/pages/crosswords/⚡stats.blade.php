@@ -2,6 +2,7 @@
 
 use App\Models\PuzzleAttempt;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
@@ -74,6 +75,54 @@ new #[Title('Solve Statistics')] class extends Component {
             ->sortKeys()
             ->values()
             ->all();
+    }
+
+    #[Computed]
+    public function communityAverages(): array
+    {
+        $crosswordIds = $this->completedAttempts->pluck('crossword_id')->unique();
+
+        if ($crosswordIds->isEmpty()) {
+            return [];
+        }
+
+        return DB::table('puzzle_attempts')
+            ->select('crossword_id', DB::raw('AVG(solve_time_seconds) as avg_time'), DB::raw('COUNT(*) as solver_count'))
+            ->where('is_completed', true)
+            ->whereNotNull('solve_time_seconds')
+            ->whereIn('crossword_id', $crosswordIds)
+            ->groupBy('crossword_id')
+            ->get()
+            ->keyBy('crossword_id')
+            ->map(fn ($row) => [
+                'avg_time' => (int) round($row->avg_time),
+                'solver_count' => $row->solver_count,
+            ])
+            ->all();
+    }
+
+    #[Computed]
+    public function fasterThanAverageCount(): int
+    {
+        $averages = $this->communityAverages;
+
+        return $this->completedAttempts->filter(function (PuzzleAttempt $attempt) use ($averages) {
+            $avg = $averages[$attempt->crossword_id] ?? null;
+
+            return $avg && $avg['solver_count'] > 1 && $attempt->solve_time_seconds < $avg['avg_time'];
+        })->count();
+    }
+
+    #[Computed]
+    public function puzzlesWithCommunityData(): int
+    {
+        $averages = $this->communityAverages;
+
+        return $this->completedAttempts->filter(function (PuzzleAttempt $attempt) use ($averages) {
+            $avg = $averages[$attempt->crossword_id] ?? null;
+
+            return $avg && $avg['solver_count'] > 1;
+        })->count();
     }
 
     public function formatTime(?int $seconds): string
@@ -158,7 +207,7 @@ new #[Title('Solve Statistics')] class extends Component {
     </div>
 
     {{-- Summary Cards --}}
-    <div class="grid gap-4 sm:grid-cols-3">
+    <div class="grid gap-4 sm:grid-cols-4">
         <div class="border-line rounded-xl border p-5">
             <div class="flex items-center gap-3">
                 <div class="flex size-10 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/30">
@@ -197,6 +246,25 @@ new #[Title('Solve Statistics')] class extends Component {
                 </div>
             </div>
         </div>
+
+        @if($this->puzzlesWithCommunityData > 0)
+            <div class="border-line rounded-xl border p-5">
+                <div class="flex items-center gap-3">
+                    <div class="flex size-10 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-900/30">
+                        <flux:icon name="arrow-trending-up" class="size-5 text-purple-600 dark:text-purple-400" />
+                    </div>
+                    <div>
+                        <flux:text size="sm" class="text-zinc-600">{{ __('Faster Than Avg') }}</flux:text>
+                        <div class="text-2xl font-bold text-fg">
+                            {{ round(($this->fasterThanAverageCount / $this->puzzlesWithCommunityData) * 100) }}%
+                        </div>
+                        <flux:text size="sm" class="text-zinc-500">
+                            {{ __(':count of :total puzzles', ['count' => $this->fasterThanAverageCount, 'total' => $this->puzzlesWithCommunityData]) }}
+                        </flux:text>
+                    </div>
+                </div>
+            </div>
+        @endif
     </div>
 
     {{-- Average by Size --}}
@@ -242,11 +310,14 @@ new #[Title('Solve Statistics')] class extends Component {
                     <flux:table.column>{{ __('Puzzle') }}</flux:table.column>
                     <flux:table.column>{{ __('Size') }}</flux:table.column>
                     <flux:table.column sortable :sorted="$sortField === 'solve_time_seconds'" :direction="$sortDirection" wire:click="sortBy('solve_time_seconds')" align="end">{{ __('Solve Time') }}</flux:table.column>
+                    <flux:table.column align="end">{{ __('vs. Avg') }}</flux:table.column>
                     <flux:table.column sortable :sorted="$sortField === 'completed_at'" :direction="$sortDirection" wire:click="sortBy('completed_at')" align="end">{{ __('Completed') }}</flux:table.column>
                 </flux:table.columns>
 
                 <flux:table.rows>
                     @foreach($this->completedAttempts as $attempt)
+                        @php($communityAvg = $this->communityAverages[$attempt->crossword_id] ?? null)
+                        @php($diff = $communityAvg && $communityAvg['solver_count'] > 1 ? $attempt->solve_time_seconds - $communityAvg['avg_time'] : null)
                         <flux:table.row :key="$attempt->id">
                             <flux:table.cell variant="strong">
                                 <a href="{{ route('crosswords.solver', $attempt->crossword_id) }}" wire:navigate class="hover:text-blue-600 dark:hover:text-blue-400">
@@ -255,6 +326,19 @@ new #[Title('Solve Statistics')] class extends Component {
                             </flux:table.cell>
                             <flux:table.cell>{{ $attempt->crossword->width }}&times;{{ $attempt->crossword->height }}</flux:table.cell>
                             <flux:table.cell align="end" class="font-mono">{{ $this->formatTime($attempt->solve_time_seconds) }}</flux:table.cell>
+                            <flux:table.cell align="end" class="font-mono text-sm">
+                                @if($diff !== null)
+                                    @if($diff < 0)
+                                        <span class="text-emerald-600 dark:text-emerald-400">{{ $this->formatTime(abs($diff)) }} {{ __('faster') }}</span>
+                                    @elseif($diff > 0)
+                                        <span class="text-zinc-500">{{ $this->formatTime($diff) }} {{ __('slower') }}</span>
+                                    @else
+                                        <span class="text-zinc-500">{{ __('same') }}</span>
+                                    @endif
+                                @else
+                                    <span class="text-zinc-400 dark:text-zinc-600">—</span>
+                                @endif
+                            </flux:table.cell>
                             <flux:table.cell align="end">{{ $attempt->completed_at?->diffForHumans() ?? '—' }}</flux:table.cell>
                         </flux:table.row>
                     @endforeach

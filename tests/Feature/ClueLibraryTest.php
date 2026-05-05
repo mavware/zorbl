@@ -4,6 +4,7 @@ use App\Models\ClueEntry;
 use App\Models\ClueReport;
 use App\Models\Crossword;
 use App\Models\User;
+use Illuminate\Support\Facades\Cache;
 use Livewire\Livewire;
 
 test('authenticated users can view the clue library', function () {
@@ -17,6 +18,69 @@ test('authenticated users can view the clue library', function () {
 test('guests cannot view the clue library', function () {
     $this->get(route('clues.index'))
         ->assertRedirect();
+});
+
+test('default clue library listing serves its total from cache', function () {
+    // Seed a stale total in the cache; the page should trust it instead of
+    // running its own COUNT(*) on the (potentially huge) clue_entries table.
+    Cache::put('clue-entries:default-count', 99999, 600);
+
+    $user = User::factory()->create();
+
+    $component = Livewire::actingAs($user)->test('pages::clues.index');
+    $clues = $component->instance()->clues;
+
+    expect($clues->total())->toBe(99999);
+});
+
+test('adding a clue busts the cached total', function () {
+    // Pre-seed the cache with a stale value. After adding a clue, the page
+    // re-renders and re-populates the cache with the fresh count — so the
+    // contract is "the cached value reflects reality after the action", not
+    // "the key was deleted".
+    Cache::put('clue-entries:default-count', 99999, 600);
+
+    $user = User::factory()->create();
+
+    Livewire::actingAs($user)
+        ->test('pages::clues.index')
+        ->set('newAnswer', 'CACHE')
+        ->set('newClue', 'Stash for later')
+        ->call('addClue');
+
+    expect(Cache::get('clue-entries:default-count'))->toBe(1);
+});
+
+test('deleting a clue busts the cached total', function () {
+    $user = User::factory()->create();
+    $entry = ClueEntry::create([
+        'answer' => 'GONE',
+        'clue' => 'No longer here',
+        'user_id' => $user->id,
+    ]);
+
+    Cache::put('clue-entries:default-count', 99999, 600);
+
+    Livewire::actingAs($user)
+        ->test('pages::clues.index')
+        ->call('deleteClue', $entry->id);
+
+    expect(Cache::get('clue-entries:default-count'))->toBe(0);
+});
+
+test('searching the clue library bypasses the cached count', function () {
+    Cache::put('clue-entries:default-count', 99999, 600);
+
+    $user = User::factory()->create();
+    ClueEntry::create(['answer' => 'OCEAN', 'clue' => 'Salt water', 'user_id' => $user->id]);
+
+    $component = Livewire::actingAs($user)
+        ->test('pages::clues.index')
+        ->set('search', 'OCEAN');
+
+    // With the search applied, the paginator must use the live count (1),
+    // not the cached default of 99999.
+    expect($component->instance()->clues->total())->toBe(1);
 });
 
 test('users can add standalone clues', function () {

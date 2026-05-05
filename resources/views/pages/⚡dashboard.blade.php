@@ -2,6 +2,7 @@
 
 use App\Models\Crossword;
 use App\Models\CrosswordLike;
+use App\Models\Follow;
 use App\Models\PuzzleAttempt;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -90,6 +91,30 @@ new #[Title('Dashboard')] class extends Component {
     }
 
     #[Computed]
+    public function followingPuzzles()
+    {
+        $followingIds = Auth::user()->following()->pluck('users.id');
+
+        if ($followingIds->isEmpty()) {
+            return collect();
+        }
+
+        return Crossword::where('is_published', true)
+            ->whereIn('user_id', $followingIds)
+            ->with('user:id,name')
+            ->withCount('likes')
+            ->latest()
+            ->limit(6)
+            ->get();
+    }
+
+    #[Computed]
+    public function followingCount(): int
+    {
+        return Auth::user()->following()->count();
+    }
+
+    #[Computed]
     public function totalPublishedPuzzles(): int
     {
         return Cache::remember('stats:published_puzzles', 300, fn () => Crossword::where('is_published', true)->count());
@@ -152,8 +177,17 @@ new #[Title('Dashboard')] class extends Component {
                                     &middot;
                                     {{ $attempt->updated_at->diffForHumans() }}
                                 </flux:text>
+                                @php($solveProgress = $attempt->solveProgress())
+                                <div class="mt-1.5 flex items-center gap-2">
+                                    <div class="h-1.5 flex-1 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-700">
+                                        <div
+                                            class="h-full rounded-full {{ $solveProgress >= 50 ? 'bg-sky-500' : 'bg-zinc-400' }}"
+                                            style="width: {{ $solveProgress }}%"
+                                        ></div>
+                                    </div>
+                                    <span class="text-xs tabular-nums text-zinc-500">{{ $solveProgress }}%</span>
+                                </div>
                             </div>
-                            <flux:icon name="chevron-right" class="size-4 shrink-0 text-zinc-500" />
                         </a>
                     @endforeach
                 </div>
@@ -202,6 +236,57 @@ new #[Title('Dashboard')] class extends Component {
             @endif
         </div>
     </div>
+
+    {{-- From People You Follow --}}
+    @if($this->followingCount > 0)
+        <div class="border-line rounded-xl border p-5">
+            <div class="mb-4 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <flux:heading size="lg">{{ __('From People You Follow') }}</flux:heading>
+                    <flux:badge size="sm" color="blue">{{ $this->followingCount }}</flux:badge>
+                </div>
+                <flux:button variant="ghost" size="sm" :href="route('crosswords.solving')" wire:navigate>
+                    {{ __('Browse All') }}
+                </flux:button>
+            </div>
+
+            @if($this->followingPuzzles->isEmpty())
+                <div class="border-line-strong flex flex-col items-center justify-center rounded-lg border border-dashed py-8">
+                    <flux:icon name="clock" class="mb-2 size-8 text-zinc-500" />
+                    <flux:text size="sm" class="text-zinc-500">{{ __('No new puzzles from people you follow yet.') }}</flux:text>
+                </div>
+            @else
+                <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    @foreach($this->followingPuzzles as $crossword)
+                        <a
+                            href="{{ route('crosswords.solver', $crossword) }}"
+                            wire:navigate
+                            class="border-line group rounded-xl border p-4 transition-colors hover:border-zinc-400 dark:hover:border-zinc-600"
+                        >
+                            <div class="mb-3 flex justify-center">
+                                <x-grid-thumbnail :grid="$crossword->grid" :width="$crossword->width" :height="$crossword->height" :cell-size="5" :max-width="80" />
+                            </div>
+                            <flux:heading size="sm" class="truncate group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                                {{ $crossword->title ?: __('Untitled Puzzle') }}
+                            </flux:heading>
+                            <flux:text size="sm" class="mt-1 text-zinc-500">
+                                {{ __('by :author', ['author' => $crossword->user->name ?? __('Unknown')]) }}
+                                &middot;
+                                {{ $crossword->width }}&times;{{ $crossword->height }}
+                            </flux:text>
+                            <div class="mt-1.5 flex items-center gap-2 text-xs text-zinc-500">
+                                <span class="flex items-center gap-0.5">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="size-3.5 text-red-400" viewBox="0 0 24 24" fill="currentColor"><path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" /></svg>
+                                    {{ $crossword->likes_count }}
+                                </span>
+                                <span>{{ $crossword->created_at->diffForHumans() }}</span>
+                            </div>
+                        </a>
+                    @endforeach
+                </div>
+            @endif
+        </div>
+    @endif
 
     {{-- Trending & Newest --}}
     <div class="grid gap-6 lg:grid-cols-2">

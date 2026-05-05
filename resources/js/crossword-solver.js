@@ -55,6 +55,7 @@ export function crosswordSolver({
         achievementToasts: [],
         showCelebration: false,
         celebrationTime: '',
+        shareCopied: false,
         persistence: persistence || null,
 
         init() {
@@ -596,8 +597,6 @@ export function crosswordSolver({
 
             return lines.join('\n');
         },
-
-        shareCopied: false,
 
         async shareResults() {
             const text = this.generateShareText();
