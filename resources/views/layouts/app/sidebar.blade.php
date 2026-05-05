@@ -32,6 +32,15 @@
                     </flux:sidebar.item>
                 </flux:sidebar.group>
 
+                <flux:sidebar.group :heading="__('Community')" class="grid">
+                    <flux:sidebar.item icon="users" :href="route('constructors.index')" :current="request()->routeIs('constructors.*')" wire:navigate>
+                        {{ __('Constructors') }}
+                    </flux:sidebar.item>
+                    <flux:sidebar.item icon="trophy" :href="route('contests.index')" :current="request()->routeIs('contests.*')" wire:navigate>
+                        {{ __('Contests') }}
+                    </flux:sidebar.item>
+                </flux:sidebar.group>
+
                 @if (auth()->user()->hasRole('Admin'))
                     <flux:sidebar.group :heading="__('Admin')" class="grid">
                         <flux:sidebar.item icon="map" :href="route('roadmap.index')" :current="request()->routeIs('roadmap.index')" wire:navigate>
