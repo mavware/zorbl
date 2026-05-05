@@ -231,7 +231,7 @@ test('solver renders share button when puzzle is solved', function () {
         ->assertOk()
         ->assertSet('isSolved', true)
         ->assertSeeHtml('shareResults()')
-        ->assertSeeHtml('shareButtonLabel');
+        ->assertSeeHtml('shareCopied');
 });
 
 test('solver renders share button in celebration modal', function () {
@@ -242,6 +242,6 @@ test('solver renders share button in celebration modal', function () {
 
     Livewire::test('pages::crosswords.solver', ['crossword' => $crossword])
         ->assertOk()
-        ->assertSeeHtml('x-text="shareButtonLabel"')
+        ->assertSeeHtml('shareCopied ?')
         ->assertSeeHtml('shareResults()');
 });

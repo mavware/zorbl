@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Enums\WebhookEvent;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\UpsertAttemptRequest;
 use App\Http\Resources\Api\V1\PuzzleAttemptResource;
+use App\Jobs\DispatchWebhooks;
 use App\Models\Crossword;
 use App\Models\PuzzleAttempt;
 use App\Notifications\PuzzleCompleted;
@@ -98,6 +100,23 @@ class PuzzleAttemptController extends Controller
             if ($constructor && $constructor->id !== $user->id) {
                 $constructor->notify(new PuzzleCompleted($crossword, $user, $data['solve_time_seconds'] ?? null));
             }
+
+            DispatchWebhooks::dispatch(WebhookEvent::PuzzleCompleted, $crossword->user_id, [
+                'puzzle_id' => $crossword->id,
+                'puzzle_title' => $crossword->title,
+                'solver_id' => $user->id,
+                'solver_name' => $user->name,
+                'solve_time_seconds' => $attempt->solve_time_seconds,
+                'completed_at' => $attempt->completed_at?->toIso8601String(),
+            ]);
+        } elseif ($isCreating) {
+            DispatchWebhooks::dispatch(WebhookEvent::PuzzleAttemptStarted, $crossword->user_id, [
+                'puzzle_id' => $crossword->id,
+                'puzzle_title' => $crossword->title,
+                'solver_id' => $user->id,
+                'solver_name' => $user->name,
+                'started_at' => $attempt->started_at?->toIso8601String(),
+            ]);
         }
 
         $resource = new PuzzleAttemptResource($attempt);

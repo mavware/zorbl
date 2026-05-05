@@ -452,6 +452,8 @@ new #[Title('Solve Crossword')] class extends Component {
         initialSolved: @js($isSolved),
         initialPencilCells: @js($pencilCells),
         puzzleTitle: @js($title),
+        shareTitle: @js($title),
+        shareUrl: @js(route('puzzles.solve', $crosswordId)),
     })"
     x-on:progress-saved.window="onSaved()"
     x-on:achievements-earned.window="showAchievements($event.detail.achievements)"
@@ -664,9 +666,18 @@ new #[Title('Solve Crossword')] class extends Component {
                         <button
                             x-on:click="shareResults()"
                             class="rounded-md px-2 py-0.5 text-xs font-medium text-emerald-600 transition-colors hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/30"
-                            x-text="shareButtonLabel"
+                            x-text="shareCopied ? '{{ __('Copied!') }}' : '{{ __('Share Results') }}'"
                         ></button>
                     </span>
+                </template>
+                <template x-if="solved">
+                    <button
+                        x-on:click="shareResults()"
+                        class="ml-1 inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-xs font-medium text-blue-600 transition-colors hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/30"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z" /></svg>
+                        <span x-text="shareCopied ? '{{ __('Copied!') }}' : '{{ __('Share') }}'"></span>
+                    </button>
                 </template>
             </div>
         </div>
@@ -1150,19 +1161,10 @@ new #[Title('Solve Crossword')] class extends Component {
                 <div class="flex flex-col gap-2">
                     <button
                         x-on:click="shareResults()"
-                        class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:bg-emerald-600 dark:hover:bg-emerald-500 dark:focus:ring-offset-zinc-800"
+                        class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-blue-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:bg-blue-600 dark:hover:bg-blue-500 dark:focus:ring-offset-zinc-800"
                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" class="size-4" viewBox="0 0 20 20" fill="currentColor"><path d="M13 4.5a2.5 2.5 0 11.702 4.89L8.45 12.3a2.5 2.5 0 11-.36-.891l5.252-2.91A2.5 2.5 0 0113 4.5zm-8 6a1 1 0 100 2 1 1 0 000-2zm8-5a1 1 0 100 2 1 1 0 000-2z"/></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z" /></svg>
                         <span x-text="shareCopied ? '{{ __('Copied!') }}' : '{{ __('Share Results') }}'"></span>
-                    </button>
-                    <button
-                        x-on:click="shareResults()"
-                        class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:bg-emerald-600 dark:hover:bg-emerald-500 dark:focus:ring-offset-zinc-800"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" class="size-4" viewBox="0 0 20 20" fill="currentColor">
-                            <path d="M13 4.5a2.5 2.5 0 11.702 4.89L8.839 12.11a2.5 2.5 0 11-.399-.964l4.863-2.72A2.5 2.5 0 0113 4.5zM6.5 10a1.5 1.5 0 100 3 1.5 1.5 0 000-3z"/>
-                        </svg>
-                        <span x-text="shareButtonLabel"></span>
                     </button>
                     <a
                         href="{{ route('crosswords.solving') }}"

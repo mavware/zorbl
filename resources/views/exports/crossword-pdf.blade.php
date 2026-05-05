@@ -160,7 +160,7 @@
         @if ($copyright)
             <p class="meta">&copy; {{ $copyright }}</p>
         @endif
-        @if ($notes)
+        @if ($notes ?? null)
             <p class="notes">{{ $notes }}</p>
         @endif
     </div>
@@ -211,7 +211,7 @@
     </div>
 
     {{-- Clues: separate page for large puzzles, inline for small ones --}}
-    @if ($forceCluePageBreak)
+    @if ($forceCluePageBreak ?? false)
         <div class="page-break"></div>
     @endif
 
