@@ -5,8 +5,10 @@ use App\Enums\PuzzleType;
 use App\Models\ClueEntry;
 use App\Models\Crossword;
 use App\Models\Tag;
+use App\Notifications\NewPuzzlePublished;
 use App\Services\ClueHarvester;
 use App\Livewire\Concerns\ExportsCrossword;
+use Illuminate\Support\Facades\Notification;
 use Zorbl\CrosswordIO\GridNumberer;
 use App\Services\WordSuggester;
 use App\Services\DifficultyRater;
@@ -378,13 +380,18 @@ class extends Component {
         if ($this->isPublished) {
             $harvester->harvest($crossword);
 
-            // Calculate and store difficulty rating
             $rater = app(DifficultyRater::class);
             $rating = $rater->rate($crossword);
             $crossword->update([
                 'difficulty_score' => $rating['score'],
                 'difficulty_label' => $rating['label'],
             ]);
+
+            $user = Auth::user();
+            $followers = $user->followers;
+            if ($followers->isNotEmpty()) {
+                Notification::send($followers, new NewPuzzlePublished($crossword, $user));
+            }
         } else {
             $harvester->purge($crossword);
         }
