@@ -5,17 +5,78 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 
 new #[Title('Solving')] class extends Component {
+    #[Url]
+    public string $filter = '';
+
+    #[Url]
+    public string $sortBy = 'recent';
+
+    #[Url]
+    public string $search = '';
+
     #[Computed]
     public function attempts()
     {
-        return Auth::user()
+        $query = Auth::user()
             ->puzzleAttempts()
-            ->with('crossword.user')
-            ->latest('updated_at')
-            ->get();
+            ->with('crossword.user');
+
+        if ($this->filter === 'in_progress') {
+            $query->where('is_completed', false);
+        } elseif ($this->filter === 'completed') {
+            $query->where('is_completed', true);
+        }
+
+        if ($this->search !== '') {
+            $term = $this->search;
+            $query->whereHas('crossword', fn ($q) => $q->whereLike('title', "%{$term}%"));
+        }
+
+        match ($this->sortBy) {
+            'oldest' => $query->oldest('updated_at'),
+            'fastest' => $query->where('is_completed', true)
+                ->whereNotNull('solve_time_seconds')
+                ->orderBy('solve_time_seconds', 'asc'),
+            default => $query->latest('updated_at'),
+        };
+
+        return $query->get();
+    }
+
+    #[Computed]
+    public function attemptCounts(): array
+    {
+        $base = Auth::user()->puzzleAttempts();
+
+        if ($this->search !== '') {
+            $term = $this->search;
+            $base->whereHas('crossword', fn ($q) => $q->whereLike('title', "%{$term}%"));
+        }
+
+        return [
+            'all' => (clone $base)->count(),
+            'in_progress' => (clone $base)->where('is_completed', false)->count(),
+            'completed' => (clone $base)->where('is_completed', true)->count(),
+        ];
+    }
+
+    public function updatedFilter(): void
+    {
+        unset($this->attempts, $this->attemptCounts);
+    }
+
+    public function updatedSortBy(): void
+    {
+        unset($this->attempts);
+    }
+
+    public function updatedSearch(): void
+    {
+        unset($this->attempts, $this->attemptCounts);
     }
 
     public function removeAttempt(int $attemptId): void
@@ -25,13 +86,13 @@ new #[Title('Solving')] class extends Component {
         Gate::authorize('delete', $attempt);
 
         $attempt->delete();
-        unset($this->attempts);
+        unset($this->attempts, $this->attemptCounts);
     }
 }
 ?>
 
 <div class="space-y-8">
-    {{-- In Progress --}}
+    {{-- My Attempts --}}
     <div class="space-y-4">
         <div class="flex items-center justify-between">
             <flux:heading size="xl">{{ __('Solving') }}</flux:heading>
@@ -40,11 +101,47 @@ new #[Title('Solving')] class extends Component {
             </flux:button>
         </div>
 
+        {{-- Filters --}}
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <flux:radio.group wire:model.live="filter" variant="segmented" size="sm">
+                <flux:radio value="" label="{{ __('All') }} ({{ $this->attemptCounts['all'] }})" />
+                <flux:radio value="in_progress" label="{{ __('In Progress') }} ({{ $this->attemptCounts['in_progress'] }})" />
+                <flux:radio value="completed" label="{{ __('Completed') }} ({{ $this->attemptCounts['completed'] }})" />
+            </flux:radio.group>
+
+            <div class="flex items-center gap-2">
+                <flux:input
+                    icon="magnifying-glass"
+                    placeholder="{{ __('Search puzzles...') }}"
+                    wire:model.live.debounce.300ms="search"
+                    size="sm"
+                    class="w-48"
+                />
+                <flux:select wire:model.live="sortBy" size="sm" class="w-36">
+                    <flux:select.option value="recent">{{ __('Recent') }}</flux:select.option>
+                    <flux:select.option value="oldest">{{ __('Oldest') }}</flux:select.option>
+                    <flux:select.option value="fastest">{{ __('Fastest') }}</flux:select.option>
+                </flux:select>
+            </div>
+        </div>
+
         @if($this->attempts->isEmpty())
             <div class="border-line-strong flex flex-col items-center justify-center rounded-xl border border-dashed py-12">
                 <flux:icon name="puzzle-piece" class="mb-4 size-12 text-zinc-500" />
-                <flux:heading size="lg" class="mb-2">{{ __('No puzzles in progress') }}</flux:heading>
-                <flux:text>{{ __('Browse published puzzles below and start solving.') }}</flux:text>
+                <flux:heading size="lg" class="mb-2">
+                    @if($search !== '' || $filter !== '')
+                        {{ __('No matching puzzles') }}
+                    @else
+                        {{ __('No puzzles in progress') }}
+                    @endif
+                </flux:heading>
+                <flux:text>
+                    @if($search !== '' || $filter !== '')
+                        {{ __('Try adjusting your filters or search terms.') }}
+                    @else
+                        {{ __('Browse published puzzles below and start solving.') }}
+                    @endif
+                </flux:text>
             </div>
         @else
             <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

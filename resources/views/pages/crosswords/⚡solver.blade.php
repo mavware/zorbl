@@ -5,6 +5,7 @@ use App\Models\CrosswordLike;
 use App\Models\FavoriteList;
 use App\Models\PuzzleAttempt;
 use App\Models\PuzzleComment;
+use App\Notifications\PuzzleCompleted;
 use App\Services\AchievementService;
 use App\Services\ContestService;
 use App\Livewire\Concerns\ExportsCrossword;
@@ -71,6 +72,62 @@ new #[Title('Solve Crossword')] class extends Component {
     public string $commentBody = '';
 
     public int $commentRating = 0;
+
+    #[Computed]
+    public function communityStats(): ?array
+    {
+        if (! $this->isSolved) {
+            return null;
+        }
+
+        $attempt = PuzzleAttempt::find($this->attemptId);
+        if (! $attempt || $attempt->solve_time_seconds === null) {
+            return null;
+        }
+
+        $crossword = Crossword::find($this->crosswordId);
+        $avg = $crossword?->averageSolveTimeSeconds();
+        $totalSolvers = PuzzleAttempt::where('crossword_id', $this->crosswordId)
+            ->where('is_completed', true)
+            ->whereNotNull('solve_time_seconds')
+            ->count();
+
+        if ($avg === null || $totalSolvers < 2) {
+            return null;
+        }
+
+        $fasterCount = PuzzleAttempt::where('crossword_id', $this->crosswordId)
+            ->where('is_completed', true)
+            ->whereNotNull('solve_time_seconds')
+            ->where('id', '!=', $this->attemptId)
+            ->where('solve_time_seconds', '>', $attempt->solve_time_seconds)
+            ->count();
+
+        $percentile = (int) round(($fasterCount / ($totalSolvers - 1)) * 100);
+
+        return [
+            'your_time' => $attempt->solve_time_seconds,
+            'your_time_formatted' => $attempt->formattedSolveTime() ?? '—',
+            'avg_time' => $avg,
+            'avg_time_formatted' => $this->formatSeconds($avg),
+            'diff' => $attempt->solve_time_seconds - $avg,
+            'percentile' => $percentile,
+            'total_solvers' => $totalSolvers,
+        ];
+    }
+
+    private function formatSeconds(int $seconds): string
+    {
+        $hours = intdiv($seconds, 3600);
+        $minutes = intdiv($seconds % 3600, 60);
+        $secs = $seconds % 60;
+
+        if ($hours > 0) {
+            return sprintf('%d:%02d:%02d', $hours, $minutes, $secs);
+        }
+
+        return sprintf('%d:%02d', $minutes, $secs);
+    }
 
     #[Computed]
     public function comments()
@@ -356,6 +413,13 @@ new #[Title('Solve Crossword')] class extends Component {
             if ($crossword && $crossword->contests()->exists()) {
                 app(ContestService::class)->processContestSolve(Auth::user(), $crossword);
             }
+
+            $crossword ??= Crossword::find($this->crosswordId);
+            $constructor = $crossword?->user;
+
+            if ($constructor && $constructor->id !== Auth::id()) {
+                $constructor->notify(new PuzzleCompleted($crossword, Auth::user(), $elapsedSeconds));
+            }
         }
 
         $attempt->update($data);
@@ -400,7 +464,7 @@ new #[Title('Solve Crossword')] class extends Component {
     {{-- Toolbar --}}
     <div class="mb-4 flex flex-wrap items-center gap-2">
         <div class="flex flex-1 items-center gap-3">
-            <flux:heading size="lg">{{ $title }}</flux:heading>
+            <flux:heading size="lg" data-puzzle-title>{{ $title }}</flux:heading>
             @if(!$isOwner && $authorName)
                 <flux:text size="sm" class="text-zinc-500">
                     {{ __('by') }}
@@ -568,6 +632,17 @@ new #[Title('Solve Crossword')] class extends Component {
                 </div>
             @endif
 
+            {{-- Share button (visible when solved) --}}
+            <template x-if="solved">
+                <button
+                    x-on:click="shareResults()"
+                    :title="shareCopied ? '{{ __('Copied!') }}' : '{{ __('Share results') }}'"
+                    class="rounded-lg p-1.5 text-emerald-500 transition-colors hover:text-emerald-600 dark:hover:text-emerald-400"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 20 20" fill="currentColor"><path d="M13 4.5a2.5 2.5 0 11.702 4.89L8.45 12.3a2.5 2.5 0 11-.36-.891l5.252-2.91A2.5 2.5 0 0113 4.5zm-8 6a1 1 0 100 2 1 1 0 000-2zm8-5a1 1 0 100 2 1 1 0 000-2z"/></svg>
+                </button>
+            </template>
+
             {{-- Save status --}}
             <div class="flex items-center gap-1 pl-2 text-sm text-zinc-500">
                 <template x-if="pencilMode && !solved">
@@ -583,7 +658,14 @@ new #[Title('Solve Crossword')] class extends Component {
                     </span>
                 </template>
                 <template x-if="solved">
-                    <span class="font-semibold text-emerald-500">{{ __('Solved!') }}</span>
+                    <span class="flex items-center gap-1.5">
+                        <span class="font-semibold text-emerald-500">{{ __('Solved!') }}</span>
+                        <button
+                            x-on:click="shareResults()"
+                            class="rounded-md px-2 py-0.5 text-xs font-medium text-emerald-600 transition-colors hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/30"
+                            x-text="shareButtonLabel"
+                        ></button>
+                    </span>
                 </template>
             </div>
         </div>
@@ -784,6 +866,52 @@ new #[Title('Solve Crossword')] class extends Component {
             </div>
         </div>
     </div>
+
+    {{-- Performance Comparison (visible when solved with community data) --}}
+    @if($isSolved && $this->communityStats)
+        @php($stats = $this->communityStats)
+        <div class="mt-6 rounded-xl border {{ $stats['diff'] < 0 ? 'border-emerald-200 bg-emerald-50/50 dark:border-emerald-900/30 dark:bg-emerald-950/20' : 'border-line bg-elevated' }} p-5" wire:key="performance-section">
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="flex size-10 items-center justify-center rounded-lg {{ $stats['diff'] < 0 ? 'bg-emerald-100 dark:bg-emerald-900/40' : 'bg-zinc-100 dark:bg-zinc-800' }}">
+                        @if($stats['diff'] < 0)
+                            <flux:icon name="arrow-trending-up" class="size-5 text-emerald-600 dark:text-emerald-400" />
+                        @else
+                            <svg xmlns="http://www.w3.org/2000/svg" class="size-5 text-zinc-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        @endif
+                    </div>
+                    <div>
+                        @if($stats['diff'] < 0)
+                            <div class="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+                                {{ __('Faster than average!') }}
+                            </div>
+                        @elseif($stats['diff'] > 0)
+                            <div class="text-sm font-semibold text-fg">
+                                {{ __('Keep practicing!') }}
+                            </div>
+                        @else
+                            <div class="text-sm font-semibold text-fg">
+                                {{ __('Right on target!') }}
+                            </div>
+                        @endif
+                        <flux:text size="sm" class="text-zinc-500">
+                            {{ __('Faster than :pct% of :count solvers', ['pct' => $stats['percentile'], 'count' => $stats['total_solvers']]) }}
+                        </flux:text>
+                    </div>
+                </div>
+                <div class="flex items-center gap-6">
+                    <div class="text-center">
+                        <flux:text size="sm" class="text-zinc-500">{{ __('Your Time') }}</flux:text>
+                        <div class="font-mono text-sm font-semibold text-fg">{{ $stats['your_time_formatted'] }}</div>
+                    </div>
+                    <div class="text-center">
+                        <flux:text size="sm" class="text-zinc-500">{{ __('Average') }}</flux:text>
+                        <div class="font-mono text-sm font-semibold text-fg">{{ $stats['avg_time_formatted'] }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
 
     {{-- Leaderboard (visible when solved) --}}
     @if($isSolved && count($this->leaderboard) > 1)
@@ -992,16 +1120,32 @@ new #[Title('Solve Crossword')] class extends Component {
 
                 {{-- Buttons --}}
                 <div class="flex flex-col gap-2">
+                    <button
+                        x-on:click="shareResults()"
+                        class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:bg-emerald-600 dark:hover:bg-emerald-500 dark:focus:ring-offset-zinc-800"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="size-4" viewBox="0 0 20 20" fill="currentColor"><path d="M13 4.5a2.5 2.5 0 11.702 4.89L8.45 12.3a2.5 2.5 0 11-.36-.891l5.252-2.91A2.5 2.5 0 0113 4.5zm-8 6a1 1 0 100 2 1 1 0 000-2zm8-5a1 1 0 100 2 1 1 0 000-2z"/></svg>
+                        <span x-text="shareCopied ? '{{ __('Copied!') }}' : '{{ __('Share Results') }}'"></span>
+                    </button>
+                    <button
+                        x-on:click="shareResults()"
+                        class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:bg-emerald-600 dark:hover:bg-emerald-500 dark:focus:ring-offset-zinc-800"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="size-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M13 4.5a2.5 2.5 0 11.702 4.89L8.839 12.11a2.5 2.5 0 11-.399-.964l4.863-2.72A2.5 2.5 0 0113 4.5zM6.5 10a1.5 1.5 0 100 3 1.5 1.5 0 000-3z"/>
+                        </svg>
+                        <span x-text="shareButtonLabel"></span>
+                    </button>
                     <a
                         href="{{ route('crosswords.solving') }}"
                         wire:navigate
-                        class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:bg-emerald-600 dark:hover:bg-emerald-500 dark:focus:ring-offset-zinc-800"
+                        class="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-zinc-200 px-4 py-2.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:ring-offset-2 dark:border-zinc-600 dark:text-zinc-300 dark:hover:bg-zinc-700 dark:focus:ring-offset-zinc-800"
                     >
                         {{ __('Browse More Puzzles') }}
                     </a>
                     <button
                         x-on:click="showCelebration = false"
-                        class="inline-flex w-full items-center justify-center rounded-lg px-4 py-2.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:ring-offset-2 dark:text-zinc-400 dark:hover:bg-zinc-700 dark:focus:ring-offset-zinc-800"
+                        class="inline-flex w-full items-center justify-center rounded-lg px-4 py-2.5 text-sm font-medium text-zinc-500 transition hover:text-zinc-700 focus:outline-none dark:text-zinc-400 dark:hover:text-zinc-200"
                     >
                         {{ __('Keep Looking') }}
                     </button>
