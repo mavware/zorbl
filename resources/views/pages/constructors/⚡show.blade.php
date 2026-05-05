@@ -155,6 +155,11 @@ new #[Title('Constructor Profile')] class extends Component {
                     <span>{{ trans_choice(':count follower|:count followers', $this->followersCount) }}</span>
                     <span>{{ __(':count total solves', ['count' => $this->totalSolves]) }}</span>
                 </div>
+                @if($this->constructor->bio)
+                    <flux:text size="sm" class="mt-1.5 max-w-xl text-zinc-600 dark:text-zinc-400">
+                        {{ $this->constructor->bio }}
+                    </flux:text>
+                @endif
                 <flux:text size="sm" class="mt-0.5 text-zinc-500">
                     {{ __('Joined :date', ['date' => $this->constructor->created_at->format('M Y')]) }}
                 </flux:text>

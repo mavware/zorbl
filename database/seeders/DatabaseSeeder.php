@@ -35,6 +35,7 @@ class DatabaseSeeder extends Seeder
             RoadmapSeeder::class,
             TagSeeder::class,
             TemplateSeeder::class,
+            TemplateTagSeeder::class,
         ]);
         // Call php artisan setup:platform to seed the rest of the data
     }

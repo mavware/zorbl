@@ -46,6 +46,13 @@ class UserFactory extends Factory
         ]);
     }
 
+    public function withBio(string $bio = 'I love building crosswords!'): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'bio' => $bio,
+        ]);
+    }
+
     /**
      * Indicate that the model has two-factor authentication configured.
      */
