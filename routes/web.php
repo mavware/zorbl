@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\EmbedController;
+use App\Http\Controllers\Auth\GoogleController;
 use App\Models\Crossword;
 use Illuminate\Support\Facades\Route;
 
@@ -14,6 +15,12 @@ Route::get('/embed/{crossword}', function (Crossword $crossword) {
 
     return view('embed.solver', ['crossword' => $crossword]);
 })->name('embed.solver');
+
+// Google OAuth
+Route::middleware('guest')->group(function () {
+    Route::get('auth/google/redirect', [GoogleController::class, 'redirect'])->name('auth.google.redirect');
+    Route::get('auth/google/callback', [GoogleController::class, 'callback'])->name('auth.google.callback');
+});
 
 // Public puzzle browsing (no auth required)
 Route::livewire('puzzles', 'pages::puzzles.index')->name('puzzles.index');
