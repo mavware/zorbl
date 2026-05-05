@@ -29,7 +29,7 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [x] Seed a default set of common crossword tags (e.g. Pop Culture, Sports, Science, History, Movies, Music, Geography, Food, Literature, Current Events)
 - [x] ability to change color of cell background
 - [x] Render bar-style word boundaries in PDF exports (bars are used for numbering but not visually drawn in the PDF)
-- [ ] Ask Claude to find an algorithm to generate a template based on existing template data
+- [x] Ask Claude to find an algorithm to generate a template based on existing template data
 - [ ] Add solve time vs. average indicator to puzzle cards on the /solving page for completed puzzles
 - [ ] Add difficulty breakdown (Easy/Medium/Hard/Expert) stats to the solving stats page alongside Times by Grid Size
 - [ ] Add a notification preferences page so users can opt out of specific notification types (e.g. new puzzle published, likes, comments)
