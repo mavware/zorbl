@@ -96,7 +96,6 @@ class PuzzleAttemptController extends Controller
             }
 
             $constructor = $crossword->user;
-
             if ($constructor && $constructor->id !== $user->id) {
                 $constructor->notify(new PuzzleCompleted($crossword, $user, $data['solve_time_seconds'] ?? null));
             }

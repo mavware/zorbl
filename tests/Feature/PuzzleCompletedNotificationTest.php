@@ -7,8 +7,95 @@ use App\Notifications\PuzzleCompleted;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Laravel\Sanctum\Sanctum;
+use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
+
+// ─── Livewire solver-page integration ──────────────────────────────────────
+
+test('constructor is notified when another user completes their puzzle via solver', function () {
+    Notification::fake();
+
+    $constructor = User::factory()->create();
+    $solver = User::factory()->create();
+    $crossword = Crossword::factory()->published()->for($constructor)->create([
+        'width' => 3,
+        'height' => 3,
+    ]);
+
+    $progress = Crossword::emptySolution(3, 3);
+
+    Livewire::actingAs($solver)
+        ->test('pages::crosswords.solver', ['crossword' => $crossword])
+        ->call('saveProgress', $progress, true, 120);
+
+    Notification::assertSentTo($constructor, PuzzleCompleted::class, function ($notification) use ($crossword, $solver) {
+        return $notification->crossword->id === $crossword->id
+            && $notification->solver->id === $solver->id
+            && $notification->solveTimeSeconds === 120;
+    });
+});
+
+test('constructor is not notified when solving their own puzzle via solver', function () {
+    Notification::fake();
+
+    $constructor = User::factory()->create();
+    $crossword = Crossword::factory()->for($constructor)->create([
+        'width' => 3,
+        'height' => 3,
+    ]);
+
+    $progress = Crossword::emptySolution(3, 3);
+
+    Livewire::actingAs($constructor)
+        ->test('pages::crosswords.solver', ['crossword' => $crossword])
+        ->call('saveProgress', $progress, true, 60);
+
+    Notification::assertNotSentTo($constructor, PuzzleCompleted::class);
+});
+
+test('constructor is not notified on progress save without completion via solver', function () {
+    Notification::fake();
+
+    $constructor = User::factory()->create();
+    $solver = User::factory()->create();
+    $crossword = Crossword::factory()->published()->for($constructor)->create([
+        'width' => 3,
+        'height' => 3,
+    ]);
+
+    $progress = Crossword::emptySolution(3, 3);
+    $progress[0][0] = 'A';
+
+    Livewire::actingAs($solver)
+        ->test('pages::crosswords.solver', ['crossword' => $crossword])
+        ->call('saveProgress', $progress, false, 30);
+
+    Notification::assertNotSentTo($constructor, PuzzleCompleted::class);
+});
+
+test('constructor is not notified twice for the same solver via solver', function () {
+    Notification::fake();
+
+    $constructor = User::factory()->create();
+    $solver = User::factory()->create();
+    $crossword = Crossword::factory()->published()->for($constructor)->create([
+        'width' => 3,
+        'height' => 3,
+    ]);
+
+    $progress = Crossword::emptySolution(3, 3);
+
+    $component = Livewire::actingAs($solver)
+        ->test('pages::crosswords.solver', ['crossword' => $crossword])
+        ->call('saveProgress', $progress, true, 120);
+
+    $component->call('saveProgress', $progress, true, 125);
+
+    Notification::assertSentToTimes($constructor, PuzzleCompleted::class, 1);
+});
+
+// ─── API integration ───────────────────────────────────────────────────────
 
 it('sends notification to constructor when someone completes their puzzle via API', function () {
     Notification::fake();
@@ -85,6 +172,8 @@ it('does not send notification for non-completion saves via API', function () {
 
     Notification::assertNotSentTo($constructor, PuzzleCompleted::class);
 });
+
+// ─── Notification payload formatting ───────────────────────────────────────
 
 it('includes solve time in notification body', function () {
     $constructor = User::factory()->create();

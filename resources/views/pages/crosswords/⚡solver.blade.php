@@ -414,11 +414,14 @@ new #[Title('Solve Crossword')] class extends Component {
                 app(ContestService::class)->processContestSolve(Auth::user(), $crossword);
             }
 
+            // Notify the constructor (skip if solving own puzzle).
+            // `?: null` converts a falsy 0 to null so the notification body
+            // doesn't render "Solved in 0:00" when no elapsed time was tracked.
             $crossword ??= Crossword::find($this->crosswordId);
             $constructor = $crossword?->user;
 
             if ($constructor && $constructor->id !== Auth::id()) {
-                $constructor->notify(new PuzzleCompleted($crossword, Auth::user(), $elapsedSeconds));
+                $constructor->notify(new PuzzleCompleted($crossword, Auth::user(), $elapsedSeconds ?: null));
             }
         }
 
