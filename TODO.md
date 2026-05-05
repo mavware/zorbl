@@ -32,6 +32,8 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [ ] Ask Claude to find an algorithm to generate a template based on existing template data
 - [ ] Add solve time vs. average indicator to puzzle cards on the /solving page for completed puzzles
 - [ ] Add difficulty breakdown (Easy/Medium/Hard/Expert) stats to the solving stats page alongside Times by Grid Size
+- [ ] Add a notification preferences page so users can opt out of specific notification types (e.g. new puzzle published, likes, comments)
+- [ ] Add email channel option for puzzle-published notifications (alongside the existing database channel)
 
 ## Done
 
