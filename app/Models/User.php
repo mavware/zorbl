@@ -41,6 +41,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property string|null $two_factor_confirmed_at
  * @property string|null $copyright_name
  * @property string|null $bio
+ * @property string|null $google_id
  * @property int $current_streak
  * @property int $longest_streak
  * @property string|null $last_solve_date
@@ -75,12 +76,14 @@ use Spatie\Permission\Traits\HasRoles;
  * @property-read int|null $assigned_tickets_count
  * @property-read Collection<int, Tag> $blockedTags
  * @property-read int|null $blocked_tags_count
+ * @property-read Collection<int, WebhookEndpoint> $webhookEndpoints
+ * @property-read int|null $webhook_endpoints_count
  *
  * @method static UserFactory factory($count = null, $state = [])
  *
  * @mixin Eloquent
  */
-#[Fillable(['name', 'email', 'password', 'copyright_name', 'bio', 'current_streak', 'longest_streak', 'last_solve_date', 'grandfathered_at'])]
+#[Fillable(['name', 'email', 'password', 'copyright_name', 'bio', 'google_id', 'current_streak', 'longest_streak', 'last_solve_date', 'grandfathered_at'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements FilamentUser
 {
@@ -194,6 +197,14 @@ class User extends Authenticatable implements FilamentUser
     public function assignedTickets(): HasMany
     {
         return $this->hasMany(SupportTicket::class, 'assigned_to');
+    }
+
+    /**
+     * @return HasMany<WebhookEndpoint, $this>
+     */
+    public function webhookEndpoints(): HasMany
+    {
+        return $this->hasMany(WebhookEndpoint::class);
     }
 
     /**

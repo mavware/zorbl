@@ -16,6 +16,7 @@
         "fortify-development",
         "laravel-best-practices",
         "pulse-development",
+        "socialite-development",
         "fluxui-development",
         "livewire-development",
         "pest-testing",

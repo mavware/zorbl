@@ -12,14 +12,14 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [x] Ability to search for a puzzle by tag
 - [x] Ability to select tags that you never want to see puzzles associated with
 - [ ] Ability to sign in with a passkey
-- [ ] Ability to sign in with google
+- [x] Ability to sign in with google
 - [x] Double check the printable/downloadable PDFs for the puzzle editor/solver
 - [x] Ensure that freestyle puzzles can be exported as PDFs with the removed squares
 - [ ] Execute puzzle entgagement ranker plan at `.claude/plans/puzzle-engagement-ranker.md` (deferred — gated on ≥2k completed attempts across ≥300 published puzzles; see gate conditions in file)
 - [x] Add Livewire component tests for settings, favorites, roadmap, and support pages
 - [x] Audit Livewire page components for authorization — ensure they use policies instead of inline ownership checks
 - [x] Add feature tests for admin-assigned-ticket access via SupportTicketPolicy
-- [ ] Let users set up webhooks for their puzzles for common events like puzzle completion or puzzle attempt submission, etc...
+- [x] Let users set up webhooks for their puzzles for common events like puzzle completion or puzzle attempt submission, etc...
 - [x] Add Filament test coverage for ContestResource CRUD (create, edit, delete) — currently only basic tests exist in ContestAdminTest
 - [ ] Add plagiarism detection that gives a percentage of similarity to the other puzzles.  For copyright protection, this should be done with a third-party service like PlagiarismCheck.com or a custom implementation using machine learning algorithms.
 - [x] Render bar styles (thick cell dividers) in PDF exports — bars affect numbering but are not visually rendered in the PDF output
@@ -29,7 +29,16 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [x] Seed a default set of common crossword tags (e.g. Pop Culture, Sports, Science, History, Movies, Music, Geography, Food, Literature, Current Events)
 - [x] ability to change color of cell background
 - [x] Render bar-style word boundaries in PDF exports (bars are used for numbering but not visually drawn in the PDF)
-- [ ] Ask Claude to find an algorithm to generate a template based on existing template data
+- [x] Ask Claude to find an algorithm to generate a template based on existing template data
+- [ ] Add solve time vs. average indicator to puzzle cards on the /solving page for completed puzzles
+- [ ] Add difficulty breakdown (Easy/Medium/Hard/Expert) stats to the solving stats page alongside Times by Grid Size
+- [ ] Add a notification preferences page so users can opt out of specific notification types (e.g. new puzzle published, likes, comments)
+- [ ] Add email channel option for puzzle-published notifications (alongside the existing database channel)
+- [ ] Add a rating trend chart or sparkline to the constructor analytics page showing how ratings change over time
+- [ ] Add pagination to the solve history table on the stats page to handle users with many completed puzzles
+- [ ] Add an Artisan command to bulk-schedule daily puzzles for a date range
+- [ ] Show a "solved" badge on the daily puzzle card if the user has already completed it
+- [ ] Add a daily puzzle history page so users can catch up on missed days
 - [ ] Add a minimum-rating filter to the puzzle discovery secondary filter panel (e.g. "4+ stars only")
 - [ ] Show completion rate percentage on puzzle discovery cards (requires withCount for completed attempts)
 
