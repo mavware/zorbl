@@ -61,7 +61,7 @@ test('creating a template fails when grid dimensions do not match', function () 
         ->assertHasFormErrors(['grid']);
 });
 
-test('creating a template fails when a word is shorter than min_word_length', function () {
+test('creating a template with short words succeeds (warning surfaced via modal, not hard validation)', function () {
     $grid = TemplateFactory::openGrid(5, 5);
     $grid[0][1] = '#';
     $grid[4][3] = '#';
@@ -77,7 +77,12 @@ test('creating a template fails when a word is shorter than min_word_length', fu
             'is_active' => true,
         ])
         ->call('create')
-        ->assertHasFormErrors(['grid']);
+        ->assertHasNoFormErrors();
+
+    $this->assertDatabaseHas('templates', [
+        'name' => 'Short word',
+        'min_word_length' => 3,
+    ]);
 });
 
 test('lowering min_word_length allows grids previously rejected', function () {

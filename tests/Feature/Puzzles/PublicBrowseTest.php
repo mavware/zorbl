@@ -577,8 +577,7 @@ test('puzzle type label returns Standard for regular grids', function () {
         'styles' => [],
     ]);
 
-    $component = Livewire::test('pages::puzzles.index');
-    expect($component->instance()->puzzleTypeLabel($crossword))->toBe('Standard');
+    expect($crossword->puzzleTypeLabel())->toBe('Standard');
 });
 
 test('puzzle type label returns Shaped for grids with null cells', function () {
@@ -589,8 +588,7 @@ test('puzzle type label returns Shaped for grids with null cells', function () {
         'grid' => $shapedGrid,
     ]);
 
-    $component = Livewire::test('pages::puzzles.index');
-    expect($component->instance()->puzzleTypeLabel($crossword))->toBe('Shaped');
+    expect($crossword->puzzleTypeLabel())->toBe('Shaped');
 });
 
 test('puzzle type label returns Barred for grids with bar styles', function () {
@@ -599,8 +597,7 @@ test('puzzle type label returns Barred for grids with bar styles', function () {
         'styles' => [['bars' => ['bottom']]],
     ]);
 
-    $component = Livewire::test('pages::puzzles.index');
-    expect($component->instance()->puzzleTypeLabel($crossword))->toBe('Barred');
+    expect($crossword->puzzleTypeLabel())->toBe('Barred');
 });
 
 // --- Combined Filters ---
