@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\EmbedController;
+use App\Http\Controllers\Auth\GoogleController;
 use App\Models\Crossword;
 use Illuminate\Support\Facades\Route;
 
@@ -14,6 +15,12 @@ Route::get('/embed/{crossword}', function (Crossword $crossword) {
 
     return view('embed.solver', ['crossword' => $crossword]);
 })->name('embed.solver');
+
+// Google OAuth
+Route::middleware('guest')->group(function () {
+    Route::get('auth/google/redirect', [GoogleController::class, 'redirect'])->name('auth.google.redirect');
+    Route::get('auth/google/callback', [GoogleController::class, 'callback'])->name('auth.google.callback');
+});
 
 // Public puzzle browsing (no auth required)
 Route::livewire('puzzles', 'pages::puzzles.index')->name('puzzles.index');
@@ -36,7 +43,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::livewire('favorites', 'pages::favorites.index')->name('favorites.index');
 
+    Route::livewire('constructors', 'pages::constructors.index')->name('constructors.index');
     Route::livewire('constructors/{constructor}', 'pages::constructors.show')->name('constructors.show');
+
+    Route::livewire('leaderboard', 'pages::leaderboard')->name('leaderboard');
 
     Route::livewire('roadmap', 'pages::roadmap.index')->name('roadmap.index');
 

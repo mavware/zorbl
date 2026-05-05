@@ -5,6 +5,7 @@ use App\Models\CrosswordLike;
 use App\Models\FavoriteList;
 use App\Models\PuzzleAttempt;
 use App\Models\PuzzleComment;
+use App\Notifications\PuzzleCompleted;
 use App\Services\AchievementService;
 use App\Services\ContestService;
 use App\Livewire\Concerns\ExportsCrossword;
@@ -73,12 +74,118 @@ new #[Title('Solve Crossword')] class extends Component {
     public int $commentRating = 0;
 
     #[Computed]
+    public function communityStats(): ?array
+    {
+        if (! $this->isSolved) {
+            return null;
+        }
+
+        $attempt = PuzzleAttempt::find($this->attemptId);
+        if (! $attempt || $attempt->solve_time_seconds === null) {
+            return null;
+        }
+
+        $crossword = Crossword::find($this->crosswordId);
+        $avg = $crossword?->averageSolveTimeSeconds();
+        $totalSolvers = PuzzleAttempt::where('crossword_id', $this->crosswordId)
+            ->where('is_completed', true)
+            ->whereNotNull('solve_time_seconds')
+            ->count();
+
+        if ($avg === null || $totalSolvers < 2) {
+            return null;
+        }
+
+        $fasterCount = PuzzleAttempt::where('crossword_id', $this->crosswordId)
+            ->where('is_completed', true)
+            ->whereNotNull('solve_time_seconds')
+            ->where('id', '!=', $this->attemptId)
+            ->where('solve_time_seconds', '>', $attempt->solve_time_seconds)
+            ->count();
+
+        $percentile = (int) round(($fasterCount / ($totalSolvers - 1)) * 100);
+
+        return [
+            'your_time' => $attempt->solve_time_seconds,
+            'your_time_formatted' => $attempt->formattedSolveTime() ?? '—',
+            'avg_time' => $avg,
+            'avg_time_formatted' => $this->formatSeconds($avg),
+            'diff' => $attempt->solve_time_seconds - $avg,
+            'percentile' => $percentile,
+            'total_solvers' => $totalSolvers,
+        ];
+    }
+
+    private function formatSeconds(int $seconds): string
+    {
+        $hours = intdiv($seconds, 3600);
+        $minutes = intdiv($seconds % 3600, 60);
+        $secs = $seconds % 60;
+
+        if ($hours > 0) {
+            return sprintf('%d:%02d:%02d', $hours, $minutes, $secs);
+        }
+
+        return sprintf('%d:%02d', $minutes, $secs);
+    }
+
+    #[Computed]
     public function comments()
     {
         return PuzzleComment::where('crossword_id', $this->crosswordId)
             ->with('user')
             ->latest()
             ->get();
+    }
+
+    #[Computed]
+    public function leaderboard(): array
+    {
+        return PuzzleAttempt::where('crossword_id', $this->crosswordId)
+            ->where('is_completed', true)
+            ->whereNotNull('solve_time_seconds')
+            ->with('user:id,name')
+            ->orderBy('solve_time_seconds')
+            ->limit(10)
+            ->get()
+            ->map(fn (PuzzleAttempt $a) => [
+                'user_id' => $a->user_id,
+                'name' => $a->user->name,
+                'initials' => $a->user->initials(),
+                'time' => $a->formattedSolveTime(),
+                'seconds' => $a->solve_time_seconds,
+            ])
+            ->values()
+            ->all();
+    }
+
+    #[Computed]
+    public function solverRank(): ?int
+    {
+        $userId = Auth::id();
+        $attempt = PuzzleAttempt::where('crossword_id', $this->crosswordId)
+            ->where('user_id', $userId)
+            ->where('is_completed', true)
+            ->first();
+
+        if (! $attempt || $attempt->solve_time_seconds === null) {
+            return null;
+        }
+
+        return PuzzleAttempt::where('crossword_id', $this->crosswordId)
+            ->where('is_completed', true)
+            ->whereNotNull('solve_time_seconds')
+            ->where('solve_time_seconds', '<', $attempt->solve_time_seconds)
+            ->count() + 1;
+    }
+
+    #[Computed]
+    public function totalSolvers(): int
+    {
+        return PuzzleAttempt::where('crossword_id', $this->crosswordId)
+            ->where('is_completed', true)
+            ->whereNotNull('solve_time_seconds')
+            ->count();
     }
 
     #[Computed]
@@ -306,11 +413,44 @@ new #[Title('Solve Crossword')] class extends Component {
             if ($crossword && $crossword->contests()->exists()) {
                 app(ContestService::class)->processContestSolve(Auth::user(), $crossword);
             }
+
+            // Notify the constructor (skip if solving own puzzle).
+            // `?: null` converts a falsy 0 to null so the notification body
+            // doesn't render "Solved in 0:00" when no elapsed time was tracked.
+            $crossword ??= Crossword::find($this->crosswordId);
+            $constructor = $crossword?->user;
+
+            if ($constructor && $constructor->id !== Auth::id()) {
+                $constructor->notify(new PuzzleCompleted($crossword, Auth::user(), $elapsedSeconds ?: null));
+            }
         }
 
         $attempt->update($data);
 
         $this->dispatch('progress-saved');
+    }
+
+    public function generateShareText(): string
+    {
+        $lines = [];
+        $lines[] = __(':title on Zorbl', ['title' => $this->title]);
+        $lines[] = $this->width.'x'.$this->height.' | '.$this->formatSolveTime($this->elapsedSeconds);
+        $lines[] = route('puzzles.solve', $this->crosswordId);
+
+        return implode("\n", $lines);
+    }
+
+    private function formatSolveTime(int $seconds): string
+    {
+        $hours = intdiv($seconds, 3600);
+        $minutes = intdiv($seconds % 3600, 60);
+        $secs = $seconds % 60;
+
+        if ($hours > 0) {
+            return sprintf('%d:%02d:%02d', $hours, $minutes, $secs);
+        }
+
+        return sprintf('%d:%02d', $minutes, $secs);
     }
 
     protected function getExportableCrossword(): Crossword
@@ -337,6 +477,9 @@ new #[Title('Solve Crossword')] class extends Component {
         initialElapsed: @js($elapsedSeconds),
         initialSolved: @js($isSolved),
         initialPencilCells: @js($pencilCells),
+        puzzleTitle: @js($title),
+        shareTitle: @js($title),
+        shareUrl: @js(route('puzzles.solve', $crosswordId)),
     })"
     x-on:progress-saved.window="onSaved()"
     x-on:achievements-earned.window="showAchievements($event.detail.achievements)"
@@ -350,7 +493,7 @@ new #[Title('Solve Crossword')] class extends Component {
     {{-- Toolbar --}}
     <div class="mb-4 flex flex-wrap items-center gap-2">
         <div class="flex flex-1 items-center gap-3">
-            <flux:heading size="lg">{{ $title }}</flux:heading>
+            <flux:heading size="lg" data-puzzle-title>{{ $title }}</flux:heading>
             @if(!$isOwner && $authorName)
                 <flux:text size="sm" class="text-zinc-500">
                     {{ __('by') }}
@@ -518,6 +661,17 @@ new #[Title('Solve Crossword')] class extends Component {
                 </div>
             @endif
 
+            {{-- Share button (visible when solved) --}}
+            <template x-if="solved">
+                <button
+                    x-on:click="shareResults()"
+                    :title="shareCopied ? '{{ __('Copied!') }}' : '{{ __('Share results') }}'"
+                    class="rounded-lg p-1.5 text-emerald-500 transition-colors hover:text-emerald-600 dark:hover:text-emerald-400"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 20 20" fill="currentColor"><path d="M13 4.5a2.5 2.5 0 11.702 4.89L8.45 12.3a2.5 2.5 0 11-.36-.891l5.252-2.91A2.5 2.5 0 0113 4.5zm-8 6a1 1 0 100 2 1 1 0 000-2zm8-5a1 1 0 100 2 1 1 0 000-2z"/></svg>
+                </button>
+            </template>
+
             {{-- Save status --}}
             <div class="flex items-center gap-1 pl-2 text-sm text-zinc-500">
                 <template x-if="pencilMode && !solved">
@@ -533,7 +687,23 @@ new #[Title('Solve Crossword')] class extends Component {
                     </span>
                 </template>
                 <template x-if="solved">
-                    <span class="font-semibold text-emerald-500">{{ __('Solved!') }}</span>
+                    <span class="flex items-center gap-1.5">
+                        <span class="font-semibold text-emerald-500">{{ __('Solved!') }}</span>
+                        <button
+                            x-on:click="shareResults()"
+                            class="rounded-md px-2 py-0.5 text-xs font-medium text-emerald-600 transition-colors hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/30"
+                            x-text="shareCopied ? '{{ __('Copied!') }}' : '{{ __('Share Results') }}'"
+                        ></button>
+                    </span>
+                </template>
+                <template x-if="solved">
+                    <button
+                        x-on:click="shareResults()"
+                        class="ml-1 inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-xs font-medium text-blue-600 transition-colors hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/30"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z" /></svg>
+                        <span x-text="shareCopied ? '{{ __('Copied!') }}' : '{{ __('Share') }}'"></span>
+                    </button>
                 </template>
             </div>
         </div>
@@ -735,6 +905,133 @@ new #[Title('Solve Crossword')] class extends Component {
         </div>
     </div>
 
+    {{-- Share Results (visible when solved) --}}
+    @if($isSolved)
+        <div class="mt-6 rounded-xl border border-emerald-200 bg-emerald-50/50 p-5 dark:border-emerald-900/40 dark:bg-emerald-950/20" wire:key="share-section">
+            <div class="flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="flex size-10 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/30">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="size-5 text-emerald-600 dark:text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                    </div>
+                    <div>
+                        <div class="font-semibold text-emerald-800 dark:text-emerald-200">{{ __('You solved it!') }}</div>
+                        <div class="text-sm text-emerald-700 dark:text-emerald-400">
+                            {{ $this->title }} &middot; {{ $width }}&times;{{ $height }}
+                            @if($elapsedSeconds > 0)
+                                &middot; {{ $this->formatSolveTime($elapsedSeconds) }}
+                            @endif
+                        </div>
+                    </div>
+                </div>
+                <div
+                    x-data="{ copied: false }"
+                    class="shrink-0"
+                >
+                    <flux:button
+                        size="sm"
+                        variant="primary"
+                        x-on:click="
+                            $wire.generateShareText().then(text => {
+                                navigator.clipboard.writeText(text).then(() => {
+                                    copied = true;
+                                    setTimeout(() => copied = false, 2000);
+                                });
+                            });
+                        "
+                    >
+                        <template x-if="!copied">
+                            <span class="inline-flex items-center gap-1.5">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" x2="12" y1="2" y2="15"/></svg>
+                                {{ __('Share Results') }}
+                            </span>
+                        </template>
+                        <template x-if="copied">
+                            <span class="inline-flex items-center gap-1.5">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                                {{ __('Copied to Clipboard!') }}
+                            </span>
+                        </template>
+                    </flux:button>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- Performance Comparison (visible when solved with community data) --}}
+    @if($isSolved && $this->communityStats)
+        @php($stats = $this->communityStats)
+        <div class="mt-6 rounded-xl border {{ $stats['diff'] < 0 ? 'border-emerald-200 bg-emerald-50/50 dark:border-emerald-900/30 dark:bg-emerald-950/20' : 'border-line bg-elevated' }} p-5" wire:key="performance-section">
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="flex size-10 items-center justify-center rounded-lg {{ $stats['diff'] < 0 ? 'bg-emerald-100 dark:bg-emerald-900/40' : 'bg-zinc-100 dark:bg-zinc-800' }}">
+                        @if($stats['diff'] < 0)
+                            <flux:icon name="arrow-trending-up" class="size-5 text-emerald-600 dark:text-emerald-400" />
+                        @else
+                            <svg xmlns="http://www.w3.org/2000/svg" class="size-5 text-zinc-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        @endif
+                    </div>
+                    <div>
+                        @if($stats['diff'] < 0)
+                            <div class="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+                                {{ __('Faster than average!') }}
+                            </div>
+                        @elseif($stats['diff'] > 0)
+                            <div class="text-sm font-semibold text-fg">
+                                {{ __('Keep practicing!') }}
+                            </div>
+                        @else
+                            <div class="text-sm font-semibold text-fg">
+                                {{ __('Right on target!') }}
+                            </div>
+                        @endif
+                        <flux:text size="sm" class="text-zinc-500">
+                            {{ __('Faster than :pct% of :count solvers', ['pct' => $stats['percentile'], 'count' => $stats['total_solvers']]) }}
+                        </flux:text>
+                    </div>
+                </div>
+                <div class="flex items-center gap-6">
+                    <div class="text-center">
+                        <flux:text size="sm" class="text-zinc-500">{{ __('Your Time') }}</flux:text>
+                        <div class="font-mono text-sm font-semibold text-fg">{{ $stats['your_time_formatted'] }}</div>
+                    </div>
+                    <div class="text-center">
+                        <flux:text size="sm" class="text-zinc-500">{{ __('Average') }}</flux:text>
+                        <div class="font-mono text-sm font-semibold text-fg">{{ $stats['avg_time_formatted'] }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- Leaderboard (visible when solved) --}}
+    @if($isSolved && count($this->leaderboard) > 1)
+        <div class="border-line mt-6 rounded-xl border p-5" wire:key="leaderboard-section">
+            <div class="mb-4 flex items-center justify-between">
+                <flux:heading size="lg">{{ __('Fastest Solvers') }}</flux:heading>
+                @if($this->solverRank && $this->totalSolvers > 0)
+                    <flux:text size="sm" class="text-zinc-500">
+                        {{ __('Your rank:') }} <span class="font-semibold text-fg">#{{ $this->solverRank }}</span> {{ __('of') }} {{ $this->totalSolvers }}
+                    </flux:text>
+                @endif
+            </div>
+            <div class="space-y-1">
+                @foreach($this->leaderboard as $index => $entry)
+                    <div class="flex items-center gap-3 rounded-lg px-3 py-2 {{ $entry['user_id'] === Auth::id() ? 'bg-emerald-50 dark:bg-emerald-900/20' : ($index % 2 === 0 ? 'bg-zinc-50 dark:bg-zinc-800/50' : '') }}">
+                        <span class="w-6 text-right text-sm font-bold tabular-nums {{ match(true) { $index === 0 => 'text-amber-500', $index === 1 => 'text-zinc-400', $index === 2 => 'text-amber-700 dark:text-amber-600', default => 'text-zinc-400 dark:text-zinc-500' } }}">{{ $index + 1 }}</span>
+                        <div class="flex size-8 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-xs font-bold text-zinc-700 dark:bg-zinc-700 dark:text-zinc-300">
+                            {{ $entry['initials'] }}
+                        </div>
+                        <span class="flex-1 truncate text-sm {{ $entry['user_id'] === Auth::id() ? 'font-semibold text-fg' : 'text-zinc-700 dark:text-zinc-300' }}">
+                            {{ $entry['user_id'] === Auth::id() ? __('You') : $entry['name'] }}
+                        </span>
+                        <span class="text-sm font-medium tabular-nums text-zinc-600 dark:text-zinc-400">{{ $entry['time'] }}</span>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
+
     {{-- Comments & Ratings (visible when solved) --}}
     @if($isSolved)
         <div class="border-line mt-6 rounded-xl border p-5" wire:key="comments-section">
@@ -878,26 +1175,86 @@ new #[Title('Solve Crossword')] class extends Component {
 
             {{-- Content --}}
             <div class="space-y-4 px-6 pt-5 pb-6">
-                {{-- Solve time --}}
+                {{-- Solve time & rank --}}
                 <div class="flex items-center justify-center gap-2 rounded-xl bg-zinc-50 px-4 py-3 dark:bg-zinc-700/50">
                     <svg xmlns="http://www.w3.org/2000/svg" class="size-5 text-emerald-500" viewBox="0 0 20 20" fill="currentColor">
                         <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 000-1.5h-3.25V5z" clip-rule="evenodd" />
                     </svg>
                     <span class="text-lg font-semibold tabular-nums text-fg" x-text="celebrationTime"></span>
+                    @if($this->solverRank && $this->totalSolvers > 0)
+                        <span class="text-sm text-zinc-500 dark:text-zinc-400">
+                            &middot; #{{ $this->solverRank }} {{ __('of') }} {{ $this->totalSolvers }}
+                        </span>
+                    @endif
                 </div>
+
+                {{-- Share result --}}
+                <div class="flex items-center justify-center gap-2">
+                    <button
+                        x-on:click="shareResult('{{ route('puzzles.solve', $crosswordId) }}')"
+                        x-show="canNativeShare()"
+                        class="inline-flex items-center gap-1.5 rounded-lg bg-zinc-100 px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-200 dark:bg-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-600"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="size-4" viewBox="0 0 20 20" fill="currentColor"><path d="M13 4.5a2.5 2.5 0 11.702 1.737L6.97 9.604a2.518 2.518 0 010 .799l6.733 3.366a2.5 2.5 0 11-.671 1.341l-6.733-3.366a2.5 2.5 0 110-3.482l6.733-3.366A2.52 2.52 0 0113 4.5z"/></svg>
+                        {{ __('Share') }}
+                    </button>
+                    <button
+                        x-on:click="copyShareText('{{ route('puzzles.solve', $crosswordId) }}', $el)"
+                        class="inline-flex items-center gap-1.5 rounded-lg bg-zinc-100 px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-200 dark:bg-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-600"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="size-4" viewBox="0 0 20 20" fill="currentColor"><path d="M7 3.5A1.5 1.5 0 018.5 2h3.879a1.5 1.5 0 011.06.44l3.122 3.12A1.5 1.5 0 0117 6.622V12.5a1.5 1.5 0 01-1.5 1.5h-1v-3.379a3 3 0 00-.879-2.121L10.5 5.379A3 3 0 008.379 4.5H7v-1z"/><path d="M4.5 6A1.5 1.5 0 003 7.5v9A1.5 1.5 0 004.5 18h7a1.5 1.5 0 001.5-1.5v-5.879a1.5 1.5 0 00-.44-1.06L9.44 6.439A1.5 1.5 0 008.378 6H4.5z"/></svg>
+                        <span x-ref="copyLabel">{{ __('Copy Result') }}</span>
+                    </button>
+                    <a
+                        x-bind:href="twitterShareUrl('{{ route('puzzles.solve', $crosswordId) }}')"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="inline-flex items-center gap-1.5 rounded-lg bg-zinc-100 px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-200 dark:bg-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-600"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="size-4" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                    </a>
+                </div>
+
+                {{-- Leaderboard --}}
+                @if(count($this->leaderboard) > 1)
+                    <div>
+                        <h3 class="mb-2 text-center text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">{{ __('Fastest Solvers') }}</h3>
+                        <div class="max-h-48 space-y-1 overflow-y-auto">
+                            @foreach($this->leaderboard as $index => $entry)
+                                <div class="flex items-center gap-2 rounded-lg px-2 py-1.5 {{ $entry['user_id'] === Auth::id() ? 'bg-emerald-50 dark:bg-emerald-900/20' : '' }}">
+                                    <span class="w-5 text-right text-xs font-bold tabular-nums {{ $index < 3 ? 'text-amber-500' : 'text-zinc-400 dark:text-zinc-500' }}">{{ $index + 1 }}</span>
+                                    <div class="flex size-6 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-[10px] font-bold text-zinc-700 dark:bg-zinc-700 dark:text-zinc-300">
+                                        {{ $entry['initials'] }}
+                                    </div>
+                                    <span class="flex-1 truncate text-sm {{ $entry['user_id'] === Auth::id() ? 'font-semibold text-fg' : 'text-zinc-700 dark:text-zinc-300' }}">
+                                        {{ $entry['user_id'] === Auth::id() ? __('You') : $entry['name'] }}
+                                    </span>
+                                    <span class="text-sm font-medium tabular-nums text-zinc-600 dark:text-zinc-400">{{ $entry['time'] }}</span>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
 
                 {{-- Buttons --}}
                 <div class="flex flex-col gap-2">
+                    <button
+                        x-on:click="shareResults()"
+                        class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-blue-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:bg-blue-600 dark:hover:bg-blue-500 dark:focus:ring-offset-zinc-800"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z" /></svg>
+                        <span x-text="shareCopied ? '{{ __('Copied!') }}' : '{{ __('Share Results') }}'"></span>
+                    </button>
                     <a
                         href="{{ route('crosswords.solving') }}"
                         wire:navigate
-                        class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:bg-emerald-600 dark:hover:bg-emerald-500 dark:focus:ring-offset-zinc-800"
+                        class="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-zinc-200 px-4 py-2.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:ring-offset-2 dark:border-zinc-600 dark:text-zinc-300 dark:hover:bg-zinc-700 dark:focus:ring-offset-zinc-800"
                     >
                         {{ __('Browse More Puzzles') }}
                     </a>
                     <button
                         x-on:click="showCelebration = false"
-                        class="inline-flex w-full items-center justify-center rounded-lg px-4 py-2.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:ring-offset-2 dark:text-zinc-400 dark:hover:bg-zinc-700 dark:focus:ring-offset-zinc-800"
+                        class="inline-flex w-full items-center justify-center rounded-lg px-4 py-2.5 text-sm font-medium text-zinc-500 transition hover:text-zinc-700 focus:outline-none dark:text-zinc-400 dark:hover:text-zinc-200"
                     >
                         {{ __('Keep Looking') }}
                     </button>

@@ -45,4 +45,10 @@ return [
         'pro_yearly_price' => env('ZORBL_PRO_YEARLY_PRICE'),
     ],
 
+    'google' => [
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect' => env('GOOGLE_REDIRECT_URI', '/auth/google/callback'),
+    ],
+
 ];
