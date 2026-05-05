@@ -30,8 +30,17 @@
                     <flux:sidebar.item icon="language" :href="route('words.index')" :current="request()->routeIs('words.*')" wire:navigate>
                         {{ __('Word Catalog') }}
                     </flux:sidebar.item>
+                    <flux:sidebar.item icon="trophy" :href="route('leaderboard')" :current="request()->routeIs('leaderboard')" wire:navigate>
+                        {{ __('Leaderboard') }}
+                    </flux:sidebar.item>
+                </flux:sidebar.group>
+
+                <flux:sidebar.group :heading="__('Community')" class="grid">
                     <flux:sidebar.item icon="users" :href="route('constructors.index')" :current="request()->routeIs('constructors.*')" wire:navigate>
                         {{ __('Constructors') }}
+                    </flux:sidebar.item>
+                    <flux:sidebar.item icon="trophy" :href="route('contests.index')" :current="request()->routeIs('contests.*')" wire:navigate>
+                        {{ __('Contests') }}
                     </flux:sidebar.item>
                 </flux:sidebar.group>
 

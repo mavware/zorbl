@@ -21,6 +21,8 @@ import { cloneForWire, createAutosave } from './grid/persistence.js';
 export function crosswordSolver({
     width, height, grid, solution, progress, styles, prefilled,
     cluesAcross, cluesDown, initialElapsed, initialSolved, initialPencilCells, persistence,
+    puzzleTitle,
+    shareTitle, shareUrl,
 }) {
     return {
         width,
@@ -28,6 +30,7 @@ export function crosswordSolver({
         grid,
         solution,
         progress,
+        puzzleTitle: puzzleTitle || '',
         styles: (styles && !Array.isArray(styles)) ? styles : {},
         prefilled: prefilled || null,
         cluesAcross: cluesAcross || [],
@@ -54,6 +57,7 @@ export function crosswordSolver({
         achievementToasts: [],
         showCelebration: false,
         celebrationTime: '',
+        shareCopied: false,
         persistence: persistence || null,
 
         init() {
@@ -562,6 +566,97 @@ export function crosswordSolver({
 
         // Templates call onSaved() from a Livewire-dispatched event.
         onSaved() { this._autosave?.acknowledge(); },
+
+        shareTitle: shareTitle || '',
+        shareUrl: shareUrl || '',
+
+        generateShareText() {
+            const lines = [];
+            const title = this.shareTitle || 'Crossword';
+            lines.push(`\u{1F9E9} Zorbl — “${title}”`);
+            lines.push(`⏱️ ${this.formattedTime()}`);
+            lines.push('');
+
+            const maxCols = 15;
+            const maxRows = 15;
+            const skipCols = this.width > maxCols ? Math.max(1, Math.floor(this.width / maxCols)) : 1;
+            const skipRows = this.height > maxRows ? Math.max(1, Math.floor(this.height / maxRows)) : 1;
+
+            for (let r = 0; r < this.height; r += skipRows) {
+                let row = '';
+                for (let c = 0; c < this.width; c += skipCols) {
+                    if (this.isBlock(r, c) || isVoid(this.grid, r, c)) {
+                        row += '⬛';
+                    } else {
+                        row += '⬜';
+                    }
+                }
+                lines.push(row);
+            }
+
+            lines.push('');
+            lines.push(this.shareUrl || window.location.href);
+
+            return lines.join('\n');
+        },
+
+        async shareResults() {
+            const text = this.generateShareText();
+
+            if (navigator.share) {
+                try {
+                    await navigator.share({ text });
+                    return;
+                } catch {
+                    // User cancelled or share failed — fall through to clipboard
+                }
+            }
+
+            try {
+                await navigator.clipboard.writeText(text);
+                this.shareCopied = true;
+                setTimeout(() => { this.shareCopied = false; }, 2000);
+            } catch {
+                // Clipboard failed silently
+            }
+        },
+
+        _buildShareText(puzzleUrl) {
+            return `🧩 ${this.puzzleTitle || 'a crossword'} — Zorbl\n⏱️ ${this.celebrationTime} | ${this.width}×${this.height}\n${puzzleUrl}`;
+        },
+
+        canNativeShare() {
+            return typeof navigator.share === 'function';
+        },
+
+        async shareResult(puzzleUrl) {
+            const text = this._buildShareText(puzzleUrl);
+            try {
+                await navigator.share({ text });
+            } catch (e) {
+                if (e.name !== 'AbortError') {
+                    await navigator.clipboard.writeText(text);
+                }
+            }
+        },
+
+        async copyShareText(puzzleUrl, buttonEl) {
+            const text = this._buildShareText(puzzleUrl);
+            try {
+                await navigator.clipboard.writeText(text);
+                const label = buttonEl.querySelector('[x-ref="copyLabel"]');
+                if (label) {
+                    const original = label.textContent;
+                    label.textContent = 'Copied!';
+                    setTimeout(() => { label.textContent = original; }, 2000);
+                }
+            } catch {}
+        },
+
+        twitterShareUrl(puzzleUrl) {
+            const text = this._buildShareText(puzzleUrl);
+            return 'https://x.com/intent/post?text=' + encodeURIComponent(text);
+        },
 
         showAchievements(achievements) {
             if (!achievements || achievements.length === 0) return;

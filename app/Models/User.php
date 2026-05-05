@@ -75,6 +75,8 @@ use Spatie\Permission\Traits\HasRoles;
  * @property-read int|null $assigned_tickets_count
  * @property-read Collection<int, Tag> $blockedTags
  * @property-read int|null $blocked_tags_count
+ * @property-read Collection<int, WebhookEndpoint> $webhookEndpoints
+ * @property-read int|null $webhook_endpoints_count
  *
  * @method static UserFactory factory($count = null, $state = [])
  *
@@ -194,6 +196,14 @@ class User extends Authenticatable implements FilamentUser
     public function assignedTickets(): HasMany
     {
         return $this->hasMany(SupportTicket::class, 'assigned_to');
+    }
+
+    /**
+     * @return HasMany<WebhookEndpoint, $this>
+     */
+    public function webhookEndpoints(): HasMany
+    {
+        return $this->hasMany(WebhookEndpoint::class);
     }
 
     /**
