@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Enums\WebhookEvent;
 use App\Http\Controllers\Controller;
+use App\Jobs\DispatchWebhooks;
 use App\Models\Crossword;
 use App\Notifications\CrosswordLiked;
 use Illuminate\Http\JsonResponse;
@@ -26,6 +28,13 @@ class CrosswordLikeController extends Controller
             if ($crosswordOwner && $crosswordOwner->id !== $request->user()->id) {
                 $crosswordOwner->notify(new CrosswordLiked($crossword, $request->user()));
             }
+
+            DispatchWebhooks::dispatch(WebhookEvent::PuzzleLiked, $crossword->user_id, [
+                'puzzle_id' => $crossword->id,
+                'puzzle_title' => $crossword->title,
+                'liker_id' => $request->user()->id,
+                'liker_name' => $request->user()->name,
+            ]);
         }
 
         return response()->json(null, 201);

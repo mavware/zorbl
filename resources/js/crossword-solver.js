@@ -22,6 +22,7 @@ export function crosswordSolver({
     width, height, grid, solution, progress, styles, prefilled,
     cluesAcross, cluesDown, initialElapsed, initialSolved, initialPencilCells, persistence,
     puzzleTitle,
+    shareTitle, shareUrl,
 }) {
     return {
         width,
@@ -56,6 +57,7 @@ export function crosswordSolver({
         achievementToasts: [],
         showCelebration: false,
         celebrationTime: '',
+        shareCopied: false,
         persistence: persistence || null,
 
         init() {
@@ -565,51 +567,96 @@ export function crosswordSolver({
         // Templates call onSaved() from a Livewire-dispatched event.
         onSaved() { this._autosave?.acknowledge(); },
 
-        shareResults() {
-            const title = this.puzzleTitle || 'Crossword';
-            const time = this.celebrationTime || this.formattedTime();
-            const miniGrid = this._buildMiniGrid();
+        shareTitle: shareTitle || '',
+        shareUrl: shareUrl || '',
 
-            const text = `${title}\n${this.width}×${this.height} | ⏱ ${time}\n\n${miniGrid}\n\nzorbl.com`;
-
-            if (navigator.share) {
-                navigator.share({ text }).catch(() => {
-                    this._copyToClipboard(text);
-                });
-            } else {
-                this._copyToClipboard(text);
-            }
-        },
-
-        _copyToClipboard(text) {
-            navigator.clipboard.writeText(text).then(() => {
-                this.shareButtonLabel = 'Copied!';
-                setTimeout(() => { this.shareButtonLabel = ''; }, 2000);
-            });
-        },
-
-        _buildMiniGrid() {
-            const maxCols = 14;
-            const step = this.width > maxCols ? Math.ceil(this.width / maxCols) : 1;
-            const sampledWidth = Math.ceil(this.width / step);
-            const sampledHeight = Math.ceil(this.height / step);
+        generateShareText() {
             const lines = [];
+            const title = this.shareTitle || 'Crossword';
+            lines.push(`\u{1F9E9} Zorbl — “${title}”`);
+            lines.push(`⏱️ ${this.formattedTime()}`);
+            lines.push('');
 
-            for (let r = 0; r < this.height; r += step) {
-                let line = '';
-                for (let c = 0; c < this.width; c += step) {
-                    if (this.grid[r][c] === '#' || this.grid[r][c] === null) {
-                        line += '⬛';
+            const maxCols = 15;
+            const maxRows = 15;
+            const skipCols = this.width > maxCols ? Math.max(1, Math.floor(this.width / maxCols)) : 1;
+            const skipRows = this.height > maxRows ? Math.max(1, Math.floor(this.height / maxRows)) : 1;
+
+            for (let r = 0; r < this.height; r += skipRows) {
+                let row = '';
+                for (let c = 0; c < this.width; c += skipCols) {
+                    if (this.isBlock(r, c) || isVoid(this.grid, r, c)) {
+                        row += '⬛';
                     } else {
-                        line += '🟩';
+                        row += '⬜';
                     }
                 }
-                lines.push(line);
+                lines.push(row);
             }
+
+            lines.push('');
+            lines.push(this.shareUrl || window.location.href);
+
             return lines.join('\n');
         },
 
-        shareButtonLabel: '',
+        async shareResults() {
+            const text = this.generateShareText();
+
+            if (navigator.share) {
+                try {
+                    await navigator.share({ text });
+                    return;
+                } catch {
+                    // User cancelled or share failed — fall through to clipboard
+                }
+            }
+
+            try {
+                await navigator.clipboard.writeText(text);
+                this.shareCopied = true;
+                setTimeout(() => { this.shareCopied = false; }, 2000);
+            } catch {
+                // Clipboard failed silently
+            }
+        },
+
+        _buildShareText(puzzleUrl) {
+            return `🧩 ${this.puzzleTitle || 'a crossword'} — Zorbl\n⏱️ ${this.celebrationTime} | ${this.width}×${this.height}\n${puzzleUrl}`;
+        },
+
+        canNativeShare() {
+            return typeof navigator.share === 'function';
+        },
+
+        async shareResult(puzzleUrl) {
+            const text = this._buildShareText(puzzleUrl);
+            try {
+                await navigator.share({ text });
+            } catch (e) {
+                if (e.name !== 'AbortError') {
+                    await navigator.clipboard.writeText(text);
+                }
+            }
+        },
+
+        async copyShareText(puzzleUrl, buttonEl) {
+            const text = this._buildShareText(puzzleUrl);
+            try {
+                await navigator.clipboard.writeText(text);
+                const label = buttonEl.querySelector('[x-ref="copyLabel"]');
+                if (label) {
+                    const original = label.textContent;
+                    label.textContent = 'Copied!';
+                    setTimeout(() => { label.textContent = original; }, 2000);
+                }
+            } catch {}
+        },
+
+        twitterShareUrl(puzzleUrl) {
+            const text = this._buildShareText(puzzleUrl);
+            return 'https://x.com/intent/post?text=' + encodeURIComponent(text);
+        },
 
         showAchievements(achievements) {
             if (!achievements || achievements.length === 0) return;
