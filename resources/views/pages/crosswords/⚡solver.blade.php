@@ -73,6 +73,62 @@ new #[Title('Solve Crossword')] class extends Component {
     public int $commentRating = 0;
 
     #[Computed]
+    public function communityStats(): ?array
+    {
+        if (! $this->isSolved) {
+            return null;
+        }
+
+        $attempt = PuzzleAttempt::find($this->attemptId);
+        if (! $attempt || $attempt->solve_time_seconds === null) {
+            return null;
+        }
+
+        $crossword = Crossword::find($this->crosswordId);
+        $avg = $crossword?->averageSolveTimeSeconds();
+        $totalSolvers = PuzzleAttempt::where('crossword_id', $this->crosswordId)
+            ->where('is_completed', true)
+            ->whereNotNull('solve_time_seconds')
+            ->count();
+
+        if ($avg === null || $totalSolvers < 2) {
+            return null;
+        }
+
+        $fasterCount = PuzzleAttempt::where('crossword_id', $this->crosswordId)
+            ->where('is_completed', true)
+            ->whereNotNull('solve_time_seconds')
+            ->where('id', '!=', $this->attemptId)
+            ->where('solve_time_seconds', '>', $attempt->solve_time_seconds)
+            ->count();
+
+        $percentile = (int) round(($fasterCount / ($totalSolvers - 1)) * 100);
+
+        return [
+            'your_time' => $attempt->solve_time_seconds,
+            'your_time_formatted' => $attempt->formattedSolveTime() ?? '—',
+            'avg_time' => $avg,
+            'avg_time_formatted' => $this->formatSeconds($avg),
+            'diff' => $attempt->solve_time_seconds - $avg,
+            'percentile' => $percentile,
+            'total_solvers' => $totalSolvers,
+        ];
+    }
+
+    private function formatSeconds(int $seconds): string
+    {
+        $hours = intdiv($seconds, 3600);
+        $minutes = intdiv($seconds % 3600, 60);
+        $secs = $seconds % 60;
+
+        if ($hours > 0) {
+            return sprintf('%d:%02d:%02d', $hours, $minutes, $secs);
+        }
+
+        return sprintf('%d:%02d', $minutes, $secs);
+    }
+
+    #[Computed]
     public function comments()
     {
         return PuzzleComment::where('crossword_id', $this->crosswordId)
@@ -734,6 +790,52 @@ new #[Title('Solve Crossword')] class extends Component {
             </div>
         </div>
     </div>
+
+    {{-- Performance Comparison (visible when solved with community data) --}}
+    @if($isSolved && $this->communityStats)
+        @php($stats = $this->communityStats)
+        <div class="mt-6 rounded-xl border {{ $stats['diff'] < 0 ? 'border-emerald-200 bg-emerald-50/50 dark:border-emerald-900/30 dark:bg-emerald-950/20' : 'border-line bg-elevated' }} p-5" wire:key="performance-section">
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="flex size-10 items-center justify-center rounded-lg {{ $stats['diff'] < 0 ? 'bg-emerald-100 dark:bg-emerald-900/40' : 'bg-zinc-100 dark:bg-zinc-800' }}">
+                        @if($stats['diff'] < 0)
+                            <flux:icon name="arrow-trending-up" class="size-5 text-emerald-600 dark:text-emerald-400" />
+                        @else
+                            <svg xmlns="http://www.w3.org/2000/svg" class="size-5 text-zinc-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        @endif
+                    </div>
+                    <div>
+                        @if($stats['diff'] < 0)
+                            <div class="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+                                {{ __('Faster than average!') }}
+                            </div>
+                        @elseif($stats['diff'] > 0)
+                            <div class="text-sm font-semibold text-fg">
+                                {{ __('Keep practicing!') }}
+                            </div>
+                        @else
+                            <div class="text-sm font-semibold text-fg">
+                                {{ __('Right on target!') }}
+                            </div>
+                        @endif
+                        <flux:text size="sm" class="text-zinc-500">
+                            {{ __('Faster than :pct% of :count solvers', ['pct' => $stats['percentile'], 'count' => $stats['total_solvers']]) }}
+                        </flux:text>
+                    </div>
+                </div>
+                <div class="flex items-center gap-6">
+                    <div class="text-center">
+                        <flux:text size="sm" class="text-zinc-500">{{ __('Your Time') }}</flux:text>
+                        <div class="font-mono text-sm font-semibold text-fg">{{ $stats['your_time_formatted'] }}</div>
+                    </div>
+                    <div class="text-center">
+                        <flux:text size="sm" class="text-zinc-500">{{ __('Average') }}</flux:text>
+                        <div class="font-mono text-sm font-semibold text-fg">{{ $stats['avg_time_formatted'] }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
 
     {{-- Comments & Ratings (visible when solved) --}}
     @if($isSolved)
