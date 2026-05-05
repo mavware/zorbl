@@ -406,7 +406,7 @@ new #[Title('Solve Crossword')] class extends Component {
     {{-- Toolbar --}}
     <div class="mb-4 flex flex-wrap items-center gap-2">
         <div class="flex flex-1 items-center gap-3">
-            <flux:heading size="lg">{{ $title }}</flux:heading>
+            <flux:heading size="lg" data-puzzle-title>{{ $title }}</flux:heading>
             @if(!$isOwner && $authorName)
                 <flux:text size="sm" class="text-zinc-500">
                     {{ __('by') }}
@@ -573,6 +573,17 @@ new #[Title('Solve Crossword')] class extends Component {
                     </template>
                 </div>
             @endif
+
+            {{-- Share button (visible when solved) --}}
+            <template x-if="solved">
+                <button
+                    x-on:click="shareResults()"
+                    :title="shareCopied ? '{{ __('Copied!') }}' : '{{ __('Share results') }}'"
+                    class="rounded-lg p-1.5 text-emerald-500 transition-colors hover:text-emerald-600 dark:hover:text-emerald-400"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 20 20" fill="currentColor"><path d="M13 4.5a2.5 2.5 0 11.702 4.89L8.45 12.3a2.5 2.5 0 11-.36-.891l5.252-2.91A2.5 2.5 0 0113 4.5zm-8 6a1 1 0 100 2 1 1 0 000-2zm8-5a1 1 0 100 2 1 1 0 000-2z"/></svg>
+                </button>
+            </template>
 
             {{-- Save status --}}
             <div class="flex items-center gap-1 pl-2 text-sm text-zinc-500">
@@ -990,16 +1001,23 @@ new #[Title('Solve Crossword')] class extends Component {
 
                 {{-- Buttons --}}
                 <div class="flex flex-col gap-2">
+                    <button
+                        x-on:click="shareResults()"
+                        class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:bg-emerald-600 dark:hover:bg-emerald-500 dark:focus:ring-offset-zinc-800"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="size-4" viewBox="0 0 20 20" fill="currentColor"><path d="M13 4.5a2.5 2.5 0 11.702 4.89L8.45 12.3a2.5 2.5 0 11-.36-.891l5.252-2.91A2.5 2.5 0 0113 4.5zm-8 6a1 1 0 100 2 1 1 0 000-2zm8-5a1 1 0 100 2 1 1 0 000-2z"/></svg>
+                        <span x-text="shareCopied ? '{{ __('Copied!') }}' : '{{ __('Share Results') }}'"></span>
+                    </button>
                     <a
                         href="{{ route('crosswords.solving') }}"
                         wire:navigate
-                        class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:bg-emerald-600 dark:hover:bg-emerald-500 dark:focus:ring-offset-zinc-800"
+                        class="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-zinc-200 px-4 py-2.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:ring-offset-2 dark:border-zinc-600 dark:text-zinc-300 dark:hover:bg-zinc-700 dark:focus:ring-offset-zinc-800"
                     >
                         {{ __('Browse More Puzzles') }}
                     </a>
                     <button
                         x-on:click="showCelebration = false"
-                        class="inline-flex w-full items-center justify-center rounded-lg px-4 py-2.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:ring-offset-2 dark:text-zinc-400 dark:hover:bg-zinc-700 dark:focus:ring-offset-zinc-800"
+                        class="inline-flex w-full items-center justify-center rounded-lg px-4 py-2.5 text-sm font-medium text-zinc-500 transition hover:text-zinc-700 focus:outline-none dark:text-zinc-400 dark:hover:text-zinc-200"
                     >
                         {{ __('Keep Looking') }}
                     </button>

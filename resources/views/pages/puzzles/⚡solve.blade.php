@@ -138,7 +138,7 @@ class extends Component {
         {{-- Toolbar --}}
         <div class="mb-4 flex flex-wrap items-center gap-2">
             <div class="flex flex-1 items-center gap-3">
-                <flux:heading size="lg">{{ $title }}</flux:heading>
+                <flux:heading size="lg" data-puzzle-title>{{ $title }}</flux:heading>
                 @if($authorName)
                     <flux:text size="sm" class="text-zinc-500">
                         {{ __('by') }} {{ $authorName }}
@@ -202,6 +202,17 @@ class extends Component {
                         <flux:menu.item x-on:click="clearErrors()" class="text-amber-600 dark:text-amber-400">{{ __('Clear incorrect letters') }}</flux:menu.item>
                     </flux:menu>
                 </flux:dropdown>
+
+                {{-- Share button (visible when solved) --}}
+                <template x-if="solved">
+                    <button
+                        x-on:click="shareResults()"
+                        :title="shareCopied ? '{{ __('Copied!') }}' : '{{ __('Share results') }}'"
+                        class="rounded-lg p-1.5 text-emerald-500 transition-colors hover:text-emerald-600 dark:hover:text-emerald-400"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 20 20" fill="currentColor"><path d="M13 4.5a2.5 2.5 0 11.702 4.89L8.45 12.3a2.5 2.5 0 11-.36-.891l5.252-2.91A2.5 2.5 0 0113 4.5zm-8 6a1 1 0 100 2 1 1 0 000-2zm8-5a1 1 0 100 2 1 1 0 000-2z"/></svg>
+                    </button>
+                </template>
 
                 {{-- Status --}}
                 <div class="flex items-center gap-1 pl-2 text-sm text-zinc-500">
