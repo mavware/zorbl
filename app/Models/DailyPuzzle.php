@@ -76,11 +76,21 @@ class DailyPuzzle extends Model
 
     public static function today(): ?self
     {
-        return Cache::remember('daily_puzzle:'.today()->toDateString(), 3600, function () {
-            return static::with('crossword.user:id,name')
-                ->forDate(today())
-                ->first();
-        });
+        // Cache only the scalar id, then re-fetch the full model on read.
+        // Caching a hydrated Eloquent model means a class-definition drift
+        // between deploys (or any change in the eager-loaded graph) returns
+        // __PHP_Incomplete_Class on unserialize. Cache keys were bumped from
+        // `daily_puzzle:` to `daily_puzzle_id:` so any pre-existing corrupted
+        // caches are bypassed.
+        $id = Cache::remember(
+            'daily_puzzle_id:'.today()->toDateString(),
+            3600,
+            fn () => static::forDate(today())->value('id'),
+        );
+
+        return $id
+            ? static::with('crossword.user:id,name')->find($id)
+            : null;
     }
 
     public static function todayOrAuto(): ?Crossword
@@ -98,24 +108,30 @@ class DailyPuzzle extends Model
     {
         $dateString = $date instanceof Carbon ? $date->toDateString() : $date;
 
-        return Cache::remember('daily_puzzle_auto:'.$dateString, 3600, function () use ($dateString) {
-            $candidates = Crossword::where('is_published', true)
-                ->whereNotNull('title')
-                ->where('title', '!=', '')
-                ->whereHas('attempts', fn (Builder $q) => $q->where('is_completed', true))
-                ->select('id')
-                ->get();
+        // See `today()` for why we cache only the scalar id.
+        $id = Cache::remember(
+            'daily_puzzle_auto_id:'.$dateString,
+            3600,
+            function () use ($dateString) {
+                $candidates = Crossword::where('is_published', true)
+                    ->whereNotNull('title')
+                    ->where('title', '!=', '')
+                    ->whereHas('attempts', fn (Builder $q) => $q->where('is_completed', true))
+                    ->pluck('id');
 
-            if ($candidates->isEmpty()) {
-                return null;
-            }
+                if ($candidates->isEmpty()) {
+                    return null;
+                }
 
-            $seed = crc32($dateString);
-            $index = abs($seed) % $candidates->count();
+                $seed = crc32($dateString);
+                $index = abs($seed) % $candidates->count();
 
-            return Crossword::with('user:id,name')
-                ->withCount('likes')
-                ->find($candidates->values()->get($index)->id);
-        });
+                return $candidates->values()->get($index);
+            },
+        );
+
+        return $id
+            ? Crossword::with('user:id,name')->withCount('likes')->find($id)
+            : null;
     }
 }
