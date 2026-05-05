@@ -29,6 +29,13 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [x] Seed a default set of common crossword tags (e.g. Pop Culture, Sports, Science, History, Movies, Music, Geography, Food, Literature, Current Events)
 - [x] ability to change color of cell background
 - [x] Render bar-style word boundaries in PDF exports (bars are used for numbering but not visually drawn in the PDF)
+- [ ] Ask Claude to find an algorithm to generate a template based on existing template data
+- [ ] Add solve time vs. average indicator to puzzle cards on the /solving page for completed puzzles
+- [ ] Add difficulty breakdown (Easy/Medium/Hard/Expert) stats to the solving stats page alongside Times by Grid Size
+- [ ] Add a notification preferences page so users can opt out of specific notification types (e.g. new puzzle published, likes, comments)
+- [ ] Add email channel option for puzzle-published notifications (alongside the existing database channel)
+- [ ] Add a rating trend chart or sparkline to the constructor analytics page showing how ratings change over time
+- [ ] Add pagination to the solve history table on the stats page to handle users with many completed puzzles
 - [x] Ask Claude to find an algorithm to generate a template based on existing template data
 
 ## Done
