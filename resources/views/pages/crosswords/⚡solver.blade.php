@@ -600,7 +600,14 @@ new #[Title('Solve Crossword')] class extends Component {
                     </span>
                 </template>
                 <template x-if="solved">
-                    <span class="font-semibold text-emerald-500">{{ __('Solved!') }}</span>
+                    <span class="flex items-center gap-1.5">
+                        <span class="font-semibold text-emerald-500">{{ __('Solved!') }}</span>
+                        <button
+                            x-on:click="shareResults()"
+                            class="rounded-md px-2 py-0.5 text-xs font-medium text-emerald-600 transition-colors hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/30"
+                            x-text="shareButtonLabel"
+                        ></button>
+                    </span>
                 </template>
             </div>
         </div>
@@ -1007,6 +1014,15 @@ new #[Title('Solve Crossword')] class extends Component {
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" class="size-4" viewBox="0 0 20 20" fill="currentColor"><path d="M13 4.5a2.5 2.5 0 11.702 4.89L8.45 12.3a2.5 2.5 0 11-.36-.891l5.252-2.91A2.5 2.5 0 0113 4.5zm-8 6a1 1 0 100 2 1 1 0 000-2zm8-5a1 1 0 100 2 1 1 0 000-2z"/></svg>
                         <span x-text="shareCopied ? '{{ __('Copied!') }}' : '{{ __('Share Results') }}'"></span>
+                    </button>
+                    <button
+                        x-on:click="shareResults()"
+                        class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:bg-emerald-600 dark:hover:bg-emerald-500 dark:focus:ring-offset-zinc-800"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="size-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M13 4.5a2.5 2.5 0 11.702 4.89L8.839 12.11a2.5 2.5 0 11-.399-.964l4.863-2.72A2.5 2.5 0 0113 4.5zM6.5 10a1.5 1.5 0 100 3 1.5 1.5 0 000-3z"/>
+                        </svg>
+                        <span x-text="shareButtonLabel"></span>
                     </button>
                     <a
                         href="{{ route('crosswords.solving') }}"
