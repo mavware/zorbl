@@ -16,6 +16,7 @@ class UserResource extends JsonApiResource
         return [
             'name' => $this->name,
             'copyright_name' => $this->copyright_name,
+            'bio' => $this->bio,
             'created_at' => $this->created_at,
         ];
     }
