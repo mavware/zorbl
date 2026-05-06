@@ -20,6 +20,22 @@ new #[Title('Dashboard')] class extends Component {
     }
 
     #[Computed]
+    public function dailyPuzzleSolved(): bool
+    {
+        $puzzle = $this->dailyPuzzle;
+
+        if (! $puzzle) {
+            return false;
+        }
+
+        return Auth::user()
+            ->puzzleAttempts()
+            ->where('crossword_id', $puzzle->id)
+            ->where('is_completed', true)
+            ->exists();
+    }
+
+    #[Computed]
     public function publishedCount(): int
     {
         return Auth::user()->crosswords()->where('is_published', true)->count();
@@ -173,16 +189,28 @@ new #[Title('Dashboard')] class extends Component {
 
     {{-- Puzzle of the Day --}}
     @if($dailyPuzzle = $this->dailyPuzzle)
-        <div class="relative overflow-hidden rounded-xl border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 p-5 dark:border-amber-800/50 dark:from-amber-950/30 dark:to-orange-950/30">
+        @php
+            $dailySolved = $this->dailyPuzzleSolved;
+            $dailyIconName = $dailySolved ? 'check-circle' : 'star';
+            $dailyBorderClass = $dailySolved
+                ? 'border-emerald-200 bg-gradient-to-r from-emerald-50 to-green-50 dark:border-emerald-800/50 dark:from-emerald-950/30 dark:to-green-950/30'
+                : 'border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 dark:border-amber-800/50 dark:from-amber-950/30 dark:to-orange-950/30';
+            $dailyIconBgClass = $dailySolved ? 'bg-emerald-100 dark:bg-emerald-900/50' : 'bg-amber-100 dark:bg-amber-900/50';
+            $dailyIconClass = $dailySolved ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400';
+        @endphp
+        <div class="relative overflow-hidden rounded-xl border {{ $dailyBorderClass }} p-5">
             <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div class="flex items-center gap-4">
-                    <div class="flex size-12 shrink-0 items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-900/50">
-                        <flux:icon name="star" class="size-6 text-amber-600 dark:text-amber-400" />
+                    <div class="flex size-12 shrink-0 items-center justify-center rounded-xl {{ $dailyIconBgClass }}">
+                        <flux:icon :name="$dailyIconName" class="size-6 {{ $dailyIconClass }}" />
                     </div>
                     <div>
                         <div class="flex items-center gap-2">
                             <flux:heading size="lg">{{ __('Puzzle of the Day') }}</flux:heading>
                             <flux:badge size="sm" color="amber">{{ today()->format('M j') }}</flux:badge>
+                            @if($dailySolved)
+                                <flux:badge size="sm" color="green">{{ __('Solved') }}</flux:badge>
+                            @endif
                         </div>
                         <flux:text size="sm" class="mt-0.5 text-zinc-600 dark:text-zinc-400">
                             <span class="font-medium text-fg">{{ $dailyPuzzle->title ?: __('Untitled Puzzle') }}</span>
@@ -193,9 +221,15 @@ new #[Title('Dashboard')] class extends Component {
                         </flux:text>
                     </div>
                 </div>
-                <flux:button variant="primary" size="sm" :href="route('crosswords.solver', $dailyPuzzle)" wire:navigate icon="play">
-                    {{ __('Solve Today\'s Puzzle') }}
-                </flux:button>
+                @if($dailySolved)
+                    <flux:button variant="ghost" size="sm" :href="route('crosswords.solver', $dailyPuzzle)" wire:navigate icon="arrow-path">
+                        {{ __('Solve Again') }}
+                    </flux:button>
+                @else
+                    <flux:button variant="primary" size="sm" :href="route('crosswords.solver', $dailyPuzzle)" wire:navigate icon="play">
+                        {{ __('Solve Today\'s Puzzle') }}
+                    </flux:button>
+                @endif
             </div>
         </div>
     @endif

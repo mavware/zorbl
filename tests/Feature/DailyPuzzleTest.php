@@ -176,3 +176,84 @@ test('public puzzles page shows daily puzzle', function () {
         ->assertSee('Puzzle of the Day')
         ->assertSee('Public Daily');
 });
+
+test('dashboard shows solved badge when user has completed the daily puzzle', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->published()->create(['title' => 'Daily Solved']);
+    DailyPuzzle::create(['date' => today(), 'crossword_id' => $crossword->id]);
+
+    PuzzleAttempt::factory()->completed()->create([
+        'user_id' => $user->id,
+        'crossword_id' => $crossword->id,
+    ]);
+
+    Cache::flush();
+
+    Livewire::actingAs($user)
+        ->test('pages::dashboard')
+        ->assertSee('Puzzle of the Day')
+        ->assertSee('Solved')
+        ->assertSee('Solve Again');
+});
+
+test('dashboard does not show solved badge when user has not completed the daily puzzle', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->published()->create(['title' => 'Daily Unsolved']);
+    DailyPuzzle::create(['date' => today(), 'crossword_id' => $crossword->id]);
+
+    Cache::flush();
+
+    Livewire::actingAs($user)
+        ->test('pages::dashboard')
+        ->assertSee('Puzzle of the Day')
+        ->assertDontSee('Solve Again')
+        ->assertSee("Solve Today's Puzzle");
+});
+
+test('dashboard does not show solved badge for in-progress daily attempt', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->published()->create();
+    DailyPuzzle::create(['date' => today(), 'crossword_id' => $crossword->id]);
+
+    PuzzleAttempt::factory()->create([
+        'user_id' => $user->id,
+        'crossword_id' => $crossword->id,
+        'is_completed' => false,
+    ]);
+
+    Cache::flush();
+
+    $component = Livewire::actingAs($user)->test('pages::dashboard');
+
+    expect($component->get('dailyPuzzleSolved'))->toBeFalse();
+});
+
+test('browse page shows solved badge when authenticated user has completed the daily puzzle', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->published()->create(['title' => 'Browse Daily']);
+    DailyPuzzle::create(['date' => today(), 'crossword_id' => $crossword->id]);
+
+    PuzzleAttempt::factory()->completed()->create([
+        'user_id' => $user->id,
+        'crossword_id' => $crossword->id,
+    ]);
+
+    Cache::flush();
+
+    Livewire::actingAs($user)
+        ->test('pages::puzzles.index')
+        ->assertSee('Puzzle of the Day')
+        ->assertSee('Solved')
+        ->assertSee('Solve Again');
+});
+
+test('browse page does not show solved badge for guests', function () {
+    $crossword = Crossword::factory()->published()->create(['title' => 'Guest Daily']);
+    DailyPuzzle::create(['date' => today(), 'crossword_id' => $crossword->id]);
+
+    Cache::flush();
+
+    $component = Livewire::test('pages::puzzles.index');
+
+    expect($component->get('dailyPuzzleSolved'))->toBeFalse();
+});
