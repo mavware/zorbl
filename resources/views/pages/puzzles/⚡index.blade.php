@@ -51,6 +51,26 @@ class extends Component {
     }
 
     #[Computed]
+    public function dailyPuzzleSolved(): bool
+    {
+        if (! Auth::check()) {
+            return false;
+        }
+
+        $puzzle = $this->dailyPuzzle;
+
+        if (! $puzzle) {
+            return false;
+        }
+
+        return Auth::user()
+            ->puzzleAttempts()
+            ->where('crossword_id', $puzzle->id)
+            ->where('is_completed', true)
+            ->exists();
+    }
+
+    #[Computed]
     public function puzzles()
     {
         $query = Crossword::where('is_published', true)
@@ -282,16 +302,27 @@ class extends Component {
 
     {{-- Puzzle of the Day --}}
     @if($dailyPuzzle = $this->dailyPuzzle)
-        <div class="relative overflow-hidden rounded-xl border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 p-5 dark:border-amber-800/50 dark:from-amber-950/30 dark:to-orange-950/30">
+        @php
+            $dailySolved = $this->dailyPuzzleSolved;
+            $dailyIconName = $dailySolved ? 'check-circle' : 'star';
+            $dailyIconClass = $dailySolved ? 'text-emerald-500' : 'text-amber-500';
+            $dailyBorderClass = $dailySolved
+                ? 'border-emerald-200 bg-gradient-to-r from-emerald-50 to-green-50 dark:border-emerald-800/50 dark:from-emerald-950/30 dark:to-green-950/30'
+                : 'border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 dark:border-amber-800/50 dark:from-amber-950/30 dark:to-orange-950/30';
+        @endphp
+        <div class="relative overflow-hidden rounded-xl border {{ $dailyBorderClass }} p-5">
             <div class="flex flex-col gap-4 sm:flex-row sm:items-center">
                 <div class="flex shrink-0 justify-center sm:justify-start">
                     <x-grid-thumbnail :grid="$dailyPuzzle->grid" :width="$dailyPuzzle->width" :height="$dailyPuzzle->height" :cell-size="5" :max-width="64" />
                 </div>
                 <div class="min-w-0 flex-1">
                     <div class="flex items-center gap-2">
-                        <flux:icon name="star" class="size-5 text-amber-500" />
+                        <flux:icon :name="$dailyIconName" class="size-5 {{ $dailyIconClass }}" />
                         <flux:heading size="lg">{{ __('Puzzle of the Day') }}</flux:heading>
                         <flux:badge size="sm" color="amber">{{ today()->format('M j') }}</flux:badge>
+                        @if($dailySolved)
+                            <flux:badge size="sm" color="green">{{ __('Solved') }}</flux:badge>
+                        @endif
                     </div>
                     <div class="mt-1">
                         <span class="font-medium text-fg">{{ $dailyPuzzle->title ?: __('Untitled Puzzle') }}</span>
@@ -307,9 +338,15 @@ class extends Component {
                     </div>
                 </div>
                 <div class="shrink-0">
-                    <flux:button variant="primary" size="sm" wire:click="startSolving({{ $dailyPuzzle->id }})" icon="play">
-                        {{ __('Solve Now') }}
-                    </flux:button>
+                    @if($dailySolved)
+                        <flux:button variant="ghost" size="sm" wire:click="startSolving({{ $dailyPuzzle->id }})" icon="arrow-path">
+                            {{ __('Solve Again') }}
+                        </flux:button>
+                    @else
+                        <flux:button variant="primary" size="sm" wire:click="startSolving({{ $dailyPuzzle->id }})" icon="play">
+                            {{ __('Solve Now') }}
+                        </flux:button>
+                    @endif
                 </div>
             </div>
         </div>
