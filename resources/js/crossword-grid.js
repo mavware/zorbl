@@ -42,7 +42,7 @@ export function crosswordGrid({
         cluesDown: cluesDown || [],
         minAnswerLength: minAnswerLength || 3,
         prefilled: prefilled || null,
-        gridLocked: !!gridLocked,
+        gridLocked: caps.hasGridLock && !!gridLocked,
         puzzleType: caps,
         selectedRow: -1,
         selectedCol: -1,
@@ -655,7 +655,14 @@ export function crosswordGrid({
         },
 
         // --- Block / void toggling -------------------------------------------
+        // Fixed voids (e.g. Diamond corners) define the puzzle's shape and must
+        // never be mutated by the user.
+        _isFixedVoid(row, col) {
+            return this.puzzleType.hasFixedVoids && this.isVoid(row, col);
+        },
+
         toggleBlock(row, col) {
+            if (this._isFixedVoid(row, col)) return;
             const becomingBlock = !this.isBlock(row, col);
             this._writeCell(row, col, becomingBlock ? '#' : 0, becomingBlock ? '#' : '');
             if (this.symmetry) {
@@ -672,6 +679,7 @@ export function crosswordGrid({
         },
 
         toggleVoid(row, col) {
+            if (this._isFixedVoid(row, col)) return;
             const becomingVoid = !this.isVoid(row, col);
             this._writeCell(row, col, becomingVoid ? null : 0, becomingVoid ? null : '');
             if (this.symmetry) {

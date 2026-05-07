@@ -776,7 +776,7 @@ class extends Component {
             cluesDown: @js($cluesDown),
             minAnswerLength: @js($minAnswerLength),
             prefilled: @js($prefilled),
-            gridLocked: @js($freestyleLocked && $puzzleType === PuzzleType::Freestyle),
+            gridLocked: @js($freestyleLocked),
             puzzleType: @js($puzzleType->value),
         })"
     x-on:freestyle-locked.window="gridLocked = $event.detail.locked; grid = $wire.grid; solution = $wire.solution; cluesAcross = $wire.cluesAcross; cluesDown = $wire.cluesDown;"
