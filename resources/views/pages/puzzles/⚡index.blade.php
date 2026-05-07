@@ -3,6 +3,7 @@
 use App\Models\Crossword;
 use App\Models\CrosswordLike;
 use App\Models\DailyPuzzle;
+use App\Models\PuzzleAttempt;
 use App\Models\Tag;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
@@ -48,6 +49,22 @@ class extends Component {
     public function dailyPuzzle(): ?Crossword
     {
         return DailyPuzzle::todayOrAuto();
+    }
+
+    #[Computed]
+    public function dailyPuzzleSolved(): bool
+    {
+        $puzzle = $this->dailyPuzzle;
+
+        if (! $puzzle || ! Auth::check()) {
+            return false;
+        }
+
+        return Auth::user()
+            ->puzzleAttempts()
+            ->where('crossword_id', $puzzle->id)
+            ->where('is_completed', true)
+            ->exists();
     }
 
     #[Computed]
@@ -292,6 +309,9 @@ class extends Component {
                         <flux:icon name="star" class="size-5 text-amber-500" />
                         <flux:heading size="lg">{{ __('Puzzle of the Day') }}</flux:heading>
                         <flux:badge size="sm" color="amber">{{ today()->format('M j') }}</flux:badge>
+                        @if($this->dailyPuzzleSolved)
+                            <flux:badge size="sm" color="green" icon="check-circle">{{ __('Solved') }}</flux:badge>
+                        @endif
                     </div>
                     <div class="mt-1">
                         <span class="font-medium text-fg">{{ $dailyPuzzle->title ?: __('Untitled Puzzle') }}</span>
@@ -307,9 +327,15 @@ class extends Component {
                     </div>
                 </div>
                 <div class="shrink-0">
-                    <flux:button variant="primary" size="sm" wire:click="startSolving({{ $dailyPuzzle->id }})" icon="play">
-                        {{ __('Solve Now') }}
-                    </flux:button>
+                    @if($this->dailyPuzzleSolved)
+                        <flux:button variant="filled" size="sm" wire:click="startSolving({{ $dailyPuzzle->id }})" icon="eye">
+                            {{ __('View Solution') }}
+                        </flux:button>
+                    @else
+                        <flux:button variant="primary" size="sm" wire:click="startSolving({{ $dailyPuzzle->id }})" icon="play">
+                            {{ __('Solve Now') }}
+                        </flux:button>
+                    @endif
                 </div>
             </div>
         </div>

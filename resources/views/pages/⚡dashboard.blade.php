@@ -20,6 +20,22 @@ new #[Title('Dashboard')] class extends Component {
     }
 
     #[Computed]
+    public function dailyPuzzleSolved(): bool
+    {
+        $puzzle = $this->dailyPuzzle;
+
+        if (! $puzzle) {
+            return false;
+        }
+
+        return Auth::user()
+            ->puzzleAttempts()
+            ->where('crossword_id', $puzzle->id)
+            ->where('is_completed', true)
+            ->exists();
+    }
+
+    #[Computed]
     public function publishedCount(): int
     {
         return Auth::user()->crosswords()->where('is_published', true)->count();
@@ -183,6 +199,9 @@ new #[Title('Dashboard')] class extends Component {
                         <div class="flex items-center gap-2">
                             <flux:heading size="lg">{{ __('Puzzle of the Day') }}</flux:heading>
                             <flux:badge size="sm" color="amber">{{ today()->format('M j') }}</flux:badge>
+                            @if($this->dailyPuzzleSolved)
+                                <flux:badge size="sm" color="green" icon="check-circle">{{ __('Solved') }}</flux:badge>
+                            @endif
                         </div>
                         <flux:text size="sm" class="mt-0.5 text-zinc-600 dark:text-zinc-400">
                             <span class="font-medium text-fg">{{ $dailyPuzzle->title ?: __('Untitled Puzzle') }}</span>
@@ -193,9 +212,15 @@ new #[Title('Dashboard')] class extends Component {
                         </flux:text>
                     </div>
                 </div>
-                <flux:button variant="primary" size="sm" :href="route('crosswords.solver', $dailyPuzzle)" wire:navigate icon="play">
-                    {{ __('Solve Today\'s Puzzle') }}
-                </flux:button>
+                @if($this->dailyPuzzleSolved)
+                    <flux:button variant="filled" size="sm" :href="route('crosswords.solver', $dailyPuzzle)" wire:navigate icon="eye">
+                        {{ __('View Solution') }}
+                    </flux:button>
+                @else
+                    <flux:button variant="primary" size="sm" :href="route('crosswords.solver', $dailyPuzzle)" wire:navigate icon="play">
+                        {{ __('Solve Today\'s Puzzle') }}
+                    </flux:button>
+                @endif
             </div>
         </div>
     @endif
