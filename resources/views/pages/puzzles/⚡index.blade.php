@@ -338,7 +338,7 @@ class extends Component {
                         </flux:text>
                     </div>
                 </div>
-                <div class="shrink-0">
+                <div class="flex shrink-0 flex-col items-end gap-2">
                     @if($dailySolved)
                         <flux:button variant="filled" size="sm" wire:click="startSolving({{ $dailyPuzzle->id }})" icon="eye">
                             {{ __('View Solution') }}
@@ -348,6 +348,9 @@ class extends Component {
                             {{ __('Solve Now') }}
                         </flux:button>
                     @endif
+                    <a href="{{ route('puzzles.daily-history') }}" wire:navigate class="text-xs text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300">
+                        {{ __('View past puzzles') }} &rarr;
+                    </a>
                 </div>
             </div>
         </div>
