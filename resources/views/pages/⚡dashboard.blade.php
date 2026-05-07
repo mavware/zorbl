@@ -209,7 +209,7 @@ new #[Title('Dashboard')] class extends Component {
                             <flux:heading size="lg">{{ __('Puzzle of the Day') }}</flux:heading>
                             <flux:badge size="sm" color="amber">{{ today()->format('M j') }}</flux:badge>
                             @if($dailySolved)
-                                <flux:badge size="sm" color="green">{{ __('Solved') }}</flux:badge>
+                                <flux:badge size="sm" color="green" icon="check-circle">{{ __('Solved') }}</flux:badge>
                             @endif
                         </div>
                         <flux:text size="sm" class="mt-0.5 text-zinc-600 dark:text-zinc-400">
@@ -222,8 +222,8 @@ new #[Title('Dashboard')] class extends Component {
                     </div>
                 </div>
                 @if($dailySolved)
-                    <flux:button variant="ghost" size="sm" :href="route('crosswords.solver', $dailyPuzzle)" wire:navigate icon="arrow-path">
-                        {{ __('Solve Again') }}
+                    <flux:button variant="filled" size="sm" :href="route('crosswords.solver', $dailyPuzzle)" wire:navigate icon="eye">
+                        {{ __('View Solution') }}
                     </flux:button>
                 @else
                     <flux:button variant="primary" size="sm" :href="route('crosswords.solver', $dailyPuzzle)" wire:navigate icon="play">

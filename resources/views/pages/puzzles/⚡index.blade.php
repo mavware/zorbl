@@ -3,6 +3,7 @@
 use App\Models\Crossword;
 use App\Models\CrosswordLike;
 use App\Models\DailyPuzzle;
+use App\Models\PuzzleAttempt;
 use App\Models\Tag;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
@@ -321,7 +322,7 @@ class extends Component {
                         <flux:heading size="lg">{{ __('Puzzle of the Day') }}</flux:heading>
                         <flux:badge size="sm" color="amber">{{ today()->format('M j') }}</flux:badge>
                         @if($dailySolved)
-                            <flux:badge size="sm" color="green">{{ __('Solved') }}</flux:badge>
+                            <flux:badge size="sm" color="green" icon="check-circle">{{ __('Solved') }}</flux:badge>
                         @endif
                     </div>
                     <div class="mt-1">
@@ -339,8 +340,8 @@ class extends Component {
                 </div>
                 <div class="shrink-0">
                     @if($dailySolved)
-                        <flux:button variant="ghost" size="sm" wire:click="startSolving({{ $dailyPuzzle->id }})" icon="arrow-path">
-                            {{ __('Solve Again') }}
+                        <flux:button variant="filled" size="sm" wire:click="startSolving({{ $dailyPuzzle->id }})" icon="eye">
+                            {{ __('View Solution') }}
                         </flux:button>
                     @else
                         <flux:button variant="primary" size="sm" wire:click="startSolving({{ $dailyPuzzle->id }})" icon="play">
