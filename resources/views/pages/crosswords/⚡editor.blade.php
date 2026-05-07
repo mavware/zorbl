@@ -777,6 +777,7 @@ class extends Component {
             minAnswerLength: @js($minAnswerLength),
             prefilled: @js($prefilled),
             gridLocked: @js($freestyleLocked && $puzzleType === PuzzleType::Freestyle),
+            puzzleType: @js($puzzleType->value),
         })"
     x-on:freestyle-locked.window="gridLocked = $event.detail.locked; grid = $wire.grid; solution = $wire.solution; cluesAcross = $wire.cluesAcross; cluesDown = $wire.cluesDown;"
     x-on:saved.window="onSaved()"
@@ -828,7 +829,7 @@ class extends Component {
             </div>
 
             {{-- Symmetry --}}
-            <flux:tooltip content="{{ __('Rotational symmetry') }}">
+            <flux:tooltip content="{{ __('Rotational symmetry') }}" x-show="puzzleType.allowSymmetryToggle">
                 <button
                     x-on:click="symmetry = !symmetry"
                     :class="symmetry ? 'bg-zinc-800 text-white dark:bg-zinc-200 dark:text-zinc-900' : 'text-fg-muted'"

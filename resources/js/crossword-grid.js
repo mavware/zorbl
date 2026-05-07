@@ -19,6 +19,7 @@ import {
 } from './grid/helpers.js';
 import { numberGrid as runNumberGrid } from './grid/numbering.js';
 import { cloneForWire, createAutosave } from './grid/persistence.js';
+import { puzzleTypeCapabilities } from './grid/puzzle-type.js';
 
 const HIGHLIGHT_AUTO_CLEAR_MS = 8000;
 const WORD_SUGGEST_DEBOUNCE_MS = 300;
@@ -26,8 +27,10 @@ const LONG_PRESS_MS = 500;
 
 export function crosswordGrid({
     width, height, grid, solution, styles, cluesAcross, cluesDown,
-    minAnswerLength, prefilled, gridLocked,
+    minAnswerLength, prefilled, gridLocked, puzzleType,
 }) {
+    const caps = puzzleTypeCapabilities(puzzleType);
+
     return {
         // --- State -----------------------------------------------------------
         width,
@@ -40,11 +43,12 @@ export function crosswordGrid({
         minAnswerLength: minAnswerLength || 3,
         prefilled: prefilled || null,
         gridLocked: !!gridLocked,
+        puzzleType: caps,
         selectedRow: -1,
         selectedCol: -1,
         direction: 'across',
         mode: 'edit',
-        symmetry: true,
+        symmetry: caps.enforceSymmetry,
         isDirty: false,
         saving: false,
         showSaved: false,
