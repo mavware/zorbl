@@ -189,17 +189,26 @@ new #[Title('Dashboard')] class extends Component {
 
     {{-- Puzzle of the Day --}}
     @if($dailyPuzzle = $this->dailyPuzzle)
-        <div class="relative overflow-hidden rounded-xl border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 p-5 dark:border-amber-800/50 dark:from-amber-950/30 dark:to-orange-950/30">
+        @php
+            $dailySolved = $this->dailyPuzzleSolved;
+            $dailyIconName = $dailySolved ? 'check-circle' : 'star';
+            $dailyBorderClass = $dailySolved
+                ? 'border-emerald-200 bg-gradient-to-r from-emerald-50 to-green-50 dark:border-emerald-800/50 dark:from-emerald-950/30 dark:to-green-950/30'
+                : 'border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 dark:border-amber-800/50 dark:from-amber-950/30 dark:to-orange-950/30';
+            $dailyIconBgClass = $dailySolved ? 'bg-emerald-100 dark:bg-emerald-900/50' : 'bg-amber-100 dark:bg-amber-900/50';
+            $dailyIconClass = $dailySolved ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400';
+        @endphp
+        <div class="relative overflow-hidden rounded-xl border {{ $dailyBorderClass }} p-5">
             <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div class="flex items-center gap-4">
-                    <div class="flex size-12 shrink-0 items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-900/50">
-                        <flux:icon name="star" class="size-6 text-amber-600 dark:text-amber-400" />
+                    <div class="flex size-12 shrink-0 items-center justify-center rounded-xl {{ $dailyIconBgClass }}">
+                        <flux:icon :name="$dailyIconName" class="size-6 {{ $dailyIconClass }}" />
                     </div>
                     <div>
                         <div class="flex items-center gap-2">
                             <flux:heading size="lg">{{ __('Puzzle of the Day') }}</flux:heading>
                             <flux:badge size="sm" color="amber">{{ today()->format('M j') }}</flux:badge>
-                            @if($this->dailyPuzzleSolved)
+                            @if($dailySolved)
                                 <flux:badge size="sm" color="green" icon="check-circle">{{ __('Solved') }}</flux:badge>
                             @endif
                         </div>
@@ -212,7 +221,7 @@ new #[Title('Dashboard')] class extends Component {
                         </flux:text>
                     </div>
                 </div>
-                @if($this->dailyPuzzleSolved)
+                @if($dailySolved)
                     <flux:button variant="filled" size="sm" :href="route('crosswords.solver', $dailyPuzzle)" wire:navigate icon="eye">
                         {{ __('View Solution') }}
                     </flux:button>
