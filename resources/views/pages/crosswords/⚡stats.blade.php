@@ -7,8 +7,11 @@ use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
+use Livewire\WithPagination;
 
 new #[Title('Solve Statistics')] class extends Component {
+    use WithPagination;
+
     #[Url]
     public string $sortField = 'completed_at';
 
@@ -16,19 +19,19 @@ new #[Title('Solve Statistics')] class extends Component {
     public string $sortDirection = 'desc';
 
     #[Computed]
-    public function completedAttempts()
+    public function paginatedAttempts()
     {
-        $query = Auth::user()
-            ->puzzleAttempts()
-            ->where('is_completed', true)
-            ->whereNotNull('solve_time_seconds')
-            ->with('crossword:id,title,width,height,author');
-
         $allowed = ['solve_time_seconds', 'completed_at'];
         $field = in_array($this->sortField, $allowed) ? $this->sortField : 'completed_at';
         $direction = $this->sortDirection === 'desc' ? 'desc' : 'asc';
 
-        return $query->orderBy($field, $direction)->get();
+        return Auth::user()
+            ->puzzleAttempts()
+            ->where('is_completed', true)
+            ->whereNotNull('solve_time_seconds')
+            ->with('crossword:id,title,width,height,author')
+            ->orderBy($field, $direction)
+            ->paginate(15);
     }
 
     public function sortBy(string $field): void
@@ -39,6 +42,8 @@ new #[Title('Solve Statistics')] class extends Component {
             $this->sortField = $field;
             $this->sortDirection = 'asc';
         }
+
+        $this->resetPage();
     }
 
     #[Computed]
@@ -50,7 +55,11 @@ new #[Title('Solve Statistics')] class extends Component {
     #[Computed]
     public function averageTime(): ?int
     {
-        $avg = $this->completedAttempts->avg('solve_time_seconds');
+        $avg = Auth::user()
+            ->puzzleAttempts()
+            ->where('is_completed', true)
+            ->whereNotNull('solve_time_seconds')
+            ->avg('solve_time_seconds');
 
         return $avg ? (int) round($avg) : null;
     }
@@ -58,13 +67,24 @@ new #[Title('Solve Statistics')] class extends Component {
     #[Computed]
     public function fastestSolve(): ?PuzzleAttempt
     {
-        return $this->completedAttempts->sortBy('solve_time_seconds')->first();
+        return Auth::user()
+            ->puzzleAttempts()
+            ->where('is_completed', true)
+            ->whereNotNull('solve_time_seconds')
+            ->with('crossword:id,title')
+            ->orderBy('solve_time_seconds')
+            ->first();
     }
 
     #[Computed]
     public function averageBySize(): array
     {
-        return $this->completedAttempts
+        return Auth::user()
+            ->puzzleAttempts()
+            ->where('is_completed', true)
+            ->whereNotNull('solve_time_seconds')
+            ->with('crossword:id,width,height')
+            ->get(['id', 'crossword_id', 'solve_time_seconds'])
             ->groupBy(fn (PuzzleAttempt $a) => $this->sizeCategory($a->crossword))
             ->map(fn ($group, $label) => [
                 'label' => $label,
@@ -80,7 +100,7 @@ new #[Title('Solve Statistics')] class extends Component {
     #[Computed]
     public function communityAverages(): array
     {
-        $crosswordIds = $this->completedAttempts->pluck('crossword_id')->unique();
+        $crosswordIds = $this->paginatedAttempts->pluck('crossword_id')->unique();
 
         if ($crosswordIds->isEmpty()) {
             return [];
@@ -102,27 +122,28 @@ new #[Title('Solve Statistics')] class extends Component {
     }
 
     #[Computed]
-    public function fasterThanAverageCount(): int
+    public function communityComparison(): array
     {
-        $averages = $this->communityAverages;
+        $subquery = DB::table('puzzle_attempts')
+            ->select('crossword_id', DB::raw('AVG(solve_time_seconds) as avg_time'))
+            ->where('is_completed', true)
+            ->whereNotNull('solve_time_seconds')
+            ->groupBy('crossword_id')
+            ->havingRaw('COUNT(*) > 1');
 
-        return $this->completedAttempts->filter(function (PuzzleAttempt $attempt) use ($averages) {
-            $avg = $averages[$attempt->crossword_id] ?? null;
+        $result = DB::table('puzzle_attempts', 'pa')
+            ->joinSub($subquery, 'community', 'pa.crossword_id', '=', 'community.crossword_id')
+            ->where('pa.user_id', Auth::id())
+            ->where('pa.is_completed', true)
+            ->whereNotNull('pa.solve_time_seconds')
+            ->selectRaw('COUNT(*) as total_with_community')
+            ->selectRaw('SUM(CASE WHEN pa.solve_time_seconds < community.avg_time THEN 1 ELSE 0 END) as faster_count')
+            ->first();
 
-            return $avg && $avg['solver_count'] > 1 && $attempt->solve_time_seconds < $avg['avg_time'];
-        })->count();
-    }
-
-    #[Computed]
-    public function puzzlesWithCommunityData(): int
-    {
-        $averages = $this->communityAverages;
-
-        return $this->completedAttempts->filter(function (PuzzleAttempt $attempt) use ($averages) {
-            $avg = $averages[$attempt->crossword_id] ?? null;
-
-            return $avg && $avg['solver_count'] > 1;
-        })->count();
+        return [
+            'total' => (int) ($result->total_with_community ?? 0),
+            'faster' => (int) ($result->faster_count ?? 0),
+        ];
     }
 
     public function formatTime(?int $seconds): string
@@ -247,7 +268,7 @@ new #[Title('Solve Statistics')] class extends Component {
             </div>
         </div>
 
-        @if($this->puzzlesWithCommunityData > 0)
+        @if($this->communityComparison['total'] > 0)
             <div class="border-line rounded-xl border p-5">
                 <div class="flex items-center gap-3">
                     <div class="flex size-10 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-900/30">
@@ -256,10 +277,10 @@ new #[Title('Solve Statistics')] class extends Component {
                     <div>
                         <flux:text size="sm" class="text-zinc-600">{{ __('Faster Than Avg') }}</flux:text>
                         <div class="text-2xl font-bold text-fg">
-                            {{ round(($this->fasterThanAverageCount / $this->puzzlesWithCommunityData) * 100) }}%
+                            {{ round(($this->communityComparison['faster'] / $this->communityComparison['total']) * 100) }}%
                         </div>
                         <flux:text size="sm" class="text-zinc-500">
-                            {{ __(':count of :total puzzles', ['count' => $this->fasterThanAverageCount, 'total' => $this->puzzlesWithCommunityData]) }}
+                            {{ __(':count of :total puzzles', ['count' => $this->communityComparison['faster'], 'total' => $this->communityComparison['total']]) }}
                         </flux:text>
                     </div>
                 </div>
@@ -299,7 +320,7 @@ new #[Title('Solve Statistics')] class extends Component {
     <div class="border-line rounded-xl border p-5">
         <flux:heading size="lg" class="mb-4">{{ __('Solve History') }}</flux:heading>
 
-        @if($this->completedAttempts->isEmpty())
+        @if($this->paginatedAttempts->isEmpty())
             <div class="border-line-strong flex flex-col items-center justify-center rounded-lg border border-dashed py-8">
                 <flux:icon name="clock" class="mb-2 size-8 text-zinc-500" />
                 <flux:text size="sm" class="text-zinc-500">{{ __('Complete puzzles to see your solve history here.') }}</flux:text>
@@ -315,7 +336,7 @@ new #[Title('Solve Statistics')] class extends Component {
                 </flux:table.columns>
 
                 <flux:table.rows>
-                    @foreach($this->completedAttempts as $attempt)
+                    @foreach($this->paginatedAttempts as $attempt)
                         @php($communityAvg = $this->communityAverages[$attempt->crossword_id] ?? null)
                         @php($diff = $communityAvg && $communityAvg['solver_count'] > 1 ? $attempt->solve_time_seconds - $communityAvg['avg_time'] : null)
                         <flux:table.row :key="$attempt->id">
@@ -344,6 +365,10 @@ new #[Title('Solve Statistics')] class extends Component {
                     @endforeach
                 </flux:table.rows>
             </flux:table>
+
+            <div class="mt-4">
+                {{ $this->paginatedAttempts->links() }}
+            </div>
         @endif
     </div>
 </div>

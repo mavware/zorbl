@@ -328,3 +328,93 @@ test('stats page sort field is synced to url', function () {
         ->call('sortBy', 'solve_time_seconds')
         ->assertSet('sortField', 'solve_time_seconds');
 });
+
+test('stats page paginates solve history at 15 per page', function () {
+    $user = User::factory()->create();
+
+    Crossword::factory()->published()->count(20)->create([
+        'width' => 5,
+        'height' => 5,
+        'grid' => Crossword::emptyGrid(5, 5),
+    ])->each(function (Crossword $crossword) use ($user) {
+        PuzzleAttempt::factory()->for($user)->for($crossword)->completed()->create([
+            'solve_time_seconds' => rand(60, 600),
+        ]);
+    });
+
+    $this->actingAs($user);
+
+    $component = Livewire::test('pages::crosswords.stats');
+    $paginated = $component->get('paginatedAttempts');
+
+    expect($paginated)->toHaveCount(15);
+    expect($paginated->total())->toBe(20);
+    expect($paginated->lastPage())->toBe(2);
+});
+
+test('stats page shows second page of solve history', function () {
+    $user = User::factory()->create();
+
+    Crossword::factory()->published()->count(20)->create([
+        'width' => 5,
+        'height' => 5,
+        'grid' => Crossword::emptyGrid(5, 5),
+    ])->each(function (Crossword $crossword) use ($user) {
+        PuzzleAttempt::factory()->for($user)->for($crossword)->completed()->create([
+            'solve_time_seconds' => rand(60, 600),
+        ]);
+    });
+
+    $this->actingAs($user);
+
+    $component = Livewire::test('pages::crosswords.stats')
+        ->set('paginators.page', 2);
+    $paginated = $component->get('paginatedAttempts');
+
+    expect($paginated)->toHaveCount(5);
+    expect($paginated->currentPage())->toBe(2);
+});
+
+test('stats page resets to page 1 when sorting changes', function () {
+    $user = User::factory()->create();
+
+    Crossword::factory()->published()->count(20)->create([
+        'width' => 5,
+        'height' => 5,
+        'grid' => Crossword::emptyGrid(5, 5),
+    ])->each(function (Crossword $crossword) use ($user) {
+        PuzzleAttempt::factory()->for($user)->for($crossword)->completed()->create([
+            'solve_time_seconds' => rand(60, 600),
+        ]);
+    });
+
+    $this->actingAs($user);
+
+    $component = Livewire::test('pages::crosswords.stats')
+        ->set('paginators.page', 2)
+        ->call('sortBy', 'solve_time_seconds');
+
+    $paginated = $component->get('paginatedAttempts');
+    expect($paginated->currentPage())->toBe(1);
+});
+
+test('stats page summary cards show totals across all pages', function () {
+    $user = User::factory()->create();
+
+    Crossword::factory()->published()->count(20)->create([
+        'width' => 5,
+        'height' => 5,
+        'grid' => Crossword::emptyGrid(5, 5),
+    ])->each(function (Crossword $crossword) use ($user) {
+        PuzzleAttempt::factory()->for($user)->for($crossword)->completed()->create([
+            'solve_time_seconds' => 120,
+        ]);
+    });
+
+    $this->actingAs($user);
+
+    $component = Livewire::test('pages::crosswords.stats');
+
+    expect($component->get('totalSolved'))->toBe(20);
+    expect($component->get('averageTime'))->toBe(120);
+});
