@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Crossword;
+use App\Models\PuzzleAttempt;
 use App\Models\Tag;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -141,4 +142,47 @@ it('includes tags in index response', function () {
     expect($relationships)->toHaveCount(1)
         ->and($relationships[0]['attributes']['name'])->toBe('History')
         ->and($relationships[0]['attributes']['slug'])->toBe('history');
+});
+
+it('includes completed_attempts_count and avg_solve_time_seconds in index meta', function () {
+    $crossword = Crossword::factory()->published()->create();
+    PuzzleAttempt::factory()->for($crossword)->completed()->create(['solve_time_seconds' => 120]);
+    PuzzleAttempt::factory()->for($crossword)->completed()->create(['solve_time_seconds' => 180]);
+    PuzzleAttempt::factory()->for($crossword)->create(); // incomplete, should not count
+
+    $response = $this->getJson('/api/v1/crosswords');
+
+    $response->assertSuccessful();
+    $meta = $response->json('data.0.meta');
+    expect($meta['completed_attempts_count'])->toBe(2)
+        ->and($meta['avg_solve_time_seconds'])->toBe(150)
+        ->and($meta['attempts_count'])->toBe(3);
+});
+
+it('includes completed_attempts_count and avg_solve_time_seconds in show meta', function () {
+    $crossword = Crossword::factory()->published()->create();
+    PuzzleAttempt::factory()->for($crossword)->completed()->create(['solve_time_seconds' => 200]);
+    PuzzleAttempt::factory()->for($crossword)->completed()->create(['solve_time_seconds' => 400]);
+    PuzzleAttempt::factory()->for($crossword)->create(); // incomplete
+
+    $response = $this->getJson("/api/v1/crosswords/{$crossword->id}");
+
+    $response->assertSuccessful();
+    $meta = $response->json('data.meta');
+    expect($meta['completed_attempts_count'])->toBe(2)
+        ->and($meta['avg_solve_time_seconds'])->toBe(300)
+        ->and($meta['attempts_count'])->toBe(3);
+});
+
+it('omits solve stats from meta when no completed attempts exist', function () {
+    $crossword = Crossword::factory()->published()->create();
+    PuzzleAttempt::factory()->for($crossword)->create(); // incomplete only
+
+    $response = $this->getJson("/api/v1/crosswords/{$crossword->id}");
+
+    $response->assertSuccessful();
+    $meta = $response->json('data.meta');
+    expect($meta)->toHaveKey('attempts_count')
+        ->and($meta['completed_attempts_count'])->toBe(0)
+        ->and($meta)->not->toHaveKey('avg_solve_time_seconds');
 });

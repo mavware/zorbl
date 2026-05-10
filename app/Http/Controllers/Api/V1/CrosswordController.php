@@ -37,7 +37,16 @@ class CrosswordController extends Controller
             )
             ->allowedSorts('created_at', 'title', 'difficulty_score')
             ->allowedIncludes('user')
-            ->withCount(['likes', 'attempts', 'comments'])
+            ->withCount([
+                'likes',
+                'attempts',
+                'comments',
+                'attempts as completed_attempts_count' => fn ($q) => $q->where('is_completed', true),
+            ])
+            ->withAvg(
+                ['attempts as attempts_avg_solve_time_seconds' => fn ($q) => $q->where('is_completed', true)],
+                'solve_time_seconds',
+            )
             ->paginate(15);
 
         return CrosswordResource::collection($crosswords);
@@ -51,7 +60,16 @@ class CrosswordController extends Controller
             }
         }
 
-        $crossword->loadCount(['likes', 'attempts', 'comments']);
+        $crossword->loadCount([
+            'likes',
+            'attempts',
+            'comments',
+            'attempts as completed_attempts_count' => fn ($q) => $q->where('is_completed', true),
+        ]);
+        $crossword->loadAvg(
+            ['attempts as attempts_avg_solve_time_seconds' => fn ($q) => $q->where('is_completed', true)],
+            'solve_time_seconds',
+        );
 
         return new CrosswordResource($crossword);
     }

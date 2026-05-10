@@ -35,7 +35,16 @@ class ConstructorController extends Controller
         )
             ->allowedFilters('difficulty_label', 'author', 'kind')
             ->allowedSorts('created_at', 'title', 'difficulty_score')
-            ->withCount(['likes', 'attempts', 'comments'])
+            ->withCount([
+                'likes',
+                'attempts',
+                'comments',
+                'attempts as completed_attempts_count' => fn ($q) => $q->where('is_completed', true),
+            ])
+            ->withAvg(
+                ['attempts as attempts_avg_solve_time_seconds' => fn ($q) => $q->where('is_completed', true)],
+                'solve_time_seconds',
+            )
             ->paginate(15);
 
         return CrosswordResource::collection($crosswords);

@@ -80,6 +80,14 @@ class CrosswordResource extends JsonApiResource
             $meta['comments_count'] = $this->comments_count;
         }
 
+        if ($this->completed_attempts_count !== null) {
+            $meta['completed_attempts_count'] = (int) $this->completed_attempts_count;
+        }
+
+        if ($this->attempts_avg_solve_time_seconds !== null) {
+            $meta['avg_solve_time_seconds'] = (int) round((float) $this->attempts_avg_solve_time_seconds);
+        }
+
         return $meta;
     }
 }
