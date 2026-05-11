@@ -22,7 +22,7 @@ new #[Title('Solve Statistics')] class extends Component {
             ->puzzleAttempts()
             ->where('is_completed', true)
             ->whereNotNull('solve_time_seconds')
-            ->with('crossword:id,title,width,height,author');
+            ->with('crossword:id,title,width,height,author,difficulty_label');
 
         $allowed = ['solve_time_seconds', 'completed_at'];
         $field = in_array($this->sortField, $allowed) ? $this->sortField : 'completed_at';
@@ -73,6 +73,29 @@ new #[Title('Solve Statistics')] class extends Component {
                 'fastest' => (int) $group->min('solve_time_seconds'),
             ])
             ->sortKeys()
+            ->values()
+            ->all();
+    }
+
+    #[Computed]
+    public function averageByDifficulty(): array
+    {
+        return $this->completedAttempts
+            ->filter(fn (PuzzleAttempt $a) => $a->crossword->difficulty_label !== null)
+            ->groupBy(fn (PuzzleAttempt $a) => $a->crossword->difficulty_label)
+            ->map(fn ($group, $label) => [
+                'label' => $label,
+                'count' => $group->count(),
+                'average' => (int) round($group->avg('solve_time_seconds')),
+                'fastest' => (int) $group->min('solve_time_seconds'),
+            ])
+            ->sortBy(fn ($item) => match ($item['label']) {
+                'Easy' => 0,
+                'Medium' => 1,
+                'Hard' => 2,
+                'Expert' => 3,
+                default => 4,
+            })
             ->values()
             ->all();
     }
@@ -287,6 +310,37 @@ new #[Title('Solve Statistics')] class extends Component {
                             <div class="flex justify-between">
                                 <flux:text size="sm" class="text-zinc-600">{{ __('Fastest') }}</flux:text>
                                 <span class="text-sm font-mono font-medium text-emerald-600 dark:text-emerald-400">{{ $this->formatTime($size['fastest']) }}</span>
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
+    {{-- Average by Difficulty --}}
+    @if(count($this->averageByDifficulty) > 0)
+        <div class="border-line rounded-xl border p-5">
+            <flux:heading size="lg" class="mb-4">{{ __('Times by Difficulty') }}</flux:heading>
+            <div class="grid gap-4 sm:grid-cols-4">
+                @foreach($this->averageByDifficulty as $difficulty)
+                    <div class="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700/50">
+                        <flux:heading size="sm">
+                            @php($colors = ['Easy' => 'text-emerald-600 dark:text-emerald-400', 'Medium' => 'text-blue-600 dark:text-blue-400', 'Hard' => 'text-amber-600 dark:text-amber-400', 'Expert' => 'text-red-600 dark:text-red-400'])
+                            <span class="{{ $colors[$difficulty['label']] ?? 'text-fg' }}">{{ $difficulty['label'] }}</span>
+                        </flux:heading>
+                        <div class="mt-2 space-y-1">
+                            <div class="flex justify-between">
+                                <flux:text size="sm" class="text-zinc-600">{{ __('Solved') }}</flux:text>
+                                <span class="text-sm font-medium text-fg">{{ $difficulty['count'] }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <flux:text size="sm" class="text-zinc-600">{{ __('Average') }}</flux:text>
+                                <span class="text-sm font-mono font-medium text-fg">{{ $this->formatTime($difficulty['average']) }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <flux:text size="sm" class="text-zinc-600">{{ __('Fastest') }}</flux:text>
+                                <span class="text-sm font-mono font-medium text-emerald-600 dark:text-emerald-400">{{ $this->formatTime($difficulty['fastest']) }}</span>
                             </div>
                         </div>
                     </div>

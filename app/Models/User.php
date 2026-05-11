@@ -45,6 +45,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property int $current_streak
  * @property int $longest_streak
  * @property string|null $last_solve_date
+ * @property array<string, bool>|null $notification_preferences
  * @property CarbonImmutable|null $grandfathered_at
  * @property-read Collection<int, Achievement> $achievements
  * @property-read int|null $achievements_count
@@ -83,7 +84,7 @@ use Spatie\Permission\Traits\HasRoles;
  *
  * @mixin Eloquent
  */
-#[Fillable(['name', 'email', 'password', 'copyright_name', 'bio', 'google_id', 'current_streak', 'longest_streak', 'last_solve_date', 'grandfathered_at'])]
+#[Fillable(['name', 'email', 'password', 'copyright_name', 'bio', 'google_id', 'current_streak', 'longest_streak', 'last_solve_date', 'notification_preferences', 'grandfathered_at'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements FilamentUser
 {
@@ -100,6 +101,7 @@ class User extends Authenticatable implements FilamentUser
         return [
             'email_verified_at' => 'datetime',
             'grandfathered_at' => 'datetime',
+            'notification_preferences' => 'array',
             'password' => 'hashed',
         ];
     }
@@ -239,6 +241,11 @@ class User extends Authenticatable implements FilamentUser
     public function isFollowing(User $user): bool
     {
         return $this->following()->where('following_id', $user->id)->exists();
+    }
+
+    public function wantsNotification(string $type): bool
+    {
+        return ($this->notification_preferences[$type] ?? true) !== false;
     }
 
     public function initials(): string
