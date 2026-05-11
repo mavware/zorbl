@@ -26,6 +26,8 @@ new class extends Component {
 
     public string $tag = '';
 
+    public string $minRating = '';
+
     public string $sortBy = 'newest';
 
     /**
@@ -49,6 +51,7 @@ new class extends Component {
             'dateRange' => ['except' => ''],
             'difficulty' => ['except' => ''],
             'tag' => ['except' => ''],
+            'minRating' => ['except' => ''],
             'sortBy' => ['except' => 'newest'],
         ];
     }
@@ -138,6 +141,14 @@ new class extends Component {
             $query->whereHas('tags', fn ($q) => $q->where('slug', $this->tag));
         }
 
+        if ($this->minRating !== '') {
+            $min = (int) $this->minRating;
+            $query->whereRaw(
+                '(SELECT AVG(rating) FROM puzzle_comments WHERE puzzle_comments.crossword_id = crosswords.id) >= ?',
+                [$min]
+            );
+        }
+
         if (Auth::check()) {
             $blockedTagIds = Auth::user()->blockedTags()->pluck('tags.id');
 
@@ -219,7 +230,7 @@ new class extends Component {
 
     public function clearFilters(): void
     {
-        $this->reset('search', 'gridSize', 'puzzleType', 'constructor', 'dateRange', 'difficulty', 'tag', 'sortBy');
+        $this->reset('search', 'gridSize', 'puzzleType', 'constructor', 'dateRange', 'difficulty', 'tag', 'minRating', 'sortBy');
         $this->sortBy = 'newest';
         $this->resetPage();
         unset($this->puzzles);
@@ -255,6 +266,11 @@ new class extends Component {
         $this->resetPage();
     }
 
+    public function updatedMinRating(): void
+    {
+        $this->resetPage();
+    }
+
     public function updatedSortBy(): void
     {
         $this->resetPage();
@@ -276,6 +292,7 @@ new class extends Component {
             || $this->dateRange !== ''
             || $this->difficulty !== ''
             || $this->tag !== ''
+            || $this->minRating !== ''
             || $this->sortBy !== 'newest';
     }
 
@@ -358,7 +375,7 @@ new class extends Component {
 
     {{-- Secondary Filters (collapsible) --}}
     @if($showFilters)
-        <div class="border-line grid gap-3 rounded-xl border p-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div class="border-line grid gap-3 rounded-xl border p-4 sm:grid-cols-2 lg:grid-cols-4">
             <flux:field>
                 <flux:label>{{ __('Constructor') }}</flux:label>
                 <flux:input wire:model.live.debounce.300ms="constructor" size="sm" placeholder="{{ __('Name...') }}" />
@@ -382,6 +399,17 @@ new class extends Component {
                     @foreach($this->allTags as $t)
                         <flux:select.option value="{{ $t->slug }}">{{ $t->name }}</flux:select.option>
                     @endforeach
+                </flux:select>
+            </flux:field>
+
+            <flux:field>
+                <flux:label>{{ __('Minimum Rating') }}</flux:label>
+                <flux:select wire:model.live="minRating" size="sm">
+                    <flux:select.option value="">{{ __('Any Rating') }}</flux:select.option>
+                    <flux:select.option value="4">{{ __('4+ Stars') }}</flux:select.option>
+                    <flux:select.option value="3">{{ __('3+ Stars') }}</flux:select.option>
+                    <flux:select.option value="2">{{ __('2+ Stars') }}</flux:select.option>
+                    <flux:select.option value="1">{{ __('1+ Stars') }}</flux:select.option>
                 </flux:select>
             </flux:field>
         </div>
