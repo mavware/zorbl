@@ -15,7 +15,7 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [x] Ability to sign in with google
 - [x] Double check the printable/downloadable PDFs for the puzzle editor/solver
 - [x] Ensure that freestyle puzzles can be exported as PDFs with the removed squares
-- [ ] Execute puzzle entgagement ranker plan at `.claude/plans/puzzle-engagement-ranker.md` (deferred — gated on ≥2k completed attempts across ≥300 published puzzles; see gate conditions in file)
+- [ ] Execute puzzle engagement ranker plan at `.claude/plans/puzzle-engagement-ranker.md` (deferred — gated on ≥2k completed attempts across ≥300 published puzzles; see gate conditions in file)
 - [x] Add Livewire component tests for settings, favorites, roadmap, and support pages
 - [x] Audit Livewire page components for authorization — ensure they use policies instead of inline ownership checks
 - [x] Add feature tests for admin-assigned-ticket access via SupportTicketPolicy
@@ -34,15 +34,23 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [ ] Consider caching per-puzzle solve stats for high-traffic discovery pages
 - [ ] Add solve time vs. average indicator to puzzle cards on the /solving page for completed puzzles
 - [x] Add difficulty breakdown (Easy/Medium/Hard/Expert) stats to the solving stats page alongside Times by Grid Size
-- [ ] Add a notification preferences page so users can opt out of specific notification types (e.g. new puzzle published, likes, comments)
+- [x] Add a notification preferences page so users can opt out of specific notification types (e.g. new puzzle published, likes, comments)
 - [ ] Add email channel option for puzzle-published notifications (alongside the existing database channel)
 - [ ] Add a rating trend chart or sparkline to the constructor analytics page showing how ratings change over time
 - [ ] Add pagination to the solve history table on the stats page to handle users with many completed puzzles
 - [x] Add an Artisan command to bulk-schedule daily puzzles for a date range
 - [x] Show a "solved" badge on the daily puzzle card if the user has already completed it
-- [ ] Add a daily puzzle history page so users can catch up on missed days
+- [x] Add a daily puzzle history page so users can catch up on missed days
 - [ ] Add a minimum-rating filter to the puzzle discovery secondary filter panel (e.g. "4+ stars only")
 - [ ] Show completion rate percentage on puzzle discovery cards (requires withCount for completed attempts)
+- [ ] Space bar should add black square, but also navigate to the next available square
+ 
+  Substring/decomposition (cousin of what you just built)
+  - Words inside words — find every dictionary word that's a substring of a longer dictionary word (MANSLAUGHTER contains LAUGHTER, THERAPIST contains THE, RAP, RAPI,          
+  THERAPI...). Good for pun and clue mining. Naively O(n × avg_len²); a suffix automaton over the wordlist makes it linear.                                                     
+  - Pyramids — chains where each step adds one letter and the letters rearrange to a new word: A → AT → CAT → CART → CARTS. Constructive — uses the same graph as               
+  ladders/beheadments inverted.                                                                                                                                                 
+                                                                                                                                                                                
 
 ## Done
 
