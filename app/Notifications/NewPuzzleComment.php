@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Enums\NotificationType;
 use App\Models\PuzzleComment;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
@@ -22,6 +23,10 @@ class NewPuzzleComment extends Notification implements ShouldQueue
      */
     public function via(User $notifiable): array
     {
+        if (! $notifiable->wantsNotification(NotificationType::NewPuzzleComment->value)) {
+            return [];
+        }
+
         return ['database'];
     }
 

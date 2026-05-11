@@ -304,6 +304,7 @@ test('discovery clear filters resets all filters', function () {
         ->set('puzzleType', 'standard')
         ->set('constructor', 'Alice')
         ->set('dateRange', 'week')
+        ->set('minRating', '3')
         ->set('sortBy', 'oldest')
         ->call('clearFilters')
         ->assertSet('search', '')
@@ -311,6 +312,7 @@ test('discovery clear filters resets all filters', function () {
         ->assertSet('puzzleType', '')
         ->assertSet('constructor', '')
         ->assertSet('dateRange', '')
+        ->assertSet('minRating', '')
         ->assertSet('sortBy', 'newest');
 });
 
@@ -817,6 +819,73 @@ test('discovery hides play count when puzzle has no attempts', function () {
         ->assertDontSee('plays');
 });
 
+// --- Completion Rate ---
+
+test('discovery cards show completion rate percentage', function () {
+    $user = User::factory()->create();
+    $creator = User::factory()->create();
+    $crossword = Crossword::factory()->published()->for($creator)->create(['title' => 'Rate Puzzle']);
+
+    PuzzleAttempt::factory()->completed()->count(3)->create(['crossword_id' => $crossword->id]);
+    PuzzleAttempt::factory()->count(2)->create(['crossword_id' => $crossword->id]);
+
+    Livewire::actingAs($user)
+        ->test('puzzle-discovery', ['excludeAttempted' => true])
+        ->assertSee('Rate Puzzle')
+        ->assertSee('60%');
+});
+
+test('discovery cards show 100% completion rate when all attempts completed', function () {
+    $user = User::factory()->create();
+    $creator = User::factory()->create();
+    $crossword = Crossword::factory()->published()->for($creator)->create(['title' => 'Perfect Puzzle']);
+
+    PuzzleAttempt::factory()->completed()->count(4)->create(['crossword_id' => $crossword->id]);
+
+    Livewire::actingAs($user)
+        ->test('puzzle-discovery', ['excludeAttempted' => true])
+        ->assertSee('Perfect Puzzle')
+        ->assertSee('100%');
+});
+
+test('discovery cards show 0% completion rate when no attempts completed', function () {
+    $user = User::factory()->create();
+    $creator = User::factory()->create();
+    $crossword = Crossword::factory()->published()->for($creator)->create(['title' => 'Tough Puzzle']);
+
+    PuzzleAttempt::factory()->count(3)->create(['crossword_id' => $crossword->id]);
+
+    Livewire::actingAs($user)
+        ->test('puzzle-discovery', ['excludeAttempted' => true])
+        ->assertSee('Tough Puzzle')
+        ->assertSee('0%');
+});
+
+test('discovery cards hide completion rate when puzzle has no attempts', function () {
+    $user = User::factory()->create();
+    $creator = User::factory()->create();
+    Crossword::factory()->published()->for($creator)->create(['title' => 'Untouched Puzzle']);
+
+    Livewire::actingAs($user)
+        ->test('puzzle-discovery', ['excludeAttempted' => true])
+        ->assertSee('Untouched Puzzle')
+        ->assertDontSee('of solvers completed this puzzle');
+});
+
+test('discovery cards show completion rate tooltip', function () {
+    $user = User::factory()->create();
+    $creator = User::factory()->create();
+    $crossword = Crossword::factory()->published()->for($creator)->create(['title' => 'Tooltip Puzzle']);
+
+    PuzzleAttempt::factory()->completed()->count(1)->create(['crossword_id' => $crossword->id]);
+    PuzzleAttempt::factory()->count(1)->create(['crossword_id' => $crossword->id]);
+
+    Livewire::actingAs($user)
+        ->test('puzzle-discovery', ['excludeAttempted' => true])
+        ->assertSee('Tooltip Puzzle')
+        ->assertSeeHtml('50% of solvers completed this puzzle');
+});
+
 test('discovery clear filters resets new sort options', function () {
     $user = User::factory()->create();
     $creator = User::factory()->create();
@@ -833,4 +902,81 @@ test('discovery clear filters resets new sort options', function () {
         ->set('sortBy', 'most_played')
         ->call('clearFilters')
         ->assertSet('sortBy', 'newest');
+});
+
+// --- Minimum Rating Filter ---
+
+test('discovery filters by minimum rating', function () {
+    $user = User::factory()->create();
+    $creator = User::factory()->create();
+
+    $highRated = Crossword::factory()->published()->for($creator)->create(['title' => 'High Rated Puzzle']);
+    $lowRated = Crossword::factory()->published()->for($creator)->create(['title' => 'Low Rated Puzzle']);
+    $unrated = Crossword::factory()->published()->for($creator)->create(['title' => 'Unrated Puzzle']);
+
+    PuzzleComment::factory()->create(['crossword_id' => $highRated->id, 'rating' => 5]);
+    PuzzleComment::factory()->create(['crossword_id' => $highRated->id, 'rating' => 4]);
+    PuzzleComment::factory()->create(['crossword_id' => $lowRated->id, 'rating' => 2]);
+
+    Livewire::actingAs($user)
+        ->test('puzzle-discovery', ['excludeAttempted' => true])
+        ->set('minRating', '4')
+        ->assertSee('High Rated Puzzle')
+        ->assertDontSee('Low Rated Puzzle')
+        ->assertDontSee('Unrated Puzzle');
+});
+
+test('discovery shows all puzzles when minimum rating is empty', function () {
+    $user = User::factory()->create();
+    $creator = User::factory()->create();
+
+    $rated = Crossword::factory()->published()->for($creator)->create(['title' => 'Rated Puzzle']);
+    Crossword::factory()->published()->for($creator)->create(['title' => 'Unrated Puzzle']);
+
+    PuzzleComment::factory()->create(['crossword_id' => $rated->id, 'rating' => 3]);
+
+    Livewire::actingAs($user)
+        ->test('puzzle-discovery', ['excludeAttempted' => true])
+        ->set('minRating', '')
+        ->assertSee('Rated Puzzle')
+        ->assertSee('Unrated Puzzle');
+});
+
+test('discovery minimum rating filter excludes unrated puzzles', function () {
+    $user = User::factory()->create();
+    $creator = User::factory()->create();
+
+    Crossword::factory()->published()->for($creator)->create(['title' => 'No Ratings Puzzle']);
+    $rated = Crossword::factory()->published()->for($creator)->create(['title' => 'Has Rating']);
+    PuzzleComment::factory()->create(['crossword_id' => $rated->id, 'rating' => 3]);
+
+    Livewire::actingAs($user)
+        ->test('puzzle-discovery', ['excludeAttempted' => true])
+        ->set('minRating', '1')
+        ->assertSee('Has Rating')
+        ->assertDontSee('No Ratings Puzzle');
+});
+
+test('discovery clear filters resets minimum rating', function () {
+    $user = User::factory()->create();
+    $creator = User::factory()->create();
+    Crossword::factory()->published()->for($creator)->create();
+
+    Livewire::actingAs($user)
+        ->test('puzzle-discovery', ['excludeAttempted' => true])
+        ->set('minRating', '4')
+        ->call('clearFilters')
+        ->assertSet('minRating', '');
+});
+
+test('discovery shows filter indicator when minimum rating is active', function () {
+    $user = User::factory()->create();
+    $creator = User::factory()->create();
+    Crossword::factory()->published()->for($creator)->create();
+
+    Livewire::actingAs($user)
+        ->test('puzzle-discovery')
+        ->assertDontSee('Clear')
+        ->set('minRating', '3')
+        ->assertSee('Clear');
 });

@@ -686,3 +686,179 @@ test('rating displays on analytics page for pro users', function () {
         ->assertSee('Avg Rating')
         ->assertSee('1 review');
 });
+
+test('rating trend groups ratings by month', function () {
+    $constructor = makeAnalyticsProUser();
+    $solver1 = User::factory()->create();
+    $solver2 = User::factory()->create();
+
+    $puzzle1 = Crossword::factory()->published()->for($constructor)->create([
+        'width' => 2,
+        'height' => 2,
+        'grid' => [[1, 2], [3, 0]],
+    ]);
+    $puzzle2 = Crossword::factory()->published()->for($constructor)->create([
+        'width' => 2,
+        'height' => 2,
+        'grid' => [[1, 2], [3, 0]],
+    ]);
+
+    $c1 = PuzzleComment::create(['user_id' => $solver1->id, 'crossword_id' => $puzzle1->id, 'body' => 'Great', 'rating' => 5]);
+    PuzzleComment::where('id', $c1->id)->update(['created_at' => now()->subMonths(2)->startOfMonth()->addDay()]);
+
+    $c2 = PuzzleComment::create(['user_id' => $solver2->id, 'crossword_id' => $puzzle1->id, 'body' => 'Okay', 'rating' => 3]);
+    PuzzleComment::where('id', $c2->id)->update(['created_at' => now()->subMonths(2)->startOfMonth()->addDays(5)]);
+
+    $c3 = PuzzleComment::create(['user_id' => $solver1->id, 'crossword_id' => $puzzle2->id, 'body' => 'Fun', 'rating' => 4]);
+    PuzzleComment::where('id', $c3->id)->update(['created_at' => now()->subMonth()->startOfMonth()->addDay()]);
+
+    $component = Livewire::actingAs($constructor)->test('pages::crosswords.analytics');
+    $trend = $component->get('ratingTrend');
+
+    expect($trend)->toHaveCount(2)
+        ->and($trend[0]['avg_rating'])->toBe(4.0)
+        ->and($trend[0]['count'])->toBe(2)
+        ->and($trend[1]['avg_rating'])->toBe(4.0)
+        ->and($trend[1]['count'])->toBe(1);
+});
+
+test('rating trend excludes reviews older than 12 months', function () {
+    $constructor = makeAnalyticsProUser();
+    $solver = User::factory()->create();
+
+    $puzzle = Crossword::factory()->published()->for($constructor)->create([
+        'width' => 2,
+        'height' => 2,
+        'grid' => [[1, 2], [3, 0]],
+    ]);
+
+    $comment = PuzzleComment::create(['user_id' => $solver->id, 'crossword_id' => $puzzle->id, 'body' => 'Old review', 'rating' => 2]);
+    PuzzleComment::where('id', $comment->id)->update(['created_at' => now()->subMonths(13)]);
+
+    $component = Livewire::actingAs($constructor)->test('pages::crosswords.analytics');
+
+    expect($component->get('ratingTrend'))->toHaveCount(0);
+});
+
+test('rating trend excludes comments without ratings', function () {
+    $constructor = makeAnalyticsProUser();
+    $solver = User::factory()->create();
+
+    $puzzle = Crossword::factory()->published()->for($constructor)->create([
+        'width' => 2,
+        'height' => 2,
+        'grid' => [[1, 2], [3, 0]],
+    ]);
+
+    PuzzleComment::create(['user_id' => $solver->id, 'crossword_id' => $puzzle->id, 'body' => 'No rating comment', 'rating' => null]);
+
+    $component = Livewire::actingAs($constructor)->test('pages::crosswords.analytics');
+
+    expect($component->get('ratingTrend'))->toHaveCount(0);
+});
+
+test('rating trend excludes draft puzzle reviews', function () {
+    $constructor = makeAnalyticsProUser();
+    $solver = User::factory()->create();
+
+    $draft = Crossword::factory()->for($constructor)->create([
+        'width' => 2,
+        'height' => 2,
+        'grid' => [[1, 2], [3, 0]],
+        'is_published' => false,
+    ]);
+
+    PuzzleComment::create(['user_id' => $solver->id, 'crossword_id' => $draft->id, 'body' => 'Draft review', 'rating' => 5]);
+
+    $component = Livewire::actingAs($constructor)->test('pages::crosswords.analytics');
+
+    expect($component->get('ratingTrend'))->toHaveCount(0);
+});
+
+test('rating trend chart renders when 2+ months of data exist', function () {
+    $constructor = makeAnalyticsProUser();
+    $solver1 = User::factory()->create();
+    $solver2 = User::factory()->create();
+
+    $puzzle1 = Crossword::factory()->published()->for($constructor)->create([
+        'width' => 2,
+        'height' => 2,
+        'grid' => [[1, 2], [3, 0]],
+    ]);
+    $puzzle2 = Crossword::factory()->published()->for($constructor)->create([
+        'width' => 2,
+        'height' => 2,
+        'grid' => [[1, 2], [3, 0]],
+    ]);
+
+    $c1 = PuzzleComment::create(['user_id' => $solver1->id, 'crossword_id' => $puzzle1->id, 'body' => 'Month 1', 'rating' => 4]);
+    PuzzleComment::where('id', $c1->id)->update(['created_at' => now()->subMonths(2)->startOfMonth()->addDay()]);
+
+    $c2 = PuzzleComment::create(['user_id' => $solver2->id, 'crossword_id' => $puzzle2->id, 'body' => 'Month 2', 'rating' => 5]);
+    PuzzleComment::where('id', $c2->id)->update(['created_at' => now()->subMonth()->startOfMonth()->addDay()]);
+
+    $this->actingAs($constructor)
+        ->get(route('crosswords.analytics'))
+        ->assertOk()
+        ->assertSee('Rating Trend')
+        ->assertSee('Average rating received per month');
+});
+
+test('rating trend chart is hidden with fewer than 2 data points', function () {
+    $constructor = makeAnalyticsProUser();
+    $solver = User::factory()->create();
+
+    $puzzle = Crossword::factory()->published()->for($constructor)->create([
+        'width' => 2,
+        'height' => 2,
+        'grid' => [[1, 2], [3, 0]],
+    ]);
+
+    PuzzleComment::create(['user_id' => $solver->id, 'crossword_id' => $puzzle->id, 'body' => 'Only one month', 'rating' => 4]);
+
+    $this->actingAs($constructor)
+        ->get(route('crosswords.analytics'))
+        ->assertOk()
+        ->assertDontSee('Rating Trend');
+});
+
+test('rating trend is sorted chronologically', function () {
+    $constructor = makeAnalyticsProUser();
+
+    $puzzle1 = Crossword::factory()->published()->for($constructor)->create([
+        'width' => 2,
+        'height' => 2,
+        'grid' => [[1, 2], [3, 0]],
+    ]);
+    $puzzle2 = Crossword::factory()->published()->for($constructor)->create([
+        'width' => 2,
+        'height' => 2,
+        'grid' => [[1, 2], [3, 0]],
+    ]);
+    $puzzle3 = Crossword::factory()->published()->for($constructor)->create([
+        'width' => 2,
+        'height' => 2,
+        'grid' => [[1, 2], [3, 0]],
+    ]);
+
+    $solver1 = User::factory()->create();
+    $solver2 = User::factory()->create();
+    $solver3 = User::factory()->create();
+
+    $c1 = PuzzleComment::create(['user_id' => $solver1->id, 'crossword_id' => $puzzle1->id, 'body' => 'Oldest', 'rating' => 3]);
+    PuzzleComment::where('id', $c1->id)->update(['created_at' => now()->subMonths(3)->startOfMonth()->addDay()]);
+
+    $c2 = PuzzleComment::create(['user_id' => $solver2->id, 'crossword_id' => $puzzle2->id, 'body' => 'Middle', 'rating' => 4]);
+    PuzzleComment::where('id', $c2->id)->update(['created_at' => now()->subMonths(2)->startOfMonth()->addDay()]);
+
+    $c3 = PuzzleComment::create(['user_id' => $solver3->id, 'crossword_id' => $puzzle3->id, 'body' => 'Newest', 'rating' => 5]);
+    PuzzleComment::where('id', $c3->id)->update(['created_at' => now()->subMonth()->startOfMonth()->addDay()]);
+
+    $component = Livewire::actingAs($constructor)->test('pages::crosswords.analytics');
+    $trend = $component->get('ratingTrend');
+
+    expect($trend)->toHaveCount(3)
+        ->and($trend[0]['avg_rating'])->toBe(3.0)
+        ->and($trend[1]['avg_rating'])->toBe(4.0)
+        ->and($trend[2]['avg_rating'])->toBe(5.0);
+});

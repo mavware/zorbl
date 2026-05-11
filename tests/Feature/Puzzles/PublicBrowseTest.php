@@ -2,6 +2,7 @@
 
 use App\Models\Crossword;
 use App\Models\CrosswordLike;
+use App\Models\PuzzleComment;
 use App\Models\User;
 use Livewire\Livewire;
 
@@ -532,6 +533,7 @@ test('clear filters resets all filter state', function () {
         ->set('constructor', 'Alice')
         ->set('dateRange', 'week')
         ->set('difficulty', 'Easy')
+        ->set('minRating', '4')
         ->set('sortBy', 'oldest')
         ->call('clearFilters')
         ->assertSet('search', '')
@@ -540,6 +542,7 @@ test('clear filters resets all filter state', function () {
         ->assertSet('constructor', '')
         ->assertSet('dateRange', '')
         ->assertSet('difficulty', '')
+        ->assertSet('minRating', '')
         ->assertSet('sortBy', 'newest');
 });
 
@@ -663,4 +666,94 @@ test('difficulty badges are shown on puzzle cards', function () {
     Livewire::test('pages::puzzles.index')
         ->assertSee('Easy Crossword')
         ->assertSee('Easy');
+});
+
+// --- Minimum Rating Filter ---
+
+test('minimum rating filter shows only puzzles meeting threshold', function () {
+    $creator = User::factory()->create();
+
+    $highRated = Crossword::factory()->published()->for($creator)->create(['title' => 'Five Star Puzzle']);
+    $lowRated = Crossword::factory()->published()->for($creator)->create(['title' => 'Two Star Puzzle']);
+
+    PuzzleComment::factory()->create(['crossword_id' => $highRated->id, 'rating' => 5]);
+    PuzzleComment::factory()->create(['crossword_id' => $lowRated->id, 'rating' => 2]);
+
+    Livewire::test('pages::puzzles.index')
+        ->set('minRating', '4')
+        ->assertSee('Five Star Puzzle')
+        ->assertDontSee('Two Star Puzzle');
+});
+
+test('minimum rating filter excludes unrated puzzles', function () {
+    $creator = User::factory()->create();
+
+    Crossword::factory()->published()->for($creator)->create(['title' => 'Unrated Puzzle']);
+    $rated = Crossword::factory()->published()->for($creator)->create(['title' => 'Rated Puzzle']);
+    PuzzleComment::factory()->create(['crossword_id' => $rated->id, 'rating' => 3]);
+
+    Livewire::test('pages::puzzles.index')
+        ->set('minRating', '3')
+        ->assertSee('Rated Puzzle')
+        ->assertDontSee('Unrated Puzzle');
+});
+
+test('minimum rating filter shows all puzzles when empty', function () {
+    $creator = User::factory()->create();
+
+    $rated = Crossword::factory()->published()->for($creator)->create(['title' => 'Has Rating']);
+    Crossword::factory()->published()->for($creator)->create(['title' => 'No Rating']);
+    PuzzleComment::factory()->create(['crossword_id' => $rated->id, 'rating' => 5]);
+
+    Livewire::test('pages::puzzles.index')
+        ->set('minRating', '')
+        ->assertSee('Has Rating')
+        ->assertSee('No Rating');
+});
+
+test('clear filters resets minimum rating', function () {
+    $creator = User::factory()->create();
+    Crossword::factory()->published()->for($creator)->create();
+
+    Livewire::test('pages::puzzles.index')
+        ->set('minRating', '4')
+        ->call('clearFilters')
+        ->assertSet('minRating', '');
+});
+
+test('hasActiveFilters returns true when minimum rating is set', function () {
+    $creator = User::factory()->create();
+    Crossword::factory()->published()->for($creator)->create();
+
+    Livewire::test('pages::puzzles.index')
+        ->set('minRating', '3')
+        ->assertSee('Clear All');
+});
+
+test('minimum rating filter combines with other filters', function () {
+    $creator = User::factory()->create();
+
+    $match = Crossword::factory()->published()->for($creator)->create([
+        'title' => 'Easy Top Rated',
+        'difficulty_label' => 'Easy',
+    ]);
+    PuzzleComment::factory()->create(['crossword_id' => $match->id, 'rating' => 5]);
+
+    $noRating = Crossword::factory()->published()->for($creator)->create([
+        'title' => 'Easy No Rating',
+        'difficulty_label' => 'Easy',
+    ]);
+
+    $wrongDifficulty = Crossword::factory()->published()->for($creator)->create([
+        'title' => 'Hard Top Rated',
+        'difficulty_label' => 'Hard',
+    ]);
+    PuzzleComment::factory()->create(['crossword_id' => $wrongDifficulty->id, 'rating' => 5]);
+
+    Livewire::test('pages::puzzles.index')
+        ->set('difficulty', 'Easy')
+        ->set('minRating', '4')
+        ->assertSee('Easy Top Rated')
+        ->assertDontSee('Easy No Rating')
+        ->assertDontSee('Hard Top Rated');
 });

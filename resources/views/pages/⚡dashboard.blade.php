@@ -221,15 +221,20 @@ new #[Title('Dashboard')] class extends Component {
                         </flux:text>
                     </div>
                 </div>
-                @if($dailySolved)
-                    <flux:button variant="filled" size="sm" :href="route('crosswords.solver', $dailyPuzzle)" wire:navigate icon="eye">
-                        {{ __('View Solution') }}
-                    </flux:button>
-                @else
-                    <flux:button variant="primary" size="sm" :href="route('crosswords.solver', $dailyPuzzle)" wire:navigate icon="play">
-                        {{ __('Solve Today\'s Puzzle') }}
-                    </flux:button>
-                @endif
+                <div class="flex flex-col items-end gap-2">
+                    @if($dailySolved)
+                        <flux:button variant="filled" size="sm" :href="route('crosswords.solver', $dailyPuzzle)" wire:navigate icon="eye">
+                            {{ __('View Solution') }}
+                        </flux:button>
+                    @else
+                        <flux:button variant="primary" size="sm" :href="route('crosswords.solver', $dailyPuzzle)" wire:navigate icon="play">
+                            {{ __('Solve Today\'s Puzzle') }}
+                        </flux:button>
+                    @endif
+                    <a href="{{ route('puzzles.daily-history') }}" wire:navigate class="text-xs text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300">
+                        {{ __('View past puzzles') }} &rarr;
+                    </a>
+                </div>
             </div>
         </div>
     @endif
