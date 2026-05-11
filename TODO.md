@@ -32,7 +32,7 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [x] Ask Claude to find an algorithm to generate a template based on existing template data
 - [x] Add completed_attempts_count and avg_solve_time to the crosswords API resource meta for parity with the UI
 - [ ] Consider caching per-puzzle solve stats for high-traffic discovery pages
-- [ ] Add solve time vs. average indicator to puzzle cards on the /solving page for completed puzzles
+- [x] Add solve time vs. average indicator to puzzle cards on the /solving page for completed puzzles
 - [x] Add difficulty breakdown (Easy/Medium/Hard/Expert) stats to the solving stats page alongside Times by Grid Size
 - [x] Add a notification preferences page so users can opt out of specific notification types (e.g. new puzzle published, likes, comments)
 - [ ] Add email channel option for puzzle-published notifications (alongside the existing database channel)
