@@ -15,7 +15,7 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [x] Ability to sign in with google
 - [x] Double check the printable/downloadable PDFs for the puzzle editor/solver
 - [x] Ensure that freestyle puzzles can be exported as PDFs with the removed squares
-- [ ] Execute puzzle entgagement ranker plan at `.claude/plans/puzzle-engagement-ranker.md` (deferred — gated on ≥2k completed attempts across ≥300 published puzzles; see gate conditions in file)
+- [ ] Execute puzzle engagement ranker plan at `.claude/plans/puzzle-engagement-ranker.md` (deferred — gated on ≥2k completed attempts across ≥300 published puzzles; see gate conditions in file)
 - [x] Add Livewire component tests for settings, favorites, roadmap, and support pages
 - [x] Audit Livewire page components for authorization — ensure they use policies instead of inline ownership checks
 - [x] Add feature tests for admin-assigned-ticket access via SupportTicketPolicy
@@ -30,19 +30,20 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [x] ability to change color of cell background
 - [x] Render bar-style word boundaries in PDF exports (bars are used for numbering but not visually drawn in the PDF)
 - [x] Ask Claude to find an algorithm to generate a template based on existing template data
-- [ ] Add completed_attempts_count and avg_solve_time to the crosswords API resource meta for parity with the UI
+- [x] Add completed_attempts_count and avg_solve_time to the crosswords API resource meta for parity with the UI
 - [ ] Consider caching per-puzzle solve stats for high-traffic discovery pages
-- [ ] Add solve time vs. average indicator to puzzle cards on the /solving page for completed puzzles
-- [ ] Add difficulty breakdown (Easy/Medium/Hard/Expert) stats to the solving stats page alongside Times by Grid Size
-- [ ] Add a notification preferences page so users can opt out of specific notification types (e.g. new puzzle published, likes, comments)
+- [x] Add solve time vs. average indicator to puzzle cards on the /solving page for completed puzzles
+- [x] Add difficulty breakdown (Easy/Medium/Hard/Expert) stats to the solving stats page alongside Times by Grid Size
+- [x] Add a notification preferences page so users can opt out of specific notification types (e.g. new puzzle published, likes, comments)
 - [ ] Add email channel option for puzzle-published notifications (alongside the existing database channel)
-- [ ] Add a rating trend chart or sparkline to the constructor analytics page showing how ratings change over time
+- [x] Add a rating trend chart or sparkline to the constructor analytics page showing how ratings change over time
 - [ ] Add pagination to the solve history table on the stats page to handle users with many completed puzzles
 - [x] Add an Artisan command to bulk-schedule daily puzzles for a date range
 - [x] Show a "solved" badge on the daily puzzle card if the user has already completed it
-- [ ] Add a daily puzzle history page so users can catch up on missed days
+- [x] Add a daily puzzle history page so users can catch up on missed days
 - [x] Add a minimum-rating filter to the puzzle discovery secondary filter panel (e.g. "4+ stars only")
-- [ ] Show completion rate percentage on puzzle discovery cards (requires withCount for completed attempts)
+- [x] Show completion rate percentage on puzzle discovery cards (requires withCount for completed attempts)
+- [x] Space bar should add black square, but also navigate to the next available square
 
 ## Done
 

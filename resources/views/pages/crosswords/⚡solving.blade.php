@@ -23,7 +23,9 @@ new #[Title('Solving')] class extends Component {
     {
         $query = Auth::user()
             ->puzzleAttempts()
-            ->with('crossword.user');
+            ->with(['crossword' => fn ($q) => $q->with('user')->withAvg([
+                'attempts as avg_solve_time_seconds' => fn ($q) => $q->where('is_completed', true)->whereNotNull('solve_time_seconds'),
+            ], 'solve_time_seconds')]);
 
         if ($this->filter === 'in_progress') {
             $query->where('is_completed', false);
@@ -171,7 +173,9 @@ new #[Title('Solving')] class extends Component {
                                 </div>
                                 <span class="text-xs tabular-nums text-zinc-500">{{ $solveProgress }}%</span>
                             </div>
-                            <div class="mt-1.5 flex items-center gap-2">
+                            @php($avgSeconds = $attempt->is_completed ? (int) ($attempt->crossword->avg_solve_time_seconds ?? 0) : 0)
+                            @php($solveTimeDiffPercent = ($attempt->is_completed && $attempt->solve_time_seconds && $avgSeconds > 0) ? (int) round((1 - $attempt->solve_time_seconds / $avgSeconds) * 100) : null)
+                            <div class="mt-1.5 flex flex-wrap items-center gap-2">
                                 @if($attempt->is_completed)
                                     <flux:badge size="sm" variant="solid" color="green">{{ __('Completed') }}</flux:badge>
                                     @if($attempt->formattedSolveTime())
@@ -182,6 +186,11 @@ new #[Title('Solving')] class extends Component {
                                     @endif
                                 @else
                                     <flux:badge size="sm" variant="solid" color="sky">{{ __('In Progress') }}</flux:badge>
+                                @endif
+                                @if($solveTimeDiffPercent !== null && $solveTimeDiffPercent !== 0)
+                                    <flux:badge size="sm" variant="pill" color="{{ $solveTimeDiffPercent > 0 ? 'green' : 'amber' }}">
+                                        {{ abs($solveTimeDiffPercent) }}% {{ $solveTimeDiffPercent > 0 ? __('faster') : __('slower') }}
+                                    </flux:badge>
                                 @endif
                                 <flux:text size="sm" class="text-zinc-500">{{ $attempt->updated_at->diffForHumans() }}</flux:text>
                             </div>
