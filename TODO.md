@@ -42,7 +42,7 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [x] Show a "solved" badge on the daily puzzle card if the user has already completed it
 - [ ] Add a daily puzzle history page so users can catch up on missed days
 - [ ] Add a minimum-rating filter to the puzzle discovery secondary filter panel (e.g. "4+ stars only")
-- [ ] Show completion rate percentage on puzzle discovery cards (requires withCount for completed attempts)
+- [x] Show completion rate percentage on puzzle discovery cards (requires withCount for completed attempts)
 
 ## Done
 
