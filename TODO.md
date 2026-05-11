@@ -42,15 +42,8 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [x] Show a "solved" badge on the daily puzzle card if the user has already completed it
 - [x] Add a daily puzzle history page so users can catch up on missed days
 - [ ] Add a minimum-rating filter to the puzzle discovery secondary filter panel (e.g. "4+ stars only")
-- [ ] Show completion rate percentage on puzzle discovery cards (requires withCount for completed attempts)
-- [ ] Space bar should add black square, but also navigate to the next available square
- 
-  Substring/decomposition (cousin of what you just built)
-  - Words inside words — find every dictionary word that's a substring of a longer dictionary word (MANSLAUGHTER contains LAUGHTER, THERAPIST contains THE, RAP, RAPI,          
-  THERAPI...). Good for pun and clue mining. Naively O(n × avg_len²); a suffix automaton over the wordlist makes it linear.                                                     
-  - Pyramids — chains where each step adds one letter and the letters rearrange to a new word: A → AT → CAT → CART → CARTS. Constructive — uses the same graph as               
-  ladders/beheadments inverted.                                                                                                                                                 
-                                                                                                                                                                                
+- [x] Show completion rate percentage on puzzle discovery cards (requires withCount for completed attempts)
+- [x] Space bar should add black square, but also navigate to the next available square
 
 ## Done
 
