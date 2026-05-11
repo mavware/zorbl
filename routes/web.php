@@ -24,6 +24,7 @@ Route::middleware('guest')->group(function () {
 
 // Public puzzle browsing (no auth required)
 Route::livewire('puzzles', 'pages::puzzles.index')->name('puzzles.index');
+Route::livewire('puzzles/daily', 'pages::puzzles.daily-history')->name('puzzles.daily-history');
 Route::livewire('puzzles/{crossword}', 'pages::puzzles.solve')->name('puzzles.solve');
 
 Route::middleware(['auth', 'verified'])->group(function () {
