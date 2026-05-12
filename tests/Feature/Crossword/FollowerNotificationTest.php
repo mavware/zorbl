@@ -78,11 +78,71 @@ test('notification contains correct data', function () {
         ->constructor_id->toBe($constructor->id);
 });
 
-test('notification uses database channel', function () {
+test('notification uses database channel by default', function () {
     $constructor = User::factory()->create();
     $crossword = Crossword::factory()->for($constructor)->create();
 
     $notification = new NewPuzzlePublished($crossword, $constructor);
 
     expect($notification->via($constructor))->toBe(['database']);
+});
+
+test('notification includes mail channel when user opts in to email', function () {
+    $user = User::factory()->create([
+        'notification_preferences' => [
+            'new_puzzle_published' => true,
+            'new_puzzle_published_email' => true,
+        ],
+    ]);
+
+    $crossword = Crossword::factory()->create();
+    $constructor = User::factory()->create();
+
+    $notification = new NewPuzzlePublished($crossword, $constructor);
+
+    expect($notification->via($user))->toBe(['database', 'mail']);
+});
+
+test('notification excludes mail channel when email opt-in is false', function () {
+    $user = User::factory()->create([
+        'notification_preferences' => [
+            'new_puzzle_published' => true,
+            'new_puzzle_published_email' => false,
+        ],
+    ]);
+
+    $crossword = Crossword::factory()->create();
+    $constructor = User::factory()->create();
+
+    $notification = new NewPuzzlePublished($crossword, $constructor);
+
+    expect($notification->via($user))->toBe(['database']);
+});
+
+test('notification excludes mail channel when notification type is disabled', function () {
+    $user = User::factory()->create([
+        'notification_preferences' => [
+            'new_puzzle_published' => false,
+            'new_puzzle_published_email' => true,
+        ],
+    ]);
+
+    $crossword = Crossword::factory()->create();
+    $constructor = User::factory()->create();
+
+    $notification = new NewPuzzlePublished($crossword, $constructor);
+
+    expect($notification->via($user))->toBe([]);
+});
+
+test('notification mail contains correct content', function () {
+    $constructor = User::factory()->create(['name' => 'Jane Doe']);
+    $crossword = Crossword::factory()->for($constructor)->create(['title' => 'My Great Puzzle']);
+
+    $notification = new NewPuzzlePublished($crossword, $constructor);
+    $mail = $notification->toMail($constructor);
+
+    expect($mail->subject)->toContain('Jane Doe')
+        ->and($mail->introLines[0])->toContain('My Great Puzzle')
+        ->and($mail->actionUrl)->toBe(route('crosswords.solver', $crossword));
 });
