@@ -23,9 +23,7 @@ new #[Title('Solving')] class extends Component {
     {
         $query = Auth::user()
             ->puzzleAttempts()
-            ->with(['crossword' => fn ($q) => $q->with('user')->withAvg([
-                'attempts as avg_solve_time_seconds' => fn ($q) => $q->where('is_completed', true)->whereNotNull('solve_time_seconds'),
-            ], 'solve_time_seconds')]);
+            ->with(['crossword' => fn ($q) => $q->with('user')]);
 
         if ($this->filter === 'in_progress') {
             $query->where('is_completed', false);
@@ -173,7 +171,7 @@ new #[Title('Solving')] class extends Component {
                                 </div>
                                 <span class="text-xs tabular-nums text-zinc-500">{{ $solveProgress }}%</span>
                             </div>
-                            @php($avgSeconds = $attempt->is_completed ? (int) ($attempt->crossword->avg_solve_time_seconds ?? 0) : 0)
+                            @php($avgSeconds = $attempt->is_completed ? ($attempt->crossword->cached_avg_solve_time ?? 0) : 0)
                             @php($solveTimeDiffPercent = ($attempt->is_completed && $attempt->solve_time_seconds && $avgSeconds > 0) ? (int) round((1 - $attempt->solve_time_seconds / $avgSeconds) * 100) : null)
                             <div class="mt-1.5 flex flex-wrap items-center gap-2">
                                 @if($attempt->is_completed)

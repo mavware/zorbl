@@ -14,14 +14,12 @@ class RecalculateDifficultyRatings extends Command
 {
     public function handle(DifficultyRater $rater): int
     {
-        $puzzles = Crossword::where('is_published', true)
-            ->withAvg('attempts as avg_solve_time', 'solve_time_seconds')
-            ->get();
+        $puzzles = Crossword::where('is_published', true)->get();
 
         $count = 0;
 
         foreach ($puzzles as $puzzle) {
-            $avgTime = $puzzle->avg_solve_time ? (float) $puzzle->avg_solve_time : null;
+            $avgTime = $puzzle->cached_avg_solve_time ? (float) $puzzle->cached_avg_solve_time : null;
             $rating = $rater->rate($puzzle, $avgTime);
 
             $puzzle->update([

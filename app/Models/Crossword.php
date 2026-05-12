@@ -43,6 +43,9 @@ use Zorbl\CrosswordIO\GridNumberer;
  * @property array<array-key, mixed>|null $user_progress
  * @property numeric|null $difficulty_score
  * @property string|null $difficulty_label
+ * @property int $cached_attempts_count
+ * @property int $cached_completed_count
+ * @property int|null $cached_avg_solve_time
  * @property-read Collection<int, PuzzleAttempt> $attempts
  * @property-read int|null $attempts_count
  * @property-read Collection<int, ClueEntry> $clueEntries
@@ -61,6 +64,7 @@ use Zorbl\CrosswordIO\GridNumberer;
     'grid', 'solution', 'prefilled', 'user_progress', 'clues_across', 'clues_down',
     'styles', 'metadata', 'is_published',
     'difficulty_score', 'difficulty_label',
+    'cached_attempts_count', 'cached_completed_count', 'cached_avg_solve_time',
 ])]
 class Crossword extends Model
 {
@@ -376,12 +380,28 @@ class Crossword extends Model
      */
     public function averageSolveTimeSeconds(): ?int
     {
-        $avg = $this->attempts()
-            ->where('is_completed', true)
+        return $this->cached_avg_solve_time;
+    }
+
+    /**
+     * Recalculate and persist the cached solve-stats columns from puzzle_attempts.
+     */
+    public function refreshSolveStats(): void
+    {
+        $completedQuery = $this->attempts()
+            ->where('is_completed', true);
+
+        $attemptsCount = $this->attempts()->count();
+        $completedCount = (clone $completedQuery)->count();
+        $avgSolveTime = (clone $completedQuery)
             ->whereNotNull('solve_time_seconds')
             ->avg('solve_time_seconds');
 
-        return $avg !== null ? (int) round($avg) : null;
+        $this->updateQuietly([
+            'cached_attempts_count' => $attemptsCount,
+            'cached_completed_count' => $completedCount,
+            'cached_avg_solve_time' => $avgSolveTime !== null ? (int) round($avgSolveTime) : null,
+        ]);
     }
 
     /**

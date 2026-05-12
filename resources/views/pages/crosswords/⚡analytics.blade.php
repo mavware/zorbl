@@ -1,7 +1,6 @@
 <?php
 
 use App\Models\Crossword;
-use App\Models\PuzzleAttempt;
 use App\Models\PuzzleComment;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Auth;
@@ -25,15 +24,12 @@ new #[Title('Constructor Analytics')] class extends Component {
             ->crosswords()
             ->where('is_published', true)
             ->withCount([
-                'attempts',
-                'attempts as completed_attempts_count' => fn ($q) => $q->where('is_completed', true),
                 'likes',
                 'comments as reviews_count' => fn ($q) => $q->whereNotNull('rating'),
             ])
-            ->withAvg('attempts as avg_solve_time', 'solve_time_seconds')
             ->withAvg('comments as avg_rating', 'rating');
 
-        $allowed = ['title', 'attempts_count', 'completed_attempts_count', 'avg_solve_time', 'likes_count', 'avg_rating'];
+        $allowed = ['title', 'cached_attempts_count', 'cached_completed_count', 'cached_avg_solve_time', 'likes_count', 'avg_rating'];
         if ($this->sortField !== '' && in_array($this->sortField, $allowed)) {
             $direction = $this->sortDirection === 'desc' ? 'desc' : 'asc';
             $query->orderBy($this->sortField, $direction);
@@ -57,31 +53,26 @@ new #[Title('Constructor Analytics')] class extends Component {
     #[Computed]
     public function totalSolves(): int
     {
-        return PuzzleAttempt::whereIn(
-            'crossword_id',
-            Auth::user()->crosswords()->where('is_published', true)->select('id')
-        )->count();
+        return (int) Auth::user()->crosswords()
+            ->where('is_published', true)
+            ->sum('cached_attempts_count');
     }
 
     #[Computed]
     public function totalCompletions(): int
     {
-        return PuzzleAttempt::whereIn(
-            'crossword_id',
-            Auth::user()->crosswords()->where('is_published', true)->select('id')
-        )->where('is_completed', true)->count();
+        return (int) Auth::user()->crosswords()
+            ->where('is_published', true)
+            ->sum('cached_completed_count');
     }
 
     #[Computed]
     public function overallAvgSolveTime(): ?int
     {
-        $avg = PuzzleAttempt::whereIn(
-            'crossword_id',
-            Auth::user()->crosswords()->where('is_published', true)->select('id')
-        )
-            ->where('is_completed', true)
-            ->whereNotNull('solve_time_seconds')
-            ->avg('solve_time_seconds');
+        $avg = Auth::user()->crosswords()
+            ->where('is_published', true)
+            ->whereNotNull('cached_avg_solve_time')
+            ->avg('cached_avg_solve_time');
 
         return $avg ? (int) round($avg) : null;
     }
@@ -354,10 +345,10 @@ new #[Title('Constructor Analytics')] class extends Component {
             <flux:table>
                 <flux:table.columns>
                     <flux:table.column sortable :sorted="$sortField === 'title'" :direction="$sortDirection" wire:click="sortBy('title')">{{ __('Puzzle') }}</flux:table.column>
-                    <flux:table.column sortable :sorted="$sortField === 'attempts_count'" :direction="$sortDirection" wire:click="sortBy('attempts_count')" align="center">{{ __('Attempts') }}</flux:table.column>
-                    <flux:table.column sortable :sorted="$sortField === 'completed_attempts_count'" :direction="$sortDirection" wire:click="sortBy('completed_attempts_count')" align="center">{{ __('Completed') }}</flux:table.column>
+                    <flux:table.column sortable :sorted="$sortField === 'cached_attempts_count'" :direction="$sortDirection" wire:click="sortBy('cached_attempts_count')" align="center">{{ __('Attempts') }}</flux:table.column>
+                    <flux:table.column sortable :sorted="$sortField === 'cached_completed_count'" :direction="$sortDirection" wire:click="sortBy('cached_completed_count')" align="center">{{ __('Completed') }}</flux:table.column>
                     <flux:table.column align="center">{{ __('Completion Rate') }}</flux:table.column>
-                    <flux:table.column sortable :sorted="$sortField === 'avg_solve_time'" :direction="$sortDirection" wire:click="sortBy('avg_solve_time')" align="center">{{ __('Avg Time') }}</flux:table.column>
+                    <flux:table.column sortable :sorted="$sortField === 'cached_avg_solve_time'" :direction="$sortDirection" wire:click="sortBy('cached_avg_solve_time')" align="center">{{ __('Avg Time') }}</flux:table.column>
                     <flux:table.column sortable :sorted="$sortField === 'likes_count'" :direction="$sortDirection" wire:click="sortBy('likes_count')" align="center">{{ __('Likes') }}</flux:table.column>
                     <flux:table.column sortable :sorted="$sortField === 'avg_rating'" :direction="$sortDirection" wire:click="sortBy('avg_rating')" align="center">{{ __('Rating') }}</flux:table.column>
                 </flux:table.columns>
@@ -371,16 +362,16 @@ new #[Title('Constructor Analytics')] class extends Component {
                                 </a>
                                 <div class="text-xs text-zinc-500">{{ $puzzle->width }}&times;{{ $puzzle->height }}</div>
                             </flux:table.cell>
-                            <flux:table.cell align="center">{{ $puzzle->attempts_count }}</flux:table.cell>
-                            <flux:table.cell align="center">{{ $puzzle->completed_attempts_count }}</flux:table.cell>
+                            <flux:table.cell align="center">{{ $puzzle->cached_attempts_count }}</flux:table.cell>
+                            <flux:table.cell align="center">{{ $puzzle->cached_completed_count }}</flux:table.cell>
                             <flux:table.cell align="center">
-                                @php($rate = $puzzle->attempts_count > 0 ? round(($puzzle->completed_attempts_count / $puzzle->attempts_count) * 100) : 0)
+                                @php($rate = $puzzle->cached_attempts_count > 0 ? round(($puzzle->cached_completed_count / $puzzle->cached_attempts_count) * 100) : 0)
                                 <span class="{{ $rate >= 75 ? 'text-emerald-600 dark:text-emerald-400' : ($rate >= 40 ? 'text-amber-600 dark:text-amber-400' : 'text-zinc-600') }}">
                                     {{ $rate }}%
                                 </span>
                             </flux:table.cell>
                             <flux:table.cell align="center" class="font-mono">
-                                {{ $this->formatTime($puzzle->avg_solve_time ? (int) round($puzzle->avg_solve_time) : null) }}
+                                {{ $this->formatTime($puzzle->cached_avg_solve_time) }}
                             </flux:table.cell>
                             <flux:table.cell align="center">
                                 <span class="inline-flex items-center gap-1">

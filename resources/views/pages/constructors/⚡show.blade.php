@@ -2,7 +2,6 @@
 
 use App\Models\Crossword;
 use App\Models\Follow;
-use App\Models\PuzzleAttempt;
 use App\Models\User;
 use App\Notifications\NewFollower;
 use Illuminate\Support\Facades\Auth;
@@ -41,11 +40,7 @@ new #[Title('Constructor Profile')] class extends Component {
     {
         $query = Crossword::where('user_id', $this->constructorId)
             ->where('is_published', true)
-            ->withCount([
-                'likes',
-                'attempts',
-                'attempts as completed_attempts_count' => fn ($q) => $q->where('is_completed', true),
-            ]);
+            ->withCount('likes');
 
         if ($this->difficulty !== '') {
             $query->where('difficulty_label', $this->difficulty);
@@ -54,7 +49,7 @@ new #[Title('Constructor Profile')] class extends Component {
         match ($this->sortBy) {
             'oldest' => $query->oldest(),
             'most_liked' => $query->orderByDesc('likes_count'),
-            'most_played' => $query->orderByDesc('attempts_count'),
+            'most_played' => $query->orderByDesc('cached_attempts_count'),
             default => $query->latest(),
         };
 
@@ -98,10 +93,9 @@ new #[Title('Constructor Profile')] class extends Component {
     #[Computed]
     public function totalSolves(): int
     {
-        return PuzzleAttempt::whereHas('crossword', fn ($q) => $q
-            ->where('user_id', $this->constructorId)
+        return (int) Crossword::where('user_id', $this->constructorId)
             ->where('is_published', true)
-        )->count();
+            ->sum('cached_attempts_count');
     }
 
     public function toggleFollow(): void
@@ -247,10 +241,10 @@ new #[Title('Constructor Profile')] class extends Component {
                             </span>
                             <span class="flex items-center gap-0.5">
                                 <flux:icon name="play" class="size-3.5" />
-                                {{ $puzzle->attempts_count }}
+                                {{ $puzzle->cached_attempts_count }}
                             </span>
-                            @if($puzzle->attempts_count > 0)
-                                @php($completionRate = round(($puzzle->completed_attempts_count / $puzzle->attempts_count) * 100))
+                            @if($puzzle->cached_attempts_count > 0)
+                                @php($completionRate = round(($puzzle->cached_completed_count / $puzzle->cached_attempts_count) * 100))
                                 <span @class([
                                     'text-emerald-600 dark:text-emerald-400' => $completionRate >= 75,
                                     'text-amber-600 dark:text-amber-400' => $completionRate >= 40 && $completionRate < 75,

@@ -236,8 +236,8 @@ test('published puzzles table includes attempt and like counts', function () {
     $puzzles = $component->get('publishedPuzzles');
 
     expect($puzzles)->toHaveCount(1)
-        ->and($puzzles->first()->attempts_count)->toBe(8)
-        ->and($puzzles->first()->completed_attempts_count)->toBe(3)
+        ->and($puzzles->first()->cached_attempts_count)->toBe(8)
+        ->and($puzzles->first()->cached_completed_count)->toBe(3)
         ->and($puzzles->first()->likes_count)->toBe(1);
 });
 
@@ -289,10 +289,10 @@ test('sorting by attempts count orders correctly', function () {
 
     $component = Livewire::actingAs($constructor)->test('pages::crosswords.analytics');
 
-    $component->call('sortBy', 'attempts_count');
+    $component->call('sortBy', 'cached_attempts_count');
     expect($component->get('publishedPuzzles')->first()->title)->toBe('Less Popular');
 
-    $component->call('sortBy', 'attempts_count');
+    $component->call('sortBy', 'cached_attempts_count');
     expect($component->get('publishedPuzzles')->first()->title)->toBe('More Popular');
 });
 
@@ -502,14 +502,14 @@ test('average solve time displayed in performance table', function () {
         'grid' => [[1, 2], [3, 0]],
     ]);
 
-    PuzzleAttempt::factory()->for($puzzle)->create([
+    PuzzleAttempt::factory()->completed()->for($puzzle)->create([
         'solve_time_seconds' => 300,
     ]);
 
     $component = Livewire::actingAs($constructor)->test('pages::crosswords.analytics');
     $puzzles = $component->get('publishedPuzzles');
 
-    expect((int) round($puzzles->first()->avg_solve_time))->toBe(300);
+    expect($puzzles->first()->cached_avg_solve_time)->toBe(300);
 });
 
 test('sorting by a new field resets direction to ascending', function () {

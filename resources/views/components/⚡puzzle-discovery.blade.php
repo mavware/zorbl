@@ -79,12 +79,7 @@ new class extends Component {
     {
         $query = Crossword::where('is_published', true)
             ->with('user:id,name', 'tags:id,name,slug')
-            ->withCount([
-                'likes',
-                'attempts',
-                'attempts as completed_attempts_count' => fn ($q) => $q->where('is_completed', true),
-            ])
-            ->withAvg(['attempts as avg_solve_time' => fn ($q) => $q->where('is_completed', true)], 'solve_time_seconds')
+            ->withCount('likes')
             ->withAvg('comments as avg_rating', 'rating');
 
         $hasExplicitFilters = $this->search !== '' || $this->constructor !== '';
@@ -170,9 +165,9 @@ new class extends Component {
         match ($this->sortBy) {
             'oldest' => $query->oldest(),
             'most_liked' => $query->orderByDesc('likes_count'),
-            'most_solved' => $query->orderByDesc('completed_attempts_count'),
+            'most_solved' => $query->orderByDesc('cached_completed_count'),
             'highest_rated' => $query->orderByDesc('avg_rating'),
-            'most_played' => $query->orderByDesc('attempts_count'),
+            'most_played' => $query->orderByDesc('cached_attempts_count'),
             'largest' => $query->orderByRaw('width * height DESC'),
             'smallest' => $query->orderByRaw('width * height ASC'),
             default => $query->latest(),
@@ -468,13 +463,13 @@ new class extends Component {
                     <div class="mt-2 flex items-center gap-3 text-xs text-zinc-500">
                         <span class="flex items-center gap-0.5">
                             <flux:icon name="check-circle" class="size-3.5" />
-                            {{ trans_choice(':count solve|:count solves', $crossword->completed_attempts_count) }}
+                            {{ trans_choice(':count solve|:count solves', $crossword->cached_completed_count) }}
                         </span>
-                        @if($crossword->avg_solve_time)
+                        @if($crossword->cached_avg_solve_time)
                             <span class="flex items-center gap-0.5">
                                 <flux:icon name="clock" class="size-3.5" />
                                 @php
-                                    $avgSeconds = (int) round($crossword->avg_solve_time);
+                                    $avgSeconds = $crossword->cached_avg_solve_time;
                                     $avgHours = intdiv($avgSeconds, 3600);
                                     $avgMinutes = intdiv($avgSeconds % 3600, 60);
                                     $avgSecs = $avgSeconds % 60;
@@ -492,13 +487,13 @@ new class extends Component {
                                 @endfor
                             </span>
                         @endif
-                        @if($crossword->attempts_count > 0)
+                        @if($crossword->cached_attempts_count > 0)
                             <span class="flex items-center gap-0.5">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="size-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                                {{ $crossword->attempts_count }} {{ trans_choice('play|plays', $crossword->attempts_count) }}
+                                {{ $crossword->cached_attempts_count }} {{ trans_choice('play|plays', $crossword->cached_attempts_count) }}
                             </span>
                             @php
-                                $completionRate = round(($crossword->completed_attempts_count / $crossword->attempts_count) * 100);
+                                $completionRate = round(($crossword->cached_completed_count / $crossword->cached_attempts_count) * 100);
                             @endphp
                             <span class="flex items-center gap-0.5" title="{{ __(':rate% of solvers completed this puzzle', ['rate' => $completionRate]) }}">
                                 <flux:icon name="chart-bar" class="size-3.5" />
