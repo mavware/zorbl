@@ -107,6 +107,8 @@ class ActivitySeeder extends Seeder
             ];
         }
 
+        $constructorBatch = $this->filterOutExistingEmails($constructorBatch);
+
         // Insert constructors in chunks to handle large batches
         foreach (array_chunk($constructorBatch, 500) as $chunk) {
             User::insert($chunk);
@@ -139,15 +141,16 @@ class ActivitySeeder extends Seeder
             ];
         }
 
+        $solverBatch = $this->filterOutExistingEmails($solverBatch);
         User::insert($solverBatch);
 
         $solverIds = User::whereIn('email', $solverEmails)->pluck('id')->all();
         $allUserIds = array_merge($constructorIds, $solverIds);
 
-        $this->command->info('Created '.count($constructorBatch).' constructor(s) and '.self::SOLVER_COUNT.' solvers.');
+        $this->log('Created '.count($constructorBatch).' constructor(s) and '.count($solverBatch).' solver(s).');
 
         // Step 3: Create crosswords (matched to author users)
-        $this->command->info('Creating crosswords...');
+        $this->log('Creating crosswords...');
         $rater = new DifficultyRater;
         $crosswordIds = [];
 
