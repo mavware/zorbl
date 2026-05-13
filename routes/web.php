@@ -27,8 +27,9 @@ Route::get('/embed/{crossword}', function (Crossword $crossword) {
     return view('embed.solver', ['crossword' => $crossword]);
 })->name('embed.solver');
 
-// Google OAuth
-Route::middleware('guest')->group(function () {
+// Google OAuth — throttled per IP so a flood of invalid callbacks can't
+// drown the Socialite HTTP requests we make against Google.
+Route::middleware(['guest', 'throttle:oauth-callback'])->group(function () {
     Route::get('auth/google/redirect', [GoogleController::class, 'redirect'])->name('auth.google.redirect');
     Route::get('auth/google/callback', [GoogleController::class, 'callback'])->name('auth.google.callback');
 });

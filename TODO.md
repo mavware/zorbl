@@ -58,7 +58,6 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 
   Launch-blocking (most are ops, not code):
   
-  1. Error tracking — Sentry or similar. Without it you find out about errors when users tweet at you. ~30 min to wire up the SDK.
   2. Production .env audit — APP_DEBUG=false, real Stripe keys (not test), MAIL_* configured, LEGAL_ENTITY / LEGAL_CONTACT_EMAIL / LEGAL_DMCA_EMAIL filled in, ANTHROPIC_API_KEY
    if AI is on, GOOGLE_CLIENT_* if OAuth is on.
   3. Real support inboxes — legal@, dmca@, support@ need to actually deliver to a human you check. The Privacy/Terms/DMCA pages already reference them.
@@ -66,14 +65,7 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
   loop once before launch.
   5. Queue worker + scheduler running in prod — Laravel Pulse, daily puzzle scheduling, async notifications all depend on these. (Laravel Cloud handles both; bare-metal hosting
    needs supervisor.)
-   
-  Important week-1 fixes (ship without, fix fast):
-  1. Welcome email — first impression. Nothing currently sent on registration.
-  2. Empty states — new constructor with 0 puzzles, new solver with 0 attempts, no favorites yet. Likely showing blank tables right now.
-  3. Security headers — Content-Security-Policy, Strict-Transport-Security, X-Frame-Options. ~50 lines of middleware.
-  4. Rate limits on auth routes — login/register/forgot-password aren't behind a throttle. One brute-force attempt and you eat compute.
-  5. 404 / 500 pages styled to match the app.
-  
+    
   Defer (no urgency):
   1. Analytics (Plausible/Posthog)
   2. Referral codes
