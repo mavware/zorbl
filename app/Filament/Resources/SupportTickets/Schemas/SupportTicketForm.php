@@ -29,6 +29,7 @@ class SupportTicketForm
                         'feature_request' => 'Feature Request',
                         'account_issue' => 'Account Issue',
                         'puzzle_issue' => 'Puzzle Issue',
+                        'copyright' => 'Copyright (DMCA)',
                         'general' => 'General',
                     ])
                     ->required(),

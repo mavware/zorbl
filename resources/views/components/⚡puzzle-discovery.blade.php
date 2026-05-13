@@ -78,6 +78,7 @@ new class extends Component {
     public function puzzles()
     {
         $query = Crossword::where('is_published', true)
+            ->safeFor(Auth::user())
             ->with('user:id,name', 'tags:id,name,slug')
             ->withCount([
                 'likes',

@@ -44,6 +44,36 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [x] Add a minimum-rating filter to the puzzle discovery secondary filter panel (e.g. "4+ stars only")
 - [x] Show completion rate percentage on puzzle discovery cards (requires withCount for completed attempts)
 - [x] Space bar should add black square, but also navigate to the next available square
+- [ ] Ability to create a puzzle when not logged in (for anonymous users) (possibly creating a user via ip?)
+- [ ] Create a command that periodically updates legal functions (privacy policy, terms of service, cookie policy, where the cookie banner shows, etc...).  Based on real laws.
+- [ ] Ability to arrange the printable/downloadable versions of the puzzle in a different orientation.
+- [ ] Ability to add an image to the printable/downloadable arrangements of the puzzle.
+- [ ] Ability to add narrative text to the printable/downloadable arrangements of the puzzle.
+- [ ] Ability to convert selected contiguous cells to a custom image (or a single cell if only one is selected)
+- [ ] Ability to arrange several puzzles in a single PDF file.
+- [ ] Ability to add a custom image or text page to the PDF file.
+- [ ] Ability to add a section that prompts the solver to enter one or more custom answer.  Constructor will choose if the solver gets feedback if they enter the correct answers.
+- [ ] Constructors get a section that shows what answers the solvers entered into the answer field (just the distinct answers with the count)
+
+
+  Growth surfaces
+  - Per-puzzle Open Graph share image (auto-generated PNG of the grid) — single biggest social-virality unlock
+  - Sitemap.xml + JSON-LD structured data for puzzles → Google indexing
+    - Public help center / FAQ separate from the ticket system
+  - Referral / invite-a-friend code (you already have Cashier; pairs naturally)
+
+  Operations
+  - Error tracking (Sentry/Bugsnag) — last-error via Pulse is reactive, not paged
+  - Uptime monitor pointed at / and /api/v1/health
+  - Automated DB backup verification (not just that backups run, but that they restore)
+  - Stripe webhook retry/idempotency audit before real money flows
+
+  Quality
+  - Accessibility pass on the grid (screen reader announcements for clue/cell, ARIA, high-contrast) — also an SEO/legal hedge in some jurisdictions
+  
+  If I had to pick the one thing most likely to matter on day one of public launch, it's auto-generated per-puzzle share images — every solver completion or constructor share
+  becomes a free ad. Closest tie for "blocking" is the legal trio (ToS / Privacy / account deletion).
+
 
 ## Done
 

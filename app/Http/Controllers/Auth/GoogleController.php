@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Support\ProfanityFilter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -43,8 +44,15 @@ class GoogleController extends Controller
             return redirect()->intended(config('fortify.home'));
         }
 
+        $name = (string) $googleUser->getName();
+        if (app(ProfanityFilter::class)->contains($name)) {
+            // Fall back to the email local-part if Google's display name is profane —
+            // the user can still rename themselves later through profile settings.
+            $name = Str::before((string) $googleUser->getEmail(), '@');
+        }
+
         $user = User::create([
-            'name' => $googleUser->getName(),
+            'name' => $name,
             'email' => $googleUser->getEmail(),
             'google_id' => $googleUser->getId(),
             'password' => Str::random(32),

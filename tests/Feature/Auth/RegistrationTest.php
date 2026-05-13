@@ -6,10 +6,13 @@ beforeEach(function () {
     $this->skipUnlessFortifyHas(Features::registration());
 });
 
-test('registration screen can be rendered', function () {
+test('registration screen renders with clickwrap terms acknowledgement', function () {
     $response = $this->get(route('register'));
 
-    $response->assertOk();
+    $response->assertOk()
+        ->assertSee('By creating an account')
+        ->assertSee(route('legal.terms'), false)
+        ->assertSee(route('legal.privacy'), false);
 });
 
 test('new users can register', function () {

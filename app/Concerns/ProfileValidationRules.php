@@ -3,6 +3,7 @@
 namespace App\Concerns;
 
 use App\Models\User;
+use App\Rules\CleanUsername;
 use Illuminate\Validation\Rule;
 
 trait ProfileValidationRules
@@ -29,7 +30,7 @@ trait ProfileValidationRules
      */
     protected function nameRules(): array
     {
-        return ['required', 'string', 'max:255'];
+        return ['required', 'string', 'max:255', app(CleanUsername::class)];
     }
 
     /**

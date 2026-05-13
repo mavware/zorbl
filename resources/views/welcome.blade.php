@@ -42,6 +42,13 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="csrf-token" content="{{ csrf_token() }}">
+        <link rel="manifest" href="{{ asset('site.webmanifest') }}">
+        <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}">
+        <meta name="theme-color" content="#0a0a0a">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+        <meta name="apple-mobile-web-app-title" content="{{ $appName }}">
         <title>{{ $appName }} — From blank grid to published crossword in 10 minutes</title>
         <meta name="description" content="{{ $tagline }}">
         <link rel="canonical" href="{{ $canonicalUrl }}">
@@ -60,7 +67,25 @@
         <meta name="twitter:description" content="{{ $tagline }}">
         <meta name="twitter:image" content="{{ $ogImage }}">
 
+        {{-- WebSite schema with SearchAction so Google may surface a sitelinks search box --}}
+        <script type="application/ld+json">{!! json_encode([
+            '@context' => 'https://schema.org',
+            '@type' => 'WebSite',
+            'name' => $appName,
+            'url' => url('/'),
+            'description' => $tagline,
+            'potentialAction' => [
+                '@type' => 'SearchAction',
+                'target' => [
+                    '@type' => 'EntryPoint',
+                    'urlTemplate' => route('puzzles.index').'?search={search_term_string}',
+                ],
+                'query-input' => 'required name=search_term_string',
+            ],
+        ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
+
         @vite(['resources/css/app.css', 'resources/js/app.js'])
+        @fluxAppearance
     </head>
     <body class="bg-zinc-950 text-zinc-100 antialiased">
         {{-- Navigation --}}
@@ -325,10 +350,22 @@
 
         {{-- Footer --}}
         <footer class="border-t border-zinc-800 py-8">
-            <div class="mx-auto flex max-w-6xl flex-col items-center gap-2 px-6 text-center text-sm text-zinc-700 sm:flex-row sm:justify-between">
+            <div class="mx-auto flex max-w-6xl flex-col items-center gap-3 px-6 text-center text-sm text-zinc-700 sm:flex-row sm:justify-between">
                 <p>&copy; {{ date('Y') }} {{ $appName }}. All rights reserved.</p>
-                <a href="{{ route('roadmap.index') }}" class="text-zinc-500 hover:text-zinc-300">Roadmap</a>
+                <div class="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
+                    <a href="{{ route('help.index') }}" class="text-zinc-500 hover:text-zinc-300">Help</a>
+                    <a href="{{ route('roadmap.index') }}" class="text-zinc-500 hover:text-zinc-300">Roadmap</a>
+                    <a href="{{ route('legal.terms') }}" class="text-zinc-500 hover:text-zinc-300">Terms</a>
+                    <a href="{{ route('legal.privacy') }}" class="text-zinc-500 hover:text-zinc-300">Privacy</a>
+                    <a href="{{ route('legal.cookies') }}" class="text-zinc-500 hover:text-zinc-300">Cookies</a>
+                    <a href="{{ route('legal.dmca') }}" class="text-zinc-500 hover:text-zinc-300">DMCA</a>
+                </div>
             </div>
         </footer>
+
+        @include('partials.cookie-banner')
+        @include('partials.install-prompt')
+
+        @fluxScripts
     </body>
 </html>

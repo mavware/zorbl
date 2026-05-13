@@ -3,11 +3,14 @@
 use App\Models\SupportTicket;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Title;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 
 new #[Title('Submit a Ticket')] class extends Component {
     public string $subject = '';
     public string $description = '';
+
+    #[Url]
     public string $category = 'general';
 
     public function submit(): void
@@ -15,7 +18,7 @@ new #[Title('Submit a Ticket')] class extends Component {
         $this->validate([
             'subject' => ['required', 'string', 'min:5', 'max:255'],
             'description' => ['required', 'string', 'min:20', 'max:5000'],
-            'category' => ['required', 'in:bug_report,feature_request,account_issue,puzzle_issue,general'],
+            'category' => ['required', 'in:bug_report,feature_request,account_issue,puzzle_issue,copyright,general'],
         ]);
 
         $ticket = Auth::user()->supportTickets()->create([
@@ -36,6 +39,14 @@ new #[Title('Submit a Ticket')] class extends Component {
     </div>
 
     <div class="mx-auto max-w-2xl space-y-6">
+        <flux:callout icon="question-mark-circle" color="amber">
+            <flux:callout.heading>{{ __('Try the Help Center first') }}</flux:callout.heading>
+            <flux:callout.text>
+                {{ __('Many common questions are answered in our guides — you may get a faster answer there.') }}
+                <flux:link :href="route('help.index')" wire:navigate>{{ __('Browse the Help Center →') }}</flux:link>
+            </flux:callout.text>
+        </flux:callout>
+
         <flux:field>
             <flux:label>{{ __('Subject') }}</flux:label>
             <flux:input wire:model="subject" placeholder="{{ __('Brief summary of your issue') }}" />
@@ -50,6 +61,7 @@ new #[Title('Submit a Ticket')] class extends Component {
                 <option value="feature_request">{{ __('Feature Request') }}</option>
                 <option value="account_issue">{{ __('Account Issue') }}</option>
                 <option value="puzzle_issue">{{ __('Puzzle Issue') }}</option>
+                <option value="copyright">{{ __('Copyright (DMCA)') }}</option>
             </flux:select>
             <flux:error name="category" />
         </flux:field>
