@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\ThrottleAuthRoutes;
 use Laravel\Fortify\Features;
 
 return [
@@ -101,7 +102,7 @@ return [
     |
     */
 
-    'middleware' => ['web'],
+    'middleware' => ['web', ThrottleAuthRoutes::class],
 
     /*
     |--------------------------------------------------------------------------
@@ -152,6 +153,7 @@ return [
             'confirmPassword' => true,
             // 'window' => 0
         ]),
+        Features::passkeys(),
     ],
 
 ];

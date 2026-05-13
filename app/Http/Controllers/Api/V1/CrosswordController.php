@@ -37,7 +37,7 @@ class CrosswordController extends Controller
             )
             ->allowedSorts('created_at', 'title', 'difficulty_score')
             ->allowedIncludes('user')
-            ->withCount(['likes', 'attempts', 'comments'])
+            ->withCount(['likes', 'comments'])
             ->paginate(15);
 
         return CrosswordResource::collection($crosswords);
@@ -51,7 +51,7 @@ class CrosswordController extends Controller
             }
         }
 
-        $crossword->loadCount(['likes', 'attempts', 'comments']);
+        $crossword->loadCount(['likes', 'comments']);
 
         return new CrosswordResource($crossword);
     }

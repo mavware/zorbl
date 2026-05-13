@@ -85,6 +85,7 @@ new #[Title('Support Tickets')] class extends Component {
                                     'feature_request' => 'blue',
                                     'account_issue' => 'amber',
                                     'puzzle_issue' => 'violet',
+                                    'copyright' => 'pink',
                                     default => 'zinc',
                                 }"
                             >
@@ -93,6 +94,7 @@ new #[Title('Support Tickets')] class extends Component {
                                     'feature_request' => __('Feature Request'),
                                     'account_issue' => __('Account Issue'),
                                     'puzzle_issue' => __('Puzzle Issue'),
+                                    'copyright' => __('Copyright (DMCA)'),
                                     default => __('General'),
                                 } }}
                             </flux:badge>

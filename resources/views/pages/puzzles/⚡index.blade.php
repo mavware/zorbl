@@ -41,6 +41,9 @@ class extends Component {
     public string $tag = '';
 
     #[Url]
+    public string $minRating = '';
+
+    #[Url]
     public string $sortBy = 'newest';
 
     public bool $showFilters = false;
@@ -75,8 +78,10 @@ class extends Component {
     public function puzzles()
     {
         $query = Crossword::where('is_published', true)
+            ->safeFor(Auth::user())
             ->with('user:id,name', 'tags:id,name,slug')
-            ->withCount('likes');
+            ->withCount('likes')
+            ->withAvg('comments as avg_rating', 'rating');
 
         if ($this->search !== '') {
             $term = $this->search;
@@ -128,6 +133,14 @@ class extends Component {
 
         if ($this->tag !== '') {
             $query->whereHas('tags', fn ($q) => $q->where('slug', $this->tag));
+        }
+
+        if ($this->minRating !== '') {
+            $min = (int) $this->minRating;
+            $query->whereRaw(
+                '(SELECT AVG(rating) FROM puzzle_comments WHERE puzzle_comments.crossword_id = crosswords.id) >= ?',
+                [$min]
+            );
         }
 
         if (Auth::check()) {
@@ -203,6 +216,7 @@ class extends Component {
     {
         $crossword = Crossword::findOrFail($crosswordId);
         abort_unless($crossword->is_published, 404);
+        abort_unless($crossword->isVisibleToSafeSearch(Auth::user()), 404);
 
         if (Auth::check()) {
             $this->redirect(route('crosswords.solver', $crossword), navigate: true);
@@ -224,7 +238,7 @@ class extends Component {
 
     public function clearFilters(): void
     {
-        $this->reset('search', 'gridSize', 'puzzleType', 'constructor', 'dateRange', 'difficulty', 'tag', 'sortBy');
+        $this->reset('search', 'gridSize', 'puzzleType', 'constructor', 'dateRange', 'difficulty', 'tag', 'minRating', 'sortBy');
         $this->sortBy = 'newest';
         $this->resetPage();
         unset($this->puzzles);
@@ -265,6 +279,11 @@ class extends Component {
         $this->resetPage();
     }
 
+    public function updatedMinRating(): void
+    {
+        $this->resetPage();
+    }
+
     public function updatedSortBy(): void
     {
         $this->resetPage();
@@ -286,6 +305,7 @@ class extends Component {
             || $this->dateRange !== ''
             || $this->difficulty !== ''
             || $this->tag !== ''
+            || $this->minRating !== ''
             || $this->sortBy !== 'newest';
     }
 }
@@ -338,7 +358,7 @@ class extends Component {
                         </flux:text>
                     </div>
                 </div>
-                <div class="shrink-0">
+                <div class="flex shrink-0 flex-col items-end gap-2">
                     @if($dailySolved)
                         <flux:button variant="filled" size="sm" wire:click="startSolving({{ $dailyPuzzle->id }})" icon="eye">
                             {{ __('View Solution') }}
@@ -348,6 +368,9 @@ class extends Component {
                             {{ __('Solve Now') }}
                         </flux:button>
                     @endif
+                    <a href="{{ route('puzzles.daily-history') }}" wire:navigate class="text-xs text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300">
+                        {{ __('View past puzzles') }} &rarr;
+                    </a>
                 </div>
             </div>
         </div>
@@ -427,7 +450,7 @@ class extends Component {
 
     {{-- Secondary Filters (collapsible) --}}
     @if($showFilters)
-        <div class="border-line grid gap-3 rounded-xl border p-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div class="border-line grid gap-3 rounded-xl border p-4 sm:grid-cols-2 lg:grid-cols-4">
             <flux:field>
                 <flux:label>{{ __('Constructor') }}</flux:label>
                 <flux:input wire:model.live.debounce.300ms="constructor" size="sm" placeholder="{{ __('Name...') }}" />
@@ -451,6 +474,17 @@ class extends Component {
                     @foreach($this->allTags as $t)
                         <flux:select.option value="{{ $t->slug }}">{{ $t->name }}</flux:select.option>
                     @endforeach
+                </flux:select>
+            </flux:field>
+
+            <flux:field>
+                <flux:label>{{ __('Minimum Rating') }}</flux:label>
+                <flux:select wire:model.live="minRating" size="sm">
+                    <flux:select.option value="">{{ __('Any Rating') }}</flux:select.option>
+                    <flux:select.option value="4">{{ __('4+ Stars') }}</flux:select.option>
+                    <flux:select.option value="3">{{ __('3+ Stars') }}</flux:select.option>
+                    <flux:select.option value="2">{{ __('2+ Stars') }}</flux:select.option>
+                    <flux:select.option value="1">{{ __('1+ Stars') }}</flux:select.option>
                 </flux:select>
             </flux:field>
         </div>

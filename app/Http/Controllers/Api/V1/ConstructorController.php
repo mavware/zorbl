@@ -35,7 +35,7 @@ class ConstructorController extends Controller
         )
             ->allowedFilters('difficulty_label', 'author', 'kind')
             ->allowedSorts('created_at', 'title', 'difficulty_score')
-            ->withCount(['likes', 'attempts', 'comments'])
+            ->withCount(['likes', 'comments'])
             ->paginate(15);
 
         return CrosswordResource::collection($crosswords);

@@ -2,9 +2,11 @@
 
 namespace App\Models;
 
+use App\Observers\PuzzleAttemptObserver;
 use Carbon\CarbonImmutable;
 use Database\Factories\PuzzleAttemptFactory;
 use Eloquent;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -28,6 +30,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  * @mixin Eloquent
  */
+#[ObservedBy(PuzzleAttemptObserver::class)]
 class PuzzleAttempt extends Model
 {
     /** @use HasFactory<PuzzleAttemptFactory> */

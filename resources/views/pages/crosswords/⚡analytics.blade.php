@@ -1,8 +1,8 @@
 <?php
 
 use App\Models\Crossword;
-use App\Models\PuzzleAttempt;
 use App\Models\PuzzleComment;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Computed;
@@ -24,15 +24,12 @@ new #[Title('Constructor Analytics')] class extends Component {
             ->crosswords()
             ->where('is_published', true)
             ->withCount([
-                'attempts',
-                'attempts as completed_attempts_count' => fn ($q) => $q->where('is_completed', true),
                 'likes',
                 'comments as reviews_count' => fn ($q) => $q->whereNotNull('rating'),
             ])
-            ->withAvg('attempts as avg_solve_time', 'solve_time_seconds')
             ->withAvg('comments as avg_rating', 'rating');
 
-        $allowed = ['title', 'attempts_count', 'completed_attempts_count', 'avg_solve_time', 'likes_count', 'avg_rating'];
+        $allowed = ['title', 'cached_attempts_count', 'cached_completed_count', 'cached_avg_solve_time', 'likes_count', 'avg_rating'];
         if ($this->sortField !== '' && in_array($this->sortField, $allowed)) {
             $direction = $this->sortDirection === 'desc' ? 'desc' : 'asc';
             $query->orderBy($this->sortField, $direction);
@@ -56,31 +53,26 @@ new #[Title('Constructor Analytics')] class extends Component {
     #[Computed]
     public function totalSolves(): int
     {
-        return PuzzleAttempt::whereIn(
-            'crossword_id',
-            Auth::user()->crosswords()->where('is_published', true)->select('id')
-        )->count();
+        return (int) Auth::user()->crosswords()
+            ->where('is_published', true)
+            ->sum('cached_attempts_count');
     }
 
     #[Computed]
     public function totalCompletions(): int
     {
-        return PuzzleAttempt::whereIn(
-            'crossword_id',
-            Auth::user()->crosswords()->where('is_published', true)->select('id')
-        )->where('is_completed', true)->count();
+        return (int) Auth::user()->crosswords()
+            ->where('is_published', true)
+            ->sum('cached_completed_count');
     }
 
     #[Computed]
     public function overallAvgSolveTime(): ?int
     {
-        $avg = PuzzleAttempt::whereIn(
-            'crossword_id',
-            Auth::user()->crosswords()->where('is_published', true)->select('id')
-        )
-            ->where('is_completed', true)
-            ->whereNotNull('solve_time_seconds')
-            ->avg('solve_time_seconds');
+        $avg = Auth::user()->crosswords()
+            ->where('is_published', true)
+            ->whereNotNull('cached_avg_solve_time')
+            ->avg('cached_avg_solve_time');
 
         return $avg ? (int) round($avg) : null;
     }
@@ -118,6 +110,35 @@ new #[Title('Constructor Analytics')] class extends Component {
         )
             ->whereNotNull('rating')
             ->count();
+    }
+
+    /**
+     * @return list<array{month: string, avg_rating: float, count: int}>
+     */
+    #[Computed]
+    public function ratingTrend(): array
+    {
+        $publishedIds = Auth::user()
+            ->crosswords()
+            ->where('is_published', true)
+            ->select('id');
+
+        $cutoff = CarbonImmutable::now()->subMonths(11)->startOfMonth();
+
+        return PuzzleComment::whereIn('crossword_id', $publishedIds)
+            ->whereNotNull('rating')
+            ->where('created_at', '>=', $cutoff)
+            ->orderBy('created_at')
+            ->get(['rating', 'created_at'])
+            ->groupBy(fn (PuzzleComment $c) => $c->created_at->format('Y-m'))
+            ->map(fn ($group, $month) => [
+                'month' => $month,
+                'avg_rating' => round($group->avg('rating'), 2),
+                'count' => $group->count(),
+            ])
+            ->sortKeys()
+            ->values()
+            ->all();
     }
 
     #[Computed]
@@ -324,10 +345,10 @@ new #[Title('Constructor Analytics')] class extends Component {
             <flux:table>
                 <flux:table.columns>
                     <flux:table.column sortable :sorted="$sortField === 'title'" :direction="$sortDirection" wire:click="sortBy('title')">{{ __('Puzzle') }}</flux:table.column>
-                    <flux:table.column sortable :sorted="$sortField === 'attempts_count'" :direction="$sortDirection" wire:click="sortBy('attempts_count')" align="center">{{ __('Attempts') }}</flux:table.column>
-                    <flux:table.column sortable :sorted="$sortField === 'completed_attempts_count'" :direction="$sortDirection" wire:click="sortBy('completed_attempts_count')" align="center">{{ __('Completed') }}</flux:table.column>
+                    <flux:table.column sortable :sorted="$sortField === 'cached_attempts_count'" :direction="$sortDirection" wire:click="sortBy('cached_attempts_count')" align="center">{{ __('Attempts') }}</flux:table.column>
+                    <flux:table.column sortable :sorted="$sortField === 'cached_completed_count'" :direction="$sortDirection" wire:click="sortBy('cached_completed_count')" align="center">{{ __('Completed') }}</flux:table.column>
                     <flux:table.column align="center">{{ __('Completion Rate') }}</flux:table.column>
-                    <flux:table.column sortable :sorted="$sortField === 'avg_solve_time'" :direction="$sortDirection" wire:click="sortBy('avg_solve_time')" align="center">{{ __('Avg Time') }}</flux:table.column>
+                    <flux:table.column sortable :sorted="$sortField === 'cached_avg_solve_time'" :direction="$sortDirection" wire:click="sortBy('cached_avg_solve_time')" align="center">{{ __('Avg Time') }}</flux:table.column>
                     <flux:table.column sortable :sorted="$sortField === 'likes_count'" :direction="$sortDirection" wire:click="sortBy('likes_count')" align="center">{{ __('Likes') }}</flux:table.column>
                     <flux:table.column sortable :sorted="$sortField === 'avg_rating'" :direction="$sortDirection" wire:click="sortBy('avg_rating')" align="center">{{ __('Rating') }}</flux:table.column>
                 </flux:table.columns>
@@ -341,16 +362,16 @@ new #[Title('Constructor Analytics')] class extends Component {
                                 </a>
                                 <div class="text-xs text-zinc-500">{{ $puzzle->width }}&times;{{ $puzzle->height }}</div>
                             </flux:table.cell>
-                            <flux:table.cell align="center">{{ $puzzle->attempts_count }}</flux:table.cell>
-                            <flux:table.cell align="center">{{ $puzzle->completed_attempts_count }}</flux:table.cell>
+                            <flux:table.cell align="center">{{ $puzzle->cached_attempts_count }}</flux:table.cell>
+                            <flux:table.cell align="center">{{ $puzzle->cached_completed_count }}</flux:table.cell>
                             <flux:table.cell align="center">
-                                @php($rate = $puzzle->attempts_count > 0 ? round(($puzzle->completed_attempts_count / $puzzle->attempts_count) * 100) : 0)
+                                @php($rate = $puzzle->cached_attempts_count > 0 ? round(($puzzle->cached_completed_count / $puzzle->cached_attempts_count) * 100) : 0)
                                 <span class="{{ $rate >= 75 ? 'text-emerald-600 dark:text-emerald-400' : ($rate >= 40 ? 'text-amber-600 dark:text-amber-400' : 'text-zinc-600') }}">
                                     {{ $rate }}%
                                 </span>
                             </flux:table.cell>
                             <flux:table.cell align="center" class="font-mono">
-                                {{ $this->formatTime($puzzle->avg_solve_time ? (int) round($puzzle->avg_solve_time) : null) }}
+                                {{ $this->formatTime($puzzle->cached_avg_solve_time) }}
                             </flux:table.cell>
                             <flux:table.cell align="center">
                                 <span class="inline-flex items-center gap-1">
@@ -377,6 +398,98 @@ new #[Title('Constructor Analytics')] class extends Component {
             </flux:table>
         @endif
     </div>
+
+    {{-- Rating Trend Chart --}}
+    @if(count($this->ratingTrend) >= 2)
+        <div class="border-line rounded-xl border p-5">
+            <flux:heading size="lg" class="mb-1">{{ __('Rating Trend') }}</flux:heading>
+            <flux:text size="sm" class="mb-4 text-zinc-500">{{ __('Average rating received per month over the last 12 months.') }}</flux:text>
+
+            <div
+                x-data="{
+                    points: @js($this->ratingTrend),
+                    width: 600,
+                    height: 200,
+                    padX: 48,
+                    padY: 24,
+                    get chartWidth() { return this.width - this.padX * 2 },
+                    get chartHeight() { return this.height - this.padY * 2 },
+                    get minRating() { return Math.max(0, Math.floor(Math.min(...this.points.map(p => p.avg_rating)) * 2) / 2 - 0.5) },
+                    get maxRating() { return Math.min(5, Math.ceil(Math.max(...this.points.map(p => p.avg_rating)) * 2) / 2 + 0.5) },
+                    get ratingRange() { return this.maxRating - this.minRating || 1 },
+                    x(i) { return this.padX + (i / (this.points.length - 1)) * this.chartWidth },
+                    y(val) { return this.padY + this.chartHeight - ((val - this.minRating) / this.ratingRange) * this.chartHeight },
+                    get linePath() {
+                        return this.points.map((p, i) => `${i === 0 ? 'M' : 'L'}${this.x(i).toFixed(1)},${this.y(p.avg_rating).toFixed(1)}`).join(' ')
+                    },
+                    get areaPath() {
+                        const bottom = this.padY + this.chartHeight;
+                        return this.linePath + ` L${this.x(this.points.length - 1).toFixed(1)},${bottom} L${this.x(0).toFixed(1)},${bottom} Z`
+                    },
+                    get gridLines() {
+                        const lines = [];
+                        for (let v = Math.ceil(this.minRating); v <= Math.floor(this.maxRating); v++) {
+                            lines.push({ y: this.y(v), label: v });
+                        }
+                        return lines;
+                    },
+                    formatMonth(m) {
+                        const [y, mo] = m.split('-');
+                        const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                        return months[parseInt(mo) - 1];
+                    },
+                    tooltip: null,
+                    showTooltip(i) {
+                        const p = this.points[i];
+                        this.tooltip = { x: this.x(i), y: this.y(p.avg_rating), rating: p.avg_rating, count: p.count, month: this.formatMonth(p.month) };
+                    },
+                    hideTooltip() { this.tooltip = null },
+                }"
+                class="w-full overflow-x-auto"
+            >
+                <svg :viewBox="`0 0 ${width} ${height}`" class="h-52 w-full min-w-[400px]" preserveAspectRatio="xMidYMid meet">
+                    {{-- Grid lines --}}
+                    <template x-for="line in gridLines" :key="line.label">
+                        <g>
+                            <line :x1="padX" :y1="line.y" :x2="width - padX" :y2="line.y" class="stroke-zinc-200 dark:stroke-zinc-700" stroke-dasharray="4 4" />
+                            <text :x="padX - 8" :y="line.y + 4" text-anchor="end" class="fill-zinc-400 text-[11px]" x-text="line.label"></text>
+                        </g>
+                    </template>
+
+                    {{-- Area fill --}}
+                    <path :d="areaPath" class="fill-yellow-100/60 dark:fill-yellow-900/20" />
+
+                    {{-- Line --}}
+                    <path :d="linePath" fill="none" class="stroke-yellow-500" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+
+                    {{-- Data points --}}
+                    <template x-for="(p, i) in points" :key="p.month">
+                        <g>
+                            <circle :cx="x(i)" :cy="y(p.avg_rating)" r="4" class="fill-yellow-500 stroke-white dark:stroke-zinc-900" stroke-width="2" @mouseenter="showTooltip(i)" @mouseleave="hideTooltip()" style="cursor: pointer" />
+                        </g>
+                    </template>
+
+                    {{-- X-axis labels --}}
+                    <template x-for="(p, i) in points" :key="'label-' + p.month">
+                        <text :x="x(i)" :y="height - 4" text-anchor="middle" class="fill-zinc-400 text-[10px]" x-text="formatMonth(p.month)"></text>
+                    </template>
+
+                    {{-- Tooltip --}}
+                    <g x-show="tooltip" x-cloak>
+                        <rect :x="(tooltip?.x ?? 0) - 36" :y="(tooltip?.y ?? 0) - 42" width="72" height="34" rx="6" class="fill-zinc-800 dark:fill-zinc-200" opacity="0.95" />
+                        <text :x="tooltip?.x ?? 0" :y="(tooltip?.y ?? 0) - 26" text-anchor="middle" class="fill-white dark:fill-zinc-900 text-[11px] font-semibold">
+                            <tspan x-text="tooltip ? `★ ${tooltip.rating}` : ''"></tspan>
+                        </text>
+                        <text :x="tooltip?.x ?? 0" :y="(tooltip?.y ?? 0) - 14" text-anchor="middle" class="fill-zinc-300 dark:fill-zinc-500 text-[10px]">
+                            <tspan x-text="tooltip ? `${tooltip.count} ${tooltip.count === 1 ? 'review' : 'reviews'}` : ''"></tspan>
+                        </text>
+                    </g>
+                </svg>
+            </div>
+        </div>
+    @elseif($this->totalReviews > 0 && count($this->ratingTrend) < 2)
+        {{-- Not enough data points for a chart --}}
+    @endif
 
     {{-- Difficulty Heatmaps --}}
     @if(count($this->cellDifficulty) > 0)

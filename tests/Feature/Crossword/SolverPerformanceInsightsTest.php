@@ -36,6 +36,8 @@ test('averageSolveTimeSeconds computes average across completed attempts', funct
         'solve_time_seconds' => 400,
     ]);
 
+    $crossword->refresh();
+
     expect($crossword->averageSolveTimeSeconds())->toBe(300);
 });
 
@@ -51,6 +53,8 @@ test('averageSolveTimeSeconds ignores attempts with null solve time', function (
         'is_completed' => true,
         'solve_time_seconds' => null,
     ]);
+
+    $crossword->refresh();
 
     expect($crossword->averageSolveTimeSeconds())->toBe(600);
 });
@@ -192,8 +196,9 @@ test('stats page faster than average count is correct', function () {
 
     $component = Livewire::actingAs($user)->test('pages::crosswords.stats');
 
-    expect($component->get('fasterThanAverageCount'))->toBe(1);
-    expect($component->get('puzzlesWithCommunityData'))->toBe(2);
+    $comparison = $component->get('communityComparison');
+    expect($comparison['faster'])->toBe(1);
+    expect($comparison['total'])->toBe(2);
 });
 
 test('stats page shows vs avg column in solve history', function () {

@@ -68,5 +68,38 @@ class FortifyServiceProvider extends ServiceProvider
 
             return Limit::perMinute(5)->by($throttleKey);
         });
+
+        // Per-IP throttle for new-account creation. 10/min comfortably handles
+        // a user retrying after a typo while stopping a script that tries
+        // hundreds of usernames a minute.
+        RateLimiter::for('register-attempts', function (Request $request) {
+            return Limit::perMinute(10)->by((string) $request->ip());
+        });
+
+        // Password-reset link requests + reset-submissions. Combined limiter
+        // since they're the same attack surface (account-takeover precursor).
+        RateLimiter::for('password-reset-requests', function (Request $request) {
+            $email = $request->input('email', '');
+            $key = $email !== ''
+                ? Str::transliterate(Str::lower((string) $email).'|'.$request->ip())
+                : (string) $request->ip();
+
+            return Limit::perMinute(5)->by($key);
+        });
+
+        // Verification email resends. Two per minute is plenty for a real
+        // user who didn't get the first one.
+        RateLimiter::for('verification-resend', function (Request $request) {
+            $user = $request->user();
+            $key = $user !== null ? 'user|'.$user->getKey() : (string) $request->ip();
+
+            return Limit::perMinute(2)->by($key);
+        });
+
+        // Google OAuth callback. Each round-trip costs us a Socialite HTTP
+        // request to Google, so we want a tight cap on garbage callbacks.
+        RateLimiter::for('oauth-callback', function (Request $request) {
+            return Limit::perMinute(20)->by((string) $request->ip());
+        });
     }
 }

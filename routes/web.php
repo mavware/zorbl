@@ -2,10 +2,21 @@
 
 use App\Http\Controllers\Api\EmbedController;
 use App\Http\Controllers\Auth\GoogleController;
+use App\Http\Controllers\CookieConsentController;
+use App\Http\Controllers\OgImageController;
+use App\Http\Controllers\SitemapController;
 use App\Models\Crossword;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'welcome')->name('home');
+
+Route::get('sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
+
+Route::get('robots.txt', function () {
+    $body = "User-agent: *\nDisallow:\n\nSitemap: ".route('sitemap')."\n";
+
+    return response($body, 200, ['Content-Type' => 'text/plain']);
+})->name('robots');
 
 // Embed routes (public, no auth)
 Route::options('/api/embed/{crossword}', [EmbedController::class, 'preflight']);
@@ -16,14 +27,30 @@ Route::get('/embed/{crossword}', function (Crossword $crossword) {
     return view('embed.solver', ['crossword' => $crossword]);
 })->name('embed.solver');
 
-// Google OAuth
-Route::middleware('guest')->group(function () {
+// Google OAuth — throttled per IP so a flood of invalid callbacks can't
+// drown the Socialite HTTP requests we make against Google.
+Route::middleware(['guest', 'throttle:oauth-callback'])->group(function () {
     Route::get('auth/google/redirect', [GoogleController::class, 'redirect'])->name('auth.google.redirect');
     Route::get('auth/google/callback', [GoogleController::class, 'callback'])->name('auth.google.callback');
 });
 
+// Cookie consent (records visitor's choice; works for guests and logged-in users)
+Route::post('cookie-consent', [CookieConsentController::class, 'store'])->name('cookie-consent.store');
+
+// Help center (public, no auth)
+Route::livewire('help', 'pages::help.index')->name('help.index');
+Route::livewire('help/{article:slug}', 'pages::help.show')->name('help.show');
+
+// Legal pages (public, no auth)
+Route::livewire('terms', 'pages::legal.terms')->name('legal.terms');
+Route::livewire('privacy', 'pages::legal.privacy')->name('legal.privacy');
+Route::livewire('cookies', 'pages::legal.cookies')->name('legal.cookies');
+Route::livewire('dmca', 'pages::legal.dmca')->name('legal.dmca');
+
 // Public puzzle browsing (no auth required)
 Route::livewire('puzzles', 'pages::puzzles.index')->name('puzzles.index');
+Route::livewire('puzzles/daily', 'pages::puzzles.daily-history')->name('puzzles.daily-history');
+Route::get('puzzles/{crossword}/og.png', [OgImageController::class, 'crossword'])->name('puzzles.og');
 Route::livewire('puzzles/{crossword}', 'pages::puzzles.solve')->name('puzzles.solve');
 
 Route::middleware(['auth', 'verified'])->group(function () {

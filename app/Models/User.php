@@ -21,7 +21,10 @@ use Illuminate\Notifications\DatabaseNotificationCollection;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
 use Laravel\Cashier\Billable;
+use Laravel\Fortify\Contracts\PasskeyUser;
+use Laravel\Fortify\PasskeyAuthenticatable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
+use Laravel\Passkeys\Passkey;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -45,6 +48,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property int $current_streak
  * @property int $longest_streak
  * @property string|null $last_solve_date
+ * @property array<string, bool>|null $notification_preferences
  * @property CarbonImmutable|null $grandfathered_at
  * @property-read Collection<int, Achievement> $achievements
  * @property-read int|null $achievements_count
@@ -78,17 +82,19 @@ use Spatie\Permission\Traits\HasRoles;
  * @property-read int|null $blocked_tags_count
  * @property-read Collection<int, WebhookEndpoint> $webhookEndpoints
  * @property-read int|null $webhook_endpoints_count
+ * @property-read Collection<int, Passkey> $passkeys
+ * @property-read int|null $passkeys_count
  *
  * @method static UserFactory factory($count = null, $state = [])
  *
  * @mixin Eloquent
  */
-#[Fillable(['name', 'email', 'password', 'copyright_name', 'bio', 'google_id', 'current_streak', 'longest_streak', 'last_solve_date', 'grandfathered_at'])]
+#[Fillable(['name', 'email', 'password', 'copyright_name', 'bio', 'google_id', 'current_streak', 'longest_streak', 'last_solve_date', 'notification_preferences', 'safe_search_enabled', 'grandfathered_at'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
-class User extends Authenticatable implements FilamentUser
+class User extends Authenticatable implements FilamentUser, PasskeyUser
 {
     /** @use HasFactory<UserFactory> */
-    use Billable, HasApiTokens, HasFactory, HasRoles, Notifiable, TwoFactorAuthenticatable;
+    use Billable, HasApiTokens, HasFactory, HasRoles, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
 
     /**
      * Get the attributes that should be cast.
@@ -100,6 +106,8 @@ class User extends Authenticatable implements FilamentUser
         return [
             'email_verified_at' => 'datetime',
             'grandfathered_at' => 'datetime',
+            'notification_preferences' => 'array',
+            'safe_search_enabled' => 'boolean',
             'password' => 'hashed',
         ];
     }
@@ -239,6 +247,17 @@ class User extends Authenticatable implements FilamentUser
     public function isFollowing(User $user): bool
     {
         return $this->following()->where('following_id', $user->id)->exists();
+    }
+
+    public function wantsNotification(string $type): bool
+    {
+        return ($this->notification_preferences[$type] ?? true) !== false;
+    }
+
+    public function wantsEmailNotification(string $type): bool
+    {
+        return $this->wantsNotification($type)
+            && ($this->notification_preferences[$type.'_email'] ?? false) === true;
     }
 
     public function initials(): string

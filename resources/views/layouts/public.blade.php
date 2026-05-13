@@ -3,9 +3,17 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="csrf-token" content="{{ csrf_token() }}">
+        <link rel="manifest" href="{{ asset('site.webmanifest') }}">
+        <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}">
+        <meta name="theme-color" content="#0a0a0a">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+        <meta name="apple-mobile-web-app-title" content="{{ config('app.name') }}">
         <title>{{ $title ?? config('app.name') }}</title>
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700" rel="stylesheet" />
+        @stack('head_meta')
         @vite(['resources/css/app.css', 'resources/js/app.js'])
         @fluxAppearance
     </head>
@@ -35,6 +43,22 @@
         <main class="mx-auto max-w-6xl px-6 py-8">
             {{ $slot }}
         </main>
+
+        <footer class="border-line mt-8 border-t py-6">
+            <div class="text-fg-muted mx-auto flex max-w-6xl flex-col items-center gap-2 px-6 text-center text-xs sm:flex-row sm:justify-between">
+                <p>&copy; {{ date('Y') }} {{ config('app.name') }}.</p>
+                <div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+                    <a href="{{ route('help.index') }}" wire:navigate class="hover:text-zinc-700 dark:hover:text-zinc-300">{{ __('Help') }}</a>
+                    <a href="{{ route('legal.terms') }}" wire:navigate class="hover:text-zinc-700 dark:hover:text-zinc-300">{{ __('Terms') }}</a>
+                    <a href="{{ route('legal.privacy') }}" wire:navigate class="hover:text-zinc-700 dark:hover:text-zinc-300">{{ __('Privacy') }}</a>
+                    <a href="{{ route('legal.cookies') }}" wire:navigate class="hover:text-zinc-700 dark:hover:text-zinc-300">{{ __('Cookies') }}</a>
+                    <a href="{{ route('legal.dmca') }}" wire:navigate class="hover:text-zinc-700 dark:hover:text-zinc-300">{{ __('DMCA') }}</a>
+                </div>
+            </div>
+        </footer>
+
+        @include('partials.cookie-banner')
+        @include('partials.install-prompt')
 
         @fluxScripts
     </body>

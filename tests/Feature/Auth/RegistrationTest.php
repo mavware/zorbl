@@ -6,18 +6,27 @@ beforeEach(function () {
     $this->skipUnlessFortifyHas(Features::registration());
 });
 
-test('registration screen can be rendered', function () {
+test('registration screen renders with clickwrap terms acknowledgement', function () {
     $response = $this->get(route('register'));
 
-    $response->assertOk();
+    $response->assertOk()
+        ->assertSee('By creating an account')
+        ->assertSee(route('legal.terms'), false)
+        ->assertSee(route('legal.privacy'), false);
 });
 
-test('new users can register', function () {
+test('registration screen has no confirm-password field', function () {
+    $html = $this->get(route('register'))->getContent();
+
+    expect($html)->not->toContain('password_confirmation');
+});
+
+test('new users can register without confirming their password', function () {
     $response = $this->post(route('register.store'), [
         'name' => 'John Doe',
         'email' => 'test@example.com',
         'password' => 'password',
-        'password_confirmation' => 'password',
+        // intentionally no password_confirmation
     ]);
 
     $response->assertSessionHasNoErrors()

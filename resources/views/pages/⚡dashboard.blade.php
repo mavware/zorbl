@@ -162,6 +162,19 @@ new #[Title('Dashboard')] class extends Component {
         return Auth::user()->crosswordLikes()->count();
     }
 
+    /**
+     * Brand-new account with no activity yet — render a friendlier first-run
+     * hero so they don't bounce off a wall of zero-state cards.
+     */
+    #[Computed]
+    public function isNewUser(): bool
+    {
+        return $this->publishedCount === 0
+            && $this->draftCount === 0
+            && $this->solvedCount === 0
+            && $this->inProgressAttempts->isEmpty();
+    }
+
     #[Computed]
     public function activeContests()
     {
@@ -186,6 +199,43 @@ new #[Title('Dashboard')] class extends Component {
 
 <div class="space-y-6">
     <flux:heading size="xl">{{ __('Dashboard') }}</flux:heading>
+
+    {{-- First-run welcome — only visible to brand-new accounts with zero activity. --}}
+    @if($this->isNewUser)
+        <div class="relative overflow-hidden rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 p-6 dark:border-amber-800/50 dark:from-amber-950/30 dark:to-orange-950/20" data-test="dashboard-welcome-hero">
+            <div class="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+                <div class="max-w-xl">
+                    <flux:heading size="lg" class="!text-amber-700 dark:!text-amber-300">
+                        {{ __('Welcome to :app, :name!', ['app' => config('app.name'), 'name' => auth()->user()->name]) }}
+                    </flux:heading>
+                    <flux:text class="mt-2">
+                        {{ __('You\'re all set up. Two good ways to get started:') }}
+                    </flux:text>
+                    <ul class="mt-3 space-y-2 text-sm text-zinc-700 dark:text-zinc-300">
+                        <li class="flex items-start gap-2">
+                            <flux:icon name="play" class="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                            <span>{{ __('Try a solve — pick any puzzle from the community to see how the editor and solver feel.') }}</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <flux:icon name="pencil-square" class="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                            <span>{{ __('Build your first puzzle — the editor handles symmetry, numbering, and exports for you.') }}</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="flex flex-shrink-0 flex-col gap-2 sm:items-end">
+                    <flux:button variant="primary" icon="play" :href="route('crosswords.solving')" wire:navigate>
+                        {{ __('Browse puzzles to solve') }}
+                    </flux:button>
+                    <flux:button variant="ghost" icon="plus" :href="route('crosswords.index')" wire:navigate>
+                        {{ __('Build a puzzle') }}
+                    </flux:button>
+                    <a href="{{ route('help.index') }}" wire:navigate class="mt-1 text-xs text-zinc-600 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200">
+                        {{ __('Read the Help Center →') }}
+                    </a>
+                </div>
+            </div>
+        </div>
+    @endif
 
     {{-- Puzzle of the Day --}}
     @if($dailyPuzzle = $this->dailyPuzzle)
@@ -221,15 +271,20 @@ new #[Title('Dashboard')] class extends Component {
                         </flux:text>
                     </div>
                 </div>
-                @if($dailySolved)
-                    <flux:button variant="filled" size="sm" :href="route('crosswords.solver', $dailyPuzzle)" wire:navigate icon="eye">
-                        {{ __('View Solution') }}
-                    </flux:button>
-                @else
-                    <flux:button variant="primary" size="sm" :href="route('crosswords.solver', $dailyPuzzle)" wire:navigate icon="play">
-                        {{ __('Solve Today\'s Puzzle') }}
-                    </flux:button>
-                @endif
+                <div class="flex flex-col items-end gap-2">
+                    @if($dailySolved)
+                        <flux:button variant="filled" size="sm" :href="route('crosswords.solver', $dailyPuzzle)" wire:navigate icon="eye">
+                            {{ __('View Solution') }}
+                        </flux:button>
+                    @else
+                        <flux:button variant="primary" size="sm" :href="route('crosswords.solver', $dailyPuzzle)" wire:navigate icon="play">
+                            {{ __('Solve Today\'s Puzzle') }}
+                        </flux:button>
+                    @endif
+                    <a href="{{ route('puzzles.daily-history') }}" wire:navigate class="text-xs text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300">
+                        {{ __('View past puzzles') }} &rarr;
+                    </a>
+                </div>
             </div>
         </div>
     @endif

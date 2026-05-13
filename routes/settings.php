@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AccountExportController;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
 
@@ -7,10 +8,13 @@ Route::middleware(['auth'])->group(function () {
     Route::redirect('settings', 'settings/profile');
 
     Route::livewire('settings/profile', 'pages::settings.profile')->name('profile.edit');
+
+    Route::get('settings/data-export', [AccountExportController::class, 'download'])->name('account.export');
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('settings/billing', 'pages::settings.billing')->name('billing.index');
+    Route::livewire('settings/notifications', 'pages::settings.notifications')->name('notifications.edit');
     Route::livewire('settings/webhooks', 'pages::settings.webhooks')->name('webhooks.index');
     Route::livewire('settings/appearance', 'pages::settings.appearance')->name('appearance.edit');
 
