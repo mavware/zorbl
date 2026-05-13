@@ -1,6 +1,7 @@
 <?php
 
-use Database\Seeders\ActivitySeeder;
+use Database\Seeders\Activity\BaseActivitySeeder;
+use Database\Seeders\Activity\UsersSeeder;
 use Zorbl\CrosswordIO\GridNumberer;
 
 it('parses both across and down clues from xd files with separate sections', function () {
@@ -20,10 +21,10 @@ D1. First down clue ~ ADF
 D2. Second down clue ~ CEH
 XD;
 
-    $seeder = new ActivitySeeder;
+    $seeder = new UsersSeeder;
     $numberer = new GridNumberer;
 
-    $method = new ReflectionMethod($seeder, 'parseXdFile');
+    $method = new ReflectionMethod(BaseActivitySeeder::class, 'parseXdFile');
     $result = $method->invoke($seeder, $xdContent, $numberer);
 
     expect($result)->not->toBeNull();
@@ -57,10 +58,10 @@ D1. First down clue ~ ADF
 D2. Second down clue ~ CEH
 XD;
 
-    $seeder = new ActivitySeeder;
+    $seeder = new UsersSeeder;
     $numberer = new GridNumberer;
 
-    $method = new ReflectionMethod($seeder, 'parseXdFile');
+    $method = new ReflectionMethod(BaseActivitySeeder::class, 'parseXdFile');
     $result = $method->invoke($seeder, $xdContent, $numberer);
 
     expect($result)->not->toBeNull();
