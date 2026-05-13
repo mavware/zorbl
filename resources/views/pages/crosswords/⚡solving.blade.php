@@ -128,7 +128,7 @@ new #[Title('Solving')] class extends Component {
         </div>
 
         @if($this->attempts->isEmpty())
-            <div class="border-line-strong flex flex-col items-center justify-center rounded-xl border border-dashed py-12">
+            <div class="border-line-strong flex flex-col items-center justify-center rounded-xl border border-dashed py-12 px-6 text-center" data-test="solving-empty-state">
                 <flux:icon name="puzzle-piece" class="mb-4 size-12 text-zinc-500" />
                 <flux:heading size="lg" class="mb-2">
                     @if($search !== '' || $filter !== '')
@@ -137,13 +137,18 @@ new #[Title('Solving')] class extends Component {
                         {{ __('No puzzles in progress') }}
                     @endif
                 </flux:heading>
-                <flux:text>
+                <flux:text class="mb-4">
                     @if($search !== '' || $filter !== '')
                         {{ __('Try adjusting your filters or search terms.') }}
                     @else
-                        {{ __('Browse published puzzles below and start solving.') }}
+                        {{ __('Browse the community catalog to find your first puzzle to solve.') }}
                     @endif
                 </flux:text>
+                @if($search === '' && $filter === '')
+                    <flux:button variant="primary" icon="puzzle-piece" :href="route('puzzles.index')" wire:navigate>
+                        {{ __('Browse puzzles') }}
+                    </flux:button>
+                @endif
             </div>
         @else
             <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

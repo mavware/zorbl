@@ -44,6 +44,35 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [x] Add a minimum-rating filter to the puzzle discovery secondary filter panel (e.g. "4+ stars only")
 - [x] Show completion rate percentage on puzzle discovery cards (requires withCount for completed attempts)
 - [x] Space bar should add black square, but also navigate to the next available square
+- [ ] Ability to create a puzzle when not logged in (for anonymous users) (possibly creating a user via ip?)
+- [ ] Create a command that periodically updates legal functions (privacy policy, terms of service, cookie policy, where the cookie banner shows, etc...).  Based on real laws.
+- [ ] Ability to arrange the printable/downloadable versions of the puzzle in a different orientation.
+- [ ] Ability to add an image to the printable/downloadable arrangements of the puzzle.
+- [ ] Ability to add narrative text to the printable/downloadable arrangements of the puzzle.
+- [ ] Ability to convert selected contiguous cells to a custom image (or a single cell if only one is selected)
+- [ ] Ability to arrange several puzzles in a single PDF file.
+- [ ] Ability to add a custom image or text page to the PDF file.
+- [ ] Ability to add a section that prompts the solver to enter one or more custom answer.  Constructor will choose if the solver gets feedback if they enter the correct answers.
+- [ ] Constructors get a section that shows what answers the solvers entered into the answer field (just the distinct answers with the count)
+- [ ] Ability to work with multiple constructors at once (form teams)
+
+  Launch-blocking (most are ops, not code):
+  
+  2. Production .env audit — APP_DEBUG=false, real Stripe keys (not test), MAIL_* configured, LEGAL_ENTITY / LEGAL_CONTACT_EMAIL / LEGAL_DMCA_EMAIL filled in, ANTHROPIC_API_KEY
+   if AI is on, GOOGLE_CLIENT_* if OAuth is on.
+  3. Real support inboxes — legal@, dmca@, support@ need to actually deliver to a human you check. The Privacy/Terms/DMCA pages already reference them.
+  4. Stripe live mode — webhook endpoint registered in the Stripe dashboard, signing secret in env, customer portal configured. Test the full subscribe → cancel → resubscribe
+  loop once before launch.
+  5. Queue worker + scheduler running in prod — Laravel Pulse, daily puzzle scheduling, async notifications all depend on these. (Laravel Cloud handles both; bare-metal hosting
+   needs supervisor.)
+    
+  Defer (no urgency):
+  1. Analytics (Plausible/Posthog)
+  2. Referral codes
+  3. Passkey auth
+  4. Status page
+  5. Plagiarism detection
+
 
 ## Done
 

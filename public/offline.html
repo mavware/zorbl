@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Offline · Zorbl</title>
+    <link rel="icon" href="/favicon.ico" sizes="any">
+    <style>
+        :root { color-scheme: dark; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            background: #0a0a0a;
+            color: #fafafa;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+            padding: 2rem;
+            text-align: center;
+        }
+        h1 { margin: 0 0 .5rem; font-size: 1.75rem; color: #f59e0b; }
+        p  { margin: .25rem 0; color: #a3a3a3; max-width: 28rem; }
+        button {
+            margin-top: 1.5rem;
+            padding: .65rem 1.1rem;
+            border: none;
+            border-radius: .65rem;
+            background: #f59e0b;
+            color: #0a0a0a;
+            font-weight: 600;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div>
+        <h1>You're offline</h1>
+        <p>Zorbl needs an internet connection to load this page. Once you're back online, we'll pick up where you left off.</p>
+        <p>In-progress solves save locally — they'll sync when you reconnect.</p>
+        <button onclick="window.location.reload()">Try again</button>
+    </div>
+</body>
+</html>

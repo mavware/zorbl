@@ -86,3 +86,28 @@ it('non-owners cannot solve an unpublished puzzle', function () {
 
     $this->get(route('crosswords.solver', $crossword))->assertForbidden();
 });
+
+it('renders the grid with the expected ARIA attributes for screen readers', function () {
+    $owner = User::factory()->create();
+    $solver = User::factory()->create();
+    $crossword = Crossword::factory()
+        ->for($owner)
+        ->published()
+        ->withBlocks()
+        ->withSolution()
+        ->create();
+
+    $this->actingAs($solver);
+
+    visit(route('crosswords.solver', $crossword))
+        ->assertNoJavaScriptErrors()
+        ->assertPresent('#crossword-grid[role=grid]')
+        ->assertPresent('#crossword-grid[aria-rowcount]')
+        ->assertPresent('#crossword-grid[aria-colcount]')
+        ->assertPresent('#crossword-grid[aria-keyshortcuts]')
+        ->assertPresent('.crossword-cell[role=gridcell]')
+        ->assertPresent('#crossword-cell-0-0')
+        ->assertPresent('.crossword-cell[aria-rowindex="1"]')
+        ->assertPresent('.crossword-cell[aria-colindex="1"]')
+        ->assertPresent('[aria-live="polite"]');
+});

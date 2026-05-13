@@ -1,6 +1,7 @@
 import { crosswordGrid } from './crossword-grid.js';
 import { crosswordSolver } from './crossword-solver.js';
 import { Passkeys, UserCancelledError } from '@laravel/passkeys';
+import './pwa.js';
 
 document.addEventListener('alpine:init', () => {
     Alpine.data('crosswordGrid', crosswordGrid);

@@ -7,6 +7,7 @@
 @source '../../vendor/livewire/flux/stubs/**/*.blade.php';
 
 @custom-variant dark (&:where(.dark, .dark *));
+@custom-variant pointer-coarse (@media (pointer: coarse));
 
 @theme {
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
@@ -94,3 +95,42 @@ select:focus[data-flux-control] {
 /* \[:where(&)\]:size-4 {
     @apply size-4;
 } */
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * Forced-colors / Windows High Contrast / macOS Increase Contrast support.
+ * Goal: every meaningful state in the grid must remain distinguishable when
+ * the user agent overrides our color palette. We opt INTO the override so
+ * our hand-picked colors are replaced with system tokens (CanvasText, Highlight,
+ * etc.), and we only break out of the override where we'd otherwise lose a
+ * meaningful distinction.
+ * ─────────────────────────────────────────────────────────────────────────── */
+@media (forced-colors: active) {
+    /* Make every cell border visible — the default 1px on bg-elevated washes
+       out under HC mode. */
+    .crossword-cell {
+        border: 1px solid CanvasText !important;
+    }
+
+    /* Blocks must stay visually distinct from playable cells. */
+    .crossword-cell[aria-label*="Black square"],
+    .crossword-cell[aria-label*="Black cell"] {
+        background-color: CanvasText !important;
+        forced-color-adjust: none;
+    }
+
+    /* Currently selected cell gets the system Highlight color so it stands
+       out exactly the way the OS expects. */
+    .crossword-cell[aria-selected="true"] {
+        background-color: Highlight !important;
+        color: HighlightText !important;
+        outline: 2px solid Highlight;
+        outline-offset: -2px;
+        forced-color-adjust: none;
+    }
+
+    /* Toggle buttons (pencil mode, like) must show their pressed state. */
+    [aria-pressed="true"] {
+        outline: 2px solid Highlight;
+        outline-offset: 2px;
+    }
+}

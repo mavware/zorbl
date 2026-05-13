@@ -4,10 +4,13 @@ namespace App\Models;
 
 use App\Enums\CrosswordLayout;
 use App\Enums\PuzzleType;
+use App\Observers\CrosswordObserver;
 use Carbon\CarbonImmutable;
 use Database\Factories\CrosswordFactory;
 use Eloquent;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -59,9 +62,10 @@ use Zorbl\CrosswordIO\GridNumberer;
     'title', 'author', 'copyright', 'notes', 'secret_theme', 'layout',
     'width', 'height', 'kind', 'puzzle_type', 'freestyle_locked',
     'grid', 'solution', 'prefilled', 'user_progress', 'clues_across', 'clues_down',
-    'styles', 'metadata', 'is_published',
+    'styles', 'metadata', 'is_published', 'contains_profanity',
     'difficulty_score', 'difficulty_label',
 ])]
+#[ObservedBy([CrosswordObserver::class])]
 class Crossword extends Model
 {
     /** @use HasFactory<CrosswordFactory> */
@@ -84,10 +88,52 @@ class Crossword extends Model
             'styles' => 'array',
             'metadata' => 'array',
             'is_published' => 'boolean',
+            'contains_profanity' => 'boolean',
             'freestyle_locked' => 'boolean',
             'layout' => CrosswordLayout::class,
             'puzzle_type' => PuzzleType::class,
         ];
+    }
+
+    /**
+     * Hide profanity-flagged puzzles from users with Safe Search enabled.
+     * Guests are treated as safe-search-on by default. Pass the puzzle's
+     * own constructor as $user (or a logged-in admin) to bypass the filter.
+     *
+     * @param  Builder<Crossword>  $query
+     */
+    public function scopeSafeFor(Builder $query, ?User $user): Builder
+    {
+        $safe = $user === null ? true : (bool) $user->safe_search_enabled;
+        if (! $safe) {
+            return $query;
+        }
+
+        return $query->where(function ($q) use ($user): void {
+            $q->where('contains_profanity', false);
+            if ($user !== null) {
+                $q->orWhere('user_id', $user->getKey());
+            }
+        });
+    }
+
+    /**
+     * Convenience: should the given user be allowed to view this puzzle through
+     * a safe-search lens? Owners and admins always pass.
+     */
+    public function isVisibleToSafeSearch(?User $user): bool
+    {
+        if (! $this->contains_profanity) {
+            return true;
+        }
+        if ($user === null) {
+            return false;
+        }
+        if ((int) $this->user_id === (int) $user->getKey()) {
+            return true;
+        }
+
+        return ! (bool) $user->safe_search_enabled;
     }
 
     /**
