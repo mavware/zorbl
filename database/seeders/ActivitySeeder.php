@@ -398,6 +398,14 @@ class ActivitySeeder extends Seeder
      */
     private function loadPuzzles(): array
     {
+        $bundledPath = database_path('seeders/data/xd-puzzles-parsed.json');
+
+        if (file_exists($bundledPath)) {
+            $this->command->info('Using bundled parsed puzzles.');
+
+            return json_decode(file_get_contents($bundledPath), true);
+        }
+
         $cachePath = storage_path('app/private/xd-puzzles-parsed.json');
 
         if (file_exists($cachePath)) {

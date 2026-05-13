@@ -89,13 +89,15 @@ class SimulateActivity extends Command
             return;
         }
 
+        $bundledPath = database_path('seeders/data/xd-puzzles-parsed.json');
         $cachePath = storage_path('app/private/xd-puzzles-parsed.json');
+        $puzzleSource = file_exists($bundledPath) ? $bundledPath : (file_exists($cachePath) ? $cachePath : null);
 
-        if (! file_exists($cachePath)) {
+        if ($puzzleSource === null) {
             return;
         }
 
-        $puzzles = json_decode(file_get_contents($cachePath), true);
+        $puzzles = json_decode(file_get_contents($puzzleSource), true);
 
         if (empty($puzzles)) {
             return;
