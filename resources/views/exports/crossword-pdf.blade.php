@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <style>
         @page {
-            size: letter;
+            size: letter {{ $orientation ?? 'portrait' }};
             margin: 0.75in;
         }
 

@@ -599,7 +599,7 @@ new #[Title('Solve Crossword')] class extends Component {
                     <flux:menu.item wire:click="attemptExport('ipuz')">{{ __('.ipuz') }}</flux:menu.item>
                     <flux:menu.item wire:click="attemptExport('puz')">{{ __('.puz (Across Lite)') }}</flux:menu.item>
                     <flux:menu.item wire:click="attemptExport('jpz')">{{ __('.jpz (Crossword Compiler)') }}</flux:menu.item>
-                    <flux:menu.item wire:click="exportPdf">{{ __('.pdf (Print-Ready)') }}</flux:menu.item>
+                    <flux:menu.item wire:click="choosePdfOrientation">{{ __('.pdf (Print-Ready)') }}</flux:menu.item>
                 </flux:menu>
             </flux:dropdown>
 
@@ -1262,6 +1262,24 @@ new #[Title('Solve Crossword')] class extends Component {
             </div>
         </div>
     </div>
+
+    {{-- PDF Orientation Modal --}}
+    <flux:modal wire:model="showPdfOrientationModal">
+        <div class="space-y-6">
+            <flux:heading size="lg">{{ __('PDF Orientation') }}</flux:heading>
+            <flux:text>{{ __('Choose the page orientation for your PDF export.') }}</flux:text>
+
+            <flux:radio.group wire:model="pdfOrientation">
+                <flux:radio value="portrait" label="{{ __('Portrait') }}" description="{{ __('Standard vertical layout (8.5 × 11 in)') }}" />
+                <flux:radio value="landscape" label="{{ __('Landscape') }}" description="{{ __('Horizontal layout (11 × 8.5 in) — better for wide puzzles') }}" />
+            </flux:radio.group>
+
+            <div class="flex justify-end gap-2">
+                <flux:button wire:click="cancelPdfExport">{{ __('Cancel') }}</flux:button>
+                <flux:button variant="primary" wire:click="confirmPdfExport">{{ __('Export PDF') }}</flux:button>
+            </div>
+        </div>
+    </flux:modal>
 
     {{-- Export Warning Modal --}}
     <flux:modal wire:model="showExportWarning">
