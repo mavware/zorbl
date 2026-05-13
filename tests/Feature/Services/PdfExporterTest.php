@@ -727,3 +727,102 @@ it('does not show prefilled styling when prefilled is null', function () {
 
     expect($html)->not->toContain('class="cell-letter prefilled"');
 });
+
+it('exports a landscape PDF', function () {
+    $crossword = Crossword::factory()->make([
+        'title' => 'Landscape Test',
+        'author' => 'Tester',
+        'width' => 15,
+        'height' => 10,
+        'grid' => Crossword::emptyGrid(15, 10),
+        'solution' => Crossword::emptySolution(15, 10),
+        'clues_across' => [['number' => 1, 'clue' => 'Test clue']],
+        'clues_down' => [['number' => 1, 'clue' => 'Test clue']],
+    ]);
+
+    $exporter = app(PdfExporter::class);
+    $pdf = $exporter->export($crossword, orientation: 'landscape');
+
+    expect($pdf)->toStartWith('%PDF');
+});
+
+it('renders landscape orientation in the page CSS', function () {
+    $html = view('exports.crossword-pdf', [
+        'title' => 'Landscape CSS',
+        'author' => null,
+        'copyright' => null,
+        'notes' => null,
+        'numberedGrid' => [[1, 2], [3, 0]],
+        'solution' => [['A', 'B'], ['C', 'D']],
+        'prefilled' => null,
+        'cluesAcross' => [['number' => 1, 'clue' => 'AB']],
+        'cluesDown' => [['number' => 1, 'clue' => 'AC']],
+        'styles' => [],
+        'includeSolution' => false,
+        'cellSize' => 0.33,
+        'numberFontSize' => 6,
+        'letterFontSize' => 9,
+        'numberHeight' => 0.116,
+        'forceCluePageBreak' => false,
+        'orientation' => 'landscape',
+    ])->render();
+
+    expect($html)->toContain('size: letter landscape;');
+});
+
+it('renders portrait orientation by default in the page CSS', function () {
+    $html = view('exports.crossword-pdf', [
+        'title' => 'Portrait CSS',
+        'author' => null,
+        'copyright' => null,
+        'notes' => null,
+        'numberedGrid' => [[1, 2], [3, 0]],
+        'solution' => [['A', 'B'], ['C', 'D']],
+        'prefilled' => null,
+        'cluesAcross' => [['number' => 1, 'clue' => 'AB']],
+        'cluesDown' => [['number' => 1, 'clue' => 'AC']],
+        'styles' => [],
+        'includeSolution' => false,
+        'cellSize' => 0.33,
+        'numberFontSize' => 6,
+        'letterFontSize' => 9,
+        'numberHeight' => 0.116,
+        'forceCluePageBreak' => false,
+        'orientation' => 'portrait',
+    ])->render();
+
+    expect($html)->toContain('size: letter portrait;');
+});
+
+it('uses larger cells for wide puzzles in landscape mode', function () {
+    $crossword = Crossword::factory()->make([
+        'title' => 'Wide Puzzle',
+        'width' => 21,
+        'height' => 10,
+        'grid' => Crossword::emptyGrid(21, 10),
+        'solution' => Crossword::emptySolution(21, 10),
+        'clues_across' => [['number' => 1, 'clue' => 'Test']],
+        'clues_down' => [['number' => 1, 'clue' => 'Test']],
+    ]);
+
+    $exporter = app(PdfExporter::class);
+
+    $portraitPdf = $exporter->export($crossword, orientation: 'portrait');
+    $landscapePdf = $exporter->export($crossword, orientation: 'landscape');
+
+    expect($portraitPdf)->toStartWith('%PDF');
+    expect($landscapePdf)->toStartWith('%PDF');
+});
+
+it('adjusts page break threshold for landscape orientation', function () {
+    $exporter = app(PdfExporter::class);
+
+    $portraitAvailable = 11.0 - 2 * 0.75;
+    $landscapeAvailable = 8.5 - 2 * 0.75;
+
+    $breakPortrait = $exporter->shouldBreakBeforeClues(10, 0.33, 15, 15, $portraitAvailable);
+    $breakLandscape = $exporter->shouldBreakBeforeClues(10, 0.33, 15, 15, $landscapeAvailable);
+
+    expect($breakLandscape)->toBeTrue();
+    expect($breakPortrait)->toBeFalse();
+});

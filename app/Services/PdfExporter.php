@@ -13,9 +13,10 @@ class PdfExporter
     /**
      * Export a crossword puzzle to a print-ready PDF.
      *
+     * @param  'portrait'|'landscape'  $orientation
      * @return string The raw PDF binary content.
      */
-    public function export(Crossword $crossword, bool $includeSolution = true): string
+    public function export(Crossword $crossword, bool $includeSolution = true, string $orientation = 'portrait'): string
     {
         $result = $this->numberer->number(
             $crossword->grid,
@@ -24,8 +25,14 @@ class PdfExporter
             $crossword->styles ?? [],
         );
 
-        $maxGridWidth = 7.0;  // inches (letter width 8.5 - 2*0.75 margins)
-        $maxGridHeight = 8.5; // inches (letter height 11 - 2*0.75 margins - header)
+        $isLandscape = $orientation === 'landscape';
+
+        $pageWidth = $isLandscape ? 11.0 : 8.5;
+        $pageHeight = $isLandscape ? 8.5 : 11.0;
+        $margin = 0.75;
+
+        $maxGridWidth = $pageWidth - 2 * $margin;
+        $maxGridHeight = $pageHeight - 2 * $margin - 1.5;
         $cellSize = round(min(0.33, $maxGridWidth / $crossword->width, $maxGridHeight / $crossword->height), 3);
 
         $numberFontSize = round(max(4, $cellSize * 18), 1);
@@ -40,6 +47,7 @@ class PdfExporter
             $cellSize,
             count($cluesAcross),
             count($cluesDown),
+            $pageHeight - 2 * $margin,
         );
 
         $pdf = Pdf::loadView('exports.crossword-pdf', [
@@ -59,9 +67,10 @@ class PdfExporter
             'letterFontSize' => $letterFontSize,
             'numberHeight' => $numberHeight,
             'forceCluePageBreak' => $forceCluePageBreak,
+            'orientation' => $orientation,
         ]);
 
-        $pdf->setPaper('letter');
+        $pdf->setPaper('letter', $orientation);
 
         return $pdf->output();
     }
@@ -72,9 +81,8 @@ class PdfExporter
      * For small puzzles, grid and clues fit together on one page.
      * For larger puzzles, a page break prevents awkward mid-clue splits.
      */
-    public function shouldBreakBeforeClues(int $gridHeight, float $cellSize, int $acrossCount, int $downCount): bool
+    public function shouldBreakBeforeClues(int $gridHeight, float $cellSize, int $acrossCount, int $downCount, float $availableHeight = 9.5): bool
     {
-        $availableHeight = 9.5; // letter height minus margins
         $headerHeight = 0.5;
         $gridTotalHeight = $gridHeight * $cellSize + 0.17; // grid + header margin
 

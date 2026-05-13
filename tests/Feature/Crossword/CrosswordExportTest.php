@@ -198,3 +198,114 @@ test('users can export a puzzle with cell background colors as pdf', function ()
         ->call('exportPdf')
         ->assertFileDownloaded('colored-export.pdf');
 });
+
+test('users can choose PDF orientation before export', function () {
+    $user = makeExportProUser();
+    $crossword = Crossword::factory()->for($user)->create([
+        'title' => 'Orientation Test',
+        'width' => 3,
+        'height' => 3,
+        'grid' => [
+            [1, 2, '#'],
+            [3, 0, 4],
+            ['#', 5, 0],
+        ],
+        'solution' => [
+            ['C', 'A', '#'],
+            ['B', 'O', 'T'],
+            ['#', 'L', 'O'],
+        ],
+        'clues_across' => [
+            ['number' => 1, 'clue' => 'CA'],
+            ['number' => 3, 'clue' => 'BOT'],
+            ['number' => 5, 'clue' => 'LO'],
+        ],
+        'clues_down' => [
+            ['number' => 1, 'clue' => 'CB'],
+            ['number' => 2, 'clue' => 'AOL'],
+            ['number' => 4, 'clue' => 'TO'],
+        ],
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->call('choosePdfOrientation')
+        ->assertSet('showPdfOrientationModal', true)
+        ->assertSet('pdfOrientation', 'portrait');
+});
+
+test('users can export PDF in landscape orientation', function () {
+    $user = makeExportProUser();
+    $crossword = Crossword::factory()->for($user)->create([
+        'title' => 'Landscape Export',
+        'width' => 3,
+        'height' => 3,
+        'grid' => [
+            [1, 2, '#'],
+            [3, 0, 4],
+            ['#', 5, 0],
+        ],
+        'solution' => [
+            ['C', 'A', '#'],
+            ['B', 'O', 'T'],
+            ['#', 'L', 'O'],
+        ],
+        'clues_across' => [
+            ['number' => 1, 'clue' => 'CA'],
+            ['number' => 3, 'clue' => 'BOT'],
+            ['number' => 5, 'clue' => 'LO'],
+        ],
+        'clues_down' => [
+            ['number' => 1, 'clue' => 'CB'],
+            ['number' => 2, 'clue' => 'AOL'],
+            ['number' => 4, 'clue' => 'TO'],
+        ],
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->call('choosePdfOrientation')
+        ->set('pdfOrientation', 'landscape')
+        ->call('confirmPdfExport')
+        ->assertFileDownloaded('landscape-export.pdf');
+});
+
+test('users can cancel PDF orientation selection', function () {
+    $user = makeExportProUser();
+    $crossword = Crossword::factory()->for($user)->create([
+        'title' => 'Cancel Test',
+        'width' => 3,
+        'height' => 3,
+        'grid' => [
+            [1, 2, '#'],
+            [3, 0, 4],
+            ['#', 5, 0],
+        ],
+        'solution' => [
+            ['C', 'A', '#'],
+            ['B', 'O', 'T'],
+            ['#', 'L', 'O'],
+        ],
+        'clues_across' => [
+            ['number' => 1, 'clue' => 'CA'],
+            ['number' => 3, 'clue' => 'BOT'],
+            ['number' => 5, 'clue' => 'LO'],
+        ],
+        'clues_down' => [
+            ['number' => 1, 'clue' => 'CB'],
+            ['number' => 2, 'clue' => 'AOL'],
+            ['number' => 4, 'clue' => 'TO'],
+        ],
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->call('choosePdfOrientation')
+        ->set('pdfOrientation', 'landscape')
+        ->call('cancelPdfExport')
+        ->assertSet('showPdfOrientationModal', false)
+        ->assertSet('pdfOrientation', 'portrait');
+});
