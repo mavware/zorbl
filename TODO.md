@@ -55,23 +55,16 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [ ] Ability to add a section that prompts the solver to enter one or more custom answer.  Constructor will choose if the solver gets feedback if they enter the correct answers.
 - [ ] Constructors get a section that shows what answers the solvers entered into the answer field (just the distinct answers with the count)
 - [ ] Ability to work with multiple constructors at once (form teams)
+ 
+## For later
 
-  Launch-blocking (most are ops, not code):
-  
-  2. Production .env audit — APP_DEBUG=false, real Stripe keys (not test), MAIL_* configured, LEGAL_ENTITY / LEGAL_CONTACT_EMAIL / LEGAL_DMCA_EMAIL filled in, ANTHROPIC_API_KEY
+  1. Production .env audit — APP_DEBUG=false, real Stripe keys (not test), MAIL_* configured, LEGAL_ENTITY / LEGAL_CONTACT_EMAIL / LEGAL_DMCA_EMAIL filled in, ANTHROPIC_API_KEY
    if AI is on, GOOGLE_CLIENT_* if OAuth is on.
-  3. Real support inboxes — legal@, dmca@, support@ need to actually deliver to a human you check. The Privacy/Terms/DMCA pages already reference them.
-  4. Stripe live mode — webhook endpoint registered in the Stripe dashboard, signing secret in env, customer portal configured. Test the full subscribe → cancel → resubscribe
+  2. Real support inboxes — legal@, dmca@, support@ need to actually deliver to a human you check. The Privacy/Terms/DMCA pages already reference them.
+  3. Stripe live mode — webhook endpoint registered in the Stripe dashboard, signing secret in env, customer portal configured. Test the full subscribe → cancel → resubscribe
   loop once before launch.
-  5. Queue worker + scheduler running in prod — Laravel Pulse, daily puzzle scheduling, async notifications all depend on these. (Laravel Cloud handles both; bare-metal hosting
+  4. Queue worker + scheduler running in prod — Laravel Pulse, daily puzzle scheduling, async notifications all depend on these. (Laravel Cloud handles both; bare-metal hosting
    needs supervisor.)
-    
-  Defer (no urgency):
-  1. Analytics (Plausible/Posthog)
-  2. Referral codes
-  3. Passkey auth
-  4. Status page
-  5. Plagiarism detection
 
 
 ## Done
