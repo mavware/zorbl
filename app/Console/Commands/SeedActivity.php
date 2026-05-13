@@ -13,11 +13,9 @@ class SeedActivity extends Command
 {
     public function handle(): int
     {
-        $this->call('db:seed', [
+        return $this->call('db:seed', [
             '--class' => ActivitySeeder::class,
             '--no-interaction' => true,
         ]);
-
-        return self::SUCCESS;
     }
 }

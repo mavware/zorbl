@@ -29,10 +29,17 @@ class ActivitySeeder extends Seeder
 
     public function run(): void
     {
-        if (User::where('email', 'solver1@example.com')->exists()) {
+        $hasSeededSolver = User::where('email', 'solver1@example.com')->exists();
+        $hasSeededCrossword = Crossword::whereHas('user', fn ($q) => $q->where('email', 'like', '%@example.com'))->exists();
+
+        if ($hasSeededSolver && $hasSeededCrossword) {
             $this->command->info('Activity data already seeded. Skipping.');
 
             return;
+        }
+
+        if ($hasSeededSolver && ! $hasSeededCrossword) {
+            $this->command->warn('Partial seed detected: example solvers exist but no example crosswords. Continuing — this may create duplicate users.');
         }
 
         DB::disableQueryLog();
@@ -402,7 +409,7 @@ class ActivitySeeder extends Seeder
         $zipPath = storage_path('app/private/xd-puzzles.zip');
 
         if (! file_exists($zipPath)) {
-            $this->command->info('Downloading xd-puzzles.zip (~12MB)...');
+            $this->command->info('Downloading xd-puzzles.zip (~183MB)...');
 
             $dir = dirname($zipPath);
 
@@ -410,16 +417,16 @@ class ActivitySeeder extends Seeder
                 mkdir($dir, 0755, true);
             }
 
-            $context = stream_context_create(['http' => ['timeout' => 300]]);
-            $result = @copy(self::DOWNLOAD_URL, $zipPath, $context);
+            $context = stream_context_create(['http' => ['timeout' => 900]]);
+            $result = copy(self::DOWNLOAD_URL, $zipPath, $context);
 
             if (! $result || ! file_exists($zipPath)) {
-                $this->command->error('Failed to download xd-puzzles.zip.');
+                $this->command->error('Failed to download xd-puzzles.zip from '.self::DOWNLOAD_URL);
 
                 return [];
             }
 
-            $this->command->info('Download complete.');
+            $this->command->info('Download complete. Size: '.filesize($zipPath).' bytes');
         }
 
         $zip = new ZipArchive;
