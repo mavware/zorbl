@@ -16,6 +16,8 @@ use Faker\Factory as Faker;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 use ZipArchive;
 use Zorbl\CrosswordIO\GridNumberer;
 
@@ -29,17 +31,29 @@ class ActivitySeeder extends Seeder
 
     public function run(): void
     {
+        try {
+            $this->seedActivity();
+        } catch (Throwable $e) {
+            Log::error('ActivitySeeder failed: '.$e->getMessage(), ['exception' => $e]);
+            $this->command->error('ActivitySeeder failed: '.$e->getMessage());
+
+            throw $e;
+        }
+    }
+
+    private function seedActivity(): void
+    {
         $hasSeededSolver = User::where('email', 'solver1@example.com')->exists();
         $hasSeededCrossword = Crossword::whereHas('user', fn ($q) => $q->where('email', 'like', '%@example.com'))->exists();
 
         if ($hasSeededSolver && $hasSeededCrossword) {
-            $this->command->info('Activity data already seeded. Skipping.');
+            $this->log('Activity data already seeded. Skipping.');
 
             return;
         }
 
         if ($hasSeededSolver && ! $hasSeededCrossword) {
-            $this->command->warn('Partial seed detected: example solvers exist but no example crosswords. Continuing — this may create duplicate users.');
+            $this->log('Partial seed detected: example solvers exist but no example crosswords. Continuing — existing example.com users will be reused.', 'warning');
         }
 
         DB::disableQueryLog();
