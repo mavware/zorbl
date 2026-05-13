@@ -171,6 +171,74 @@ test('NewPuzzlePublished is not sent when user opts out', function () {
     expect($notification->via($user))->toBe([]);
 });
 
+// ─── Email channel preferences ──────────────────────────────────────────
+
+test('toggling email preference enables email for puzzle published', function () {
+    $user = User::factory()->create();
+
+    Livewire::actingAs($user)
+        ->test('pages::settings.notifications')
+        ->call('toggle', NotificationType::NewPuzzlePublished->value.'_email')
+        ->assertDispatched('notification-preferences-updated');
+
+    $user->refresh();
+
+    expect($user->notification_preferences[NotificationType::NewPuzzlePublished->value.'_email'])->toBeTrue();
+});
+
+test('toggling email preference off disables email for puzzle published', function () {
+    $user = User::factory()->create([
+        'notification_preferences' => [
+            NotificationType::NewPuzzlePublished->value.'_email' => true,
+        ],
+    ]);
+
+    Livewire::actingAs($user)
+        ->test('pages::settings.notifications')
+        ->call('toggle', NotificationType::NewPuzzlePublished->value.'_email')
+        ->assertDispatched('notification-preferences-updated');
+
+    $user->refresh();
+
+    expect($user->notification_preferences[NotificationType::NewPuzzlePublished->value.'_email'])->toBeFalse();
+});
+
+test('toggling email for non-eligible type does nothing', function () {
+    $user = User::factory()->create();
+
+    Livewire::actingAs($user)
+        ->test('pages::settings.notifications')
+        ->call('toggle', NotificationType::CrosswordLiked->value.'_email')
+        ->assertNotDispatched('notification-preferences-updated');
+});
+
+test('wantsEmailNotification defaults to false', function () {
+    $user = User::factory()->make();
+
+    expect($user->wantsEmailNotification(NotificationType::NewPuzzlePublished->value))->toBeFalse();
+});
+
+test('wantsEmailNotification returns true when opted in', function () {
+    $user = User::factory()->make([
+        'notification_preferences' => [
+            NotificationType::NewPuzzlePublished->value.'_email' => true,
+        ],
+    ]);
+
+    expect($user->wantsEmailNotification(NotificationType::NewPuzzlePublished->value))->toBeTrue();
+});
+
+test('wantsEmailNotification returns false when base notification is disabled', function () {
+    $user = User::factory()->make([
+        'notification_preferences' => [
+            NotificationType::NewPuzzlePublished->value => false,
+            NotificationType::NewPuzzlePublished->value.'_email' => true,
+        ],
+    ]);
+
+    expect($user->wantsEmailNotification(NotificationType::NewPuzzlePublished->value))->toBeFalse();
+});
+
 test('NewPuzzleComment is not sent when user opts out', function () {
     $user = User::factory()->create([
         'notification_preferences' => [

@@ -7,6 +7,7 @@ use App\Models\Crossword;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 class NewPuzzlePublished extends Notification implements ShouldQueue
@@ -27,7 +28,30 @@ class NewPuzzlePublished extends Notification implements ShouldQueue
             return [];
         }
 
-        return ['database'];
+        $channels = ['database'];
+
+        if ($notifiable->wantsEmailNotification(NotificationType::NewPuzzlePublished->value)) {
+            $channels[] = 'mail';
+        }
+
+        return $channels;
+    }
+
+    public function toMail(User $notifiable): MailMessage
+    {
+        $puzzleTitle = $this->crossword->title ?: __('Untitled Puzzle');
+
+        return (new MailMessage)
+            ->subject(__(':name published a new puzzle', ['name' => $this->constructor->name]))
+            ->greeting(__('New puzzle from :name', ['name' => $this->constructor->name]))
+            ->line(__(':name just published ":puzzle" — try solving it now!', [
+                'name' => $this->constructor->name,
+                'puzzle' => $puzzleTitle,
+            ]))
+            ->action(__('Solve now'), route('crosswords.solver', $this->crossword))
+            ->line(__('You received this because you follow :name. You can update your notification preferences in settings.', [
+                'name' => $this->constructor->name,
+            ]));
     }
 
     /**

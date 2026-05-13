@@ -254,6 +254,12 @@ class User extends Authenticatable implements FilamentUser, PasskeyUser
         return ($this->notification_preferences[$type] ?? true) !== false;
     }
 
+    public function wantsEmailNotification(string $type): bool
+    {
+        return $this->wantsNotification($type)
+            && ($this->notification_preferences[$type.'_email'] ?? false) === true;
+    }
+
     public function initials(): string
     {
         return Str::of($this->name)
