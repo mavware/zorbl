@@ -54,13 +54,8 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [ ] Ability to add a custom image or text page to the PDF file.
 - [ ] Ability to add a section that prompts the solver to enter one or more custom answer.  Constructor will choose if the solver gets feedback if they enter the correct answers.
 - [ ] Constructors get a section that shows what answers the solvers entered into the answer field (just the distinct answers with the count)
+- [ ] Ability to work with multiple constructors at once (form teams)
 
-
-  Growth surfaces
-  - Per-puzzle Open Graph share image (auto-generated PNG of the grid) — single biggest social-virality unlock
-  - Sitemap.xml + JSON-LD structured data for puzzles → Google indexing
-    - Public help center / FAQ separate from the ticket system
-  - Referral / invite-a-friend code (you already have Cashier; pairs naturally)
 
   Operations
   - Error tracking (Sentry/Bugsnag) — last-error via Pulse is reactive, not paged
