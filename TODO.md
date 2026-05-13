@@ -56,13 +56,6 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [ ] Constructors get a section that shows what answers the solvers entered into the answer field (just the distinct answers with the count)
 - [ ] Ability to work with multiple constructors at once (form teams)
 
-
-  Operations
-  - Error tracking (Sentry/Bugsnag) — last-error via Pulse is reactive, not paged
-  - Uptime monitor pointed at / and /api/v1/health
-  - Automated DB backup verification (not just that backups run, but that they restore)
-  - Stripe webhook retry/idempotency audit before real money flows
-
 ## Done
 
 <!-- completed items move here, preserving their `- [x]` state -->
