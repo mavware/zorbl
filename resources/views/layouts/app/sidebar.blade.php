@@ -74,6 +74,10 @@
 
             <flux:sidebar.nav>
 
+                <flux:sidebar.item icon="question-mark-circle" :href="route('help.index')" :current="request()->routeIs('help.*')" wire:navigate>
+                    {{ __('Help Center') }}
+                </flux:sidebar.item>
+
                 <flux:sidebar.item icon="chat-bubble-left-right" :href="route('support.index')" :current="request()->routeIs('support.*')" wire:navigate>
                     {{ __('Support') }}
                 </flux:sidebar.item>
@@ -81,6 +85,13 @@
             </flux:sidebar.nav>
 
             <x-desktop-user-menu class="hidden lg:block" :name="auth()->user()->name" />
+
+            <div class="mx-3 mb-3 mt-2 hidden flex-wrap gap-x-3 gap-y-1 text-xs text-zinc-500 lg:flex dark:text-zinc-600">
+                <a href="{{ route('legal.terms') }}" wire:navigate class="hover:text-zinc-700 dark:hover:text-zinc-400">{{ __('Terms') }}</a>
+                <a href="{{ route('legal.privacy') }}" wire:navigate class="hover:text-zinc-700 dark:hover:text-zinc-400">{{ __('Privacy') }}</a>
+                <a href="{{ route('legal.cookies') }}" wire:navigate class="hover:text-zinc-700 dark:hover:text-zinc-400">{{ __('Cookies') }}</a>
+                <a href="{{ route('legal.dmca') }}" wire:navigate class="hover:text-zinc-700 dark:hover:text-zinc-400">{{ __('DMCA') }}</a>
+            </div>
         </flux:sidebar>
 
         <!-- Mobile User Menu -->
@@ -148,6 +159,9 @@
         @persist('toast')
             <flux:toast position="top end" />
         @endpersist
+
+        @include('partials.cookie-banner')
+        @include('partials.install-prompt')
 
         @fluxScripts
     </body>

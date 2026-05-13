@@ -78,6 +78,7 @@ class extends Component {
     public function puzzles()
     {
         $query = Crossword::where('is_published', true)
+            ->safeFor(Auth::user())
             ->with('user:id,name', 'tags:id,name,slug')
             ->withCount('likes')
             ->withAvg('comments as avg_rating', 'rating');
@@ -215,6 +216,7 @@ class extends Component {
     {
         $crossword = Crossword::findOrFail($crosswordId);
         abort_unless($crossword->is_published, 404);
+        abort_unless($crossword->isVisibleToSafeSearch(Auth::user()), 404);
 
         if (Auth::check()) {
             $this->redirect(route('crosswords.solver', $crossword), navigate: true);

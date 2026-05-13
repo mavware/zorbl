@@ -28,6 +28,7 @@ class extends Component {
     public function mount(Crossword $crossword): void
     {
         abort_unless($crossword->is_published, 404);
+        abort_unless($crossword->isVisibleToSafeSearch(Auth::user()), 404);
 
         // Authenticated users should use the full solver
         if (Auth::check()) {
@@ -66,6 +67,54 @@ class extends Component {
 ?>
 
 <div>
+    @push('head_meta')
+        @php
+            $ogUrl = route('puzzles.solve', $crosswordId);
+            $ogImage = route('puzzles.og', $crosswordId);
+            $ogTitle = ($title !== '' ? $title : __('Untitled puzzle')).' — '.config('app.name');
+            $ogDescription = $authorName !== ''
+                ? __('A :w × :h crossword by :name. Solve it free at :app.', ['w' => $width, 'h' => $height, 'name' => $authorName, 'app' => config('app.name')])
+                : __('A :w × :h crossword. Solve it free at :app.', ['w' => $width, 'h' => $height, 'app' => config('app.name')]);
+
+            $jsonLd = array_filter([
+                '@context' => 'https://schema.org',
+                '@type' => 'Game',
+                'name' => $title !== '' ? $title : __('Untitled puzzle'),
+                'url' => $ogUrl,
+                'image' => $ogImage,
+                'description' => $ogDescription,
+                'genre' => 'Crossword puzzle',
+                'gamePlatform' => 'Web',
+                'inLanguage' => 'en',
+                'isAccessibleForFree' => true,
+                'publisher' => [
+                    '@type' => 'Organization',
+                    'name' => config('app.name'),
+                    'url' => url('/'),
+                ],
+                'author' => $authorName !== '' ? [
+                    '@type' => 'Person',
+                    'name' => $authorName,
+                ] : null,
+            ]);
+        @endphp
+        <link rel="canonical" href="{{ $ogUrl }}">
+        <meta name="description" content="{{ $ogDescription }}">
+        <meta property="og:type" content="website">
+        <meta property="og:site_name" content="{{ config('app.name') }}">
+        <meta property="og:url" content="{{ $ogUrl }}">
+        <meta property="og:title" content="{{ $ogTitle }}">
+        <meta property="og:description" content="{{ $ogDescription }}">
+        <meta property="og:image" content="{{ $ogImage }}">
+        <meta property="og:image:width" content="1200">
+        <meta property="og:image:height" content="630">
+        <meta name="twitter:card" content="summary_large_image">
+        <meta name="twitter:title" content="{{ $ogTitle }}">
+        <meta name="twitter:description" content="{{ $ogDescription }}">
+        <meta name="twitter:image" content="{{ $ogImage }}">
+        <script type="application/ld+json">{!! json_encode($jsonLd, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
+    @endpush
+
     {{-- Inline scripts for guest persistence and solution decoding --}}
     <script>
         window.zorblGuestPersistence = (function() {
@@ -280,9 +329,11 @@ class extends Component {
             {{-- Grid --}}
             <div class="flex min-w-0 flex-1 items-start justify-center overflow-hidden">
                 <div
-                    class="relative"
+                    class="relative touch-pan-y"
                     :style="'width: ' + Math.min(600, width * 40) + 'px;'"
                     x-on:keydown="handleKeydown($event)"
+                    x-on:touchstart.passive="onSwipeStart($event)"
+                    x-on:touchend.passive="onSwipeEnd($event)"
                     tabindex="0"
                     x-ref="gridContainer"
                     id="crossword-grid"
@@ -452,6 +503,8 @@ class extends Component {
                 {{ __('to save across devices, track stats, and solve unlimited puzzles.') }}
             </p>
         </div>
+
+        @include('partials.solver-virtual-keyboard')
     </div>
 
     {{-- Signup Prompt Modal (shown on solve completion) --}}

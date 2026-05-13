@@ -168,14 +168,17 @@ new #[Title('Constructor Profile')] class extends Component {
 
         @auth
             @if(Auth::id() !== $constructorId)
-                <flux:button
-                    wire:click="toggleFollow"
-                    :variant="$this->isFollowing ? 'ghost' : 'primary'"
-                    size="sm"
-                    :icon="$this->isFollowing ? 'user-minus' : 'user-plus'"
-                >
-                    {{ $this->isFollowing ? __('Unfollow') : __('Follow') }}
-                </flux:button>
+                <div class="flex items-center gap-2">
+                    <flux:button
+                        wire:click="toggleFollow"
+                        :variant="$this->isFollowing ? 'ghost' : 'primary'"
+                        size="sm"
+                        :icon="$this->isFollowing ? 'user-minus' : 'user-plus'"
+                    >
+                        {{ $this->isFollowing ? __('Unfollow') : __('Follow') }}
+                    </flux:button>
+                    <livewire:report-button type="profile" :reportable-id="$constructorId" :key="'report-profile-'.$constructorId" />
+                </div>
             @endif
         @endauth
     </div>

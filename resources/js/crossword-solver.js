@@ -396,16 +396,52 @@ export function crosswordSolver({
 
             if (/^[a-zA-Z]$/.test(key)) {
                 e.preventDefault();
-                if (!this.isBlock(this.selectedRow, this.selectedCol)
-                    && !this.isPrefilled(this.selectedRow, this.selectedCol)) {
-                    const k = cellKey(this.selectedRow, this.selectedCol);
-                    this.progress[this.selectedRow][this.selectedCol] = key.toUpperCase();
-                    delete this.checked[k];
-                    if (this.pencilMode) this.pencilCells[k] = true;
-                    else delete this.pencilCells[k];
-                    this.advanceCursor();
-                    this.isDirty = true;
-                    this.checkIfSolved();
+                this.typeCharacter(key);
+            }
+        },
+
+        // Write a letter into the selected cell and advance the cursor. Shared
+        // by physical-keyboard input and the on-screen virtual keyboard.
+        typeCharacter(char) {
+            if (!/^[a-zA-Z]$/.test(char)) return;
+            this.ensureCellSelected();
+            if (this.selectedRow < 0) return;
+            if (this.isBlock(this.selectedRow, this.selectedCol)
+                || this.isPrefilled(this.selectedRow, this.selectedCol)) {
+                return;
+            }
+            const k = cellKey(this.selectedRow, this.selectedCol);
+            this.progress[this.selectedRow][this.selectedCol] = char.toUpperCase();
+            delete this.checked[k];
+            if (this.pencilMode) this.pencilCells[k] = true;
+            else delete this.pencilCells[k];
+            this.advanceCursor();
+            this.isDirty = true;
+            this.checkIfSolved();
+        },
+
+        pressBackspace() {
+            if (this.selectedRow < 0) return;
+            this.handleBackspace();
+        },
+
+        toggleDirection() {
+            if (this.selectedRow < 0) return;
+            this.direction = this.direction === 'across' ? 'down' : 'across';
+            this.scrollActiveClueIntoView?.();
+        },
+
+        // Used by the virtual keyboard so the user doesn't have to pre-tap a
+        // cell — first key tap snaps to the first playable cell.
+        ensureCellSelected() {
+            if (this.selectedRow >= 0) return;
+            for (let r = 0; r < this.height; r++) {
+                for (let c = 0; c < this.width; c++) {
+                    if (!this.isVoid(r, c) && !this.isBlock(r, c) && !this.isPrefilled(r, c)) {
+                        this.selectedRow = r;
+                        this.selectedCol = c;
+                        return;
+                    }
                 }
             }
         },
@@ -459,6 +495,37 @@ export function crosswordSolver({
                     }
                 }
             }
+        },
+
+        // --- Touch / swipe ---
+        // Threshold values are intentionally generous so a sloppy thumb-flick
+        // still registers, while accidental scrolls do not.
+        _swipeStartX: 0,
+        _swipeStartY: 0,
+        _swipeStartTime: 0,
+
+        onSwipeStart(e) {
+            const touch = e.changedTouches?.[0] ?? e.touches?.[0];
+            if (!touch) return;
+            this._swipeStartX = touch.clientX;
+            this._swipeStartY = touch.clientY;
+            this._swipeStartTime = Date.now();
+        },
+
+        onSwipeEnd(e) {
+            const touch = e.changedTouches?.[0];
+            if (!touch || !this._swipeStartTime) return;
+            const dx = touch.clientX - this._swipeStartX;
+            const dy = touch.clientY - this._swipeStartY;
+            const dt = Date.now() - this._swipeStartTime;
+            this._swipeStartTime = 0;
+
+            // Only fire on quick, horizontally-dominant gestures.
+            if (dt > 600) return;
+            if (Math.abs(dx) < 60) return;
+            if (Math.abs(dy) > Math.abs(dx) * 0.6) return;
+
+            this.jumpToNextClue(dx > 0);
         },
 
         jumpToNextClue(reverse) {

@@ -241,6 +241,8 @@ new #[Title('Solve Crossword')] class extends Component {
         $this->authorize('solve', $crossword);
 
         $user = Auth::user();
+        abort_unless($crossword->isVisibleToSafeSearch($user), 404);
+
         $this->isOwner = $user->id === $crossword->user_id;
         $this->isPublished = (bool) $crossword->is_published;
         $this->authorUserId = $crossword->user_id;
@@ -518,6 +520,7 @@ new #[Title('Solve Crossword')] class extends Component {
                         <flux:icon name="bookmark" class="size-5" />
                     </button>
                 </flux:tooltip>
+                <livewire:report-button type="puzzle" :reportable-id="$crosswordId" :key="'report-puzzle-'.$crosswordId" />
             @endif
         </div>
 
@@ -744,9 +747,11 @@ new #[Title('Solve Crossword')] class extends Component {
         {{-- Grid --}}
         <div class="flex min-w-0 flex-1 items-start justify-center overflow-hidden">
             <div
-                class="relative"
+                class="relative touch-pan-y"
                 :style="'width: ' + Math.min(600, width * 40) + 'px;'"
                 x-on:keydown="handleKeydown($event)"
+                x-on:touchstart.passive="onSwipeStart($event)"
+                x-on:touchend.passive="onSwipeEnd($event)"
                 tabindex="0"
                 x-ref="gridContainer"
                 id="crossword-grid"
@@ -1108,6 +1113,9 @@ new #[Title('Solve Crossword')] class extends Component {
                                             </div>
                                         @endif
                                         <flux:text size="sm" class="text-zinc-500">{{ $comment->created_at->diffForHumans() }}</flux:text>
+                                        <div class="ml-auto">
+                                            <livewire:report-button type="comment" :reportable-id="$comment->id" :key="'report-comment-'.$comment->id" />
+                                        </div>
                                     </div>
                                     <flux:text size="sm" class="mt-1">{{ $comment->body }}</flux:text>
                                 </div>
@@ -1118,6 +1126,8 @@ new #[Title('Solve Crossword')] class extends Component {
             @endif
         </div>
     @endif
+
+    @include('partials.solver-virtual-keyboard')
 
     {{-- Achievement Toasts --}}
     <div class="fixed right-4 bottom-4 z-50 space-y-2">

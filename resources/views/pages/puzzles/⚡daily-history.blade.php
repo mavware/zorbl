@@ -56,6 +56,7 @@ class extends Component {
     {
         $crossword = Crossword::findOrFail($crosswordId);
         abort_unless($crossword->is_published, 404);
+        abort_unless($crossword->isVisibleToSafeSearch(Auth::user()), 404);
 
         if (Auth::check()) {
             $this->redirect(route('crosswords.solver', $crossword), navigate: true);

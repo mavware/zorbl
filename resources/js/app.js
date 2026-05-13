@@ -1,5 +1,6 @@
 import { crosswordGrid } from './crossword-grid.js';
 import { crosswordSolver } from './crossword-solver.js';
+import './pwa.js';
 
 document.addEventListener('alpine:init', () => {
     Alpine.data('crosswordGrid', crosswordGrid);

@@ -15,6 +15,7 @@ new #[Title('Profile settings')] class extends Component {
     public string $copyrightName = '';
     public string $bio = '';
     public string $email = '';
+    public bool $safeSearchEnabled = true;
 
     /**
      * Mount the component.
@@ -25,6 +26,7 @@ new #[Title('Profile settings')] class extends Component {
         $this->copyrightName = Auth::user()->copyright_name ?? '';
         $this->bio = Auth::user()->bio ?? '';
         $this->email = Auth::user()->email;
+        $this->safeSearchEnabled = (bool) Auth::user()->safe_search_enabled;
     }
 
     /**
@@ -41,6 +43,7 @@ new #[Title('Profile settings')] class extends Component {
             'email' => $validated['email'],
             'copyright_name' => $validated['copyrightName'] ?: null,
             'bio' => $validated['bio'] ?: null,
+            'safe_search_enabled' => $this->safeSearchEnabled,
         ]);
 
         if ($user->isDirty('email')) {
@@ -129,6 +132,15 @@ new #[Title('Profile settings')] class extends Component {
                 @endif
             </div>
 
+            <flux:field variant="inline">
+                <flux:checkbox wire:model="safeSearchEnabled" data-test="safe-search-toggle" />
+                <flux:label>{{ __('Safe Search') }}</flux:label>
+                <flux:description>
+                    {{ __('Hide puzzles whose title or clues contain profanity or strong language. Recommended for solvers of all ages.') }}
+                </flux:description>
+                <flux:error name="safeSearchEnabled" />
+            </flux:field>
+
             <div class="flex items-center gap-4">
                 <div class="flex items-center justify-end">
                     <flux:button variant="primary" type="submit" class="w-full" data-test="update-profile-button">
@@ -143,6 +155,8 @@ new #[Title('Profile settings')] class extends Component {
         </form>
 
         <livewire:pages::settings.blocked-tags />
+
+        <livewire:pages::settings.data-export />
 
         @if ($this->showDeleteUser)
             <livewire:pages::settings.delete-user-form />

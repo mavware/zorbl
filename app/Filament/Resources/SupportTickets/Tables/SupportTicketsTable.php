@@ -32,6 +32,7 @@ class SupportTicketsTable
                         'feature_request' => 'info',
                         'account_issue' => 'warning',
                         'puzzle_issue' => 'primary',
+                        'copyright' => 'danger',
                         default => 'gray',
                     })
                     ->formatStateUsing(fn (string $state): string => match ($state) {
@@ -39,6 +40,7 @@ class SupportTicketsTable
                         'feature_request' => 'Feature Request',
                         'account_issue' => 'Account Issue',
                         'puzzle_issue' => 'Puzzle Issue',
+                        'copyright' => 'Copyright (DMCA)',
                         default => 'General',
                     }),
                 TextColumn::make('status')
@@ -86,6 +88,7 @@ class SupportTicketsTable
                         'feature_request' => 'Feature Request',
                         'account_issue' => 'Account Issue',
                         'puzzle_issue' => 'Puzzle Issue',
+                        'copyright' => 'Copyright (DMCA)',
                         'general' => 'General',
                     ]),
                 SelectFilter::make('priority')
