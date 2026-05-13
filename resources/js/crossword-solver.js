@@ -239,13 +239,39 @@ export function crosswordSolver({
         },
 
         activeClueAnnouncement() {
+            if (this.solved) return 'Puzzle solved.';
             if (this.selectedRow < 0) return '';
             const num = this.activeClueNumber;
             if (num < 0) return '';
             const clues = this.direction === 'across' ? this.cluesAcross : this.cluesDown;
             const clue = clues.find(c => c.number === num);
             if (!clue) return '';
-            return `${num} ${this.direction}: ${clue.clue || 'no clue'}`;
+            const position = `row ${this.selectedRow + 1}, column ${this.selectedCol + 1}`;
+            const letter = this.progress[this.selectedRow]?.[this.selectedCol];
+            const letterPart = letter ? `letter ${letter}` : 'empty';
+            const directionLabel = this.direction === 'across' ? 'Across' : 'Down';
+            return `${directionLabel} ${num}: ${clue.clue || 'no clue'}. ${position}, ${letterPart}.`;
+        },
+
+        /**
+         * Build a descriptive aria-label for a single cell that screen readers
+         * can announce without needing extra DOM context. Covers blocks, voids,
+         * clue-starts, current letter, and pencil-marked state.
+         */
+        cellAriaLabel(row, col) {
+            if (this.isVoid(row, col)) return 'Void cell, not part of the puzzle.';
+            if (this.isBlock(row, col)) return 'Black square.';
+
+            const position = `Row ${row + 1}, column ${col + 1}`;
+            const number = this.getDisplayNumber(row, col);
+            const clueStart = number !== null && number !== undefined
+                ? `, clue ${number} start`
+                : '';
+            const letter = this.progress[row]?.[col];
+            const letterPart = letter ? `, contains ${letter}` : ', empty';
+            const pencilPart = this.isPencil(row, col) ? ', pencilled' : '';
+            const prefilledPart = this.isPrefilled(row, col) ? ', prefilled' : '';
+            return `${position}${clueStart}${letterPart}${pencilPart}${prefilledPart}.`;
         },
 
         letterClass(row, col) {

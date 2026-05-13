@@ -339,10 +339,15 @@ class extends Component {
                     id="crossword-grid"
                     role="grid"
                     :aria-label="'Crossword grid, ' + width + ' columns by ' + height + ' rows'"
+                    :aria-rowcount="height"
+                    :aria-colcount="width"
+                    :aria-activedescendant="selectedRow >= 0 ? ('crossword-cell-' + selectedRow + '-' + selectedCol) : null"
+                    aria-keyshortcuts="ArrowUp ArrowDown ArrowLeft ArrowRight Enter Tab Backspace"
                 >
                     <div
                         class="grid border border-zinc-800 dark:border-zinc-300 [--bar-color:var(--color-zinc-800)] dark:[--bar-color:var(--color-zinc-300)]"
                         :style="'grid-template-columns: repeat(' + width + ', 1fr);'"
+                        role="presentation"
                     >
                         <template x-for="(row, rowIdx) in grid" :key="'row-' + rowIdx">
                             <template x-for="(cell, colIdx) in row" :key="'cell-' + rowIdx + '-' + colIdx">
@@ -350,10 +355,13 @@ class extends Component {
                                     x-on:click="selectCell(rowIdx, colIdx)"
                                     :class="[cellClasses(rowIdx, colIdx), isVoid(rowIdx, colIdx) ? '' : 'border border-line-strong']"
                                     :style="cellBarStyles(rowIdx, colIdx)"
-                                    class="relative box-border flex aspect-square items-center justify-center select-none"
+                                    class="crossword-cell relative box-border flex aspect-square items-center justify-center select-none"
+                                    :id="'crossword-cell-' + rowIdx + '-' + colIdx"
                                     role="gridcell"
+                                    :aria-rowindex="rowIdx + 1"
+                                    :aria-colindex="colIdx + 1"
                                     :aria-selected="rowIdx === selectedRow && colIdx === selectedCol ? 'true' : 'false'"
-                                    :aria-label="isBlock(rowIdx, colIdx) ? 'Black cell' : (typeof cell === 'number' && cell > 0 ? cell + ' ' : '') + (progress[rowIdx]?.[colIdx] || 'empty') + (isPencil(rowIdx, colIdx) ? ' pencil' : '')"
+                                    :aria-label="cellAriaLabel(rowIdx, colIdx)"
                                 >
                                     {{-- Clue number --}}
                                     <template x-if="typeof cell === 'number' && cell > 0">

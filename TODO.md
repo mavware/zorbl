@@ -68,13 +68,6 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
   - Automated DB backup verification (not just that backups run, but that they restore)
   - Stripe webhook retry/idempotency audit before real money flows
 
-  Quality
-  - Accessibility pass on the grid (screen reader announcements for clue/cell, ARIA, high-contrast) — also an SEO/legal hedge in some jurisdictions
-  
-  If I had to pick the one thing most likely to matter on day one of public launch, it's auto-generated per-puzzle share images — every solver completion or constructor share
-  becomes a free ad. Closest tie for "blocking" is the legal trio (ToS / Privacy / account deletion).
-
-
 ## Done
 
 <!-- completed items move here, preserving their `- [x]` state -->
