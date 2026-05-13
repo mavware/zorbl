@@ -36,6 +36,8 @@ test('averageSolveTimeSeconds computes average across completed attempts', funct
         'solve_time_seconds' => 400,
     ]);
 
+    $crossword->refresh();
+
     expect($crossword->averageSolveTimeSeconds())->toBe(300);
 });
 
@@ -51,6 +53,8 @@ test('averageSolveTimeSeconds ignores attempts with null solve time', function (
         'is_completed' => true,
         'solve_time_seconds' => null,
     ]);
+
+    $crossword->refresh();
 
     expect($crossword->averageSolveTimeSeconds())->toBe(600);
 });

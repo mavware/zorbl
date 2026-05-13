@@ -168,7 +168,7 @@ test('constructor profile shows attempt count per puzzle', function () {
         ->test('pages::constructors.show', ['constructor' => $constructor]);
 
     $puzzles = $component->get('publishedPuzzles');
-    expect($puzzles->first()->attempts_count)->toBe(5);
+    expect($puzzles->first()->cached_attempts_count)->toBe(5);
 });
 
 test('constructor profile shows completion rate per puzzle', function () {
@@ -183,8 +183,8 @@ test('constructor profile shows completion rate per puzzle', function () {
         ->test('pages::constructors.show', ['constructor' => $constructor]);
 
     $puzzles = $component->get('publishedPuzzles');
-    expect($puzzles->first()->attempts_count)->toBe(5)
-        ->and($puzzles->first()->completed_attempts_count)->toBe(2);
+    expect($puzzles->first()->cached_attempts_count)->toBe(5)
+        ->and($puzzles->first()->cached_completed_count)->toBe(2);
 });
 
 test('constructor profile displays solved percentage text', function () {
