@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Support\ProfanityFilter;
+use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\InvalidStateException;
@@ -59,6 +61,10 @@ class GoogleController extends Controller
         ]);
 
         $user->forceFill(['email_verified_at' => now()])->save();
+
+        // Mirrors Fortify's behavior for password-based signups so listeners
+        // (welcome email, analytics, etc.) fire for OAuth-created users too.
+        Event::dispatch(new Registered($user));
 
         Auth::login($user, remember: true);
 

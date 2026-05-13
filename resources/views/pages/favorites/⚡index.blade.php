@@ -250,16 +250,19 @@ new #[Title('Favorites')] class extends Component {
 
     {{-- Puzzle Grid --}}
     @if($this->activeListCrosswords->isEmpty())
-        <div class="border-line-strong flex flex-col items-center justify-center rounded-xl border border-dashed py-16">
+        <div class="border-line-strong flex flex-col items-center justify-center rounded-xl border border-dashed py-16 px-6 text-center" data-test="favorites-empty-state">
             <flux:icon name="heart" class="mb-4 size-12 text-zinc-500" />
             <flux:heading size="lg" class="mb-2">{{ __('No puzzles here yet') }}</flux:heading>
-            <flux:text>
+            <flux:text class="mb-4">
                 @if($list === 'liked')
                     {{ __('Like puzzles while browsing or solving to see them here.') }}
                 @else
                     {{ __('Add puzzles to this list from your liked puzzles.') }}
                 @endif
             </flux:text>
+            <flux:button variant="primary" icon="puzzle-piece" :href="route('puzzles.index')" wire:navigate>
+                {{ __('Browse puzzles') }}
+            </flux:button>
         </div>
     @else
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
