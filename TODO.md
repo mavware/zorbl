@@ -11,7 +11,7 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [ ] Create a step-by-step marketing plan for the site
 - [x] Ability to search for a puzzle by tag
 - [x] Ability to select tags that you never want to see puzzles associated with
-- [ ] Ability to sign in with a passkey
+- [x] Ability to sign in with a passkey
 - [x] Ability to sign in with google
 - [x] Double check the printable/downloadable PDFs for the puzzle editor/solver
 - [x] Ensure that freestyle puzzles can be exported as PDFs with the removed squares
