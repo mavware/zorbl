@@ -21,7 +21,10 @@ class CreateNewUser implements CreatesNewUsers
     {
         Validator::make($input, [
             ...$this->profileRules(),
-            'password' => $this->passwordRules(),
+            // Registration intentionally skips the "confirm password" double-entry —
+            // password reset and the in-settings password change still require it
+            // because a typo there locks the user out.
+            'password' => $this->passwordRules(confirmed: false),
         ])->validate();
 
         return User::create([

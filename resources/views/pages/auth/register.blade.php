@@ -55,7 +55,7 @@
                 placeholder="email@example.com"
             />
 
-            <!-- Password -->
+            <!-- Password — single field with reveal so users can verify before submitting -->
             <flux:input
                 name="password"
                 :label="__('Password')"
@@ -63,17 +63,6 @@
                 required
                 autocomplete="new-password"
                 :placeholder="__('Password')"
-                viewable
-            />
-
-            <!-- Confirm Password -->
-            <flux:input
-                name="password_confirmation"
-                :label="__('Confirm password')"
-                type="password"
-                required
-                autocomplete="new-password"
-                :placeholder="__('Confirm password')"
                 viewable
             />
 
