@@ -23,14 +23,11 @@ new #[Title('Security settings')] class extends Component {
 
     public bool $requiresConfirmation;
 
-    public bool $canManagePasskeys;
-
     /**
      * Mount the component.
      */
     public function mount(DisableTwoFactorAuthentication $disableTwoFactorAuthentication): void
     {
-        $this->canManagePasskeys = Features::canManagePasskeys();
         $this->canManageTwoFactor = Features::canManageTwoFactorAuthentication();
 
         if ($this->canManageTwoFactor) {
@@ -175,12 +172,6 @@ new #[Title('Security settings')] class extends Component {
                         </div>
                     @endif
                 </div>
-            </section>
-        @endif
-
-        @if ($canManagePasskeys)
-            <section class="mt-12">
-                <livewire:pages::settings.passkeys />
             </section>
         @endif
     </x-pages::settings.layout>

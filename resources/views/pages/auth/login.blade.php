@@ -1,5 +1,5 @@
 <x-layouts::auth :title="__('Log in')">
-    <div class="flex flex-col gap-6" x-data="passkeyLogin" x-init="autofill()">
+    <div class="flex flex-col gap-6">
         <x-auth-header :title="__('Log in to your account')" :description="__('Enter your email and password below to log in')" />
 
         <!-- Session Status -->
@@ -19,26 +19,7 @@
                     </span>
                 </flux:button>
             </div>
-        @endif
 
-        <template x-if="supported">
-            <div class="flex flex-col gap-3">
-                @unless(config('services.google.client_id'))
-                    {{-- Show divider only when Google button is absent --}}
-                @endunless
-
-                <flux:button variant="ghost" class="w-full" x-on:click="verify()" x-bind:disabled="loading" icon-leading="finger-print">
-                    <span x-show="!loading">{{ __('Sign in with a passkey') }}</span>
-                    <span x-show="loading" x-cloak>{{ __('Authenticating...') }}</span>
-                </flux:button>
-
-                <template x-if="error">
-                    <p class="text-sm text-center text-red-600 dark:text-red-400" x-text="error"></p>
-                </template>
-            </div>
-        </template>
-
-        @if(config('services.google.client_id'))
             <div class="relative">
                 <div class="absolute inset-0 flex items-center">
                     <div class="border-line w-full border-t"></div>
@@ -47,17 +28,6 @@
                     <span class="bg-white px-2 text-zinc-500 dark:bg-zinc-900 dark:text-zinc-400">{{ __('or') }}</span>
                 </div>
             </div>
-        @else
-            <template x-if="supported">
-                <div class="relative">
-                    <div class="absolute inset-0 flex items-center">
-                        <div class="border-line w-full border-t"></div>
-                    </div>
-                    <div class="relative flex justify-center text-sm">
-                        <span class="bg-white px-2 text-zinc-500 dark:bg-zinc-900 dark:text-zinc-400">{{ __('or') }}</span>
-                    </div>
-                </div>
-            </template>
         @endif
 
         <form method="POST" action="{{ route('login.store') }}" class="flex flex-col gap-6">
@@ -71,7 +41,7 @@
                 type="email"
                 required
                 autofocus
-                autocomplete="email webauthn"
+                autocomplete="email"
                 placeholder="email@example.com"
             />
 
