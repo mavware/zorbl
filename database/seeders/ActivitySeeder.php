@@ -63,19 +63,19 @@ class ActivitySeeder extends Seeder
         $faker = Faker::create();
 
         // Step 1: Download and parse puzzles
-        $this->command->info('Downloading and parsing crossword puzzles...');
+        $this->log('Downloading and parsing crossword puzzles...');
         $puzzles = $this->loadPuzzles();
 
         if (count($puzzles) < 5) {
-            $this->command->error('Not enough valid puzzles found. Need at least 5.');
+            $this->log('Not enough valid puzzles found. Need at least 5. Got '.count($puzzles).'.', 'error');
 
             return;
         }
 
-        $this->command->info('Parsed '.count($puzzles).' puzzles.');
+        $this->log('Parsed '.count($puzzles).' puzzles.');
 
         // Step 2: Create users (constructors from puzzle authors + solvers)
-        $this->command->info('Creating users...');
+        $this->log('Creating users...');
 
         $seedPuzzles = array_slice($puzzles, 0, self::PUZZLE_COUNT);
 
@@ -183,10 +183,10 @@ class ActivitySeeder extends Seeder
             $crosswordIds[] = $crossword->id;
         }
 
-        $this->command->info('Created '.count($crosswordIds).' crosswords.');
+        $this->log('Created '.count($crosswordIds).' crosswords.');
 
         // Step 4: Create puzzle attempts
-        $this->command->info('Creating puzzle attempts...');
+        $this->log('Creating puzzle attempts...');
         $attemptBatch = [];
         $attemptKeys = [];
 
@@ -403,8 +403,44 @@ class ActivitySeeder extends Seeder
         }
 
         ContestEntry::insert($entryBatch);
-        $this->command->info('Created 2 contests with '.count($entryBatch).' entries.');
-        $this->command->info('Activity seeding complete!');
+        $this->log('Created 2 contests with '.count($entryBatch).' entries.');
+        $this->log('Activity seeding complete!');
+    }
+
+    /**
+     * Mirror a status message to the console and the Laravel log so it
+     * surfaces in Laravel Cloud's Logs tab regardless of how the command
+     * was invoked.
+     */
+    private function log(string $message, string $level = 'info'): void
+    {
+        match ($level) {
+            'warning' => $this->command->warn($message),
+            'error' => $this->command->error($message),
+            default => $this->command->info($message),
+        };
+
+        Log::log($level === 'warning' ? 'warning' : $level, '[ActivitySeeder] '.$message);
+    }
+
+    /**
+     * Filter a user-insert batch down to rows whose email is not already
+     * in the users table. Lets the seeder be safely re-run after a partial
+     * failure without hitting unique-constraint violations.
+     *
+     * @param  array<int, array<string, mixed>>  $batch
+     * @return array<int, array<string, mixed>>
+     */
+    private function filterOutExistingEmails(array $batch): array
+    {
+        if ($batch === []) {
+            return [];
+        }
+
+        $emails = array_column($batch, 'email');
+        $existing = User::whereIn('email', $emails)->pluck('email')->flip()->all();
+
+        return array_values(array_filter($batch, fn ($row) => ! isset($existing[$row['email']])));
     }
 
     /**
@@ -418,7 +454,7 @@ class ActivitySeeder extends Seeder
         $bundledPath = database_path('seeders/data/xd-puzzles-parsed.json');
 
         if (file_exists($bundledPath)) {
-            $this->command->info('Using bundled parsed puzzles.');
+            $this->log('Using bundled parsed puzzles from '.$bundledPath);
 
             return json_decode(file_get_contents($bundledPath), true);
         }
@@ -426,7 +462,7 @@ class ActivitySeeder extends Seeder
         $cachePath = storage_path('app/private/xd-puzzles-parsed.json');
 
         if (file_exists($cachePath)) {
-            $this->command->info('Using cached parsed puzzles.');
+            $this->log('Using cached parsed puzzles from '.$cachePath);
 
             return json_decode(file_get_contents($cachePath), true);
         }
@@ -434,7 +470,7 @@ class ActivitySeeder extends Seeder
         $zipPath = storage_path('app/private/xd-puzzles.zip');
 
         if (! file_exists($zipPath)) {
-            $this->command->info('Downloading xd-puzzles.zip (~183MB)...');
+            $this->log('Downloading xd-puzzles.zip (~183MB)...');
 
             $dir = dirname($zipPath);
 
@@ -446,18 +482,18 @@ class ActivitySeeder extends Seeder
             $result = copy(self::DOWNLOAD_URL, $zipPath, $context);
 
             if (! $result || ! file_exists($zipPath)) {
-                $this->command->error('Failed to download xd-puzzles.zip from '.self::DOWNLOAD_URL);
+                $this->log('Failed to download xd-puzzles.zip from '.self::DOWNLOAD_URL, 'error');
 
                 return [];
             }
 
-            $this->command->info('Download complete. Size: '.filesize($zipPath).' bytes');
+            $this->log('Download complete. Size: '.filesize($zipPath).' bytes');
         }
 
         $zip = new ZipArchive;
 
         if ($zip->open($zipPath) !== true) {
-            $this->command->error('Failed to open zip file.');
+            $this->log('Failed to open zip file at '.$zipPath, 'error');
 
             return [];
         }
