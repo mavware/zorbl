@@ -21,11 +21,11 @@ use Zorbl\CrosswordIO\GridNumberer;
 
 class ActivitySeeder extends Seeder
 {
-    private const DOWNLOAD_URL = 'https://xd.saul.pw/xd-puzzles.zip';
+    private const string DOWNLOAD_URL = 'https://xd.saul.pw/xd-puzzles.zip';
 
-    private const PUZZLE_COUNT = 30;
+    private const int PUZZLE_COUNT = 30;
 
-    private const SOLVER_COUNT = 45;
+    private const int SOLVER_COUNT = 45;
 
     public function run(): void
     {

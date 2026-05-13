@@ -153,7 +153,8 @@ return [
             'confirmPassword' => true,
             // 'window' => 0
         ]),
-        Features::passkeys(),
+        // Features::passkeys() lives in Fortify v2.x — re-enable here after the
+        // package is bumped (it's on the TODO under "Ability to sign in with a passkey").
     ],
 
 ];

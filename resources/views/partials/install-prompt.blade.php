@@ -22,6 +22,13 @@
             if (!pwa) return;
             if (pwa.isStandalone) return;
 
+            // 'Add to home screen' is a mobile / tablet metaphor — desktop users
+            // already have tabs, bookmarks, and a Chrome install icon in the
+            // address bar. Gate the banner to touch-primary devices so it stops
+            // showing on laptops and desktops.
+            const isTouchDevice = window.matchMedia?.('(pointer: coarse)').matches ?? false;
+            if (!isTouchDevice) return;
+
             const dismissed = (() => {
                 try {
                     const v = localStorage.getItem('zorbl_install_dismissed_at');
