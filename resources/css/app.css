@@ -131,7 +131,35 @@ select:focus[data-flux-control] {
 }
 
 .editor-complete-flash-border {
-    animation: editor-complete-flash-border 0.8s ease-in-out;
+    animation: editor-complete-flash-border 0.9s ease-in-out;
+}
+
+/* Whole-grid spring bounce — the puzzle "kicks" outward then settles. */
+@keyframes editor-grid-bounce {
+    0%   { transform: scale(1); }
+    35%  { transform: scale(1.035); }
+    70%  { transform: scale(0.995); }
+    100% { transform: scale(1); }
+}
+
+.editor-grid-bounce {
+    animation: editor-grid-bounce 0.55s ease-out;
+    transform-origin: center;
+    will-change: transform;
+}
+
+/* Per-cell ripple — each playable cell briefly tints green. Combined with a
+   per-cell `animation-delay` derived from Manhattan distance to the origin,
+   this lights the puzzle up like a wave radiating from the last-typed cell. */
+@keyframes editor-cell-ripple {
+    0%   { background-color: transparent; }
+    40%  { background-color: rgb(34 197 94 / 0.55); }
+    75%  { background-color: rgb(34 197 94 / 0.25); }
+    100% { background-color: transparent; }
+}
+
+.editor-cell-ripple {
+    animation: editor-cell-ripple 0.55s ease-out both;
 }
 
 /* ───────────────────────────────────────────────────────────────────────────

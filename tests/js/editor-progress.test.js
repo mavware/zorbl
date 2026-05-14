@@ -172,6 +172,42 @@ describe('completion flags', () => {
     });
 });
 
+describe('cellRippleDelay', () => {
+    it('returns 0 when no origin has been set yet', () => {
+        const g = makeGrid();
+        expect(g.cellRippleDelay(0, 0)).toBe(0);
+        expect(g.cellRippleDelay(2, 2)).toBe(0);
+    });
+
+    it('returns 0 at the origin', () => {
+        const g = makeGrid();
+        g.cellsCompleteRippleOrigin = [1, 1];
+        expect(g.cellRippleDelay(1, 1)).toBe(0);
+    });
+
+    it('scales linearly with Manhattan distance from origin', () => {
+        const g = makeGrid();
+        g.cellsCompleteRippleOrigin = [1, 1];
+        // (0,0) → distance 2 → 56ms
+        expect(g.cellRippleDelay(0, 0)).toBe(56);
+        // (2,2) → distance 2 → 56ms
+        expect(g.cellRippleDelay(2, 2)).toBe(56);
+        // (0,2) → distance 2 → 56ms
+        expect(g.cellRippleDelay(0, 2)).toBe(56);
+        // (2,0) → distance 2 → 56ms (block-adjacent OK; this is delay math only)
+        expect(g.cellRippleDelay(2, 0)).toBe(56);
+    });
+
+    it('is symmetric: distance from A to B equals B to A', () => {
+        const g = makeGrid();
+        g.cellsCompleteRippleOrigin = [2, 2];
+        const a = g.cellRippleDelay(0, 0);
+        g.cellsCompleteRippleOrigin = [0, 0];
+        const b = g.cellRippleDelay(2, 2);
+        expect(a).toBe(b);
+    });
+});
+
 describe('clue-fill progress getters', () => {
     it('counts total clues across both directions', () => {
         const g = makeGrid();

@@ -11,7 +11,7 @@
             >
                 <div
                     class="grid [--bar-color:var(--color-zinc-800)] dark:[--bar-color:var(--color-zinc-300)]"
-                    :class="{ 'editor-complete-flash-border': cellsCompleteFlash }"
+                    :class="{ 'editor-complete-flash-border': cellsCompleteFlash, 'editor-grid-bounce': cellsCompleteFlash }"
                     :style="'grid-template-columns: repeat(' + width + ', minmax(0, 1fr));'"
                 >
                     <template x-for="(row, rowIdx) in grid" :key="'row-' + rowIdx">
@@ -23,8 +23,8 @@
                                 x-on:touchstart.passive="startLongPress(rowIdx, colIdx, $event)"
                                 x-on:touchend="cancelLongPress()"
                                 x-on:touchmove="cancelLongPress()"
-                                :class="[cellClasses(rowIdx, colIdx), cellBorderClasses(rowIdx, colIdx)]"
-                                :style="cellBarStyles(rowIdx, colIdx)"
+                                :class="[cellClasses(rowIdx, colIdx), cellBorderClasses(rowIdx, colIdx), (cellsCompleteFlash && !isBlock(rowIdx, colIdx) && !isVoid(rowIdx, colIdx)) ? 'editor-cell-ripple' : '']"
+                                :style="cellBarStyles(rowIdx, colIdx) + (cellsCompleteFlash ? '; animation-delay: ' + cellRippleDelay(rowIdx, colIdx) + 'ms' : '')"
                                 class="relative box-border flex aspect-square items-center justify-center overflow-hidden select-none"
                                 role="gridcell"
                             >
