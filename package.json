@@ -22,7 +22,7 @@
         "lightningcss-linux-x64-gnu": "^1.29.1"
     },
     "devDependencies": {
-        "playwright": "^1.59.1",
+        "playwright": "^1.60.0",
         "vitest": "^3.2.4"
     }
 }
