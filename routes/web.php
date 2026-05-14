@@ -2,7 +2,6 @@
 
 use App\Http\Controllers\Api\EmbedController;
 use App\Http\Controllers\Auth\GoogleController;
-use App\Http\Controllers\CookieConsentController;
 use App\Http\Controllers\OgImageController;
 use App\Http\Controllers\SitemapController;
 use App\Models\Crossword;
@@ -33,9 +32,6 @@ Route::middleware(['guest', 'throttle:oauth-callback'])->group(function () {
     Route::get('auth/google/redirect', [GoogleController::class, 'redirect'])->name('auth.google.redirect');
     Route::get('auth/google/callback', [GoogleController::class, 'callback'])->name('auth.google.callback');
 });
-
-// Cookie consent (records visitor's choice; works for guests and logged-in users)
-Route::post('cookie-consent', [CookieConsentController::class, 'store'])->name('cookie-consent.store');
 
 // Help center (public, no auth)
 Route::livewire('help', 'pages::help.index')->name('help.index');

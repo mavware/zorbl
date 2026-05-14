@@ -25,7 +25,7 @@ class DatabaseSeeder extends Seeder
             ['email' => 'michael@zorbl.com'],
             [
                 'name' => 'Michael Greer',
-                'password' => Hash::make('Sunday#1'),
+                'password' => Hash::make(config('app.admin_password')),
                 'email_verified_at' => now(),
             ]
         );
@@ -37,6 +37,9 @@ class DatabaseSeeder extends Seeder
             TemplateSeeder::class,
             TemplateTagSeeder::class,
             HelpArticleSeeder::class,
+            WordListSeeder::class,
+            ClueEntrySeeder::class,
+            ActivitySeeder::class,
         ]);
         // Call php artisan setup:platform to seed the rest of the data
     }

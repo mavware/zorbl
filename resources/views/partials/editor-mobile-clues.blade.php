@@ -3,7 +3,7 @@
             $freestyleUnlocked = $this->puzzleType === \App\Enums\PuzzleType::Freestyle && ! $this->freestyleLocked;
         @endphp
         @if (! $freestyleUnlocked)
-        <div class="lg:hidden">
+        <div class="lg:hidden" :class="{ 'editor-complete-flash': cluesCompleteFlash }">
             <div class="flex border-b border-line">
                 <button
                     x-on:click="direction = 'across'"

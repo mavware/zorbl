@@ -17,7 +17,7 @@ class ClueEntryController extends Controller
 {
     public function index(Request $request): AnonymousResourceCollection
     {
-        $clueEntries = QueryBuilder::for(ClueEntry::class)
+        $clueEntries = QueryBuilder::for(ClueEntry::approved())
             ->allowedFilters(
                 AllowedFilter::partial('answer'),
                 AllowedFilter::partial('clue'),

@@ -420,6 +420,7 @@ class extends Component {
         }
 
         return ClueEntry::where('answer', $answer)
+            ->approved()
             ->where(fn($q) => $q->whereNull('crossword_id')->orWhere('crossword_id', '!=', $this->crosswordId))
             ->with(['user:id,name', 'crossword:id,title'])
             ->latest()
@@ -802,7 +803,7 @@ class extends Component {
 
         <div class="flex items-center gap-2">
             {{-- Save status --}}
-            <div class="flex items-center gap-1 pl-2 text-sm text-zinc-500">
+            <div class="flex items-center gap-1 pr-2 text-sm text-zinc-500">
                 <template x-if="saving">
                     <span>{{ __('Saving...') }}</span>
                 </template>
@@ -815,6 +816,22 @@ class extends Component {
                             {{ __('Saved') }}
                         </span>
                 </template>
+            </div>
+
+            {{-- Fill progress indicators --}}
+            <div class="flex items-center gap-3">
+                <flux:tooltip content="{{ __('Cells with a letter / total playable cells') }}">
+                    <div class="flex flex-col items-center leading-tight">
+                        <span class="text-[10px] uppercase tracking-wide text-zinc-400">{{ __('Cells') }}</span>
+                        <span class="font-mono text-xs tabular-nums" :class="cellsFillColorClass" x-text="cellsFilled + '/' + cellsTotal"></span>
+                    </div>
+                </flux:tooltip>
+                <flux:tooltip content="{{ __('Clues with text / total clue slots') }}">
+                    <div class="flex flex-col items-center leading-tight">
+                        <span class="text-[10px] uppercase tracking-wide text-zinc-400">{{ __('Clues') }}</span>
+                        <span class="font-mono text-xs tabular-nums" :class="cluesFillColorClass" x-text="cluesFilled + '/' + cluesTotal"></span>
+                    </div>
+                </flux:tooltip>
             </div>
 
             {{-- Mode toggle --}}

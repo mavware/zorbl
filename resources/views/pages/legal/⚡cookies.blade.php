@@ -44,7 +44,7 @@ class extends Component {
                 <ul class="mt-3 list-disc space-y-1 pl-6 text-zinc-400">
                     <li><strong class="text-zinc-100">{{ __('Strictly necessary.') }}</strong> {{ __('Required to run the service — for example, to keep you logged in and protect against cross-site request forgery. These cannot be switched off.') }}</li>
                     <li><strong class="text-zinc-100">{{ __('Functional.') }}</strong> {{ __('Remember preferences (such as your theme) and improve the experience.') }}</li>
-                    <li><strong class="text-zinc-100">{{ __('Analytics.') }}</strong> {{ __('Help us understand how the service is used so we can improve it. Only set with your consent in regions that require it.') }}</li>
+                    <li><strong class="text-zinc-100">{{ __('Analytics.') }}</strong> {{ __('Help us understand how the service is used so we can improve it. We currently do not use any analytics cookies.') }}</li>
                     <li><strong class="text-zinc-100">{{ __('Marketing.') }}</strong> {{ __('Used to measure advertising or build interest profiles. We currently do not use any marketing cookies.') }}</li>
                 </ul>
             </section>
@@ -75,12 +75,6 @@ class extends Component {
                                 <td class="px-4 py-3">{{ __('Session') }}</td>
                             </tr>
                             <tr>
-                                <td class="px-4 py-3 font-mono text-xs text-amber-400">cookie_consent</td>
-                                <td class="px-4 py-3">{{ __('Strictly necessary') }}</td>
-                                <td class="px-4 py-3">{{ __('Remembers your cookie choices so the banner is shown only once.') }}</td>
-                                <td class="px-4 py-3">{{ __('12 months') }}</td>
-                            </tr>
-                            <tr>
                                 <td class="px-4 py-3 font-mono text-xs text-amber-400">{{ __('Local storage (solver progress)') }}</td>
                                 <td class="px-4 py-3">{{ __('Functional') }}</td>
                                 <td class="px-4 py-3">{{ __('Keeps your in-progress solve on this device when you solve without an account.') }}</td>
@@ -103,7 +97,7 @@ class extends Component {
             <section>
                 <h2 class="text-xl font-semibold text-zinc-100">4. {{ __('Your Choices') }}</h2>
                 <p class="mt-3">
-                    {{ __('When you visit :app from a region that requires it (the EEA, the United Kingdom, or Switzerland), a banner appears the first time you load the site. From the banner you can accept all non-essential cookies, reject them, or open a preferences view to make a granular choice. You can change your mind at any time by clicking "Cookie preferences" in the footer.', ['app' => $appName]) }}
+                    {{ __(':app currently only uses strictly necessary cookies, so we do not display a consent banner. If we add analytics or advertising cookies in the future, we will update this policy and ask for your consent first where required.', ['app' => $appName]) }}
                 </p>
                 <p class="mt-3">
                     {{ __('All modern browsers let you block or delete cookies through their settings. Blocking strictly necessary cookies will break the service (you will not be able to stay logged in), but blocking the others is safe.') }}

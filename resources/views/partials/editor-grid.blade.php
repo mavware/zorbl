@@ -11,6 +11,7 @@
             >
                 <div
                     class="grid [--bar-color:var(--color-zinc-800)] dark:[--bar-color:var(--color-zinc-300)]"
+                    :class="{ 'editor-complete-flash-border': cellsCompleteFlash }"
                     :style="'grid-template-columns: repeat(' + width + ', minmax(0, 1fr));'"
                 >
                     <template x-for="(row, rowIdx) in grid" :key="'row-' + rowIdx">

@@ -56,6 +56,7 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [ ] Constructors get a section that shows what answers the solvers entered into the answer field (just the distinct answers with the count)
 - [ ] Ability to work with multiple constructors at once (form teams)
 - [ ] Publicly accessible file format converter.  Lets anonymous users upload a puzzle in any format and convert it to any other format.
+- [ ] Optional puzzle titles.  Not sure what will be the stand-in if they choose not to put a title.
  
 ## For later
 
