@@ -535,7 +535,7 @@ new #[Title('Solve Crossword')] class extends Component {
             <flux:tooltip content="{{ __('Pencil mode (P)') }}">
                 <button
                     type="button"
-                    x-on:click="pencilMode = !pencilMode"
+                    x-on:click="pencilMode = !pencilMode; if (selectedRow >= 0) $refs.gridContainer?.focus()"
                     :class="['text-fg-muted', pencilMode ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' : 'hover:text-zinc-800 dark:hover:text-zinc-200']"
                     class="rounded-lg p-1.5 transition-colors"
                     :aria-pressed="pencilMode.toString()"
