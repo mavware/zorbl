@@ -487,10 +487,40 @@ export function crosswordSolver({
 
         advanceCursor() {
             const row = this.selectedRow, col = this.selectedCol;
-            if (this.direction === 'across') {
-                if (!this.hasRightBoundary(row, col)) this.selectedCol = col + 1;
-            } else {
-                if (!this.hasBottomBoundary(row, col)) this.selectedRow = row + 1;
+            const atBoundary = this.direction === 'across'
+                ? this.hasRightBoundary(row, col)
+                : this.hasBottomBoundary(row, col);
+
+            if (!atBoundary) {
+                if (this.direction === 'across') this.selectedCol = col + 1;
+                else this.selectedRow = row + 1;
+                return;
+            }
+
+            this.advanceToNextWord();
+        },
+
+        advanceToNextWord() {
+            const clues = this.direction === 'across' ? this.cluesAcross : this.cluesDown;
+            if (clues.length === 0) return;
+
+            const currentNum = this.activeClueNumber;
+            const startIdx = clues.findIndex(c => c.number === currentNum);
+            if (startIdx < 0) return;
+
+            for (let offset = 1; offset <= clues.length; offset++) {
+                const nextIdx = (startIdx + offset) % clues.length;
+                const slot = this.findSlot(this.direction, clues[nextIdx].number);
+                if (!slot) continue;
+
+                const cells = this.getWordCells(slot.row, slot.col, this.direction);
+                const empty = cells.find(([r, c]) => !this.isPrefilled(r, c) && !this.progress[r]?.[c]);
+                if (empty) {
+                    this.selectedRow = empty[0];
+                    this.selectedCol = empty[1];
+                    this.scrollActiveClueIntoView?.();
+                    return;
+                }
             }
         },
 
