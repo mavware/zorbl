@@ -11,6 +11,7 @@ class UsersSeeder extends BaseActivitySeeder
 {
     protected function runStep(): void
     {
+        info('started');
         $puzzles = $this->loadPuzzles();
 
         if (count($puzzles) < 5) {
