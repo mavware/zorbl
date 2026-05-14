@@ -55,7 +55,7 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [ ] Ability to add a section that prompts the solver to enter one or more custom answer.  Constructor will choose if the solver gets feedback if they enter the correct answers.
 - [ ] Constructors get a section that shows what answers the solvers entered into the answer field (just the distinct answers with the count)
 - [ ] Ability to work with multiple constructors at once (form teams)
-- [ ] Publicly accessible file format converter.  Lets anonymous users upload a puzzle in any format and convert it to any other format.
+- [x] Publicly accessible file format converter.  Lets anonymous users upload a puzzle in any format and convert it to any other format.
  
 ## For later
 

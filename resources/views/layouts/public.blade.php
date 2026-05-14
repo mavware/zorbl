@@ -48,6 +48,7 @@
             <div class="text-fg-muted mx-auto flex max-w-6xl flex-col items-center gap-2 px-6 text-center text-xs sm:flex-row sm:justify-between">
                 <p>&copy; {{ date('Y') }} {{ config('app.name') }}.</p>
                 <div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+                    <a href="{{ route('tools.convert') }}" wire:navigate class="hover:text-zinc-700 dark:hover:text-zinc-300">{{ __('Converter') }}</a>
                     <a href="{{ route('help.index') }}" wire:navigate class="hover:text-zinc-700 dark:hover:text-zinc-300">{{ __('Help') }}</a>
                     <a href="{{ route('legal.terms') }}" wire:navigate class="hover:text-zinc-700 dark:hover:text-zinc-300">{{ __('Terms') }}</a>
                     <a href="{{ route('legal.privacy') }}" wire:navigate class="hover:text-zinc-700 dark:hover:text-zinc-300">{{ __('Privacy') }}</a>
