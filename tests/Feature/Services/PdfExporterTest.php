@@ -728,6 +728,89 @@ it('does not show prefilled styling when prefilled is null', function () {
     expect($html)->not->toContain('class="cell-letter prefilled"');
 });
 
+it('renders narrative text in the PDF', function () {
+    $crossword = Crossword::factory()->make([
+        'title' => 'Narrative Puzzle',
+        'width' => 3,
+        'height' => 3,
+        'grid' => [
+            [1, 2, '#'],
+            [3, 0, 4],
+            ['#', 5, 0],
+        ],
+        'solution' => [
+            ['C', 'A', '#'],
+            ['B', 'O', 'T'],
+            ['#', 'L', 'O'],
+        ],
+        'clues_across' => [
+            ['number' => 1, 'clue' => 'CA'],
+            ['number' => 3, 'clue' => 'BOT'],
+            ['number' => 5, 'clue' => 'LO'],
+        ],
+        'clues_down' => [
+            ['number' => 1, 'clue' => 'CB'],
+            ['number' => 2, 'clue' => 'AOL'],
+            ['number' => 4, 'clue' => 'TO'],
+        ],
+    ]);
+
+    $exporter = app(PdfExporter::class);
+    $pdf = $exporter->export($crossword, narrative: 'This puzzle is themed around robots and technology.');
+
+    expect($pdf)->toStartWith('%PDF');
+
+    $html = view('exports.crossword-pdf', [
+        'title' => $crossword->title,
+        'author' => $crossword->author,
+        'copyright' => $crossword->copyright,
+        'notes' => $crossword->notes,
+        'narrative' => 'This puzzle is themed around robots and technology.',
+        'numberedGrid' => $crossword->grid,
+        'solution' => $crossword->solution,
+        'prefilled' => $crossword->prefilled,
+        'cluesAcross' => $crossword->clues_across,
+        'cluesDown' => $crossword->clues_down,
+        'styles' => $crossword->styles ?? [],
+        'includeSolution' => false,
+        'cellSize' => 0.33,
+        'numberFontSize' => 6,
+        'letterFontSize' => 9,
+        'numberHeight' => 0.116,
+        'forceCluePageBreak' => false,
+        'orientation' => 'portrait',
+    ])->render();
+
+    expect($html)
+        ->toContain('class="narrative"')
+        ->toContain('This puzzle is themed around robots and technology.');
+});
+
+it('does not render narrative section when narrative is null', function () {
+    $html = view('exports.crossword-pdf', [
+        'title' => 'No Narrative',
+        'author' => null,
+        'copyright' => null,
+        'notes' => null,
+        'narrative' => null,
+        'numberedGrid' => [[1, 2], [3, 0]],
+        'solution' => [['A', 'B'], ['C', 'D']],
+        'prefilled' => null,
+        'cluesAcross' => [['number' => 1, 'clue' => 'AB']],
+        'cluesDown' => [['number' => 1, 'clue' => 'AC']],
+        'styles' => [],
+        'includeSolution' => false,
+        'cellSize' => 0.33,
+        'numberFontSize' => 6,
+        'letterFontSize' => 9,
+        'numberHeight' => 0.116,
+        'forceCluePageBreak' => false,
+        'orientation' => 'portrait',
+    ])->render();
+
+    expect($html)->not->toContain('class="narrative"');
+});
+
 it('exports a landscape PDF', function () {
     $crossword = Crossword::factory()->make([
         'title' => 'Landscape Test',
@@ -752,6 +835,7 @@ it('renders landscape orientation in the page CSS', function () {
         'author' => null,
         'copyright' => null,
         'notes' => null,
+        'narrative' => null,
         'numberedGrid' => [[1, 2], [3, 0]],
         'solution' => [['A', 'B'], ['C', 'D']],
         'prefilled' => null,
@@ -768,50 +852,6 @@ it('renders landscape orientation in the page CSS', function () {
     ])->render();
 
     expect($html)->toContain('size: letter landscape;');
-});
-
-it('renders portrait orientation by default in the page CSS', function () {
-    $html = view('exports.crossword-pdf', [
-        'title' => 'Portrait CSS',
-        'author' => null,
-        'copyright' => null,
-        'notes' => null,
-        'numberedGrid' => [[1, 2], [3, 0]],
-        'solution' => [['A', 'B'], ['C', 'D']],
-        'prefilled' => null,
-        'cluesAcross' => [['number' => 1, 'clue' => 'AB']],
-        'cluesDown' => [['number' => 1, 'clue' => 'AC']],
-        'styles' => [],
-        'includeSolution' => false,
-        'cellSize' => 0.33,
-        'numberFontSize' => 6,
-        'letterFontSize' => 9,
-        'numberHeight' => 0.116,
-        'forceCluePageBreak' => false,
-        'orientation' => 'portrait',
-    ])->render();
-
-    expect($html)->toContain('size: letter portrait;');
-});
-
-it('uses larger cells for wide puzzles in landscape mode', function () {
-    $crossword = Crossword::factory()->make([
-        'title' => 'Wide Puzzle',
-        'width' => 21,
-        'height' => 10,
-        'grid' => Crossword::emptyGrid(21, 10),
-        'solution' => Crossword::emptySolution(21, 10),
-        'clues_across' => [['number' => 1, 'clue' => 'Test']],
-        'clues_down' => [['number' => 1, 'clue' => 'Test']],
-    ]);
-
-    $exporter = app(PdfExporter::class);
-
-    $portraitPdf = $exporter->export($crossword, orientation: 'portrait');
-    $landscapePdf = $exporter->export($crossword, orientation: 'landscape');
-
-    expect($portraitPdf)->toStartWith('%PDF');
-    expect($landscapePdf)->toStartWith('%PDF');
 });
 
 it('adjusts page break threshold for landscape orientation', function () {

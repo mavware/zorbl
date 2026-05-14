@@ -11,12 +11,10 @@ class PdfExporter
     public function __construct(private readonly GridNumberer $numberer) {}
 
     /**
-     * Export a crossword puzzle to a print-ready PDF.
-     *
      * @param  'portrait'|'landscape'  $orientation
      * @return string The raw PDF binary content.
      */
-    public function export(Crossword $crossword, bool $includeSolution = true, string $orientation = 'portrait'): string
+    public function export(Crossword $crossword, bool $includeSolution = true, string $orientation = 'portrait', ?string $narrative = null): string
     {
         $result = $this->numberer->number(
             $crossword->grid,
@@ -26,7 +24,6 @@ class PdfExporter
         );
 
         $isLandscape = $orientation === 'landscape';
-
         $pageWidth = $isLandscape ? 11.0 : 8.5;
         $pageHeight = $isLandscape ? 8.5 : 11.0;
         $margin = 0.75;
@@ -55,6 +52,7 @@ class PdfExporter
             'author' => $crossword->author,
             'copyright' => $crossword->copyright,
             'notes' => $crossword->notes,
+            'narrative' => $narrative,
             'numberedGrid' => $result['grid'],
             'solution' => $crossword->solution,
             'prefilled' => $crossword->prefilled,

@@ -27,6 +27,7 @@ use Zorbl\CrosswordIO\GridNumberer;
  * @property string|null $author
  * @property string|null $copyright
  * @property string|null $notes
+ * @property string|null $pdf_narrative
  * @property string|null $secret_theme
  * @property CrosswordLayout|null $layout
  * @property PuzzleType $puzzle_type
@@ -62,7 +63,7 @@ use Zorbl\CrosswordIO\GridNumberer;
  * @mixin Eloquent
  */
 #[Fillable([
-    'title', 'author', 'copyright', 'notes', 'secret_theme', 'layout',
+    'title', 'author', 'copyright', 'notes', 'pdf_narrative', 'secret_theme', 'layout',
     'width', 'height', 'kind', 'puzzle_type', 'freestyle_locked',
     'grid', 'solution', 'prefilled', 'user_progress', 'clues_across', 'clues_down',
     'styles', 'metadata', 'is_published', 'contains_profanity',

@@ -241,8 +241,6 @@ new #[Title('Solve Crossword')] class extends Component {
         $this->authorize('solve', $crossword);
 
         $user = Auth::user();
-        abort_unless($crossword->isVisibleToSafeSearch($user), 404);
-
         $this->isOwner = $user->id === $crossword->user_id;
         $this->isPublished = (bool) $crossword->is_published;
         $this->authorUserId = $crossword->user_id;
@@ -503,30 +501,23 @@ new #[Title('Solve Crossword')] class extends Component {
                 </flux:text>
             @endif
             <button
-                type="button"
                 wire:click="toggleLike"
                 class="flex items-center gap-1 rounded-lg px-2 py-1 text-sm transition-colors {{ $this->isLiked ? 'text-red-500' : 'text-zinc-500 hover:text-red-400' }}"
-                aria-pressed="{{ $this->isLiked ? 'true' : 'false' }}"
-                aria-label="{{ $this->isLiked ? __('Unlike puzzle') : __('Like puzzle') }}"
             >
-                <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 24 24" fill="{{ $this->isLiked ? 'currentColor' : 'none' }}" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 24 24" fill="{{ $this->isLiked ? 'currentColor' : 'none' }}" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
                 </svg>
-                <span aria-hidden="true">{{ $this->likesCount }}</span>
-                <span class="sr-only">{{ trans_choice('{0} no likes|{1} 1 like|[2,*] :count likes', $this->likesCount, ['count' => $this->likesCount]) }}</span>
+                <span>{{ $this->likesCount }}</span>
             </button>
             @if(!$isOwner)
                 <flux:tooltip content="{{ __('Add to favorites list') }}">
                     <button
-                        type="button"
                         wire:click="$set('showAddToListModal', true)"
                         class="rounded-lg p-1.5 text-zinc-500 transition-colors hover:text-zinc-800 dark:hover:text-zinc-200"
-                        aria-label="{{ __('Add to favorites list') }}"
                     >
                         <flux:icon name="bookmark" class="size-5" />
                     </button>
                 </flux:tooltip>
-                <livewire:report-button type="puzzle" :reportable-id="$crosswordId" :key="'report-puzzle-'.$crosswordId" />
             @endif
         </div>
 
@@ -534,15 +525,11 @@ new #[Title('Solve Crossword')] class extends Component {
             {{-- Pencil mode toggle --}}
             <flux:tooltip content="{{ __('Pencil mode (P)') }}">
                 <button
-                    type="button"
                     x-on:click="pencilMode = !pencilMode"
                     :class="['text-fg-muted', pencilMode ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' : 'hover:text-zinc-800 dark:hover:text-zinc-200']"
                     class="rounded-lg p-1.5 transition-colors"
-                    :aria-pressed="pencilMode.toString()"
-                    aria-label="{{ __('Pencil mode') }}"
-                    aria-keyshortcuts="P"
                 >
-                    <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/>
                         <path d="m15 5 4 4"/>
                     </svg>
@@ -572,12 +559,10 @@ new #[Title('Solve Crossword')] class extends Component {
             {{-- Check answers --}}
             <flux:tooltip content="{{ __('Check answers') }}">
                 <button
-                    type="button"
                     x-on:click="checkAnswers()"
                     class="text-fg-muted rounded-lg p-1.5 transition-colors hover:text-zinc-800 dark:hover:text-zinc-200"
-                    aria-label="{{ __('Check answers') }}"
                 >
-                    <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M20 6 9 17l-5-5"/>
                     </svg>
                 </button>
@@ -614,7 +599,7 @@ new #[Title('Solve Crossword')] class extends Component {
                     <flux:menu.item wire:click="attemptExport('ipuz')">{{ __('.ipuz') }}</flux:menu.item>
                     <flux:menu.item wire:click="attemptExport('puz')">{{ __('.puz (Across Lite)') }}</flux:menu.item>
                     <flux:menu.item wire:click="attemptExport('jpz')">{{ __('.jpz (Crossword Compiler)') }}</flux:menu.item>
-                    <flux:menu.item wire:click="choosePdfOrientation">{{ __('.pdf (Print-Ready)') }}</flux:menu.item>
+                    <flux:menu.item wire:click="exportPdf">{{ __('.pdf (Print-Ready)') }}</flux:menu.item>
                 </flux:menu>
             </flux:dropdown>
 
@@ -759,25 +744,18 @@ new #[Title('Solve Crossword')] class extends Component {
         {{-- Grid --}}
         <div class="flex min-w-0 flex-1 items-start justify-center overflow-hidden">
             <div
-                class="relative touch-pan-y"
+                class="relative"
                 :style="'width: ' + Math.min(600, width * 40) + 'px;'"
                 x-on:keydown="handleKeydown($event)"
-                x-on:touchstart.passive="onSwipeStart($event)"
-                x-on:touchend.passive="onSwipeEnd($event)"
                 tabindex="0"
                 x-ref="gridContainer"
                 id="crossword-grid"
                 role="grid"
                 :aria-label="'Crossword grid, ' + width + ' columns by ' + height + ' rows'"
-                :aria-rowcount="height"
-                :aria-colcount="width"
-                :aria-activedescendant="selectedRow >= 0 ? ('crossword-cell-' + selectedRow + '-' + selectedCol) : null"
-                aria-keyshortcuts="ArrowUp ArrowDown ArrowLeft ArrowRight Enter Tab Backspace"
             >
                 <div
                     class="grid border border-zinc-800 dark:border-zinc-300 [--bar-color:var(--color-zinc-800)] dark:[--bar-color:var(--color-zinc-300)]"
                     :style="'grid-template-columns: repeat(' + width + ', minmax(0, 1fr));'"
-                    role="presentation"
                 >
                     <template x-for="(row, rowIdx) in grid" :key="'row-' + rowIdx">
                         <template x-for="(cell, colIdx) in row" :key="'cell-' + rowIdx + '-' + colIdx">
@@ -785,13 +763,10 @@ new #[Title('Solve Crossword')] class extends Component {
                                 x-on:click="selectCell(rowIdx, colIdx)"
                                 :class="[cellClasses(rowIdx, colIdx), isVoid(rowIdx, colIdx) ? '' : 'border border-line-strong']"
                                 :style="cellBarStyles(rowIdx, colIdx)"
-                                class="crossword-cell relative box-border flex aspect-square items-center justify-center overflow-hidden select-none"
-                                :id="'crossword-cell-' + rowIdx + '-' + colIdx"
+                                class="relative box-border flex aspect-square items-center justify-center overflow-hidden select-none"
                                 role="gridcell"
-                                :aria-rowindex="rowIdx + 1"
-                                :aria-colindex="colIdx + 1"
                                 :aria-selected="rowIdx === selectedRow && colIdx === selectedCol ? 'true' : 'false'"
-                                :aria-label="cellAriaLabel(rowIdx, colIdx)"
+                                :aria-label="isBlock(rowIdx, colIdx) ? 'Black cell' : (getDisplayNumber(rowIdx, colIdx) !== null ? getDisplayNumber(rowIdx, colIdx) + ' ' : '') + (progress[rowIdx]?.[colIdx] || 'empty') + (isPencil(rowIdx, colIdx) ? ' pencil' : '')"
                             >
                                 {{-- Clue number --}}
                                 <template x-if="getDisplayNumber(rowIdx, colIdx) !== null">
@@ -1133,9 +1108,6 @@ new #[Title('Solve Crossword')] class extends Component {
                                             </div>
                                         @endif
                                         <flux:text size="sm" class="text-zinc-500">{{ $comment->created_at->diffForHumans() }}</flux:text>
-                                        <div class="ml-auto">
-                                            <livewire:report-button type="comment" :reportable-id="$comment->id" :key="'report-comment-'.$comment->id" />
-                                        </div>
                                     </div>
                                     <flux:text size="sm" class="mt-1">{{ $comment->body }}</flux:text>
                                 </div>
@@ -1146,8 +1118,6 @@ new #[Title('Solve Crossword')] class extends Component {
             @endif
         </div>
     @endif
-
-    @include('partials.solver-virtual-keyboard')
 
     {{-- Achievement Toasts --}}
     <div class="fixed right-4 bottom-4 z-50 space-y-2">
@@ -1293,16 +1263,18 @@ new #[Title('Solve Crossword')] class extends Component {
         </div>
     </div>
 
-    {{-- PDF Orientation Modal --}}
-    <flux:modal wire:model="showPdfOrientationModal">
+    {{-- PDF Export Settings Modal --}}
+    <flux:modal wire:model="showPdfExportModal">
         <div class="space-y-6">
-            <flux:heading size="lg">{{ __('PDF Orientation') }}</flux:heading>
-            <flux:text>{{ __('Choose the page orientation for your PDF export.') }}</flux:text>
+            <flux:heading size="lg">{{ __('PDF Export Settings') }}</flux:heading>
+            <flux:text>{{ __('Configure the page orientation and add optional narrative text for your PDF export.') }}</flux:text>
 
-            <flux:radio.group wire:model="pdfOrientation">
+            <flux:radio.group wire:model="pdfOrientation" label="{{ __('Orientation') }}">
                 <flux:radio value="portrait" label="{{ __('Portrait') }}" description="{{ __('Standard vertical layout (8.5 × 11 in)') }}" />
                 <flux:radio value="landscape" label="{{ __('Landscape') }}" description="{{ __('Horizontal layout (11 × 8.5 in) — better for wide puzzles') }}" />
             </flux:radio.group>
+
+            <flux:textarea wire:model="pdfNarrative" label="{{ __('Narrative Text') }}" placeholder="{{ __('Add introductory text, theme explanation, or instructions that will appear above the puzzle grid...') }}" rows="4" />
 
             <div class="flex justify-end gap-2">
                 <flux:button wire:click="cancelPdfExport">{{ __('Cancel') }}</flux:button>

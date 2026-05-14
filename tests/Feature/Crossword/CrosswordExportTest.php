@@ -199,10 +199,10 @@ test('users can export a puzzle with cell background colors as pdf', function ()
         ->assertFileDownloaded('colored-export.pdf');
 });
 
-test('users can choose PDF orientation before export', function () {
+test('PDF export modal opens with correct defaults', function () {
     $user = makeExportProUser();
     $crossword = Crossword::factory()->for($user)->create([
-        'title' => 'Orientation Test',
+        'title' => 'Modal Test',
         'width' => 3,
         'height' => 3,
         'grid' => [
@@ -230,15 +230,17 @@ test('users can choose PDF orientation before export', function () {
     $this->actingAs($user);
 
     Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
-        ->call('choosePdfOrientation')
-        ->assertSet('showPdfOrientationModal', true)
-        ->assertSet('pdfOrientation', 'portrait');
+        ->call('attemptExport', 'pdf')
+        ->assertSet('showPdfExportModal', true)
+        ->assertSet('pdfOrientation', 'portrait')
+        ->assertSet('pdfNarrative', '');
 });
 
-test('users can export PDF in landscape orientation', function () {
+test('PDF export modal pre-fills saved narrative text', function () {
     $user = makeExportProUser();
     $crossword = Crossword::factory()->for($user)->create([
-        'title' => 'Landscape Export',
+        'title' => 'Saved Narrative',
+        'pdf_narrative' => 'This puzzle explores the history of computing.',
         'width' => 3,
         'height' => 3,
         'grid' => [
@@ -266,16 +268,56 @@ test('users can export PDF in landscape orientation', function () {
     $this->actingAs($user);
 
     Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
-        ->call('choosePdfOrientation')
+        ->call('attemptExport', 'pdf')
+        ->assertSet('showPdfExportModal', true)
+        ->assertSet('pdfNarrative', 'This puzzle explores the history of computing.');
+});
+
+test('confirming PDF export saves narrative and downloads', function () {
+    $user = makeExportProUser();
+    $crossword = Crossword::factory()->for($user)->create([
+        'title' => 'Narrative Export',
+        'width' => 3,
+        'height' => 3,
+        'grid' => [
+            [1, 2, '#'],
+            [3, 0, 4],
+            ['#', 5, 0],
+        ],
+        'solution' => [
+            ['C', 'A', '#'],
+            ['B', 'O', 'T'],
+            ['#', 'L', 'O'],
+        ],
+        'clues_across' => [
+            ['number' => 1, 'clue' => 'CA'],
+            ['number' => 3, 'clue' => 'BOT'],
+            ['number' => 5, 'clue' => 'LO'],
+        ],
+        'clues_down' => [
+            ['number' => 1, 'clue' => 'CB'],
+            ['number' => 2, 'clue' => 'AOL'],
+            ['number' => 4, 'clue' => 'TO'],
+        ],
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->call('attemptExport', 'pdf')
+        ->set('pdfNarrative', 'Enjoy this themed puzzle!')
         ->set('pdfOrientation', 'landscape')
         ->call('confirmPdfExport')
-        ->assertFileDownloaded('landscape-export.pdf');
+        ->assertFileDownloaded('narrative-export.pdf');
+
+    expect($crossword->fresh()->pdf_narrative)->toBe('Enjoy this themed puzzle!');
 });
 
-test('users can cancel PDF orientation selection', function () {
+test('cancelling PDF export resets state', function () {
     $user = makeExportProUser();
     $crossword = Crossword::factory()->for($user)->create([
         'title' => 'Cancel Test',
+        'pdf_narrative' => 'Original narrative',
         'width' => 3,
         'height' => 3,
         'grid' => [
@@ -303,9 +345,12 @@ test('users can cancel PDF orientation selection', function () {
     $this->actingAs($user);
 
     Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
-        ->call('choosePdfOrientation')
-        ->set('pdfOrientation', 'landscape')
+        ->call('attemptExport', 'pdf')
+        ->set('pdfNarrative', 'Modified narrative')
         ->call('cancelPdfExport')
-        ->assertSet('showPdfOrientationModal', false)
-        ->assertSet('pdfOrientation', 'portrait');
+        ->assertSet('showPdfExportModal', false)
+        ->assertSet('pdfOrientation', 'portrait')
+        ->assertSet('pdfNarrative', '');
+
+    expect($crossword->fresh()->pdf_narrative)->toBe('Original narrative');
 });
