@@ -536,7 +536,7 @@ new #[Title('Solve Crossword')] class extends Component {
                 <button
                     type="button"
                     x-on:click="pencilMode = !pencilMode; if (selectedRow >= 0) $refs.gridContainer?.focus()"
-                    :class="['text-fg-muted', pencilMode ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' : 'hover:text-zinc-800 dark:hover:text-zinc-200']"
+                    :class="pencilMode ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' : 'text-fg-muted hover:text-zinc-800 dark:hover:text-zinc-200'"
                     class="rounded-lg p-1.5 transition-colors"
                     :aria-pressed="pencilMode.toString()"
                     aria-label="{{ __('Pencil mode') }}"
@@ -689,9 +689,6 @@ new #[Title('Solve Crossword')] class extends Component {
 
             {{-- Save status --}}
             <div class="flex items-center gap-1 pl-2 text-sm text-zinc-500">
-                <template x-if="pencilMode && !solved">
-                    <span class="mr-1 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">{{ __('Pencil') }}</span>
-                </template>
                 <template x-if="saving">
                     <span>{{ __('Saving...') }}</span>
                 </template>
