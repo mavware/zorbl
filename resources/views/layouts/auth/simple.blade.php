@@ -18,8 +18,6 @@
             </div>
         </div>
 
-        @include('partials.cookie-banner')
-
         @fluxScripts
     </body>
 </html>

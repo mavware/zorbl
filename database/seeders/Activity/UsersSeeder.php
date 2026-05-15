@@ -3,7 +3,6 @@
 namespace Database\Seeders\Activity;
 
 use App\Models\User;
-use Faker\Factory as Faker;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
@@ -23,7 +22,6 @@ class UsersSeeder extends BaseActivitySeeder
 
         $now = now();
         $hashedPassword = Hash::make('password');
-        $faker = Faker::create();
 
         $seedPuzzles = array_slice($puzzles, 0, self::PUZZLE_COUNT);
         $authorNameToEmail = $this->authorEmailMap($seedPuzzles);
@@ -55,7 +53,7 @@ class UsersSeeder extends BaseActivitySeeder
         for ($i = 1; $i <= self::SOLVER_COUNT; $i++) {
             $email = "solver{$i}@example.com";
             $solverBatch[] = [
-                'name' => $faker->name(),
+                'name' => fake()->name(),
                 'email' => $email,
                 'password' => $hashedPassword,
                 'email_verified_at' => $now,

@@ -97,6 +97,72 @@ select:focus[data-flux-control] {
 } */
 
 /* ───────────────────────────────────────────────────────────────────────────
+ * Editor completion flash — celebratory pulse to green when the grid (every
+ * playable cell filled) or the clue panels (every clue text written) reach
+ * 100% during editing. Triggered by Alpine watches that toggle one of these
+ * classes for ~0.8s.
+ *
+ * Clue panels use a background tint; the grid uses an outline ring so the
+ * cell contents stay legible and the puzzle visually "lights up" instead of
+ * being washed over.
+ * ─────────────────────────────────────────────────────────────────────────── */
+@keyframes editor-complete-flash {
+    0%   { background-color: transparent; }
+    50%  { background-color: rgb(34 197 94 / 0.30); }
+    100% { background-color: transparent; }
+}
+
+.editor-complete-flash {
+    animation: editor-complete-flash 0.8s ease-in-out;
+    border-radius: 0.5rem;
+}
+
+/* Register --bar-color as an interpolatable color so the @keyframes below
+   can fade smoothly between its inherited value and green. Without this,
+   browsers treat custom-property changes as step functions. */
+@property --bar-color {
+    syntax: '<color>';
+    inherits: true;
+    initial-value: transparent;
+}
+
+@keyframes editor-complete-flash-border {
+    50% { --bar-color: rgb(34 197 94); }
+}
+
+.editor-complete-flash-border {
+    animation: editor-complete-flash-border 0.9s ease-in-out;
+}
+
+/* Whole-grid spring bounce — the puzzle "kicks" outward then settles. */
+@keyframes editor-grid-bounce {
+    0%   { transform: scale(1); }
+    35%  { transform: scale(1.035); }
+    70%  { transform: scale(0.995); }
+    100% { transform: scale(1); }
+}
+
+.editor-grid-bounce {
+    animation: editor-grid-bounce 0.55s ease-out;
+    transform-origin: center;
+    will-change: transform;
+}
+
+/* Per-cell ripple — each playable cell briefly tints green. Combined with a
+   per-cell `animation-delay` derived from Manhattan distance to the origin,
+   this lights the puzzle up like a wave radiating from the last-typed cell. */
+@keyframes editor-cell-ripple {
+    0%   { background-color: transparent; }
+    40%  { background-color: rgb(34 197 94 / 0.55); }
+    75%  { background-color: rgb(34 197 94 / 0.25); }
+    100% { background-color: transparent; }
+}
+
+.editor-cell-ripple {
+    animation: editor-cell-ripple 0.55s ease-out both;
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
  * Forced-colors / Windows High Contrast / macOS Increase Contrast support.
  * Goal: every meaningful state in the grid must remain distinguishable when
  * the user agent overrides our color palette. We opt INTO the override so
@@ -132,5 +198,25 @@ select:focus[data-flux-control] {
     [aria-pressed="true"] {
         outline: 2px solid Highlight;
         outline-offset: 2px;
+    }
+}
+
+/* Diagonal ripple of green when a puzzle is solved. Each cell gets an
+   animation-delay set inline based on (row + col), producing a wave that
+   sweeps from the top-left corner outward, then fades back so it doesn't
+   override selection/word-highlight backgrounds. */
+@keyframes crossword-solved-ripple {
+    0%   { background-color: transparent; }
+    30%  { background-color: rgb(16 185 129 / 0.65); }
+    100% { background-color: transparent; }
+}
+
+.crossword-cell.solved-ripple {
+    animation: crossword-solved-ripple 900ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .crossword-cell.solved-ripple {
+        animation: none;
     }
 }

@@ -55,6 +55,16 @@ new #[Title('Clue Library')] class extends Component {
     {
         $query = ClueEntry::with(['user:id,name', 'crossword:id,title']);
 
+        // Hide unvetted clues from everyone except the author. Moderators see
+        // the queue in Filament; the rest of the library is approved-only.
+        $authId = Auth::id();
+        $query->where(function ($q) use ($authId) {
+            $q->approved();
+            if ($authId !== null) {
+                $q->orWhere('user_id', $authId);
+            }
+        });
+
         // Only count reports when needed (flagged filter or to show badges)
         if ($this->filter === 'flagged') {
             $query->has('reports')->withCount('reports');
@@ -108,7 +118,7 @@ new #[Title('Clue Library')] class extends Component {
             $total = Cache::remember(
                 self::DEFAULT_COUNT_CACHE_KEY,
                 self::DEFAULT_COUNT_CACHE_TTL,
-                fn () => DB::table('clue_entries')->count(),
+                fn () => DB::table('clue_entries')->where('status', ClueEntry::STATUS_APPROVED)->count(),
             );
 
             $page = $this->getPage();
@@ -183,6 +193,7 @@ new #[Title('Clue Library')] class extends Component {
             'answer' => $answer,
             'clue' => $clue,
             'user_id' => Auth::id(),
+            'status' => ClueEntry::STATUS_PENDING,
         ]);
 
         $this->bustDefaultCountCache();
@@ -365,6 +376,10 @@ new #[Title('Clue Library')] class extends Component {
                             <flux:table.cell class="hidden md:table-cell">{{ $entry->user->name ?? __('Unknown') }}</flux:table.cell>
                             <flux:table.cell align="end">
                                 <div class="flex items-center justify-end gap-1">
+                                    @if($entry->status === \App\Models\ClueEntry::STATUS_PENDING)
+                                        <flux:badge size="sm" color="amber">{{ __('Pending review') }}</flux:badge>
+                                    @endif
+
                                     @if($entry->reports_count > 0)
                                         <flux:badge size="sm" color="red">
                                             {{ $entry->reports_count }} {{ trans_choice('report|reports', $entry->reports_count) }}

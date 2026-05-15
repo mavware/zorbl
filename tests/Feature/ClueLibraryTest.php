@@ -37,10 +37,17 @@ test('adding a clue busts the cached total', function () {
     // Pre-seed the cache with a stale value. After adding a clue, the page
     // re-renders and re-populates the cache with the fresh count — so the
     // contract is "the cached value reflects reality after the action", not
-    // "the key was deleted".
+    // "the key was deleted". The cache only counts approved entries, so the
+    // newly-added pending clue should NOT contribute; an approved sibling does.
     Cache::put('clue-entries:default-count', 99999, 600);
 
     $user = User::factory()->create();
+    ClueEntry::create([
+        'answer' => 'ALREADYIN',
+        'clue' => 'Pre-existing approved clue',
+        'user_id' => $user->id,
+        'status' => ClueEntry::STATUS_APPROVED,
+    ]);
 
     Livewire::actingAs($user)
         ->test('pages::clues.index')
@@ -315,8 +322,8 @@ test('flagged filter shows only reported clues', function () {
     $user = User::factory()->create();
     $other = User::factory()->create();
 
-    $flagged = ClueEntry::create(['answer' => 'BAD', 'clue' => 'Bad clue', 'user_id' => $other->id]);
-    ClueEntry::create(['answer' => 'GOOD', 'clue' => 'Good clue', 'user_id' => $other->id]);
+    $flagged = ClueEntry::create(['answer' => 'BAD', 'clue' => 'Bad clue', 'user_id' => $other->id, 'status' => ClueEntry::STATUS_APPROVED]);
+    ClueEntry::create(['answer' => 'GOOD', 'clue' => 'Good clue', 'user_id' => $other->id, 'status' => ClueEntry::STATUS_APPROVED]);
 
     ClueReport::create(['clue_entry_id' => $flagged->id, 'user_id' => $user->id, 'reason' => 'invalid']);
 

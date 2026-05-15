@@ -72,12 +72,17 @@ export function crosswordGrid({
         contextMenu: { show: false, row: -1, col: -1, x: 0, y: 0 },
         fillInProgress: false,
         fillMode: null,
+        cellsCompleteFlash: false,
+        cellsCompleteRippleOrigin: null,
+        cluesCompleteFlash: false,
 
         // Internal: timers and listeners. Kept on `this` so destroy() can clean them up.
         _autosave: null,
         _longPressTimer: null,
         _wordSuggestTimer: null,
         _highlightTimer: null,
+        _cellsFlashTimer: null,
+        _cluesFlashTimer: null,
         _onDocClick: null,
         _onDocMousedown: null,
         _onBeforeUnload: null,
@@ -122,6 +127,38 @@ export function crosswordGrid({
             this.$watch('isDirty', (val) => { if (val) this._autosave.scheduleSave(); });
             this.$watch('activeClueNumber', () => this.closeSuggestions());
             this.$watch('direction', () => this.closeSuggestions());
+
+            // Flash the grid green when every playable cell is filled, and the
+            // clue panels green when every clue text is filled. Re-arm whenever
+            // the user dips back below complete so the next completion replays.
+            this.$watch('isCellsComplete', (now) => {
+                if (!now) return;
+                // Ripple emanates from the cell the user just filled (if any);
+                // fall back to the grid's center for programmatic fills.
+                if (this.selectedRow >= 0 && this.selectedCol >= 0) {
+                    this.cellsCompleteRippleOrigin = [this.selectedRow, this.selectedCol];
+                } else {
+                    this.cellsCompleteRippleOrigin = [Math.floor(this.height / 2), Math.floor(this.width / 2)];
+                }
+                this.cellsCompleteFlash = false;
+                requestAnimationFrame(() => { this.cellsCompleteFlash = true; });
+                clearTimeout(this._cellsFlashTimer);
+                // Total duration ≈ (maxManhattan × 28ms) + 600ms ripple. For a
+                // 21×21 grid that's ~1.2s. Keep the class on a bit longer to
+                // make sure the last-arriving cell finishes its animation.
+                const maxManhattan = (this.width - 1) + (this.height - 1);
+                this._cellsFlashTimer = setTimeout(
+                    () => { this.cellsCompleteFlash = false; },
+                    maxManhattan * 28 + 700,
+                );
+            });
+            this.$watch('isCluesComplete', (now) => {
+                if (!now) return;
+                this.cluesCompleteFlash = false;
+                requestAnimationFrame(() => { this.cluesCompleteFlash = true; });
+                clearTimeout(this._cluesFlashTimer);
+                this._cluesFlashTimer = setTimeout(() => { this.cluesCompleteFlash = false; }, 800);
+            });
         },
 
         destroy() {
@@ -612,10 +649,40 @@ export function crosswordGrid({
         advanceCursor() {
             const row = this.selectedRow;
             const col = this.selectedCol;
-            if (this.direction === 'across') {
-                if (!this.hasRightBoundary(row, col)) this.selectedCol = col + 1;
-            } else {
-                if (!this.hasBottomBoundary(row, col)) this.selectedRow = row + 1;
+            const atBoundary = this.direction === 'across'
+                ? this.hasRightBoundary(row, col)
+                : this.hasBottomBoundary(row, col);
+
+            if (!atBoundary) {
+                if (this.direction === 'across') this.selectedCol = col + 1;
+                else this.selectedRow = row + 1;
+                return;
+            }
+
+            this.advanceToNextWord();
+        },
+
+        advanceToNextWord() {
+            const clues = this.direction === 'across' ? this.cluesAcross : this.cluesDown;
+            if (clues.length === 0) return;
+
+            const currentNum = this.activeClueNumber;
+            const startIdx = clues.findIndex(c => c.number === currentNum);
+            if (startIdx < 0) return;
+
+            for (let offset = 1; offset <= clues.length; offset++) {
+                const nextIdx = (startIdx + offset) % clues.length;
+                const slot = this.findSlot(this.direction, clues[nextIdx].number);
+                if (!slot) continue;
+
+                const cells = this.getWordCells(slot.row, slot.col, this.direction);
+                const empty = cells.find(([r, c]) => !this.isPrefilled?.(r, c) && !this.solution[r]?.[c]);
+                if (empty) {
+                    this.selectedRow = empty[0];
+                    this.selectedCol = empty[1];
+                    this.scrollActiveClueIntoView?.();
+                    return;
+                }
             }
         },
 
@@ -1305,6 +1372,74 @@ export function crosswordGrid({
 
             this.closeWordSuggestions();
             this.markDirty();
+        },
+
+        // --- Fill progress indicators ----------------------------------------
+        // Counts of playable cells (excluding blocks/voids) and their current
+        // letter-fill state. Drives the "X/Y cells" indicator in the toolbar.
+        get cellsTotal() {
+            let total = 0;
+            for (let r = 0; r < this.height; r++) {
+                for (let c = 0; c < this.width; c++) {
+                    if (!this.isBlock(r, c) && !this.isVoid(r, c)) total++;
+                }
+            }
+            return total;
+        },
+
+        get cellsFilled() {
+            let filled = 0;
+            for (let r = 0; r < this.height; r++) {
+                for (let c = 0; c < this.width; c++) {
+                    if (this.isBlock(r, c) || this.isVoid(r, c)) continue;
+                    const v = this.solution[r]?.[c];
+                    if (typeof v === 'string' && v.trim() !== '') filled++;
+                }
+            }
+            return filled;
+        },
+
+        get cluesTotal() {
+            return this.computedCluesAcross.length + this.computedCluesDown.length;
+        },
+
+        get cluesFilled() {
+            const nonEmpty = (clue) => typeof clue?.clue === 'string' && clue.clue.trim() !== '';
+            return this.computedCluesAcross.filter(nonEmpty).length
+                + this.computedCluesDown.filter(nonEmpty).length;
+        },
+
+        get isCellsComplete() {
+            return this.cellsTotal > 0 && this.cellsFilled === this.cellsTotal;
+        },
+
+        get isCluesComplete() {
+            return this.cluesTotal > 0 && this.cluesFilled === this.cluesTotal;
+        },
+
+        get cellsFillColorClass() {
+            return this._fillColorClass(this.cellsFilled, this.cellsTotal);
+        },
+
+        get cluesFillColorClass() {
+            return this._fillColorClass(this.cluesFilled, this.cluesTotal);
+        },
+
+        _fillColorClass(filled, total) {
+            if (total === 0) return 'text-zinc-500';
+            const ratio = filled / total;
+            if (ratio < 1 / 3) return 'text-red-300';
+            if (ratio < 2 / 3) return 'text-yellow-300';
+            return 'text-green-300';
+        },
+
+        // Manhattan-distance based delay (ms) from the ripple origin to (row, col).
+        // Drives the per-cell `animation-delay` so the completion flash radiates
+        // out from where the user just finished filling in.
+        cellRippleDelay(row, col) {
+            if (!this.cellsCompleteRippleOrigin) return 0;
+            const [r0, c0] = this.cellsCompleteRippleOrigin;
+            return (Math.abs(row - r0) + Math.abs(col - c0)) * 28;
         },
 
         // --- Grid autofill ---------------------------------------------------

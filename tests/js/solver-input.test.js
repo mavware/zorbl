@@ -87,6 +87,94 @@ describe('typeCharacter', () => {
         s.typeCharacter('C');
         expect(s.isDirty).toBe(true);
     });
+
+    it('preserves pencil flags through a JSON round-trip when the server hydrated pencilCells as an empty array', () => {
+        // PHP serializes an empty pencil_cells column as `[]`, which @js outputs
+        // as a JS Array. Adding "row,col" properties to an Array silently drops
+        // them on JSON.stringify — that's the bug. The Alpine init must coerce
+        // an empty-array input back to an Object literal.
+        const fresh = makeSolver({ initialPencilCells: [] });
+        fresh.selectedRow = 0; fresh.selectedCol = 0;
+        fresh.pencilMode = true;
+        fresh.typeCharacter('C');
+
+        expect(fresh.pencilCells['0,0']).toBe(true);
+        expect(JSON.parse(JSON.stringify(fresh.pencilCells))).toEqual({ '0,0': true });
+    });
+
+    it('jumps to the next across word when typing the last letter at the right edge', () => {
+        s.selectedRow = 0; s.selectedCol = 2;
+        s.direction = 'across';
+        s.typeCharacter('T');
+        // 1-across just finished; focus should land on the first empty cell of 4-across.
+        expect(s.selectedRow).toBe(1);
+        expect(s.selectedCol).toBe(0);
+    });
+
+    it('jumps to the next down word when typing the last letter at the bottom edge', () => {
+        s.selectedRow = 2; s.selectedCol = 0;
+        s.direction = 'down';
+        s.typeCharacter('E');
+        // 1-down just finished; focus should land on the first empty cell of 2-down.
+        expect(s.selectedRow).toBe(0);
+        expect(s.selectedCol).toBe(1);
+    });
+
+    it('skips fully filled subsequent words when looking for the next empty cell', () => {
+        // Fill 4-across entirely so advance from end of 1-across skips it and lands on 5-across.
+        s.progress[1] = ['D', 'O', 'G'];
+        s.selectedRow = 0; s.selectedCol = 2;
+        s.direction = 'across';
+        s.typeCharacter('T');
+        expect(s.selectedRow).toBe(2);
+        expect(s.selectedCol).toBe(0);
+    });
+});
+
+describe('advanceCursor across a black square', () => {
+    it('jumps to the next across word when the cell to the right is a block', () => {
+        // 3x3 grid with a block at (0,2): 1-across is two cells, then a block.
+        const grid = [
+            [1, 2, '#'],
+            [3, 0, 0],
+            [4, 0, 0],
+        ];
+        const solution = [
+            ['C', 'A', '#'],
+            ['D', 'O', 'G'],
+            ['E', 'E', 'L'],
+        ];
+        const progress = [['', '', ''], ['', '', ''], ['', '', '']];
+        const s = (function () {
+            const { crosswordSolver } = require('../../resources/js/crossword-solver.js');
+            const inst = crosswordSolver({
+                width: 3, height: 3, grid, solution, progress,
+                styles: {}, prefilled: null,
+                cluesAcross: [
+                    { number: 1, clue: 'A', cells: [[0,0],[0,1]] },
+                    { number: 3, clue: 'B', cells: [[1,0],[1,1],[1,2]] },
+                    { number: 4, clue: 'C', cells: [[2,0],[2,1],[2,2]] },
+                ],
+                cluesDown: [
+                    { number: 1, clue: 'D1', cells: [[0,0],[1,0],[2,0]] },
+                    { number: 2, clue: 'D2', cells: [[0,1],[1,1],[2,1]] },
+                ],
+                initialElapsed: 0, initialSolved: false, initialPencilCells: {},
+                persistence: null, puzzleTitle: 'T', shareTitle: 'T', shareUrl: '',
+            });
+            inst.$watch = () => {};
+            inst.$refs = {};
+            inst.$nextTick = () => {};
+            return inst;
+        })();
+
+        s.selectedRow = 0; s.selectedCol = 1;
+        s.direction = 'across';
+        s.typeCharacter('A');
+        // 1-across ends here (block to the right); focus should land on 3-across's first empty cell.
+        expect(s.selectedRow).toBe(1);
+        expect(s.selectedCol).toBe(0);
+    });
 });
 
 describe('toggleDirection', () => {

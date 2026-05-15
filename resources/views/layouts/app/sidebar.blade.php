@@ -160,7 +160,6 @@
             <flux:toast position="top end" />
         @endpersist
 
-        @include('partials.cookie-banner')
         @include('partials.install-prompt')
 
         @fluxScripts

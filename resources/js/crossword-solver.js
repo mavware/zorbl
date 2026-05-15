@@ -20,7 +20,7 @@ import { cloneForWire, createAutosave } from './grid/persistence.js';
 
 export function crosswordSolver({
     width, height, grid, solution, progress, styles, prefilled,
-    cluesAcross, cluesDown, initialElapsed, initialSolved, initialPencilCells, persistence,
+    cluesAcross, cluesDown, initialElapsed, initialSolved, initialPencilCells, initialRevealedCells, persistence,
     puzzleTitle,
     shareTitle, shareUrl,
 }) {
@@ -39,8 +39,11 @@ export function crosswordSolver({
         selectedCol: -1,
         direction: 'across',
         checked: {},
-        revealed: {},
+        revealed: (initialRevealedCells && !Array.isArray(initialRevealedCells)) ? initialRevealedCells : {},
         solved: initialSolved || false,
+        // Flips true only when the user solves in this session — used to
+        // gate the green ripple animation so it doesn't replay on reload.
+        justSolved: false,
         isDirty: false,
         saving: false,
         showSaved: false,
@@ -53,12 +56,18 @@ export function crosswordSolver({
         elapsedSeconds: initialElapsed || 0,
         rebusMode: false,
         pencilMode: false,
-        pencilCells: initialPencilCells || {},
+        // Force an Object literal even if PHP serialized an empty `pencil_cells`
+        // column to `[]` — adding "row,col" keys to a JS Array silently drops
+        // them on JSON.stringify, which made pencil flags vanish on refresh.
+        pencilCells: (initialPencilCells && !Array.isArray(initialPencilCells)) ? initialPencilCells : {},
         achievementToasts: [],
         showCelebration: false,
         celebrationTime: '',
         shareCopied: false,
         persistence: persistence || null,
+        _undoStack: [],
+        _redoStack: [],
+        _maxUndoSize: 200,
 
         init() {
             this._autosave = createAutosave({
@@ -345,6 +354,18 @@ export function crosswordSolver({
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
             const key = e.key;
 
+            if ((e.metaKey || e.ctrlKey) && key.toLowerCase() === 'z') {
+                e.preventDefault();
+                if (e.shiftKey) this.redo();
+                else this.undo();
+                return;
+            }
+            if ((e.metaKey || e.ctrlKey) && key.toLowerCase() === 'y') {
+                e.preventDefault();
+                this.redo();
+                return;
+            }
+
             if (key === 'Escape') {
                 if (this.rebusMode) { this.rebusMode = false; return; }
                 this.selectedRow = -1; this.selectedCol = -1; return;
@@ -357,6 +378,7 @@ export function crosswordSolver({
                     && !this.isPrefilled(this.selectedRow, this.selectedCol)) {
                     this.rebusMode = !this.rebusMode;
                     if (this.rebusMode) {
+                        this._pushUndo();
                         this.progress[this.selectedRow][this.selectedCol] = '';
                         delete this.checked[cellKey(this.selectedRow, this.selectedCol)];
                         this.isDirty = true;
@@ -375,6 +397,7 @@ export function crosswordSolver({
                 }
                 if (key === 'Backspace') {
                     e.preventDefault();
+                    this._pushUndo();
                     const val = this.progress[this.selectedRow][this.selectedCol] || '';
                     this.progress[this.selectedRow][this.selectedCol] = val.slice(0, -1);
                     delete this.checked[cellKey(this.selectedRow, this.selectedCol)];
@@ -383,6 +406,7 @@ export function crosswordSolver({
                 }
                 if (/^[a-zA-Z0-9]$/.test(key)) {
                     e.preventDefault();
+                    this._pushUndo();
                     const k = cellKey(this.selectedRow, this.selectedCol);
                     const current = this.progress[this.selectedRow][this.selectedCol] || '';
                     this.progress[this.selectedRow][this.selectedCol] = current + key.toUpperCase();
@@ -413,6 +437,7 @@ export function crosswordSolver({
                 e.preventDefault();
                 if (!this.isBlock(this.selectedRow, this.selectedCol)
                     && !this.isPrefilled(this.selectedRow, this.selectedCol)) {
+                    this._pushUndo();
                     this.progress[this.selectedRow][this.selectedCol] = '';
                     delete this.checked[cellKey(this.selectedRow, this.selectedCol)];
                     this.isDirty = true;
@@ -436,6 +461,7 @@ export function crosswordSolver({
                 || this.isPrefilled(this.selectedRow, this.selectedCol)) {
                 return;
             }
+            this._pushUndo();
             const k = cellKey(this.selectedRow, this.selectedCol);
             this.progress[this.selectedRow][this.selectedCol] = char.toUpperCase();
             delete this.checked[k];
@@ -472,6 +498,50 @@ export function crosswordSolver({
             }
         },
 
+        _snapshotState() {
+            return {
+                progress: this.progress.map(row => [...row]),
+                pencilCells: { ...this.pencilCells },
+                checked: { ...this.checked },
+                revealed: { ...this.revealed },
+            };
+        },
+
+        _restoreSnapshot(snap) {
+            for (let r = 0; r < this.height; r++) {
+                for (let c = 0; c < this.width; c++) {
+                    this.progress[r][c] = snap.progress[r][c];
+                }
+            }
+            this.pencilCells = { ...snap.pencilCells };
+            this.checked = { ...snap.checked };
+            this.revealed = { ...snap.revealed };
+            this.isDirty = true;
+        },
+
+        _pushUndo() {
+            this._undoStack.push(this._snapshotState());
+            if (this._undoStack.length > this._maxUndoSize) {
+                this._undoStack.shift();
+            }
+            this._redoStack = [];
+        },
+
+        get canUndo() { return this._undoStack.length > 0; },
+        get canRedo() { return this._redoStack.length > 0; },
+
+        undo() {
+            if (!this.canUndo || this.solved) return;
+            this._redoStack.push(this._snapshotState());
+            this._restoreSnapshot(this._undoStack.pop());
+        },
+
+        redo() {
+            if (!this.canRedo || this.solved) return;
+            this._undoStack.push(this._snapshotState());
+            this._restoreSnapshot(this._redoStack.pop());
+        },
+
         moveArrow(key) {
             let row = this.selectedRow, col = this.selectedCol;
             const delta = { ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1] }[key];
@@ -487,15 +557,46 @@ export function crosswordSolver({
 
         advanceCursor() {
             const row = this.selectedRow, col = this.selectedCol;
-            if (this.direction === 'across') {
-                if (!this.hasRightBoundary(row, col)) this.selectedCol = col + 1;
-            } else {
-                if (!this.hasBottomBoundary(row, col)) this.selectedRow = row + 1;
+            const atBoundary = this.direction === 'across'
+                ? this.hasRightBoundary(row, col)
+                : this.hasBottomBoundary(row, col);
+
+            if (!atBoundary) {
+                if (this.direction === 'across') this.selectedCol = col + 1;
+                else this.selectedRow = row + 1;
+                return;
+            }
+
+            this.advanceToNextWord();
+        },
+
+        advanceToNextWord() {
+            const clues = this.direction === 'across' ? this.cluesAcross : this.cluesDown;
+            if (clues.length === 0) return;
+
+            const currentNum = this.activeClueNumber;
+            const startIdx = clues.findIndex(c => c.number === currentNum);
+            if (startIdx < 0) return;
+
+            for (let offset = 1; offset <= clues.length; offset++) {
+                const nextIdx = (startIdx + offset) % clues.length;
+                const slot = this.findSlot(this.direction, clues[nextIdx].number);
+                if (!slot) continue;
+
+                const cells = this.getWordCells(slot.row, slot.col, this.direction);
+                const empty = cells.find(([r, c]) => !this.isPrefilled(r, c) && !this.progress[r]?.[c]);
+                if (empty) {
+                    this.selectedRow = empty[0];
+                    this.selectedCol = empty[1];
+                    this.scrollActiveClueIntoView?.();
+                    return;
+                }
             }
         },
 
         handleBackspace() {
             const row = this.selectedRow, col = this.selectedCol;
+            this._pushUndo();
             if (!this.isBlock(row, col) && !this.isPrefilled(row, col) && this.progress[row][col]) {
                 this.progress[row][col] = '';
                 delete this.checked[cellKey(row, col)];
@@ -567,7 +668,11 @@ export function crosswordSolver({
 
         // --- Checking & revealing ---
         checkAnswers() {
-            this.checked = {};
+            // Toggle: if any cells are currently showing check results, clear them.
+            if (Object.keys(this.checked).length > 0) {
+                this.checked = {};
+                return;
+            }
             for (let row = 0; row < this.height; row++) {
                 for (let col = 0; col < this.width; col++) {
                     if (this.isBlock(row, col) || this.isPrefilled(row, col) || !this.progress[row][col]) continue;
@@ -582,6 +687,7 @@ export function crosswordSolver({
             const row = this.selectedRow, col = this.selectedCol;
             const answer = this.solution[row]?.[col];
             if (answer && answer !== '#') {
+                this._pushUndo();
                 const key = cellKey(row, col);
                 this.progress[row][col] = answer;
                 this.revealed[key] = true;
@@ -594,6 +700,7 @@ export function crosswordSolver({
         },
 
         clearProgress() {
+            this._pushUndo();
             for (let row = 0; row < this.height; row++) {
                 for (let col = 0; col < this.width; col++) {
                     if (!this.isBlock(row, col) && !this.isPrefilled(row, col)) this.progress[row][col] = '';
@@ -607,6 +714,7 @@ export function crosswordSolver({
         },
 
         clearErrors() {
+            this._pushUndo();
             for (let row = 0; row < this.height; row++) {
                 for (let col = 0; col < this.width; col++) {
                     if (this.isBlock(row, col) || this.isPrefilled(row, col)) continue;
@@ -629,12 +737,15 @@ export function crosswordSolver({
                 }
             }
             this.solved = true;
+            this.justSolved = true;
             this._stopTimer();
-            await this._performSave(true);
+            this.celebrationTime = this.formattedTime();
+            // Fire the celebration on the next frame — don't wait for the
+            // server save round-trip. The save runs in the background.
             this._celebrationTimer = setTimeout(() => {
-                this.celebrationTime = this.formattedTime();
                 this.showCelebration = true;
-            }, 500);
+            }, 250);
+            this._performSave(true).catch(() => {});
         },
 
         // --- Persistence ---
@@ -643,13 +754,14 @@ export function crosswordSolver({
             this.showSaved = false;
             const progressCopy = cloneForWire(this.progress);
             const pencilCopy = cloneForWire(this.pencilCells);
+            const revealedCopy = cloneForWire(this.revealed);
             const solved = asCompletion || this.solved;
             try {
                 if (this.persistence) {
-                    await this.persistence.save(progressCopy, solved, this.elapsedSeconds, pencilCopy);
+                    await this.persistence.save(progressCopy, solved, this.elapsedSeconds, pencilCopy, revealedCopy);
                     this._autosave?.acknowledge();
                 } else {
-                    await this.$wire.saveProgress(progressCopy, solved, this.elapsedSeconds, pencilCopy);
+                    await this.$wire.saveProgress(progressCopy, solved, this.elapsedSeconds, pencilCopy, revealedCopy);
                 }
             } finally {
                 this.isDirty = false;

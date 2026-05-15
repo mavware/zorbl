@@ -32,7 +32,7 @@ class CrosswordsSeeder extends BaseActivitySeeder
             return;
         }
 
-        $fallbackConstructorId = $constructors->first()->id;
+        $fallbackConstructor = $constructors->first();
 
         $existingTitles = Crossword::whereHas('user', fn ($q) => $q->where('email', 'like', '%@example.com'))
             ->pluck('title')
@@ -53,11 +53,12 @@ class CrosswordsSeeder extends BaseActivitySeeder
             }
 
             $authorName = $this->cleanAuthorName($puzzle['author'] ?? '');
-            $authorUser = $constructors->get($authorName);
-            $userId = $authorUser?->id ?? $fallbackConstructorId;
+            $owner = $constructors->get($authorName) ?? $fallbackConstructor;
 
-            $crossword = Crossword::create([
-                'user_id' => $userId,
+            // Crossword::$fillable excludes user_id by design — assigning the
+            // owner via the relationship sets user_id directly on the model
+            // and bypasses mass-assignment filtering.
+            $crossword = $owner->crosswords()->create([
                 'title' => $title,
                 'author' => $authorName ?: null,
                 'copyright' => $puzzle['copyright'] ?? null,

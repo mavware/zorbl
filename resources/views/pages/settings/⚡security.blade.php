@@ -1,7 +1,10 @@
 <?php
 
 use App\Concerns\PasswordValidationRules;
+use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Laravel\Fortify\Actions\DisableTwoFactorAuthentication;
 use Laravel\Fortify\Features;
@@ -16,6 +19,8 @@ new #[Title('Security settings')] class extends Component {
     public string $current_password = '';
     public string $password = '';
     public string $password_confirmation = '';
+
+    public string $logout_other_password = '';
 
     public bool $canManageTwoFactor;
 
@@ -56,13 +61,57 @@ new #[Title('Security settings')] class extends Component {
             throw $e;
         }
 
-        Auth::user()->update([
+        $user = Auth::user();
+        $user->update([
             'password' => $validated['password'],
         ]);
+        $this->revokeOtherSessions($user);
 
         $this->reset('current_password', 'password', 'password_confirmation');
 
         $this->dispatch('password-updated');
+    }
+
+    /**
+     * Sign the user out of all other browser sessions on demand. Requires
+     * the current password as a guard against a walked-away laptop.
+     */
+    public function logoutOtherBrowserSessions(): void
+    {
+        try {
+            $this->validate([
+                'logout_other_password' => ['required', 'string', 'current_password'],
+            ]);
+        } catch (ValidationException $e) {
+            $this->reset('logout_other_password');
+
+            throw $e;
+        }
+
+        $this->revokeOtherSessions(Auth::user());
+
+        $this->reset('logout_other_password');
+
+        $this->dispatch('other-sessions-revoked');
+    }
+
+    /**
+     * Rotate the remember-me token and drop any other active sessions
+     * belonging to the user, keeping only the current session alive.
+     */
+    protected function revokeOtherSessions(User $user): void
+    {
+        $user->forceFill(['remember_token' => Str::random(60)])->save();
+
+        if (config('session.driver') !== 'database') {
+            return;
+        }
+
+        DB::connection(config('session.connection'))
+            ->table(config('session.table', 'sessions'))
+            ->where('user_id', $user->getKey())
+            ->where('id', '!=', session()->getId())
+            ->delete();
     }
 
     /**
@@ -129,6 +178,34 @@ new #[Title('Security settings')] class extends Component {
                 </x-action-message>
             </div>
         </form>
+
+        <section class="mt-12">
+            <flux:heading>{{ __('Browser sessions') }}</flux:heading>
+            <flux:subheading>
+                {{ __('If you suspect your account has been compromised, log out of every other browser and device you may have signed in from.') }}
+            </flux:subheading>
+
+            <form method="POST" wire:submit="logoutOtherBrowserSessions" class="mt-6 space-y-6">
+                <flux:input
+                    wire:model="logout_other_password"
+                    :label="__('Current password')"
+                    type="password"
+                    required
+                    autocomplete="current-password"
+                    viewable
+                />
+
+                <div class="flex items-center gap-4">
+                    <flux:button variant="primary" type="submit" data-test="logout-other-sessions-button">
+                        {{ __('Log out other browser sessions') }}
+                    </flux:button>
+
+                    <x-action-message class="me-3" on="other-sessions-revoked">
+                        {{ __('Done.') }}
+                    </x-action-message>
+                </div>
+            </form>
+        </section>
 
         @if ($canManageTwoFactor)
             <section class="mt-12">

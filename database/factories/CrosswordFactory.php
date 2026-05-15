@@ -33,6 +33,7 @@ class CrosswordFactory extends Factory
             'clues_across' => [],
             'clues_down' => [],
             'is_published' => false,
+            'allow_embed' => true,
         ];
     }
 

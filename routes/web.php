@@ -2,7 +2,6 @@
 
 use App\Http\Controllers\Api\EmbedController;
 use App\Http\Controllers\Auth\GoogleController;
-use App\Http\Controllers\CookieConsentController;
 use App\Http\Controllers\OgImageController;
 use App\Http\Controllers\SitemapController;
 use App\Models\Crossword;
@@ -34,9 +33,6 @@ Route::middleware(['guest', 'throttle:oauth-callback'])->group(function () {
     Route::get('auth/google/callback', [GoogleController::class, 'callback'])->name('auth.google.callback');
 });
 
-// Cookie consent (records visitor's choice; works for guests and logged-in users)
-Route::post('cookie-consent', [CookieConsentController::class, 'store'])->name('cookie-consent.store');
-
 // Help center (public, no auth)
 Route::livewire('help', 'pages::help.index')->name('help.index');
 Route::livewire('help/{article:slug}', 'pages::help.show')->name('help.show');
@@ -46,6 +42,9 @@ Route::livewire('terms', 'pages::legal.terms')->name('legal.terms');
 Route::livewire('privacy', 'pages::legal.privacy')->name('legal.privacy');
 Route::livewire('cookies', 'pages::legal.cookies')->name('legal.cookies');
 Route::livewire('dmca', 'pages::legal.dmca')->name('legal.dmca');
+
+// Public tools (no auth required)
+Route::livewire('tools/convert', 'pages::tools.convert')->name('tools.convert');
 
 // Public puzzle browsing (no auth required)
 Route::livewire('puzzles', 'pages::puzzles.index')->name('puzzles.index');
