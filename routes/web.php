@@ -43,6 +43,9 @@ Route::livewire('privacy', 'pages::legal.privacy')->name('legal.privacy');
 Route::livewire('cookies', 'pages::legal.cookies')->name('legal.cookies');
 Route::livewire('dmca', 'pages::legal.dmca')->name('legal.dmca');
 
+// Public tools (no auth required)
+Route::livewire('tools/convert', 'pages::tools.convert')->name('tools.convert');
+
 // Public puzzle browsing (no auth required)
 Route::livewire('puzzles', 'pages::puzzles.index')->name('puzzles.index');
 Route::livewire('puzzles/daily', 'pages::puzzles.daily-history')->name('puzzles.daily-history');
