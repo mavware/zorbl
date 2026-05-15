@@ -245,3 +245,42 @@ test('solver renders share button in celebration modal', function () {
         ->assertSeeHtml('shareCopied ?')
         ->assertSeeHtml('shareResults()');
 });
+
+test('solver hides embed UI from non-owners when allow_embed is off', function () {
+    $creator = User::factory()->create();
+    $crossword = Crossword::factory()->published()->for($creator)->create(['allow_embed' => false]);
+    $player = User::factory()->create();
+
+    $this->actingAs($player);
+
+    Livewire::test('pages::crosswords.solver', ['crossword' => $crossword])
+        ->assertOk()
+        ->assertDontSeeHtml('Embed Puzzle');
+});
+
+test('solver shows embed UI to non-owners when allow_embed is on', function () {
+    $creator = User::factory()->create();
+    $crossword = Crossword::factory()->published()->for($creator)->create(['allow_embed' => true]);
+    $player = User::factory()->create();
+
+    $this->actingAs($player);
+
+    Livewire::test('pages::crosswords.solver', ['crossword' => $crossword])
+        ->assertOk()
+        ->assertSeeHtml('Embed Puzzle');
+});
+
+test('solver shows embed UI to owner regardless of allow_embed', function () {
+    $owner = User::factory()->create();
+    // Unpublished + allow_embed off: owner still sees their own embed code.
+    $crossword = Crossword::factory()->for($owner)->create([
+        'is_published' => false,
+        'allow_embed' => false,
+    ]);
+
+    $this->actingAs($owner);
+
+    Livewire::test('pages::crosswords.solver', ['crossword' => $crossword])
+        ->assertOk()
+        ->assertSeeHtml('Embed Puzzle');
+});

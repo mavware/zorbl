@@ -52,6 +52,7 @@ class extends Component {
     public int $minAnswerLength = 3;
 
     public bool $isPublished = false;
+    public bool $allowEmbed = true;
     public bool $freestyleLocked = false;
     public PuzzleType $puzzleType = PuzzleType::Standard;
 
@@ -90,6 +91,7 @@ class extends Component {
         $this->layout = $crossword->layout;
         $this->minAnswerLength = $crossword->metadata['min_answer_length'] ?? 3;
         $this->isPublished = $crossword->is_published;
+        $this->allowEmbed = (bool) $crossword->allow_embed;
         $this->freestyleLocked = $crossword->freestyle_locked ?? false;
         $this->puzzleType = $crossword->puzzle_type;
         $this->resizeWidth = $crossword->width;
@@ -178,6 +180,7 @@ class extends Component {
             'secret_theme' => $this->secretTheme !== '' ? $this->secretTheme : null,
             'layout'       => $this->layout,
             'metadata'     => $metadata,
+            'allow_embed'  => $this->allowEmbed,
         ]);
 
         $crossword->tags()->sync($this->tagIds);
@@ -1206,6 +1209,13 @@ class extends Component {
                 <flux:textarea wire:model="notes" placeholder="{{ __('Notes for solvers (shown before solving)') }}"
                                rows="3"/>
                 <flux:error name="notes"/>
+            </flux:field>
+
+            <flux:field variant="inline">
+                <flux:switch wire:model.live="allowEmbed"/>
+                <flux:label>{{ __('Allow others to embed this puzzle') }}</flux:label>
+                <flux:description>{{ __('When off, solvers can no longer copy the embed code. You can still embed your own puzzle from this page.') }}</flux:description>
+                <flux:error name="allowEmbed"/>
             </flux:field>
 
             <flux:field>

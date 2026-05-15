@@ -49,7 +49,7 @@ function buildTemplate(data) {
                     <span x-text="formattedTime()" :class="solved ? 'text-emerald-600' : 'text-zinc-800'"></span>
                 </div>
                 <!-- Check answers -->
-                <button x-on:click="checkAnswers()" class="rounded-lg p-1.5 text-zinc-600 hover:text-zinc-800 transition-colors" title="Check answers">
+                <button x-on:click="checkAnswers()" class="rounded-lg p-1.5 text-zinc-600 hover:text-zinc-800 transition-colors" x-bind:title="Object.keys(checked).length > 0 ? 'Hide check results' : 'Check answers'">
                     <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M20 6 9 17l-5-5"/>
                     </svg>
@@ -297,12 +297,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             let initialElapsed = 0;
             let initialSolved = false;
             let initialPencilCells = {};
+            let initialRevealedCells = {};
 
             if (saved) {
                 if (saved.progress) progress = saved.progress;
                 if (saved.elapsed) initialElapsed = saved.elapsed;
                 if (saved.isCompleted) initialSolved = true;
                 if (saved.pencilCells) initialPencilCells = saved.pencilCells;
+                if (saved.revealedCells) initialRevealedCells = saved.revealedCells;
             }
 
             // Merge prefilled cells into progress
@@ -336,6 +338,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     initialElapsed: initialElapsed,
                     initialSolved: initialSolved,
                     initialPencilCells: initialPencilCells,
+                    initialRevealedCells: initialRevealedCells,
                     persistence: '__PERSISTENCE__',
                 }).replace('"__PERSISTENCE__"', `zorblPersistence_${data.id}`)})`);
 

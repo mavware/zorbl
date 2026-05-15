@@ -200,3 +200,23 @@ select:focus[data-flux-control] {
         outline-offset: 2px;
     }
 }
+
+/* Diagonal ripple of green when a puzzle is solved. Each cell gets an
+   animation-delay set inline based on (row + col), producing a wave that
+   sweeps from the top-left corner outward, then fades back so it doesn't
+   override selection/word-highlight backgrounds. */
+@keyframes crossword-solved-ripple {
+    0%   { background-color: transparent; }
+    30%  { background-color: rgb(16 185 129 / 0.65); }
+    100% { background-color: transparent; }
+}
+
+.crossword-cell.solved-ripple {
+    animation: crossword-solved-ripple 900ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .crossword-cell.solved-ripple {
+        animation: none;
+    }
+}

@@ -23,6 +23,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property CarbonImmutable|null $completed_at
  * @property int|null $solve_time_seconds
  * @property array<array-key, mixed>|null $pencil_cells
+ * @property array<array-key, mixed>|null $revealed_cells
  * @property-read Crossword $crossword
  * @property-read User $user
  *
@@ -42,6 +43,7 @@ class PuzzleAttempt extends Model
         'crossword_id',
         'progress',
         'pencil_cells',
+        'revealed_cells',
         'is_completed',
         'started_at',
         'completed_at',
@@ -56,6 +58,7 @@ class PuzzleAttempt extends Model
         return [
             'progress' => 'array',
             'pencil_cells' => 'array',
+            'revealed_cells' => 'array',
             'is_completed' => 'boolean',
             'started_at' => 'datetime',
             'completed_at' => 'datetime',

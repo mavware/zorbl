@@ -20,7 +20,7 @@ import { cloneForWire, createAutosave } from './grid/persistence.js';
 
 export function crosswordSolver({
     width, height, grid, solution, progress, styles, prefilled,
-    cluesAcross, cluesDown, initialElapsed, initialSolved, initialPencilCells, persistence,
+    cluesAcross, cluesDown, initialElapsed, initialSolved, initialPencilCells, initialRevealedCells, persistence,
     puzzleTitle,
     shareTitle, shareUrl,
 }) {
@@ -39,8 +39,11 @@ export function crosswordSolver({
         selectedCol: -1,
         direction: 'across',
         checked: {},
-        revealed: {},
+        revealed: (initialRevealedCells && !Array.isArray(initialRevealedCells)) ? initialRevealedCells : {},
         solved: initialSolved || false,
+        // Flips true only when the user solves in this session — used to
+        // gate the green ripple animation so it doesn't replay on reload.
+        justSolved: false,
         isDirty: false,
         saving: false,
         showSaved: false,
@@ -53,7 +56,10 @@ export function crosswordSolver({
         elapsedSeconds: initialElapsed || 0,
         rebusMode: false,
         pencilMode: false,
-        pencilCells: initialPencilCells || {},
+        // Force an Object literal even if PHP serialized an empty `pencil_cells`
+        // column to `[]` — adding "row,col" keys to a JS Array silently drops
+        // them on JSON.stringify, which made pencil flags vanish on refresh.
+        pencilCells: (initialPencilCells && !Array.isArray(initialPencilCells)) ? initialPencilCells : {},
         achievementToasts: [],
         showCelebration: false,
         celebrationTime: '',
@@ -662,7 +668,11 @@ export function crosswordSolver({
 
         // --- Checking & revealing ---
         checkAnswers() {
-            this.checked = {};
+            // Toggle: if any cells are currently showing check results, clear them.
+            if (Object.keys(this.checked).length > 0) {
+                this.checked = {};
+                return;
+            }
             for (let row = 0; row < this.height; row++) {
                 for (let col = 0; col < this.width; col++) {
                     if (this.isBlock(row, col) || this.isPrefilled(row, col) || !this.progress[row][col]) continue;
@@ -727,12 +737,15 @@ export function crosswordSolver({
                 }
             }
             this.solved = true;
+            this.justSolved = true;
             this._stopTimer();
-            await this._performSave(true);
+            this.celebrationTime = this.formattedTime();
+            // Fire the celebration on the next frame — don't wait for the
+            // server save round-trip. The save runs in the background.
             this._celebrationTimer = setTimeout(() => {
-                this.celebrationTime = this.formattedTime();
                 this.showCelebration = true;
-            }, 500);
+            }, 250);
+            this._performSave(true).catch(() => {});
         },
 
         // --- Persistence ---
@@ -741,13 +754,14 @@ export function crosswordSolver({
             this.showSaved = false;
             const progressCopy = cloneForWire(this.progress);
             const pencilCopy = cloneForWire(this.pencilCells);
+            const revealedCopy = cloneForWire(this.revealed);
             const solved = asCompletion || this.solved;
             try {
                 if (this.persistence) {
-                    await this.persistence.save(progressCopy, solved, this.elapsedSeconds, pencilCopy);
+                    await this.persistence.save(progressCopy, solved, this.elapsedSeconds, pencilCopy, revealedCopy);
                     this._autosave?.acknowledge();
                 } else {
-                    await this.$wire.saveProgress(progressCopy, solved, this.elapsedSeconds, pencilCopy);
+                    await this.$wire.saveProgress(progressCopy, solved, this.elapsedSeconds, pencilCopy, revealedCopy);
                 }
             } finally {
                 this.isDirty = false;

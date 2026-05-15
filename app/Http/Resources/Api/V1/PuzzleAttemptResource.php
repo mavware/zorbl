@@ -16,6 +16,7 @@ class PuzzleAttemptResource extends JsonApiResource
         return [
             'progress' => $this->progress,
             'pencil_cells' => $this->pencil_cells,
+            'revealed_cells' => $this->revealed_cells,
             'is_completed' => $this->is_completed,
             'solve_time_seconds' => $this->solve_time_seconds,
             'started_at' => $this->started_at,

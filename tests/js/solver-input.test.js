@@ -88,6 +88,20 @@ describe('typeCharacter', () => {
         expect(s.isDirty).toBe(true);
     });
 
+    it('preserves pencil flags through a JSON round-trip when the server hydrated pencilCells as an empty array', () => {
+        // PHP serializes an empty pencil_cells column as `[]`, which @js outputs
+        // as a JS Array. Adding "row,col" properties to an Array silently drops
+        // them on JSON.stringify — that's the bug. The Alpine init must coerce
+        // an empty-array input back to an Object literal.
+        const fresh = makeSolver({ initialPencilCells: [] });
+        fresh.selectedRow = 0; fresh.selectedCol = 0;
+        fresh.pencilMode = true;
+        fresh.typeCharacter('C');
+
+        expect(fresh.pencilCells['0,0']).toBe(true);
+        expect(JSON.parse(JSON.stringify(fresh.pencilCells))).toEqual({ '0,0': true });
+    });
+
     it('jumps to the next across word when typing the last letter at the right edge', () => {
         s.selectedRow = 0; s.selectedCol = 2;
         s.direction = 'across';
