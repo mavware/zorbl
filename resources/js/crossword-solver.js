@@ -41,6 +41,9 @@ export function crosswordSolver({
         checked: {},
         revealed: {},
         solved: initialSolved || false,
+        // Flips true only when the user solves in this session — used to
+        // gate the green ripple animation so it doesn't replay on reload.
+        justSolved: false,
         isDirty: false,
         saving: false,
         showSaved: false,
@@ -666,12 +669,15 @@ export function crosswordSolver({
                 }
             }
             this.solved = true;
+            this.justSolved = true;
             this._stopTimer();
-            await this._performSave(true);
+            this.celebrationTime = this.formattedTime();
+            // Fire the celebration on the next frame — don't wait for the
+            // server save round-trip. The save runs in the background.
             this._celebrationTimer = setTimeout(() => {
-                this.celebrationTime = this.formattedTime();
                 this.showCelebration = true;
-            }, 500);
+            }, 250);
+            this._performSave(true).catch(() => {});
         },
 
         // --- Persistence ---

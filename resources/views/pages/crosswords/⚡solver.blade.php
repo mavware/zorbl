@@ -784,8 +784,8 @@ new #[Title('Solve Crossword')] class extends Component {
                         <template x-for="(cell, colIdx) in row" :key="'cell-' + rowIdx + '-' + colIdx">
                             <div
                                 x-on:click="selectCell(rowIdx, colIdx)"
-                                :class="[cellClasses(rowIdx, colIdx), isVoid(rowIdx, colIdx) ? '' : 'border border-line-strong']"
-                                :style="cellBarStyles(rowIdx, colIdx)"
+                                :class="[cellClasses(rowIdx, colIdx), isVoid(rowIdx, colIdx) ? '' : 'border border-line-strong', justSolved && !isBlock(rowIdx, colIdx) && !isVoid(rowIdx, colIdx) ? 'solved-ripple' : '']"
+                                :style="justSolved && !isBlock(rowIdx, colIdx) && !isVoid(rowIdx, colIdx) ? cellBarStyles(rowIdx, colIdx) + '; animation-delay: ' + ((rowIdx + colIdx) * 35) + 'ms' : cellBarStyles(rowIdx, colIdx)"
                                 class="crossword-cell relative box-border flex aspect-square items-center justify-center overflow-hidden select-none"
                                 :id="'crossword-cell-' + rowIdx + '-' + colIdx"
                                 role="gridcell"
