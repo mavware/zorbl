@@ -972,7 +972,7 @@ class extends Component {
                             <flux:badge color="purple" size="sm">{{ __('Pro') }}</flux:badge>
                         @endunless
                     </flux:menu.item>
-                    <flux:menu.item wire:click="choosePdfOrientation" :class="! Auth::user()->planLimits()->canExportPdf() ? 'opacity-60' : ''">
+                    <flux:menu.item wire:click="attemptExport('pdf')" :class="! Auth::user()->planLimits()->canExportPdf() ? 'opacity-60' : ''">
                         {{ __('.pdf (Print-Ready)') }}
                         @unless (Auth::user()->planLimits()->canExportPdf())
                             <flux:badge color="purple" size="sm">{{ __('Pro') }}</flux:badge>
@@ -1036,16 +1036,18 @@ class extends Component {
         </div>
     </flux:modal>
 
-    {{-- PDF Orientation Modal --}}
-    <flux:modal wire:model="showPdfOrientationModal">
+    {{-- PDF Export Settings Modal --}}
+    <flux:modal wire:model="showPdfExportModal">
         <div class="space-y-6">
-            <flux:heading size="lg">{{ __('PDF Orientation') }}</flux:heading>
-            <flux:text>{{ __('Choose the page orientation for your PDF export.') }}</flux:text>
+            <flux:heading size="lg">{{ __('PDF Export Settings') }}</flux:heading>
+            <flux:text>{{ __('Configure the page orientation and add optional narrative text for your PDF export.') }}</flux:text>
 
-            <flux:radio.group wire:model="pdfOrientation">
+            <flux:radio.group wire:model="pdfOrientation" label="{{ __('Orientation') }}">
                 <flux:radio value="portrait" label="{{ __('Portrait') }}" description="{{ __('Standard vertical layout (8.5 × 11 in)') }}" />
                 <flux:radio value="landscape" label="{{ __('Landscape') }}" description="{{ __('Horizontal layout (11 × 8.5 in) — better for wide puzzles') }}" />
             </flux:radio.group>
+
+            <flux:textarea wire:model="pdfNarrative" label="{{ __('Narrative Text') }}" placeholder="{{ __('Add introductory text, theme explanation, or instructions that will appear above the puzzle grid...') }}" rows="4" />
 
             <div class="flex justify-end gap-2">
                 <flux:button wire:click="cancelPdfExport">{{ __('Cancel') }}</flux:button>

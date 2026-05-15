@@ -20,9 +20,11 @@ trait ExportsCrossword
     /** @var list<string> */
     public array $exportWarnings = [];
 
-    public bool $showPdfOrientationModal = false;
+    public bool $showPdfExportModal = false;
 
     public string $pdfOrientation = 'portrait';
+
+    public string $pdfNarrative = '';
 
     abstract protected function getExportableCrossword(): Crossword;
 
@@ -53,7 +55,9 @@ trait ExportsCrossword
         }
 
         if ($format === 'pdf') {
-            return $this->exportPdf();
+            $this->choosePdfExport();
+
+            return null;
         }
 
         $crossword = $this->getExportableCrossword();
@@ -163,7 +167,7 @@ trait ExportsCrossword
         }, $filename, ['Content-Type' => 'application/octet-stream']);
     }
 
-    public function choosePdfOrientation(): void
+    public function choosePdfExport(): void
     {
         $gate = $this->getExportPlanGates()['pdf'] ?? null;
         if ($gate && ! Auth::user()->planLimits()->{$gate}()) {
@@ -172,21 +176,31 @@ trait ExportsCrossword
             return;
         }
 
+        $crossword = $this->getExportableCrossword();
         $this->pdfOrientation = 'portrait';
-        $this->showPdfOrientationModal = true;
+        $this->pdfNarrative = $crossword->pdf_narrative ?? '';
+        $this->showPdfExportModal = true;
     }
 
     public function confirmPdfExport(): StreamedResponse
     {
-        $this->showPdfOrientationModal = false;
+        $this->showPdfExportModal = false;
+
+        $crossword = $this->getExportableCrossword();
+
+        $narrative = trim($this->pdfNarrative);
+        if ($crossword->pdf_narrative !== ($narrative ?: null)) {
+            $crossword->update(['pdf_narrative' => $narrative ?: null]);
+        }
 
         return $this->exportPdf();
     }
 
     public function cancelPdfExport(): void
     {
-        $this->showPdfOrientationModal = false;
+        $this->showPdfExportModal = false;
         $this->pdfOrientation = 'portrait';
+        $this->pdfNarrative = '';
     }
 
     public function exportPdf(): StreamedResponse
@@ -199,9 +213,15 @@ trait ExportsCrossword
         $crossword = $this->getExportableCrossword();
 
         $orientation = in_array($this->pdfOrientation, ['portrait', 'landscape']) ? $this->pdfOrientation : 'portrait';
+        $narrative = trim($this->pdfNarrative);
 
         $exporter = app(PdfExporter::class);
-        $pdf = $exporter->export($crossword, includeSolution: $this->getPdfIncludeSolution(), orientation: $orientation);
+        $pdf = $exporter->export(
+            $crossword,
+            includeSolution: $this->getPdfIncludeSolution(),
+            orientation: $orientation,
+            narrative: $narrative ?: null,
+        );
         $filename = str($crossword->title ?: 'crossword')->slug()->append('.pdf')->toString();
 
         return response()->streamDownload(function () use ($pdf) {

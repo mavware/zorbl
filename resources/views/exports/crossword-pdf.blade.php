@@ -148,6 +148,16 @@
         .grid-wrapper {
             text-align: center;
         }
+
+        .narrative {
+            font-size: 10pt;
+            line-height: 1.5;
+            color: #222;
+            margin: 0 0 14pt 0;
+            padding: 8pt 12pt;
+            border-left: 2.5pt solid #999;
+            white-space: pre-wrap;
+        }
     </style>
 </head>
 <body>
@@ -164,6 +174,10 @@
             <p class="notes">{{ $notes }}</p>
         @endif
     </div>
+
+    @if ($narrative ?? null)
+        <div class="narrative">{{ $narrative }}</div>
+    @endif
 
     <div class="grid-wrapper">
         <table class="grid-table">
