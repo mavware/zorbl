@@ -9,13 +9,14 @@ export function createLocalStoragePersistence(crosswordId) {
         /**
          * Save solver state to localStorage.
          */
-        save(progress, isCompleted, elapsed, pencilCells) {
+        save(progress, isCompleted, elapsed, pencilCells, revealedCells) {
             try {
                 localStorage.setItem(key, JSON.stringify({
                     progress,
                     isCompleted,
                     elapsed,
                     pencilCells,
+                    revealedCells,
                     savedAt: Date.now(),
                 }));
             } catch {

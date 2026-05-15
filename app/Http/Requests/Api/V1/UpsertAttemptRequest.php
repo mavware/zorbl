@@ -19,6 +19,7 @@ class UpsertAttemptRequest extends FormRequest
         return [
             'progress' => ['required', 'array'],
             'pencil_cells' => ['nullable', 'array'],
+            'revealed_cells' => ['nullable', 'array'],
             'is_completed' => ['sometimes', 'boolean'],
             'solve_time_seconds' => ['nullable', 'integer', 'min:0'],
         ];

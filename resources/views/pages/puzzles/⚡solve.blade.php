@@ -120,10 +120,10 @@ class extends Component {
         window.zorblGuestPersistence = (function() {
             const key = 'zorbl_guest_{{ $crosswordId }}';
             return {
-                save(progress, isCompleted, elapsed, pencilCells) {
+                save(progress, isCompleted, elapsed, pencilCells, revealedCells) {
                     try {
                         localStorage.setItem(key, JSON.stringify({
-                            progress, isCompleted, elapsed, pencilCells, savedAt: Date.now()
+                            progress, isCompleted, elapsed, pencilCells, revealedCells, savedAt: Date.now()
                         }));
                     } catch {}
                     return Promise.resolve();
@@ -173,6 +173,7 @@ class extends Component {
                 initialElapsed: saved?.elapsed ?? 0,
                 initialSolved: saved?.isCompleted ?? false,
                 initialPencilCells: saved?.pencilCells ?? [],
+                initialRevealedCells: saved?.revealedCells ?? {},
                 persistence: window.zorblGuestPersistence,
                 puzzleTitle: @js($title),
                 shareTitle: @js($title),
