@@ -531,6 +531,19 @@ new #[Title('Solve Crossword')] class extends Component {
         </div>
 
         <div class="flex items-center gap-1">
+            {{-- Save status (lives left of the pencil button so it's visible mid-solve) --}}
+            <div class="flex items-center gap-1 pr-2 text-sm text-zinc-500">
+                <template x-if="saving">
+                    <span>{{ __('Saving...') }}</span>
+                </template>
+                <template x-if="showSaved">
+                    <span class="text-emerald-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="inline size-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" /></svg>
+                        {{ __('Saved') }}
+                    </span>
+                </template>
+            </div>
+
             {{-- Pencil mode toggle --}}
             <flux:tooltip content="{{ __('Pencil mode (P)') }}">
                 <button
@@ -687,17 +700,8 @@ new #[Title('Solve Crossword')] class extends Component {
                 </button>
             </template>
 
-            {{-- Save status --}}
+            {{-- Solved! announcement (end state, separate from the save indicator) --}}
             <div class="flex items-center gap-1 pl-2 text-sm text-zinc-500">
-                <template x-if="saving">
-                    <span>{{ __('Saving...') }}</span>
-                </template>
-                <template x-if="showSaved">
-                    <span class="text-emerald-500">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="inline size-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" /></svg>
-                        {{ __('Saved') }}
-                    </span>
-                </template>
                 <template x-if="solved">
                     <span class="flex items-center gap-1.5">
                         <span class="font-semibold text-emerald-500">{{ __('Solved!') }}</span>
