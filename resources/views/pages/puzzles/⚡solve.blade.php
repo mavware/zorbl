@@ -222,7 +222,7 @@ class extends Component {
                 </div>
 
                 {{-- Check answers --}}
-                <flux:tooltip content="{{ __('Check answers') }}">
+                <flux:tooltip x-bind:content="Object.keys(checked).length > 0 ? '{{ __('Hide check results') }}' : '{{ __('Check answers') }}'">
                     <button
                         x-on:click="checkAnswers()"
                         class="text-fg-muted rounded-lg p-1.5 transition-colors hover:text-zinc-800 dark:hover:text-zinc-200"

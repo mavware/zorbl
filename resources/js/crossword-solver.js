@@ -53,7 +53,10 @@ export function crosswordSolver({
         elapsedSeconds: initialElapsed || 0,
         rebusMode: false,
         pencilMode: false,
-        pencilCells: initialPencilCells || {},
+        // Force an Object literal even if PHP serialized an empty `pencil_cells`
+        // column to `[]` — adding "row,col" keys to a JS Array silently drops
+        // them on JSON.stringify, which made pencil flags vanish on refresh.
+        pencilCells: (initialPencilCells && !Array.isArray(initialPencilCells)) ? initialPencilCells : {},
         achievementToasts: [],
         showCelebration: false,
         celebrationTime: '',
@@ -597,7 +600,11 @@ export function crosswordSolver({
 
         // --- Checking & revealing ---
         checkAnswers() {
-            this.checked = {};
+            // Toggle: if any cells are currently showing check results, clear them.
+            if (Object.keys(this.checked).length > 0) {
+                this.checked = {};
+                return;
+            }
             for (let row = 0; row < this.height; row++) {
                 for (let col = 0; col < this.width; col++) {
                     if (this.isBlock(row, col) || this.isPrefilled(row, col) || !this.progress[row][col]) continue;

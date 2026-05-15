@@ -583,12 +583,12 @@ new #[Title('Solve Crossword')] class extends Component {
             @endif
 
             {{-- Check answers --}}
-            <flux:tooltip content="{{ __('Check answers') }}">
+            <flux:tooltip x-bind:content="Object.keys(checked).length > 0 ? '{{ __('Hide check results') }}' : '{{ __('Check answers') }}'">
                 <button
                     type="button"
                     x-on:click="checkAnswers()"
                     class="text-fg-muted rounded-lg p-1.5 transition-colors hover:text-zinc-800 dark:hover:text-zinc-200"
-                    aria-label="{{ __('Check answers') }}"
+                    x-bind:aria-label="Object.keys(checked).length > 0 ? '{{ __('Hide check results') }}' : '{{ __('Check answers') }}'"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <path d="M20 6 9 17l-5-5"/>
