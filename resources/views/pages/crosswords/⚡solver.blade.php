@@ -31,6 +31,9 @@ new #[Title('Solve Crossword')] class extends Component {
     public bool $isPublished = false;
 
     #[Locked]
+    public bool $allowEmbed = true;
+
+    #[Locked]
     public int $authorUserId = 0;
 
     public string $title = '';
@@ -245,6 +248,7 @@ new #[Title('Solve Crossword')] class extends Component {
 
         $this->isOwner = $user->id === $crossword->user_id;
         $this->isPublished = (bool) $crossword->is_published;
+        $this->allowEmbed = (bool) $crossword->allow_embed;
         $this->authorUserId = $crossword->user_id;
 
         // Find or create the user's attempt for this puzzle
@@ -631,8 +635,9 @@ new #[Title('Solve Crossword')] class extends Component {
                 </flux:menu>
             </flux:dropdown>
 
-            {{-- Embed code (published puzzles only) --}}
-            @if($isPublished)
+            {{-- Embed code: owner always sees it; players only when the
+                 constructor has allowed embedding on a published puzzle. --}}
+            @if($isOwner || ($isPublished && $allowEmbed))
                 <div x-data="{ showEmbed: false }">
                     <flux:tooltip content="{{ __('Embed this puzzle') }}">
                         <flux:button variant="ghost" size="sm" icon="code-bracket" x-on:click="showEmbed = true" />
@@ -689,37 +694,19 @@ new #[Title('Solve Crossword')] class extends Component {
                 </div>
             @endif
 
-            {{-- Share button (visible when solved) --}}
-            <template x-if="solved">
-                <button
-                    x-on:click="shareResults()"
-                    :title="shareCopied ? '{{ __('Copied!') }}' : '{{ __('Share results') }}'"
-                    class="rounded-lg p-1.5 text-emerald-500 transition-colors hover:text-emerald-600 dark:hover:text-emerald-400"
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 20 20" fill="currentColor"><path d="M13 4.5a2.5 2.5 0 11.702 4.89L8.45 12.3a2.5 2.5 0 11-.36-.891l5.252-2.91A2.5 2.5 0 0113 4.5zm-8 6a1 1 0 100 2 1 1 0 000-2zm8-5a1 1 0 100 2 1 1 0 000-2z"/></svg>
-                </button>
-            </template>
-
-            {{-- Solved! announcement (end state, separate from the save indicator) --}}
+            {{-- Solved! announcement with a single share action --}}
             <div class="flex items-center gap-1 pl-2 text-sm text-zinc-500">
                 <template x-if="solved">
                     <span class="flex items-center gap-1.5">
                         <span class="font-semibold text-emerald-500">{{ __('Solved!') }}</span>
                         <button
                             x-on:click="shareResults()"
-                            class="rounded-md px-2 py-0.5 text-xs font-medium text-emerald-600 transition-colors hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/30"
-                            x-text="shareCopied ? '{{ __('Copied!') }}' : '{{ __('Share Results') }}'"
-                        ></button>
+                            class="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium text-emerald-600 transition-colors hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/30"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z"/></svg>
+                            <span x-text="shareCopied ? '{{ __('Copied!') }}' : '{{ __('Share Results') }}'"></span>
+                        </button>
                     </span>
-                </template>
-                <template x-if="solved">
-                    <button
-                        x-on:click="shareResults()"
-                        class="ml-1 inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-xs font-medium text-blue-600 transition-colors hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/30"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z" /></svg>
-                        <span x-text="shareCopied ? '{{ __('Copied!') }}' : '{{ __('Share') }}'"></span>
-                    </button>
                 </template>
             </div>
         </div>

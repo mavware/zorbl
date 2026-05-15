@@ -569,3 +569,24 @@ test('cell background colors persist alongside other style properties', function
     expect($crossword->styles['0,0']['shapebg'])->toBe('circle')
         ->and($crossword->styles['0,0']['color'])->toBe('#E9D5FF');
 });
+
+test('editor exposes allow_embed defaulting to true', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create();
+
+    Livewire::actingAs($user)
+        ->test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->assertSet('allowEmbed', true);
+});
+
+test('saveMetadata persists allow_embed toggle', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create(['allow_embed' => true]);
+
+    Livewire::actingAs($user)
+        ->test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->set('allowEmbed', false)
+        ->call('saveMetadata');
+
+    expect($crossword->fresh()->allow_embed)->toBeFalse();
+});
