@@ -16,6 +16,7 @@ test('lookupClues returns clues from other published puzzles', function () {
         'user_id' => $creator->id,
         'direction' => 'across',
         'clue_number' => 1,
+        'status' => ClueEntry::STATUS_APPROVED,
     ]);
 
     $user = User::factory()->create();
@@ -72,7 +73,7 @@ test('lookupClues returns empty for short answers', function () {
     expect($result)->toHaveCount(0);
 });
 
-test('publishing a puzzle harvests clue entries', function () {
+test('publishing a puzzle harvests clue entries as pending review', function () {
     $user = User::factory()->create();
     $crossword = Crossword::factory()->for($user)->create([
         'width' => 3,
@@ -90,7 +91,33 @@ test('publishing a puzzle harvests clue entries', function () {
 
     expect(ClueEntry::count())->toBe(1)
         ->and(ClueEntry::first()->answer)->toBe('ABC')
-        ->and(ClueEntry::first()->clue)->toBe('Start of alphabet');
+        ->and(ClueEntry::first()->clue)->toBe('Start of alphabet')
+        ->and(ClueEntry::first()->status)->toBe(ClueEntry::STATUS_PENDING);
+});
+
+test('lookupClues excludes clues that are still pending moderation', function () {
+    $creator = User::factory()->create();
+    $crossword = Crossword::factory()->published()->for($creator)->create();
+
+    ClueEntry::create([
+        'answer' => 'CAT',
+        'clue' => 'Feline pet',
+        'crossword_id' => $crossword->id,
+        'user_id' => $creator->id,
+        'direction' => 'across',
+        'clue_number' => 1,
+        'status' => ClueEntry::STATUS_PENDING,
+    ]);
+
+    $user = User::factory()->create();
+    $myPuzzle = Crossword::factory()->for($user)->create();
+
+    $this->actingAs($user);
+
+    $instance = Livewire::test('pages::crosswords.editor', ['crossword' => $myPuzzle])->instance();
+    $result = $instance->lookupClues('CAT');
+
+    expect($result)->toHaveCount(0);
 });
 
 test('unpublishing a puzzle purges clue entries', function () {

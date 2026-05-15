@@ -67,6 +67,7 @@ class PuzzleAttemptController extends Controller
         $attributes = [
             'progress' => $data['progress'],
             'pencil_cells' => $data['pencil_cells'] ?? null,
+            'revealed_cells' => $data['revealed_cells'] ?? null,
             'is_completed' => $data['is_completed'] ?? false,
             'solve_time_seconds' => $data['solve_time_seconds'] ?? null,
         ];

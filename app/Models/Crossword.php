@@ -41,6 +41,7 @@ use Zorbl\CrosswordIO\GridNumberer;
  * @property array<array-key, mixed>|null $styles
  * @property array<array-key, mixed>|null $metadata
  * @property bool $is_published
+ * @property bool $allow_embed
  * @property CarbonImmutable|null $created_at
  * @property CarbonImmutable|null $updated_at
  * @property array<array-key, mixed>|null $user_progress
@@ -65,7 +66,7 @@ use Zorbl\CrosswordIO\GridNumberer;
     'title', 'author', 'copyright', 'notes', 'secret_theme', 'layout',
     'width', 'height', 'kind', 'puzzle_type', 'freestyle_locked',
     'grid', 'solution', 'prefilled', 'user_progress', 'clues_across', 'clues_down',
-    'styles', 'metadata', 'is_published', 'contains_profanity',
+    'styles', 'metadata', 'is_published', 'allow_embed', 'contains_profanity',
     'difficulty_score', 'difficulty_label',
     'cached_attempts_count', 'cached_completed_count', 'cached_avg_solve_time',
 ])]
@@ -92,6 +93,7 @@ class Crossword extends Model
             'styles' => 'array',
             'metadata' => 'array',
             'is_published' => 'boolean',
+            'allow_embed' => 'boolean',
             'contains_profanity' => 'boolean',
             'freestyle_locked' => 'boolean',
             'layout' => CrosswordLayout::class,

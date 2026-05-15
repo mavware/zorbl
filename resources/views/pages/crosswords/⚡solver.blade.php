@@ -31,6 +31,9 @@ new #[Title('Solve Crossword')] class extends Component {
     public bool $isPublished = false;
 
     #[Locked]
+    public bool $allowEmbed = true;
+
+    #[Locked]
     public int $authorUserId = 0;
 
     public string $title = '';
@@ -60,6 +63,8 @@ new #[Title('Solve Crossword')] class extends Component {
     }
 
     public array $pencilCells = [];
+
+    public array $revealedCells = [];
 
     public int $elapsedSeconds = 0;
 
@@ -245,6 +250,7 @@ new #[Title('Solve Crossword')] class extends Component {
 
         $this->isOwner = $user->id === $crossword->user_id;
         $this->isPublished = (bool) $crossword->is_published;
+        $this->allowEmbed = (bool) $crossword->allow_embed;
         $this->authorUserId = $crossword->user_id;
 
         // Find or create the user's attempt for this puzzle
@@ -304,6 +310,7 @@ new #[Title('Solve Crossword')] class extends Component {
         $this->styles = $crossword->styles;
         $this->prefilled = $crossword->prefilled;
         $this->pencilCells = $attempt->pencil_cells ?? [];
+        $this->revealedCells = $attempt->revealed_cells ?? [];
         $this->elapsedSeconds = $attempt->solve_time_seconds ?? 0;
         $this->isSolved = (bool) $attempt->is_completed;
     }
@@ -379,7 +386,7 @@ new #[Title('Solve Crossword')] class extends Component {
         unset($this->favoriteLists);
     }
 
-    public function saveProgress(array $progress, bool $isCompleted = false, int $elapsedSeconds = 0, array $pencilCells = []): void
+    public function saveProgress(array $progress, bool $isCompleted = false, int $elapsedSeconds = 0, array $pencilCells = [], array $revealedCells = []): void
     {
         $attempt = PuzzleAttempt::findOrFail($this->attemptId);
 
@@ -387,10 +394,12 @@ new #[Title('Solve Crossword')] class extends Component {
 
         $this->progress = $progress;
         $this->pencilCells = $pencilCells;
+        $this->revealedCells = $revealedCells;
 
         $data = [
             'progress' => $progress,
             'pencil_cells' => $pencilCells,
+            'revealed_cells' => $revealedCells,
             'is_completed' => $isCompleted,
             'solve_time_seconds' => $elapsedSeconds,
         ];
@@ -479,6 +488,7 @@ new #[Title('Solve Crossword')] class extends Component {
         initialElapsed: @js($elapsedSeconds),
         initialSolved: @js($isSolved),
         initialPencilCells: @js($pencilCells),
+        initialRevealedCells: @js($revealedCells),
         puzzleTitle: @js($title),
         shareTitle: @js($title),
         shareUrl: @js(route('puzzles.solve', $crosswordId)),
@@ -531,12 +541,59 @@ new #[Title('Solve Crossword')] class extends Component {
         </div>
 
         <div class="flex items-center gap-1">
+            {{-- Save status (lives left of the pencil button so it's visible mid-solve) --}}
+            <div class="flex items-center gap-1 pr-2 text-sm text-zinc-500">
+                <template x-if="saving">
+                    <span>{{ __('Saving...') }}</span>
+                </template>
+                <template x-if="showSaved">
+                    <span class="text-emerald-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="inline size-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" /></svg>
+                        {{ __('Saved') }}
+                    </span>
+                </template>
+            </div>
+
+            {{-- Undo --}}
+            <flux:tooltip content="{{ __('Undo (Ctrl+Z)') }}">
+                <button
+                    type="button"
+                    x-on:click="undo(); $refs.gridContainer?.focus()"
+                    :disabled="!canUndo || solved"
+                    class="rounded-lg p-1.5 transition-colors disabled:opacity-30"
+                    :class="canUndo && !solved ? 'text-fg-muted hover:text-zinc-800 dark:hover:text-zinc-200' : ''"
+                    aria-label="{{ __('Undo') }}"
+                    aria-keyshortcuts="Control+Z"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/>
+                    </svg>
+                </button>
+            </flux:tooltip>
+
+            {{-- Redo --}}
+            <flux:tooltip content="{{ __('Redo (Ctrl+Shift+Z)') }}">
+                <button
+                    type="button"
+                    x-on:click="redo(); $refs.gridContainer?.focus()"
+                    :disabled="!canRedo || solved"
+                    class="rounded-lg p-1.5 transition-colors disabled:opacity-30"
+                    :class="canRedo && !solved ? 'text-fg-muted hover:text-zinc-800 dark:hover:text-zinc-200' : ''"
+                    aria-label="{{ __('Redo') }}"
+                    aria-keyshortcuts="Control+Shift+Z"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/>
+                    </svg>
+                </button>
+            </flux:tooltip>
+
             {{-- Pencil mode toggle --}}
             <flux:tooltip content="{{ __('Pencil mode (P)') }}">
                 <button
                     type="button"
-                    x-on:click="pencilMode = !pencilMode"
-                    :class="['text-fg-muted', pencilMode ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' : 'hover:text-zinc-800 dark:hover:text-zinc-200']"
+                    x-on:click="pencilMode = !pencilMode; if (selectedRow >= 0) $refs.gridContainer?.focus()"
+                    :class="pencilMode ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' : 'text-fg-muted hover:text-zinc-800 dark:hover:text-zinc-200'"
                     class="rounded-lg p-1.5 transition-colors"
                     :aria-pressed="pencilMode.toString()"
                     aria-label="{{ __('Pencil mode') }}"
@@ -570,12 +627,12 @@ new #[Title('Solve Crossword')] class extends Component {
             @endif
 
             {{-- Check answers --}}
-            <flux:tooltip content="{{ __('Check answers') }}">
+            <flux:tooltip x-bind:content="Object.keys(checked).length > 0 ? '{{ __('Hide check results') }}' : '{{ __('Check answers') }}'">
                 <button
                     type="button"
                     x-on:click="checkAnswers()"
                     class="text-fg-muted rounded-lg p-1.5 transition-colors hover:text-zinc-800 dark:hover:text-zinc-200"
-                    aria-label="{{ __('Check answers') }}"
+                    x-bind:aria-label="Object.keys(checked).length > 0 ? '{{ __('Hide check results') }}' : '{{ __('Check answers') }}'"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <path d="M20 6 9 17l-5-5"/>
@@ -618,8 +675,9 @@ new #[Title('Solve Crossword')] class extends Component {
                 </flux:menu>
             </flux:dropdown>
 
-            {{-- Embed code (published puzzles only) --}}
-            @if($isPublished)
+            {{-- Embed code: owner always sees it; players only when the
+                 constructor has allowed embedding on a published puzzle. --}}
+            @if($isOwner || ($isPublished && $allowEmbed))
                 <div x-data="{ showEmbed: false }">
                     <flux:tooltip content="{{ __('Embed this puzzle') }}">
                         <flux:button variant="ghost" size="sm" icon="code-bracket" x-on:click="showEmbed = true" />
@@ -676,49 +734,19 @@ new #[Title('Solve Crossword')] class extends Component {
                 </div>
             @endif
 
-            {{-- Share button (visible when solved) --}}
-            <template x-if="solved">
-                <button
-                    x-on:click="shareResults()"
-                    :title="shareCopied ? '{{ __('Copied!') }}' : '{{ __('Share results') }}'"
-                    class="rounded-lg p-1.5 text-emerald-500 transition-colors hover:text-emerald-600 dark:hover:text-emerald-400"
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 20 20" fill="currentColor"><path d="M13 4.5a2.5 2.5 0 11.702 4.89L8.45 12.3a2.5 2.5 0 11-.36-.891l5.252-2.91A2.5 2.5 0 0113 4.5zm-8 6a1 1 0 100 2 1 1 0 000-2zm8-5a1 1 0 100 2 1 1 0 000-2z"/></svg>
-                </button>
-            </template>
-
-            {{-- Save status --}}
+            {{-- Solved! announcement with a single share action --}}
             <div class="flex items-center gap-1 pl-2 text-sm text-zinc-500">
-                <template x-if="pencilMode && !solved">
-                    <span class="mr-1 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">{{ __('Pencil') }}</span>
-                </template>
-                <template x-if="saving">
-                    <span>{{ __('Saving...') }}</span>
-                </template>
-                <template x-if="showSaved">
-                    <span class="text-emerald-500">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="inline size-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" /></svg>
-                        {{ __('Saved') }}
-                    </span>
-                </template>
                 <template x-if="solved">
                     <span class="flex items-center gap-1.5">
                         <span class="font-semibold text-emerald-500">{{ __('Solved!') }}</span>
                         <button
                             x-on:click="shareResults()"
-                            class="rounded-md px-2 py-0.5 text-xs font-medium text-emerald-600 transition-colors hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/30"
-                            x-text="shareCopied ? '{{ __('Copied!') }}' : '{{ __('Share Results') }}'"
-                        ></button>
+                            class="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium text-emerald-600 transition-colors hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/30"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z"/></svg>
+                            <span x-text="shareCopied ? '{{ __('Copied!') }}' : '{{ __('Share Results') }}'"></span>
+                        </button>
                     </span>
-                </template>
-                <template x-if="solved">
-                    <button
-                        x-on:click="shareResults()"
-                        class="ml-1 inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-xs font-medium text-blue-600 transition-colors hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/30"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z" /></svg>
-                        <span x-text="shareCopied ? '{{ __('Copied!') }}' : '{{ __('Share') }}'"></span>
-                    </button>
                 </template>
             </div>
         </div>
@@ -783,8 +811,8 @@ new #[Title('Solve Crossword')] class extends Component {
                         <template x-for="(cell, colIdx) in row" :key="'cell-' + rowIdx + '-' + colIdx">
                             <div
                                 x-on:click="selectCell(rowIdx, colIdx)"
-                                :class="[cellClasses(rowIdx, colIdx), isVoid(rowIdx, colIdx) ? '' : 'border border-line-strong']"
-                                :style="cellBarStyles(rowIdx, colIdx)"
+                                :class="[cellClasses(rowIdx, colIdx), isVoid(rowIdx, colIdx) ? '' : 'border border-line-strong', justSolved && !isBlock(rowIdx, colIdx) && !isVoid(rowIdx, colIdx) ? 'solved-ripple' : '']"
+                                :style="justSolved && !isBlock(rowIdx, colIdx) && !isVoid(rowIdx, colIdx) ? cellBarStyles(rowIdx, colIdx) + '; animation-delay: ' + ((rowIdx + colIdx) * 35) + 'ms' : cellBarStyles(rowIdx, colIdx)"
                                 class="crossword-cell relative box-border flex aspect-square items-center justify-center overflow-hidden select-none"
                                 :id="'crossword-cell-' + rowIdx + '-' + colIdx"
                                 role="gridcell"

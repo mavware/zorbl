@@ -120,10 +120,10 @@ class extends Component {
         window.zorblGuestPersistence = (function() {
             const key = 'zorbl_guest_{{ $crosswordId }}';
             return {
-                save(progress, isCompleted, elapsed, pencilCells) {
+                save(progress, isCompleted, elapsed, pencilCells, revealedCells) {
                     try {
                         localStorage.setItem(key, JSON.stringify({
-                            progress, isCompleted, elapsed, pencilCells, savedAt: Date.now()
+                            progress, isCompleted, elapsed, pencilCells, revealedCells, savedAt: Date.now()
                         }));
                     } catch {}
                     return Promise.resolve();
@@ -173,6 +173,7 @@ class extends Component {
                 initialElapsed: saved?.elapsed ?? 0,
                 initialSolved: saved?.isCompleted ?? false,
                 initialPencilCells: saved?.pencilCells ?? [],
+                initialRevealedCells: saved?.revealedCells ?? {},
                 persistence: window.zorblGuestPersistence,
                 puzzleTitle: @js($title),
                 shareTitle: @js($title),
@@ -222,7 +223,7 @@ class extends Component {
                 </div>
 
                 {{-- Check answers --}}
-                <flux:tooltip content="{{ __('Check answers') }}">
+                <flux:tooltip x-bind:content="Object.keys(checked).length > 0 ? '{{ __('Hide check results') }}' : '{{ __('Check answers') }}'">
                     <button
                         x-on:click="checkAnswers()"
                         class="text-fg-muted rounded-lg p-1.5 transition-colors hover:text-zinc-800 dark:hover:text-zinc-200"
@@ -353,8 +354,8 @@ class extends Component {
                             <template x-for="(cell, colIdx) in row" :key="'cell-' + rowIdx + '-' + colIdx">
                                 <div
                                     x-on:click="selectCell(rowIdx, colIdx)"
-                                    :class="[cellClasses(rowIdx, colIdx), isVoid(rowIdx, colIdx) ? '' : 'border border-line-strong']"
-                                    :style="cellBarStyles(rowIdx, colIdx)"
+                                    :class="[cellClasses(rowIdx, colIdx), isVoid(rowIdx, colIdx) ? '' : 'border border-line-strong', justSolved && !isBlock(rowIdx, colIdx) && !isVoid(rowIdx, colIdx) ? 'solved-ripple' : '']"
+                                    :style="justSolved && !isBlock(rowIdx, colIdx) && !isVoid(rowIdx, colIdx) ? cellBarStyles(rowIdx, colIdx) + '; animation-delay: ' + ((rowIdx + colIdx) * 35) + 'ms' : cellBarStyles(rowIdx, colIdx)"
                                     class="crossword-cell relative box-border flex aspect-square items-center justify-center select-none"
                                     :id="'crossword-cell-' + rowIdx + '-' + colIdx"
                                     role="gridcell"

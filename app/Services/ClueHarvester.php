@@ -46,6 +46,7 @@ class ClueHarvester
                     'user_id' => $crossword->user_id,
                     'direction' => $direction,
                     'clue_number' => $slot['number'],
+                    'status' => ClueEntry::STATUS_PENDING,
                 ];
             }
         }

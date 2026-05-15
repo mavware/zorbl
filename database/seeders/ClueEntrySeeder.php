@@ -105,6 +105,7 @@ class ClueEntrySeeder extends Seeder
                 'crossword_id' => null,
                 'direction' => null,
                 'clue_number' => null,
+                'status' => ClueEntry::STATUS_APPROVED,
                 'created_at' => $now,
                 'updated_at' => $now,
             ];

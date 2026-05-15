@@ -7,12 +7,12 @@
     $freestyleUnlocked = $this->puzzleType === \App\Enums\PuzzleType::Freestyle && ! $this->freestyleLocked;
 @endphp
 @if ($freestyleUnlocked)
-    <div class="text-fg-muted flex h-full items-center justify-center px-4 text-center text-sm">
+    <div class="text-fg-muted flex h-full items-center justify-center px-4 text-center text-sm" :class="{ 'editor-complete-flash': cluesCompleteFlash }">
         {{ __('Lock the grid to start writing clues.') }}
     </div>
 @else
 <flux:heading size="sm" class="mb-2 shrink-0">{{ $label }}</flux:heading>
-<div class="flex-1 space-y-0.5 overflow-y-auto" x-ref="{{ $panelRef }}">
+<div class="flex-1 space-y-0.5 overflow-y-auto" x-ref="{{ $panelRef }}" :class="{ 'editor-complete-flash': cluesCompleteFlash }">
     <template x-for="clue in {{ $computed }}" :key="'{{ $direction }}-' + clue.number">
         <div
             x-on:click="selectClue('{{ $direction }}', clue.number, $event)"

@@ -363,7 +363,6 @@
             </div>
         </footer>
 
-        @include('partials.cookie-banner')
         @include('partials.install-prompt')
 
         @fluxScripts
