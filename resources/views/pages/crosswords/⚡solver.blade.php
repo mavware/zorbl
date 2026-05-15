@@ -544,6 +544,40 @@ new #[Title('Solve Crossword')] class extends Component {
                 </template>
             </div>
 
+            {{-- Undo --}}
+            <flux:tooltip content="{{ __('Undo (Ctrl+Z)') }}">
+                <button
+                    type="button"
+                    x-on:click="undo(); $refs.gridContainer?.focus()"
+                    :disabled="!canUndo || solved"
+                    class="rounded-lg p-1.5 transition-colors disabled:opacity-30"
+                    :class="canUndo && !solved ? 'text-fg-muted hover:text-zinc-800 dark:hover:text-zinc-200' : ''"
+                    aria-label="{{ __('Undo') }}"
+                    aria-keyshortcuts="Control+Z"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/>
+                    </svg>
+                </button>
+            </flux:tooltip>
+
+            {{-- Redo --}}
+            <flux:tooltip content="{{ __('Redo (Ctrl+Shift+Z)') }}">
+                <button
+                    type="button"
+                    x-on:click="redo(); $refs.gridContainer?.focus()"
+                    :disabled="!canRedo || solved"
+                    class="rounded-lg p-1.5 transition-colors disabled:opacity-30"
+                    :class="canRedo && !solved ? 'text-fg-muted hover:text-zinc-800 dark:hover:text-zinc-200' : ''"
+                    aria-label="{{ __('Redo') }}"
+                    aria-keyshortcuts="Control+Shift+Z"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/>
+                    </svg>
+                </button>
+            </flux:tooltip>
+
             {{-- Pencil mode toggle --}}
             <flux:tooltip content="{{ __('Pencil mode (P)') }}">
                 <button
