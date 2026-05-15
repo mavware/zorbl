@@ -64,6 +64,8 @@ new #[Title('Solve Crossword')] class extends Component {
 
     public array $pencilCells = [];
 
+    public array $revealedCells = [];
+
     public int $elapsedSeconds = 0;
 
     public bool $isSolved = false;
@@ -308,6 +310,7 @@ new #[Title('Solve Crossword')] class extends Component {
         $this->styles = $crossword->styles;
         $this->prefilled = $crossword->prefilled;
         $this->pencilCells = $attempt->pencil_cells ?? [];
+        $this->revealedCells = $attempt->revealed_cells ?? [];
         $this->elapsedSeconds = $attempt->solve_time_seconds ?? 0;
         $this->isSolved = (bool) $attempt->is_completed;
     }
@@ -383,7 +386,7 @@ new #[Title('Solve Crossword')] class extends Component {
         unset($this->favoriteLists);
     }
 
-    public function saveProgress(array $progress, bool $isCompleted = false, int $elapsedSeconds = 0, array $pencilCells = []): void
+    public function saveProgress(array $progress, bool $isCompleted = false, int $elapsedSeconds = 0, array $pencilCells = [], array $revealedCells = []): void
     {
         $attempt = PuzzleAttempt::findOrFail($this->attemptId);
 
@@ -391,10 +394,12 @@ new #[Title('Solve Crossword')] class extends Component {
 
         $this->progress = $progress;
         $this->pencilCells = $pencilCells;
+        $this->revealedCells = $revealedCells;
 
         $data = [
             'progress' => $progress,
             'pencil_cells' => $pencilCells,
+            'revealed_cells' => $revealedCells,
             'is_completed' => $isCompleted,
             'solve_time_seconds' => $elapsedSeconds,
         ];
@@ -483,6 +488,7 @@ new #[Title('Solve Crossword')] class extends Component {
         initialElapsed: @js($elapsedSeconds),
         initialSolved: @js($isSolved),
         initialPencilCells: @js($pencilCells),
+        initialRevealedCells: @js($revealedCells),
         puzzleTitle: @js($title),
         shareTitle: @js($title),
         shareUrl: @js(route('puzzles.solve', $crosswordId)),

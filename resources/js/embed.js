@@ -297,12 +297,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             let initialElapsed = 0;
             let initialSolved = false;
             let initialPencilCells = {};
+            let initialRevealedCells = {};
 
             if (saved) {
                 if (saved.progress) progress = saved.progress;
                 if (saved.elapsed) initialElapsed = saved.elapsed;
                 if (saved.isCompleted) initialSolved = true;
                 if (saved.pencilCells) initialPencilCells = saved.pencilCells;
+                if (saved.revealedCells) initialRevealedCells = saved.revealedCells;
             }
 
             // Merge prefilled cells into progress
@@ -336,6 +338,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     initialElapsed: initialElapsed,
                     initialSolved: initialSolved,
                     initialPencilCells: initialPencilCells,
+                    initialRevealedCells: initialRevealedCells,
                     persistence: '__PERSISTENCE__',
                 }).replace('"__PERSISTENCE__"', `zorblPersistence_${data.id}`)})`);
 

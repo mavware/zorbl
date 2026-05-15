@@ -20,7 +20,7 @@ import { cloneForWire, createAutosave } from './grid/persistence.js';
 
 export function crosswordSolver({
     width, height, grid, solution, progress, styles, prefilled,
-    cluesAcross, cluesDown, initialElapsed, initialSolved, initialPencilCells, persistence,
+    cluesAcross, cluesDown, initialElapsed, initialSolved, initialPencilCells, initialRevealedCells, persistence,
     puzzleTitle,
     shareTitle, shareUrl,
 }) {
@@ -39,7 +39,7 @@ export function crosswordSolver({
         selectedCol: -1,
         direction: 'across',
         checked: {},
-        revealed: {},
+        revealed: (initialRevealedCells && !Array.isArray(initialRevealedCells)) ? initialRevealedCells : {},
         solved: initialSolved || false,
         // Flips true only when the user solves in this session — used to
         // gate the green ripple animation so it doesn't replay on reload.
@@ -686,13 +686,14 @@ export function crosswordSolver({
             this.showSaved = false;
             const progressCopy = cloneForWire(this.progress);
             const pencilCopy = cloneForWire(this.pencilCells);
+            const revealedCopy = cloneForWire(this.revealed);
             const solved = asCompletion || this.solved;
             try {
                 if (this.persistence) {
-                    await this.persistence.save(progressCopy, solved, this.elapsedSeconds, pencilCopy);
+                    await this.persistence.save(progressCopy, solved, this.elapsedSeconds, pencilCopy, revealedCopy);
                     this._autosave?.acknowledge();
                 } else {
-                    await this.$wire.saveProgress(progressCopy, solved, this.elapsedSeconds, pencilCopy);
+                    await this.$wire.saveProgress(progressCopy, solved, this.elapsedSeconds, pencilCopy, revealedCopy);
                 }
             } finally {
                 this.isDirty = false;
