@@ -7,6 +7,7 @@ use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Forms\Components\DateTimePicker;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -53,10 +54,16 @@ class UsersTable
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('manual_pro_granted_at')
-                    ->label('Manual Pro')
+                TextColumn::make('manual_pro_started_at')
+                    ->label('Manual Pro starts')
                     ->dateTime()
                     ->placeholder('—')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('manual_pro_ended_at')
+                    ->label('Manual Pro ends')
+                    ->dateTime()
+                    ->placeholder('Never')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
@@ -66,20 +73,40 @@ class UsersTable
             ->recordActions([
                 EditAction::make(),
                 Action::make('grantPro')
-                    ->label(fn (User $record): string => $record->manual_pro_granted_at ? 'Revoke Pro' : 'Grant Pro')
-                    ->icon(fn (User $record): Heroicon => $record->manual_pro_granted_at ? Heroicon::OutlinedXCircle : Heroicon::OutlinedSparkles)
-                    ->color(fn (User $record): string => $record->manual_pro_granted_at ? 'danger' : 'success')
-                    ->requiresConfirmation()
-                    ->modalHeading(fn (User $record): string => $record->manual_pro_granted_at ? "Revoke Pro from {$record->name}?" : "Grant Pro to {$record->name}?")
-                    ->modalDescription(fn (User $record): string => $record->manual_pro_granted_at
-                        ? 'This removes the manual Pro grant. They may still have Pro through an active subscription or the Admin role.'
-                        : 'This gives the user full Pro-tier access, bypassing Stripe. They will keep Pro until you revoke it.')
-                    ->action(function (User $record): void {
-                        $granting = $record->manual_pro_granted_at === null;
-                        $record->update(['manual_pro_granted_at' => $granting ? now() : null]);
+                    ->label(fn (User $record): string => $record->hasActiveManualPro() ? 'End Pro' : 'Grant Pro')
+                    ->icon(fn (User $record): Heroicon => $record->hasActiveManualPro() ? Heroicon::OutlinedXCircle : Heroicon::OutlinedSparkles)
+                    ->color(fn (User $record): string => $record->hasActiveManualPro() ? 'danger' : 'success')
+                    ->modalHeading(fn (User $record): string => $record->hasActiveManualPro()
+                        ? "End Pro for {$record->name}?"
+                        : "Grant Pro to {$record->name}")
+                    ->modalDescription(fn (User $record): ?string => $record->hasActiveManualPro()
+                        ? 'This ends the manual Pro grant immediately. They may still have Pro through an active subscription or the Admin role.'
+                        : null)
+                    ->schema(fn (User $record): array => $record->hasActiveManualPro() ? [] : [
+                        DateTimePicker::make('manual_pro_ended_at')
+                            ->label('Ends at')
+                            ->helperText('Leave blank to grant Pro with no expiration.')
+                            ->after('now'),
+                    ])
+                    ->action(function (User $record, array $data): void {
+                        if ($record->hasActiveManualPro()) {
+                            $record->update(['manual_pro_ended_at' => now()]);
+
+                            Notification::make()
+                                ->title("Ended Pro for {$record->name}")
+                                ->success()
+                                ->send();
+
+                            return;
+                        }
+
+                        $record->update([
+                            'manual_pro_started_at' => now(),
+                            'manual_pro_ended_at' => $data['manual_pro_ended_at'] ?? null,
+                        ]);
 
                         Notification::make()
-                            ->title($granting ? "Granted Pro to {$record->name}" : "Revoked Pro from {$record->name}")
+                            ->title("Granted Pro to {$record->name}")
                             ->success()
                             ->send();
                     }),

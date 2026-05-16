@@ -47,7 +47,8 @@ use Spatie\Permission\Traits\HasRoles;
  * @property string|null $last_solve_date
  * @property array<string, bool>|null $notification_preferences
  * @property CarbonImmutable|null $grandfathered_at
- * @property CarbonImmutable|null $manual_pro_granted_at
+ * @property CarbonImmutable|null $manual_pro_started_at
+ * @property CarbonImmutable|null $manual_pro_ended_at
  * @property-read Collection<int, Achievement> $achievements
  * @property-read int|null $achievements_count
  * @property-read Collection<int, ClueEntry> $clueEntries
@@ -85,7 +86,7 @@ use Spatie\Permission\Traits\HasRoles;
  *
  * @mixin Eloquent
  */
-#[Fillable(['name', 'email', 'password', 'copyright_name', 'bio', 'google_id', 'current_streak', 'longest_streak', 'last_solve_date', 'notification_preferences', 'safe_search_enabled', 'grandfathered_at', 'manual_pro_granted_at'])]
+#[Fillable(['name', 'email', 'password', 'copyright_name', 'bio', 'google_id', 'current_streak', 'longest_streak', 'last_solve_date', 'notification_preferences', 'safe_search_enabled', 'grandfathered_at', 'manual_pro_started_at', 'manual_pro_ended_at'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements FilamentUser
 {
@@ -102,7 +103,8 @@ class User extends Authenticatable implements FilamentUser
         return [
             'email_verified_at' => 'datetime',
             'grandfathered_at' => 'datetime',
-            'manual_pro_granted_at' => 'datetime',
+            'manual_pro_started_at' => 'datetime',
+            'manual_pro_ended_at' => 'datetime',
             'notification_preferences' => 'array',
             'safe_search_enabled' => 'boolean',
             'password' => 'hashed',
@@ -272,8 +274,24 @@ class User extends Authenticatable implements FilamentUser
     public function isPro(): bool
     {
         return $this->hasRole('Admin')
-            || $this->manual_pro_granted_at !== null
+            || $this->hasActiveManualPro()
             || $this->subscribed('default');
+    }
+
+    /**
+     * Whether the user is currently within an admin-granted manual Pro window.
+     * A null end means the grant has no expiration; a future start means it hasn't begun yet.
+     */
+    public function hasActiveManualPro(): bool
+    {
+        $start = $this->manual_pro_started_at;
+        if ($start === null || $start->isFuture()) {
+            return false;
+        }
+
+        $end = $this->manual_pro_ended_at;
+
+        return $end === null || $end->isFuture();
     }
 
     /**

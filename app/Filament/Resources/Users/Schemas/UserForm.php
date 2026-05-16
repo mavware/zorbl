@@ -33,10 +33,13 @@ class UserForm
                     ->relationship('roles', 'name')
                     ->columns(2)
                     ->columnSpanFull(),
-                DateTimePicker::make('manual_pro_granted_at')
-                    ->label('Manual Pro grant')
-                    ->helperText('Set to give this user Pro-tier access without a Stripe subscription. Clear to revoke.')
-                    ->columnSpanFull(),
+                DateTimePicker::make('manual_pro_started_at')
+                    ->label('Manual Pro starts')
+                    ->helperText('When the manual Pro grant begins. Leave blank for no manual grant.'),
+                DateTimePicker::make('manual_pro_ended_at')
+                    ->label('Manual Pro ends')
+                    ->helperText('When the manual Pro grant expires. Leave blank for no expiration.')
+                    ->after('manual_pro_started_at'),
                 Textarea::make('two_factor_secret')
                     ->columnSpanFull(),
                 Textarea::make('two_factor_recovery_codes')
