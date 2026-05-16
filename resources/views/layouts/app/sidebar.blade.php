@@ -4,6 +4,7 @@
         @include('partials.head')
     </head>
     <body class="min-h-screen bg-page">
+        @include('partials.impersonation-banner')
         <flux:sidebar sticky collapsible="mobile" class="bg-surface border-line border-e">
             <flux:sidebar.header>
                 <x-app-logo :sidebar="true" href="{{ route('dashboard') }}" wire:navigate />

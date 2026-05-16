@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Users\Tables;
 
+use App\Http\Controllers\ImpersonationController;
 use App\Models\User;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
@@ -12,6 +13,7 @@ use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Auth;
 
 class UsersTable
 {
@@ -109,6 +111,20 @@ class UsersTable
                             ->title("Granted Pro to {$record->name}")
                             ->success()
                             ->send();
+                    }),
+                Action::make('impersonate')
+                    ->label('Impersonate')
+                    ->icon(Heroicon::OutlinedUserCircle)
+                    ->color('warning')
+                    ->visible(fn (User $record): bool => ! $record->is(Auth::user()) && ! $record->hasRole('Admin'))
+                    ->requiresConfirmation()
+                    ->modalHeading(fn (User $record): string => "Impersonate {$record->name}?")
+                    ->modalDescription('You will be logged in as this user. Use the banner at the top of the page to leave impersonation.')
+                    ->action(function (User $record) {
+                        session()->put(ImpersonationController::SESSION_KEY, Auth::id());
+                        Auth::loginUsingId($record->id);
+
+                        return redirect('/');
                     }),
             ])
             ->toolbarActions([

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\EmbedController;
 use App\Http\Controllers\Auth\GoogleController;
+use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\OgImageController;
 use App\Http\Controllers\SitemapController;
 use App\Models\Crossword;
@@ -51,6 +52,11 @@ Route::livewire('puzzles', 'pages::puzzles.index')->name('puzzles.index');
 Route::livewire('puzzles/daily', 'pages::puzzles.daily-history')->name('puzzles.daily-history');
 Route::get('puzzles/{crossword}/og.png', [OgImageController::class, 'crossword'])->name('puzzles.og');
 Route::livewire('puzzles/{crossword}', 'pages::puzzles.solve')->name('puzzles.solve');
+
+Route::middleware('auth')->group(function () {
+    Route::post('impersonate/stop', [ImpersonationController::class, 'stop'])->name('impersonate.stop');
+    Route::post('impersonate/{user}', [ImpersonationController::class, 'start'])->name('impersonate.start');
+});
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('dashboard', 'pages::dashboard')->name('dashboard');

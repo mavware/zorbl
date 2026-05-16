@@ -18,6 +18,7 @@
         @fluxAppearance
     </head>
     <body class="bg-page min-h-screen antialiased">
+        @include('partials.impersonation-banner')
         {{-- Navigation --}}
         <nav class="bg-elevated border-line sticky top-0 z-50 border-b /80 backdrop-blur-lg /80">
             <div class="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
