@@ -33,6 +33,10 @@ class UserForm
                     ->relationship('roles', 'name')
                     ->columns(2)
                     ->columnSpanFull(),
+                DateTimePicker::make('manual_pro_granted_at')
+                    ->label('Manual Pro grant')
+                    ->helperText('Set to give this user Pro-tier access without a Stripe subscription. Clear to revoke.')
+                    ->columnSpanFull(),
                 Textarea::make('two_factor_secret')
                     ->columnSpanFull(),
                 Textarea::make('two_factor_recovery_codes')
