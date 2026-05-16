@@ -52,7 +52,7 @@ class extends Component {
         cookie()->queue('zorbl_guest_solved', json_encode($solved), 60 * 24 * 90);
 
         $this->crosswordId = $crossword->id;
-        $this->title = $crossword->title ?? 'Untitled Puzzle';
+        $this->title = $crossword->displayTitle();
         $this->authorName = $crossword->user->name ?? '';
         $this->width = $crossword->width;
         $this->height = $crossword->height;

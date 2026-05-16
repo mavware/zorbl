@@ -224,7 +224,7 @@ new #[Title('Constructor Profile')] class extends Component {
                         </div>
                         <div class="mb-2 flex items-start justify-between">
                             <flux:heading size="sm" class="group-hover:text-blue-600 dark:group-hover:text-blue-400">
-                                {{ $puzzle->title ?: __('Untitled Puzzle') }}
+                                {{ $puzzle->displayTitle() }}
                             </flux:heading>
                             @if($puzzle->difficulty_label)
                                 <span @class([

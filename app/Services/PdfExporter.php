@@ -48,7 +48,7 @@ class PdfExporter
         );
 
         $pdf = Pdf::loadView('exports.crossword-pdf', [
-            'title' => $crossword->title ?: 'Untitled Puzzle',
+            'title' => $crossword->displayTitle(),
             'author' => $crossword->author,
             'copyright' => $crossword->copyright,
             'notes' => $crossword->notes,

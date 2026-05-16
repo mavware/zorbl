@@ -180,7 +180,7 @@ new #[Title('Contest')] class extends Component {
                             {{ $index + 1 }}
                         </span>
                         <div>
-                            <flux:heading size="sm">{{ $crossword->title ?: __('Untitled Puzzle') }}</flux:heading>
+                            <flux:heading size="sm">{{ $crossword->displayTitle() }}</flux:heading>
                             <flux:text size="xs">
                                 {{ $crossword->width }}&times;{{ $crossword->height }}
                                 @if($crossword->pivot->extraction_hint)

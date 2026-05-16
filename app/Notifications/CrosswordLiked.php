@@ -39,7 +39,7 @@ class CrosswordLiked extends Notification implements ShouldQueue
             'type' => 'crossword.liked',
             'title' => __(':name liked your puzzle ":puzzle"', [
                 'name' => $this->liker->name,
-                'puzzle' => $this->crossword->title ?: __('Untitled Puzzle'),
+                'puzzle' => $this->crossword->displayTitle(),
             ]),
             'body' => null,
             'url' => route('crosswords.solver', $this->crossword),

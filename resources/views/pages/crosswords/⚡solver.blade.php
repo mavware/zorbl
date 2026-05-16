@@ -298,7 +298,7 @@ new #[Title('Solve Crossword')] class extends Component {
 
         $this->crosswordId = $crossword->id;
         $this->attemptId = $attempt->id;
-        $this->title = $crossword->title ?? 'Untitled Puzzle';
+        $this->title = $crossword->displayTitle();
         $this->authorName = $crossword->user->name ?? '';
         $this->width = $crossword->width;
         $this->height = $crossword->height;

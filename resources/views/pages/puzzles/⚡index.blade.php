@@ -346,7 +346,7 @@ class extends Component {
                         @endif
                     </div>
                     <div class="mt-1">
-                        <span class="font-medium text-fg">{{ $dailyPuzzle->title ?: __('Untitled Puzzle') }}</span>
+                        <span class="font-medium text-fg">{{ $dailyPuzzle->displayTitle() }}</span>
                         <flux:text size="sm" class="mt-0.5 text-zinc-600 dark:text-zinc-400">
                             {{ __('by :author', ['author' => $dailyPuzzle->user->name ?? __('Unknown')]) }}
                             &middot;
@@ -516,7 +516,7 @@ class extends Component {
                         <x-grid-thumbnail :grid="$crossword->grid" :width="$crossword->width" :height="$crossword->height" />
                     </div>
 
-                    <flux:heading size="sm" class="truncate">{{ $crossword->title ?: __('Untitled Puzzle') }}</flux:heading>
+                    <flux:heading size="sm" class="truncate">{{ $crossword->displayTitle() }}</flux:heading>
                     <flux:text size="sm" class="mt-1">
                         {{ __('by :author', ['author' => $crossword->user->name ?? __('Unknown')]) }}
                         &middot;

@@ -38,7 +38,7 @@ class PuzzleCompleted extends Notification implements ShouldQueue
     {
         $title = __(':name completed your puzzle ":puzzle"', [
             'name' => $this->solver->name,
-            'puzzle' => $this->crossword->title ?: __('Untitled Puzzle'),
+            'puzzle' => $this->crossword->displayTitle(),
         ]);
 
         return [

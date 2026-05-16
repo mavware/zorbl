@@ -358,7 +358,7 @@ new #[Title('Constructor Analytics')] class extends Component {
                         <flux:table.row :key="$puzzle->id">
                             <flux:table.cell variant="strong">
                                 <a href="{{ route('crosswords.editor', $puzzle) }}" wire:navigate class="hover:text-blue-600 dark:hover:text-blue-400">
-                                    {{ $puzzle->title ?: __('Untitled Puzzle') }}
+                                    {{ $puzzle->displayTitle() }}
                                 </a>
                                 <div class="text-xs text-zinc-500">{{ $puzzle->width }}&times;{{ $puzzle->height }}</div>
                             </flux:table.cell>

@@ -118,7 +118,7 @@ class extends Component {
                         <x-grid-thumbnail :grid="$crossword->grid" :width="$crossword->width" :height="$crossword->height" />
                     </div>
 
-                    <flux:heading size="sm" class="truncate">{{ $crossword->title ?: __('Untitled Puzzle') }}</flux:heading>
+                    <flux:heading size="sm" class="truncate">{{ $crossword->displayTitle() }}</flux:heading>
                     <flux:text size="sm" class="mt-1">
                         {{ __('by :author', ['author' => $crossword->user->name ?? __('Unknown')]) }}
                         &middot;

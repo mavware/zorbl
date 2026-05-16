@@ -160,7 +160,7 @@ new #[Title('Solving')] class extends Component {
                                 <x-grid-thumbnail :grid="$attempt->crossword->grid" :width="$attempt->crossword->width" :height="$attempt->crossword->height" />
                             </div>
 
-                            <flux:heading size="sm" class="truncate">{{ $attempt->crossword->title ?: __('Untitled Puzzle') }}</flux:heading>
+                            <flux:heading size="sm" class="truncate">{{ $attempt->crossword->displayTitle() }}</flux:heading>
                             <flux:text size="sm" class="mt-1">
                                 {{ __('by :author', ['author' => $attempt->crossword->user->name ?? __('Unknown')]) }}
                                 &middot;
