@@ -24,6 +24,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int|null $solve_time_seconds
  * @property array<array-key, mixed>|null $pencil_cells
  * @property array<array-key, mixed>|null $revealed_cells
+ * @property string|null $meta_answer
  * @property-read Crossword $crossword
  * @property-read User $user
  *
@@ -44,6 +45,7 @@ class PuzzleAttempt extends Model
         'progress',
         'pencil_cells',
         'revealed_cells',
+        'meta_answer',
         'is_completed',
         'started_at',
         'completed_at',

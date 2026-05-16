@@ -48,6 +48,12 @@ class extends Component {
     public string $copyright = '';
     public string $notes = '';
     public string $secretTheme = '';
+
+    public string $metaAnswerPrompt = '';
+    /** @var list<string> */
+    public array $metaAnswers = [];
+    public bool $metaAnswerReveal = true;
+    public string $newMetaAnswer = '';
     public ?CrosswordLayout $layout = null;
     public int $minAnswerLength = 3;
 
@@ -88,6 +94,9 @@ class extends Component {
         $this->copyright = $crossword->copyright ?? copyright(Auth::user()->copyright_name ?? Auth::user()->name ?? '');
         $this->notes = $crossword->notes ?? '';
         $this->secretTheme = $crossword->secret_theme ?? '';
+        $this->metaAnswerPrompt = $crossword->meta_answer_prompt ?? '';
+        $this->metaAnswers = $crossword->meta_answers ?? [];
+        $this->metaAnswerReveal = $crossword->meta_answer_reveal ?? true;
         $this->layout = $crossword->layout;
         $this->minAnswerLength = $crossword->metadata['min_answer_length'] ?? 3;
         $this->isPublished = $crossword->is_published;
@@ -158,12 +167,15 @@ class extends Component {
     public function saveMetadata(): void
     {
         $this->validate([
-            'title'           => ['nullable', 'string', 'max:255'],
-            'author'          => ['nullable', 'string', 'max:255'],
-            'copyright'       => ['nullable', 'string', 'max:255'],
-            'notes'           => ['nullable', 'string', 'max:1000'],
-            'secretTheme'     => ['nullable', 'string', 'max:500'],
-            'minAnswerLength' => ['required', 'integer', 'min:1', 'max:15'],
+            'title'            => ['nullable', 'string', 'max:255'],
+            'author'           => ['nullable', 'string', 'max:255'],
+            'copyright'        => ['nullable', 'string', 'max:255'],
+            'notes'            => ['nullable', 'string', 'max:1000'],
+            'secretTheme'      => ['nullable', 'string', 'max:500'],
+            'metaAnswerPrompt' => ['nullable', 'string', 'max:500'],
+            'metaAnswers'      => ['nullable', 'array', 'max:10'],
+            'metaAnswers.*'    => ['required', 'string', 'max:255'],
+            'minAnswerLength'  => ['required', 'integer', 'min:1', 'max:15'],
         ]);
 
         $crossword = $this->crossword;
@@ -172,15 +184,23 @@ class extends Component {
         $metadata = $crossword->metadata ?? [];
         $metadata['min_answer_length'] = $this->minAnswerLength;
 
+        $filteredMetaAnswers = array_values(array_filter(
+            array_map('trim', $this->metaAnswers),
+            fn (string $a) => $a !== '',
+        ));
+
         $crossword->update([
-            'title'        => $this->title,
-            'author'       => $this->author,
-            'copyright'    => $this->copyright,
-            'notes'        => $this->notes,
-            'secret_theme' => $this->secretTheme !== '' ? $this->secretTheme : null,
-            'layout'       => $this->layout,
-            'metadata'     => $metadata,
-            'allow_embed'  => $this->allowEmbed,
+            'title'               => $this->title,
+            'author'              => $this->author,
+            'copyright'           => $this->copyright,
+            'notes'               => $this->notes,
+            'secret_theme'        => $this->secretTheme !== '' ? $this->secretTheme : null,
+            'meta_answer_prompt'  => $this->metaAnswerPrompt !== '' ? $this->metaAnswerPrompt : null,
+            'meta_answers'        => ! empty($filteredMetaAnswers) ? $filteredMetaAnswers : null,
+            'meta_answer_reveal'  => $this->metaAnswerReveal,
+            'layout'              => $this->layout,
+            'metadata'            => $metadata,
+            'allow_embed'         => $this->allowEmbed,
         ]);
 
         $crossword->tags()->sync($this->tagIds);
@@ -188,6 +208,23 @@ class extends Component {
         $this->showSettingsModal = false;
         $this->dispatch('settings-updated');
         $this->dispatch('saved');
+    }
+
+    public function addMetaAnswer(): void
+    {
+        $answer = trim($this->newMetaAnswer);
+        if ($answer === '' || count($this->metaAnswers) >= 10) {
+            return;
+        }
+
+        $this->metaAnswers[] = $answer;
+        $this->newMetaAnswer = '';
+    }
+
+    public function removeMetaAnswer(int $index): void
+    {
+        unset($this->metaAnswers[$index]);
+        $this->metaAnswers = array_values($this->metaAnswers);
     }
 
     /** @return array<int, array{id: int, name: string}> */
@@ -1306,6 +1343,59 @@ class extends Component {
                 <flux:description>{{ __('Only used by AI Autofill to pick the best fill. Never shown to solvers.') }}</flux:description>
                 <flux:error name="secretTheme"/>
             </flux:field>
+
+            <flux:separator/>
+
+            {{-- Meta Answer Section --}}
+            <div class="space-y-4">
+                <div>
+                    <flux:heading size="sm">{{ __('Meta Answer') }}</flux:heading>
+                    <flux:text size="sm" class="mt-1">{{ __('Add a meta answer prompt that solvers see after completing the puzzle. Great for themed puzzles with a hidden message.') }}</flux:text>
+                </div>
+
+                <flux:field>
+                    <flux:label>{{ __('Prompt') }}</flux:label>
+                    <flux:input wire:model="metaAnswerPrompt"
+                                placeholder="{{ __('e.g. "What\'s the hidden theme?" or "Unscramble the circled letters"') }}"
+                                maxlength="500" />
+                    <flux:error name="metaAnswerPrompt"/>
+                </flux:field>
+
+                <flux:field>
+                    <flux:label>{{ __('Accepted Answers') }}</flux:label>
+                    <flux:description>{{ __('Add one or more correct answers. Matching is case-insensitive.') }}</flux:description>
+
+                    @if(count($metaAnswers) > 0)
+                        <div class="mt-2 space-y-2">
+                            @foreach($metaAnswers as $index => $answer)
+                                <div class="flex items-center gap-2">
+                                    <flux:badge>{{ $answer }}</flux:badge>
+                                    <flux:button size="xs" variant="ghost" wire:click="removeMetaAnswer({{ $index }})">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="size-3.5" viewBox="0 0 20 20" fill="currentColor"><path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z"/></svg>
+                                    </flux:button>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+
+                    @if(count($metaAnswers) < 10)
+                        <div class="mt-2 flex items-center gap-2">
+                            <flux:input wire:model="newMetaAnswer"
+                                        wire:keydown.enter.prevent="addMetaAnswer"
+                                        placeholder="{{ __('Type an answer and press Enter') }}"
+                                        size="sm" />
+                            <flux:button size="sm" wire:click="addMetaAnswer">{{ __('Add') }}</flux:button>
+                        </div>
+                    @endif
+
+                    <flux:error name="metaAnswers"/>
+                </flux:field>
+
+                <flux:field>
+                    <flux:checkbox wire:model="metaAnswerReveal" label="{{ __('Show solvers whether their answer is correct') }}" />
+                    <flux:description>{{ __('When enabled, solvers get instant feedback after submitting their answer.') }}</flux:description>
+                </flux:field>
+            </div>
 
             <flux:separator/>
 

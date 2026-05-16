@@ -28,6 +28,9 @@ use Zorbl\CrosswordIO\GridNumberer;
  * @property string|null $copyright
  * @property string|null $notes
  * @property string|null $pdf_narrative
+ * @property string|null $meta_answer_prompt
+ * @property array<array-key, string>|null $meta_answers
+ * @property bool $meta_answer_reveal
  * @property string|null $secret_theme
  * @property CrosswordLayout|null $layout
  * @property PuzzleType $puzzle_type
@@ -65,7 +68,9 @@ use Zorbl\CrosswordIO\GridNumberer;
  * @mixin Eloquent
  */
 #[Fillable([
-    'title', 'author', 'copyright', 'notes', 'pdf_narrative', 'secret_theme', 'layout',
+    'title', 'author', 'copyright', 'notes', 'pdf_narrative',
+    'meta_answer_prompt', 'meta_answers', 'meta_answer_reveal',
+    'secret_theme', 'layout',
     'width', 'height', 'kind', 'puzzle_type', 'freestyle_locked',
     'grid', 'solution', 'prefilled', 'user_progress', 'clues_across', 'clues_down',
     'styles', 'metadata', 'is_published', 'allow_embed', 'contains_profanity',
@@ -94,6 +99,8 @@ class Crossword extends Model
             'clues_down' => 'array',
             'styles' => 'array',
             'metadata' => 'array',
+            'meta_answers' => 'array',
+            'meta_answer_reveal' => 'boolean',
             'is_published' => 'boolean',
             'allow_embed' => 'boolean',
             'contains_profanity' => 'boolean',
@@ -465,6 +472,24 @@ class Crossword extends Model
             'cached_completed_count' => $completedCount,
             'cached_avg_solve_time' => $avgSolveTime !== null ? (int) round($avgSolveTime) : null,
         ]);
+    }
+
+    public function hasMetaAnswer(): bool
+    {
+        return filled($this->meta_answer_prompt) && ! empty($this->meta_answers);
+    }
+
+    public function isMetaAnswerCorrect(string $submission): bool
+    {
+        $normalized = mb_strtolower(trim($submission));
+
+        foreach ($this->meta_answers ?? [] as $answer) {
+            if (mb_strtolower(trim($answer)) === $normalized) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

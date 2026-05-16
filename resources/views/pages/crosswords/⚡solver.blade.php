@@ -70,6 +70,13 @@ new #[Title('Solve Crossword')] class extends Component {
 
     public bool $isSolved = false;
 
+    public bool $hasMetaAnswer = false;
+    public string $metaAnswerPrompt = '';
+    public bool $metaAnswerReveal = false;
+    public string $metaAnswerSubmission = '';
+    public ?bool $metaAnswerCorrect = null;
+    public bool $metaAnswerSubmitted = false;
+
     public bool $showAddToListModal = false;
 
     public string $newListName = '';
@@ -313,6 +320,18 @@ new #[Title('Solve Crossword')] class extends Component {
         $this->revealedCells = $attempt->revealed_cells ?? [];
         $this->elapsedSeconds = $attempt->solve_time_seconds ?? 0;
         $this->isSolved = (bool) $attempt->is_completed;
+
+        $this->hasMetaAnswer = $crossword->hasMetaAnswer();
+        $this->metaAnswerPrompt = $crossword->meta_answer_prompt ?? '';
+        $this->metaAnswerReveal = (bool) $crossword->meta_answer_reveal;
+
+        if ($attempt->meta_answer !== null) {
+            $this->metaAnswerSubmission = $attempt->meta_answer;
+            $this->metaAnswerSubmitted = true;
+            if ($this->metaAnswerReveal) {
+                $this->metaAnswerCorrect = $crossword->isMetaAnswerCorrect($attempt->meta_answer);
+            }
+        }
     }
 
     public function toggleLike(): void
@@ -439,6 +458,33 @@ new #[Title('Solve Crossword')] class extends Component {
         $attempt->update($data);
 
         $this->dispatch('progress-saved');
+    }
+
+    public function submitMetaAnswer(): void
+    {
+        $this->validate([
+            'metaAnswerSubmission' => ['required', 'string', 'max:500'],
+        ]);
+
+        $attempt = PuzzleAttempt::findOrFail($this->attemptId);
+        $this->authorize('update', $attempt);
+
+        if (! $attempt->is_completed) {
+            return;
+        }
+
+        $crossword = Crossword::findOrFail($this->crosswordId);
+        if (! $crossword->hasMetaAnswer()) {
+            return;
+        }
+
+        $submission = trim($this->metaAnswerSubmission);
+        $attempt->update(['meta_answer' => $submission]);
+
+        $this->metaAnswerSubmitted = true;
+        if ($this->metaAnswerReveal) {
+            $this->metaAnswerCorrect = $crossword->isMetaAnswerCorrect($submission);
+        }
     }
 
     public function generateShareText(): string
@@ -1007,6 +1053,57 @@ new #[Title('Solve Crossword')] class extends Component {
                     </flux:button>
                 </div>
             </div>
+        </div>
+    @endif
+
+    {{-- Meta Answer Prompt (visible when solved and puzzle has meta answer) --}}
+    @if($isSolved && $hasMetaAnswer)
+        <div class="mt-6 rounded-xl border border-purple-200 bg-purple-50/50 p-5 dark:border-purple-900/40 dark:bg-purple-950/20" wire:key="meta-answer-section">
+            <div class="mb-3 flex items-center gap-3">
+                <div class="flex size-10 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-900/30">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="size-5 text-purple-600 dark:text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
+                </div>
+                <div>
+                    <div class="font-semibold text-purple-800 dark:text-purple-200">{{ __('Meta Answer') }}</div>
+                    <div class="text-sm text-purple-700 dark:text-purple-400">{{ $metaAnswerPrompt }}</div>
+                </div>
+            </div>
+
+            @if($metaAnswerSubmitted)
+                <div class="flex items-center gap-3 rounded-lg border px-4 py-3 {{ $metaAnswerCorrect === true ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/30' : ($metaAnswerCorrect === false ? 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/30' : 'border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800') }}">
+                    @if($metaAnswerCorrect === true)
+                        <svg xmlns="http://www.w3.org/2000/svg" class="size-5 shrink-0 text-emerald-600 dark:text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                        <div>
+                            <div class="font-medium text-emerald-800 dark:text-emerald-200">{{ __('Correct!') }}</div>
+                            <div class="text-sm text-emerald-700 dark:text-emerald-400">{{ __('Your answer: :answer', ['answer' => $metaAnswerSubmission]) }}</div>
+                        </div>
+                    @elseif($metaAnswerCorrect === false)
+                        <svg xmlns="http://www.w3.org/2000/svg" class="size-5 shrink-0 text-red-600 dark:text-red-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
+                        <div>
+                            <div class="font-medium text-red-800 dark:text-red-200">{{ __('Not quite!') }}</div>
+                            <div class="text-sm text-red-700 dark:text-red-400">{{ __('Your answer: :answer — Try again?', ['answer' => $metaAnswerSubmission]) }}</div>
+                        </div>
+                    @else
+                        <svg xmlns="http://www.w3.org/2000/svg" class="size-5 shrink-0 text-zinc-600 dark:text-zinc-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                        <div>
+                            <div class="font-medium text-zinc-800 dark:text-zinc-200">{{ __('Answer submitted!') }}</div>
+                            <div class="text-sm text-zinc-600 dark:text-zinc-400">{{ __('Your answer: :answer', ['answer' => $metaAnswerSubmission]) }}</div>
+                        </div>
+                    @endif
+                </div>
+
+                @if($metaAnswerCorrect === false)
+                    <div class="mt-3 flex items-center gap-2">
+                        <flux:input wire:model="metaAnswerSubmission" wire:keydown.enter.prevent="submitMetaAnswer" placeholder="{{ __('Try another answer...') }}" size="sm" class="flex-1" />
+                        <flux:button size="sm" variant="primary" wire:click="submitMetaAnswer">{{ __('Submit') }}</flux:button>
+                    </div>
+                @endif
+            @else
+                <div class="flex items-center gap-2">
+                    <flux:input wire:model="metaAnswerSubmission" wire:keydown.enter.prevent="submitMetaAnswer" placeholder="{{ __('Enter your answer...') }}" size="sm" class="flex-1" />
+                    <flux:button size="sm" variant="primary" wire:click="submitMetaAnswer">{{ __('Submit') }}</flux:button>
+                </div>
+            @endif
         </div>
     @endif
 

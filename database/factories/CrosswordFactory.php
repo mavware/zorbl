@@ -60,6 +60,18 @@ class CrosswordFactory extends Factory
         });
     }
 
+    /**
+     * @param  list<string>  $answers
+     */
+    public function withMetaAnswer(string $prompt = 'What is the hidden theme?', array $answers = ['MOVIES'], bool $reveal = true): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'meta_answer_prompt' => $prompt,
+            'meta_answers' => $answers,
+            'meta_answer_reveal' => $reveal,
+        ]);
+    }
+
     public function freestyle(): static
     {
         return $this->state(fn (array $attributes) => [
