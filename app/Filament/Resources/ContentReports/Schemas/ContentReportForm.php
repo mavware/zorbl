@@ -30,7 +30,7 @@ class ContentReportForm
                                 $type = ContentReport::REPORTABLE_TYPES[$record->reportable_type] ?? $record->reportable_type;
                                 $entity = $record->reportable;
                                 $label = match (true) {
-                                    $entity instanceof Crossword => ($entity->title ?: 'Untitled puzzle').' (#'.$entity->id.')',
+                                    $entity instanceof Crossword => $entity->displayTitle().' (#'.$entity->id.')',
                                     $entity instanceof PuzzleComment => 'Comment by '.$entity->user?->name.' on puzzle #'.$entity->crossword_id,
                                     $entity instanceof User => $entity->name.' <'.$entity->email.'>',
                                     default => 'Deleted content',

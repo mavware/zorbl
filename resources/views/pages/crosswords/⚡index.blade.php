@@ -179,7 +179,7 @@ new #[Title('My Puzzles')] class extends Component {
         }
 
         $crossword = Auth::user()->crosswords()->create([
-            'title' => 'Untitled Puzzle',
+            'title' => null,
             'author' => Auth::user()->name,
             'copyright' => copyright(Auth::user()->copyright_name ?? Auth::user()->name ?? ''),
             'width' => $this->newWidth,
@@ -237,7 +237,7 @@ new #[Title('My Puzzles')] class extends Component {
         }
 
         $duplicate = $user->crosswords()->create([
-            'title' => __('Copy of :title', ['title' => $crossword->title ?? __('Untitled Puzzle')]),
+            'title' => __('Copy of :title', ['title' => $crossword->displayTitle()]),
             'author' => $user->name,
             'copyright' => copyright($user->copyright_name ?? $user->name ?? ''),
             'notes' => $crossword->notes,
@@ -345,7 +345,7 @@ new #[Title('My Puzzles')] class extends Component {
 
                             <div class="flex items-center gap-2">
                                 <flux:heading size="sm" class="truncate">
-                                    {{ $crossword->title ?: __('Untitled Puzzle') }}
+                                    {{ $crossword->displayTitle() }}
                                 </flux:heading>
                                 @if($crossword->is_published)
                                     <flux:badge size="sm" color="green">{{ __('Published') }}</flux:badge>

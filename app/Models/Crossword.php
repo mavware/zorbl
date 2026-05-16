@@ -59,6 +59,7 @@ use Zorbl\CrosswordIO\GridNumberer;
  * @property-read int|null $likes_count
  * @property-read Collection<int, Tag> $tags
  * @property-read int|null $tags_count
+ * @property-read string $display_title
  * @property-read User $user
  *
  * @mixin Eloquent
@@ -213,7 +214,7 @@ class Crossword extends Model
             'solution' => $this->solution,
             'clues_across' => $this->clues_across ?? [],
             'clues_down' => $this->clues_down ?? [],
-            'title' => $this->title,
+            'title' => $this->displayTitle(),
             'author' => $this->author,
             'copyright' => $this->copyright,
             'notes' => $this->notes,
@@ -225,13 +226,27 @@ class Crossword extends Model
     }
 
     /**
+     * Display-ready title. Returns the user-supplied title when present,
+     * otherwise a generated fallback like "15×15 Standard Crossword".
+     */
+    public function displayTitle(): string
+    {
+        if (filled($this->title)) {
+            return $this->title;
+        }
+
+        $type = $this->puzzleTypeLabel();
+
+        return "{$this->width}×{$this->height} {$type} Crossword";
+    }
+
+    /**
      * Calculate puzzle completeness as a breakdown of individual checks.
      *
-     * @return array{percentage: int, checks: array{title: bool, author: bool, fill: bool, clues_across: bool, clues_down: bool}}
+     * @return array{percentage: int, checks: array{author: bool, fill: bool, clues_across: bool, clues_down: bool}}
      */
     public function completeness(): array
     {
-        $hasTitle = filled($this->title) && $this->title !== 'Untitled Puzzle';
         $hasAuthor = filled($this->author);
 
         // Check all non-block, non-void cells have letters
@@ -266,7 +281,6 @@ class Crossword extends Model
         $hasAllDown = count($downClues) > 0 && collect($downClues)->every(fn ($c) => filled($c['clue'] ?? ''));
 
         $checks = [
-            'title' => $hasTitle,
             'author' => $hasAuthor,
             'fill' => $hasFill,
             'clues_across' => $hasAllAcross,

@@ -159,9 +159,7 @@ class OgImageGenerator
         $bold = $this->fontPath('DejaVuSans-Bold.ttf');
         $regular = $this->fontPath('DejaVuSans.ttf');
 
-        $title = $crossword->title !== null && $crossword->title !== ''
-            ? $crossword->title
-            : __('Untitled puzzle');
+        $title = $crossword->displayTitle();
         $title = $this->truncate($title, 48);
 
         $author = $crossword->user?->copyright_name ?: $crossword->user?->name ?? __('Anonymous');

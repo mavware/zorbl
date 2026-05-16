@@ -39,7 +39,7 @@ class NewPuzzlePublished extends Notification implements ShouldQueue
 
     public function toMail(User $notifiable): MailMessage
     {
-        $puzzleTitle = $this->crossword->title ?: __('Untitled Puzzle');
+        $puzzleTitle = $this->crossword->displayTitle();
 
         return (new MailMessage)
             ->subject(__(':name published a new puzzle', ['name' => $this->constructor->name]))
@@ -63,7 +63,7 @@ class NewPuzzlePublished extends Notification implements ShouldQueue
             'type' => 'puzzle.published',
             'title' => __(':name published a new puzzle: ":puzzle"', [
                 'name' => $this->constructor->name,
-                'puzzle' => $this->crossword->title ?: __('Untitled Puzzle'),
+                'puzzle' => $this->crossword->displayTitle(),
             ]),
             'body' => null,
             'url' => route('crosswords.solver', $this->crossword),

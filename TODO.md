@@ -56,7 +56,7 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [ ] Constructors get a section that shows what answers the solvers entered into the answer field (just the distinct answers with the count)
 - [ ] Ability to work with multiple constructors at once (form teams)
 - [x] Publicly accessible file format converter.  Lets anonymous users upload a puzzle in any format and convert it to any other format.
-- [ ] Optional puzzle titles.  Not sure what will be the stand-in if they choose not to put a title.
+- [x] Optional puzzle titles.  Not sure what will be the stand-in if they choose not to put a title.
 - [x] In the solver, keep a local record of actions taken, so the user can undo or redo them.  add a keyboard shortcut for command+z to undo and command+shift+z to redo.
 - [x] Can't un-check the answers
 - [x] Should it remain clear which letters the user had to reveal?

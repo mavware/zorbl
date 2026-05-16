@@ -6,7 +6,6 @@ use Livewire\Livewire;
 
 test('completeness is 100% for a fully filled puzzle', function () {
     $crossword = Crossword::factory()->create([
-        'title' => 'My Puzzle',
         'author' => 'Jane',
         'grid' => [[1, 2], [3, 0]],
         'solution' => [['A', 'B'], ['C', 'D']],
@@ -26,26 +25,23 @@ test('completeness is 100% for a fully filled puzzle', function () {
         ->and($result['checks'])->each->toBeTrue();
 });
 
-test('completeness detects missing title', function () {
+test('completeness is 100% even without a title', function () {
     $crossword = Crossword::factory()->create([
-        'title' => 'Untitled Puzzle',
+        'title' => null,
         'author' => 'Jane',
         'grid' => [[1, 2], [3, 0]],
         'solution' => [['A', 'B'], ['C', 'D']],
-        'clues_across' => [['number' => 1, 'clue' => 'Clue']],
-        'clues_down' => [['number' => 1, 'clue' => 'Clue']],
+        'clues_across' => [
+            ['number' => 1, 'clue' => 'First across'],
+            ['number' => 3, 'clue' => 'Second across'],
+        ],
+        'clues_down' => [
+            ['number' => 1, 'clue' => 'First down'],
+            ['number' => 2, 'clue' => 'Second down'],
+        ],
     ]);
 
-    expect($crossword->completeness()['checks']['title'])->toBeFalse();
-});
-
-test('completeness detects empty title', function () {
-    $crossword = Crossword::factory()->create([
-        'title' => '',
-        'author' => 'Jane',
-    ]);
-
-    expect($crossword->completeness()['checks']['title'])->toBeFalse();
+    expect($crossword->completeness()['percentage'])->toBe(100);
 });
 
 test('completeness detects missing author', function () {
@@ -98,7 +94,6 @@ test('completeness detects missing down clues', function () {
 
 test('completeness percentage is calculated correctly', function () {
     $crossword = Crossword::factory()->create([
-        'title' => '',
         'author' => 'Jane',
         'grid' => [[1]],
         'solution' => [['A']],
@@ -108,18 +103,16 @@ test('completeness percentage is calculated correctly', function () {
 
     $result = $crossword->completeness();
 
-    expect($result['checks']['title'])->toBeFalse()
-        ->and($result['checks']['author'])->toBeTrue()
+    expect($result['checks']['author'])->toBeTrue()
         ->and($result['checks']['fill'])->toBeTrue()
         ->and($result['checks']['clues_across'])->toBeFalse()
         ->and($result['checks']['clues_down'])->toBeFalse()
-        ->and($result['percentage'])->toBe(40);
+        ->and($result['percentage'])->toBe(50);
 });
 
 test('publish button shows warning when puzzle is incomplete', function () {
     $user = User::factory()->create();
     $crossword = Crossword::factory()->for($user)->create([
-        'title' => '',
         'author' => '',
         'solution' => [['', ''], ['', '']],
         'clues_across' => [['number' => 1, 'clue' => '']],
@@ -137,7 +130,7 @@ test('publish button shows warning when puzzle is incomplete', function () {
 test('publish proceeds without warning when puzzle is complete', function () {
     $user = User::factory()->create();
     $crossword = Crossword::factory()->for($user)->create([
-        'title' => 'Complete Puzzle',
+        'title' => null,
         'author' => 'Author',
         'width' => 2,
         'height' => 2,
@@ -179,7 +172,7 @@ test('unpublish skips warning', function () {
 test('cancel publish dispatches highlight event', function () {
     $user = User::factory()->create();
     $crossword = Crossword::factory()->for($user)->create([
-        'title' => '',
+        'author' => '',
         'clues_across' => [['number' => 1, 'clue' => '']],
         'clues_down' => [['number' => 1, 'clue' => '']],
     ]);

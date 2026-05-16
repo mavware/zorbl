@@ -407,7 +407,7 @@ new #[Title('Solve Statistics')] class extends Component {
                         <flux:table.row :key="$attempt->id">
                             <flux:table.cell variant="strong">
                                 <a href="{{ route('crosswords.solver', $attempt->crossword_id) }}" wire:navigate class="hover:text-blue-600 dark:hover:text-blue-400">
-                                    {{ $attempt->crossword->title ?: __('Untitled Puzzle') }}
+                                    {{ $attempt->crossword->displayTitle() }}
                                 </a>
                             </flux:table.cell>
                             <flux:table.cell>{{ $attempt->crossword->width }}&times;{{ $attempt->crossword->height }}</flux:table.cell>

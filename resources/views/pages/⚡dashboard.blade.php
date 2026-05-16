@@ -263,7 +263,7 @@ new #[Title('Dashboard')] class extends Component {
                             @endif
                         </div>
                         <flux:text size="sm" class="mt-0.5 text-zinc-600 dark:text-zinc-400">
-                            <span class="font-medium text-fg">{{ $dailyPuzzle->title ?: __('Untitled Puzzle') }}</span>
+                            <span class="font-medium text-fg">{{ $dailyPuzzle->displayTitle() }}</span>
                             &middot;
                             {{ __('by :author', ['author' => $dailyPuzzle->user->name ?? __('Unknown')]) }}
                             &middot;
@@ -317,7 +317,7 @@ new #[Title('Dashboard')] class extends Component {
                         >
                             <x-grid-thumbnail class="shrink-0" :grid="$attempt->crossword->grid" :width="$attempt->crossword->width" :height="$attempt->crossword->height" :cell-size="5" :max-width="48" />
                             <div class="min-w-0 flex-1">
-                                <div class="truncate text-sm font-medium text-fg">{{ $attempt->crossword->title ?: __('Untitled Puzzle') }}</div>
+                                <div class="truncate text-sm font-medium text-fg">{{ $attempt->crossword->displayTitle() }}</div>
                                 <flux:text size="sm" class="text-zinc-500">
                                     {{ __('by :author', ['author' => $attempt->crossword->user->name ?? __('Unknown')]) }}
                                     &middot;
@@ -367,7 +367,7 @@ new #[Title('Dashboard')] class extends Component {
                         >
                             <x-grid-thumbnail class="shrink-0" :grid="$crossword->grid" :width="$crossword->width" :height="$crossword->height" :cell-size="5" :max-width="48" />
                             <div class="min-w-0 flex-1">
-                                <div class="truncate text-sm font-medium text-fg">{{ $crossword->title ?: __('Untitled Puzzle') }}</div>
+                                <div class="truncate text-sm font-medium text-fg">{{ $crossword->displayTitle() }}</div>
                                 <flux:text size="sm" class="text-zinc-500">
                                     {{ $crossword->width }}&times;{{ $crossword->height }}
                                     &middot;
@@ -485,7 +485,7 @@ new #[Title('Dashboard')] class extends Component {
                                 <x-grid-thumbnail :grid="$crossword->grid" :width="$crossword->width" :height="$crossword->height" :cell-size="5" :max-width="80" />
                             </div>
                             <flux:heading size="sm" class="truncate group-hover:text-blue-600 dark:group-hover:text-blue-400">
-                                {{ $crossword->title ?: __('Untitled Puzzle') }}
+                                {{ $crossword->displayTitle() }}
                             </flux:heading>
                             <flux:text size="sm" class="mt-1 text-zinc-500">
                                 {{ __('by :author', ['author' => $crossword->user->name ?? __('Unknown')]) }}
@@ -532,7 +532,7 @@ new #[Title('Dashboard')] class extends Component {
                         >
                             <x-grid-thumbnail class="shrink-0" :grid="$crossword->grid" :width="$crossword->width" :height="$crossword->height" :cell-size="5" :max-width="48" />
                             <div class="min-w-0 flex-1">
-                                <div class="truncate text-sm font-medium text-fg">{{ $crossword->title ?: __('Untitled Puzzle') }}</div>
+                                <div class="truncate text-sm font-medium text-fg">{{ $crossword->displayTitle() }}</div>
                                 <flux:text size="sm" class="text-zinc-500">
                                     {{ __('by :author', ['author' => $crossword->user->name ?? __('Unknown')]) }}
                                     &middot;
@@ -573,7 +573,7 @@ new #[Title('Dashboard')] class extends Component {
                         >
                             <x-grid-thumbnail class="shrink-0" :grid="$crossword->grid" :width="$crossword->width" :height="$crossword->height" :cell-size="5" :max-width="48" />
                             <div class="min-w-0 flex-1">
-                                <div class="truncate text-sm font-medium text-fg">{{ $crossword->title ?: __('Untitled Puzzle') }}</div>
+                                <div class="truncate text-sm font-medium text-fg">{{ $crossword->displayTitle() }}</div>
                                 <flux:text size="sm" class="text-zinc-500">
                                     {{ __('by :author', ['author' => $crossword->user->name ?? __('Unknown')]) }}
                                     &middot;

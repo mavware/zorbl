@@ -432,7 +432,7 @@ class extends Component {
             ->map(fn(ClueEntry $entry) => [
                 'clue'   => $entry->clue,
                 'author' => $entry->user->name ?? 'Unknown',
-                'puzzle' => $entry->crossword->title ?? 'Untitled',
+                'puzzle' => $entry->crossword?->displayTitle() ?? 'Untitled',
             ])
             ->all();
     }
@@ -1009,9 +1009,6 @@ class extends Component {
                                   clip-rule="evenodd"/>
                         </svg>
                         @switch($check)
-                            @case('title')
-                                {{ __('Puzzle title') }}
-                                @break
                             @case('author')
                                 {{ __('Constructor name') }}
                                 @break

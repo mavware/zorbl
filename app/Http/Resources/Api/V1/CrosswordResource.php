@@ -18,7 +18,7 @@ class CrosswordResource extends JsonApiResource
     protected function resourceAttributes(Request $request): array
     {
         $attributes = [
-            'title' => $this->title,
+            'title' => $this->displayTitle(),
             'author' => $this->author,
             'width' => $this->width,
             'height' => $this->height,
