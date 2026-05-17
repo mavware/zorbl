@@ -158,6 +158,16 @@
             border-left: 2.5pt solid #999;
             white-space: pre-wrap;
         }
+
+        .pdf-image {
+            text-align: center;
+            margin: 0 0 14pt 0;
+        }
+
+        .pdf-image img {
+            max-width: 100%;
+            max-height: 2.5in;
+        }
     </style>
 </head>
 <body>
@@ -177,6 +187,12 @@
 
     @if ($narrative ?? null)
         <div class="narrative">{{ $narrative }}</div>
+    @endif
+
+    @if ($imageDataUri ?? null)
+        <div class="pdf-image">
+            <img src="{{ $imageDataUri }}" />
+        </div>
     @endif
 
     <div class="grid-wrapper">

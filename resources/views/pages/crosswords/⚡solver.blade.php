@@ -14,9 +14,11 @@ use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Title;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 
 new #[Title('Solve Crossword')] class extends Component {
     use ExportsCrossword;
+    use WithFileUploads;
 
     #[Locked]
     public int $crosswordId;
@@ -1422,12 +1424,27 @@ new #[Title('Solve Crossword')] class extends Component {
     <flux:modal wire:model="showPdfExportModal">
         <div class="space-y-6">
             <flux:heading size="lg">{{ __('PDF Export Settings') }}</flux:heading>
-            <flux:text>{{ __('Configure the page orientation and add optional narrative text for your PDF export.') }}</flux:text>
+            <flux:text>{{ __('Configure the page orientation, add an image, and optional narrative text for your PDF export.') }}</flux:text>
 
             <flux:radio.group wire:model="pdfOrientation" label="{{ __('Orientation') }}">
                 <flux:radio value="portrait" label="{{ __('Portrait') }}" description="{{ __('Standard vertical layout (8.5 × 11 in)') }}" />
                 <flux:radio value="landscape" label="{{ __('Landscape') }}" description="{{ __('Horizontal layout (11 × 8.5 in) — better for wide puzzles') }}" />
             </flux:radio.group>
+
+            <div>
+                <flux:input type="file" wire:model="pdfImage" label="{{ __('Header Image') }}" accept="image/png,image/jpeg,image/gif,image/webp" />
+                <flux:text class="mt-1">{{ __('Optional image displayed above the puzzle grid (max 2 MB).') }}</flux:text>
+                @if ($this->crossword->pdf_image && !$pdfRemoveImage)
+                    <div class="mt-2 flex items-center gap-2">
+                        <flux:text class="text-sm text-green-600 dark:text-green-400">{{ __('Current image saved.') }}</flux:text>
+                        <flux:button size="xs" variant="danger" wire:click="$set('pdfRemoveImage', true)">{{ __('Remove') }}</flux:button>
+                    </div>
+                @elseif ($pdfRemoveImage)
+                    <div class="mt-2">
+                        <flux:text class="text-sm text-amber-600 dark:text-amber-400">{{ __('Image will be removed on export.') }}</flux:text>
+                    </div>
+                @endif
+            </div>
 
             <flux:textarea wire:model="pdfNarrative" label="{{ __('Narrative Text') }}" placeholder="{{ __('Add introductory text, theme explanation, or instructions that will appear above the puzzle grid...') }}" rows="4" />
 

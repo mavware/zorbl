@@ -47,7 +47,7 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [ ] Ability to create a puzzle when not logged in (for anonymous users) (possibly creating a user via ip?)
 - [ ] Create a command that periodically updates legal functions (privacy policy, terms of service, cookie policy, where the cookie banner shows, etc...).  Based on real laws.
 - [x] Ability to arrange the printable/downloadable versions of the puzzle in a different orientation.
-- [ ] Ability to add an image to the printable/downloadable arrangements of the puzzle.
+- [x] Ability to add an image to the printable/downloadable arrangements of the puzzle.
 - [x] Ability to add narrative text to the printable/downloadable arrangements of the puzzle.
 - [ ] Ability to convert selected contiguous cells to a custom image (or a single cell if only one is selected)
 - [ ] Ability to arrange several puzzles in a single PDF file.
