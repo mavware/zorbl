@@ -53,7 +53,7 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [ ] Ability to arrange several puzzles in a single PDF file.
 - [ ] Ability to add a custom image or text page to the PDF file.
 - [x] Ability to add a section that prompts the solver to enter one or more custom answer.  Constructor will choose if the solver gets feedback if they enter the correct answers.
-- [ ] Constructors get a section that shows what answers the solvers entered into the answer field (just the distinct answers with the count)
+- [x] Constructors get a section that shows what answers the solvers entered into the answer field (just the distinct answers with the count)
 - [ ] Ability to work with multiple constructors at once (form teams)
 - [x] Publicly accessible file format converter.  Lets anonymous users upload a puzzle in any format and convert it to any other format.
 - [x] Optional puzzle titles.  Not sure what will be the stand-in if they choose not to put a title.

@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Crossword;
+use App\Models\PuzzleAttempt;
 use App\Models\PuzzleComment;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Auth;
@@ -192,6 +193,55 @@ new #[Title('Constructor Analytics')] class extends Component {
                 'solution' => $puzzle->solution,
                 'attempt_count' => $puzzle->attempts->count(),
                 'avg_time' => (int) round($puzzle->attempts->avg('solve_time_seconds')),
+            ];
+        }
+
+        return $results;
+    }
+
+    /**
+     * @return list<array{puzzle_id: int, puzzle_title: string, prompt: string, accepted_answers: list<string>, responses: list<array{answer: string, count: int, is_correct: bool}>}>
+     */
+    #[Computed]
+    public function metaAnswerResponses(): array
+    {
+        $puzzles = Auth::user()
+            ->crosswords()
+            ->where('is_published', true)
+            ->whereNotNull('meta_answer_prompt')
+            ->whereNotNull('meta_answers')
+            ->get();
+
+        $results = [];
+
+        foreach ($puzzles as $puzzle) {
+            if (! $puzzle->hasMetaAnswer()) {
+                continue;
+            }
+
+            $responses = PuzzleAttempt::where('crossword_id', $puzzle->id)
+                ->whereNotNull('meta_answer')
+                ->where('meta_answer', '!=', '')
+                ->select('meta_answer', DB::raw('count(*) as count'))
+                ->groupBy('meta_answer')
+                ->orderByDesc('count')
+                ->limit(50)
+                ->get();
+
+            if ($responses->isEmpty()) {
+                continue;
+            }
+
+            $results[] = [
+                'puzzle_id' => $puzzle->id,
+                'puzzle_title' => $puzzle->displayTitle(),
+                'prompt' => $puzzle->meta_answer_prompt,
+                'accepted_answers' => $puzzle->meta_answers,
+                'responses' => $responses->map(fn ($r) => [
+                    'answer' => $r->meta_answer,
+                    'count' => $r->count,
+                    'is_correct' => $puzzle->isMetaAnswerCorrect($r->meta_answer),
+                ])->all(),
             ];
         }
 
@@ -510,6 +560,49 @@ new #[Title('Constructor Analytics')] class extends Component {
                         <div class="flex justify-between text-xs text-zinc-600">
                             <span>{{ __('Avg time:') }} {{ $this->formatTime($puzzle['avg_time']) }}</span>
                             <span>{{ $puzzle['width'] }}&times;{{ $puzzle['height'] }}</span>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
+    {{-- Meta Answer Responses --}}
+    @if(count($this->metaAnswerResponses) > 0)
+        <div class="border-line rounded-xl border p-5">
+            <flux:heading size="lg" class="mb-1">{{ __('Meta Answer Responses') }}</flux:heading>
+            <flux:text size="sm" class="mb-4 text-zinc-500">{{ __('See what solvers guessed for your themed puzzles.') }}</flux:text>
+
+            <div class="space-y-6">
+                @foreach($this->metaAnswerResponses as $puzzleData)
+                    <div class="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700/50">
+                        <div class="mb-1 flex items-center justify-between">
+                            <flux:heading size="sm">{{ $puzzleData['puzzle_title'] }}</flux:heading>
+                        </div>
+                        <flux:text size="sm" class="mb-3 text-zinc-500 italic">&ldquo;{{ $puzzleData['prompt'] }}&rdquo;</flux:text>
+
+                        <div class="space-y-1.5">
+                            @php($totalResponses = collect($puzzleData['responses'])->sum('count'))
+                            @foreach($puzzleData['responses'] as $response)
+                                @php($percentage = $totalResponses > 0 ? round(($response['count'] / $totalResponses) * 100) : 0)
+                                <div class="relative overflow-hidden rounded-md border {{ $response['is_correct'] ? 'border-emerald-200 dark:border-emerald-800/50' : 'border-zinc-200 dark:border-zinc-700/50' }}">
+                                    <div class="absolute inset-y-0 left-0 {{ $response['is_correct'] ? 'bg-emerald-50 dark:bg-emerald-900/20' : 'bg-zinc-50 dark:bg-zinc-800/30' }}" style="width: {{ $percentage }}%"></div>
+                                    <div class="relative flex items-center justify-between px-3 py-1.5">
+                                        <span class="flex items-center gap-2 text-sm">
+                                            @if($response['is_correct'])
+                                                <flux:icon name="check-circle" class="size-4 text-emerald-500" />
+                                            @endif
+                                            <span class="{{ $response['is_correct'] ? 'font-medium text-emerald-700 dark:text-emerald-400' : 'text-zinc-700 dark:text-zinc-300' }}">{{ $response['answer'] }}</span>
+                                        </span>
+                                        <span class="text-xs font-medium text-zinc-500">{{ $response['count'] }} ({{ $percentage }}%)</span>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+
+                        <div class="mt-2 flex items-center justify-between text-xs text-zinc-500">
+                            <span>{{ __('Total responses:') }} {{ $totalResponses }}</span>
+                            <span>{{ __('Accepted:') }} {{ implode(', ', $puzzleData['accepted_answers']) }}</span>
                         </div>
                     </div>
                 @endforeach
