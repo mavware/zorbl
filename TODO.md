@@ -50,7 +50,7 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [x] Ability to add an image to the printable/downloadable arrangements of the puzzle.
 - [x] Ability to add narrative text to the printable/downloadable arrangements of the puzzle.
 - [ ] Ability to convert selected contiguous cells to a custom image (or a single cell if only one is selected)
-- [ ] Ability to arrange several puzzles in a single PDF file.
+- [x] Ability to arrange several puzzles in a single PDF file.
 - [ ] Ability to add a custom image or text page to the PDF file.
 - [x] Ability to add a section that prompts the solver to enter one or more custom answer.  Constructor will choose if the solver gets feedback if they enter the correct answers.
 - [x] Constructors get a section that shows what answers the solvers entered into the answer field (just the distinct answers with the count)

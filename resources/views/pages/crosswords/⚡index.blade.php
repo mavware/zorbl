@@ -7,6 +7,7 @@ use Zorbl\CrosswordIO\Exceptions\PuzImportException;
 use App\Enums\PuzzleType;
 use App\Models\Crossword;
 use App\Services\GridTemplateProvider;
+use App\Services\PdfExporter;
 use Zorbl\CrosswordIO\GridNumberer;
 use Zorbl\CrosswordIO\ImportDetector;
 use Flux\Flux;
@@ -16,6 +17,7 @@ use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithFileUploads;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 new #[Title('My Puzzles')] class extends Component {
     use WithFileUploads;
@@ -28,6 +30,15 @@ new #[Title('My Puzzles')] class extends Component {
     public ?int $selectedTemplate = null;
     public $importFile;
     public string $importError = '';
+
+    /** @var list<int> */
+    public array $selectedPuzzles = [];
+
+    public bool $showBatchPdfModal = false;
+
+    public string $batchPdfOrientation = 'portrait';
+
+    public string $batchPdfTitle = '';
 
     #[Url]
     public string $search = '';
@@ -267,6 +278,67 @@ new #[Title('My Puzzles')] class extends Component {
         $this->authorize('delete', $crossword);
         $crossword->delete();
     }
+
+    public function togglePuzzleSelection(int $id): void
+    {
+        if (in_array($id, $this->selectedPuzzles)) {
+            $this->selectedPuzzles = array_values(array_diff($this->selectedPuzzles, [$id]));
+        } else {
+            $this->selectedPuzzles[] = $id;
+        }
+    }
+
+    public function selectAllPuzzles(): void
+    {
+        $this->selectedPuzzles = $this->crosswords->pluck('id')->all();
+    }
+
+    public function clearSelection(): void
+    {
+        $this->selectedPuzzles = [];
+    }
+
+    public function openBatchPdfExport(): void
+    {
+        if (empty($this->selectedPuzzles)) {
+            return;
+        }
+
+        $this->batchPdfOrientation = 'portrait';
+        $this->batchPdfTitle = '';
+        $this->showBatchPdfModal = true;
+    }
+
+    public function exportBatchPdf(): StreamedResponse
+    {
+        $this->showBatchPdfModal = false;
+
+        $crosswords = Crossword::whereIn('id', $this->selectedPuzzles)
+            ->where('user_id', Auth::id())
+            ->get()
+            ->sortBy(fn (Crossword $c) => array_search($c->id, $this->selectedPuzzles));
+
+        $orientation = in_array($this->batchPdfOrientation, ['portrait', 'landscape']) ? $this->batchPdfOrientation : 'portrait';
+        $title = trim($this->batchPdfTitle) ?: null;
+
+        $exporter = app(PdfExporter::class);
+        $pdf = $exporter->exportBatch($crosswords, $orientation, $title);
+
+        $filename = str($title ?? 'puzzles-collection')->slug()->append('.pdf')->toString();
+
+        $this->selectedPuzzles = [];
+
+        return response()->streamDownload(function () use ($pdf) {
+            echo $pdf;
+        }, $filename, ['Content-Type' => 'application/pdf']);
+    }
+
+    public function cancelBatchPdfExport(): void
+    {
+        $this->showBatchPdfModal = false;
+        $this->batchPdfOrientation = 'portrait';
+        $this->batchPdfTitle = '';
+    }
 }
 ?>
 
@@ -312,6 +384,25 @@ new #[Title('My Puzzles')] class extends Component {
             </div>
         </div>
 
+        @if(count($selectedPuzzles) > 0)
+            <div class="flex items-center justify-between rounded-lg bg-blue-50 px-4 py-2.5 dark:bg-blue-950/50">
+                <div class="flex items-center gap-3">
+                    <flux:text size="sm" class="font-medium text-blue-700 dark:text-blue-300">
+                        {{ trans_choice(':count puzzle selected|:count puzzles selected', count($selectedPuzzles)) }}
+                    </flux:text>
+                    <flux:button variant="ghost" size="sm" wire:click="selectAllPuzzles">
+                        {{ __('Select All') }}
+                    </flux:button>
+                    <flux:button variant="ghost" size="sm" wire:click="clearSelection">
+                        {{ __('Clear') }}
+                    </flux:button>
+                </div>
+                <flux:button size="sm" icon="document-arrow-down" wire:click="openBatchPdfExport">
+                    {{ __('Export PDF') }}
+                </flux:button>
+            </div>
+        @endif
+
         @if($this->crosswords->isEmpty())
             <div class="border-line-strong flex flex-col items-center justify-center rounded-xl border border-dashed py-16">
                 <flux:icon name="puzzle-piece" class="mb-4 size-12 text-zinc-500" />
@@ -336,8 +427,17 @@ new #[Title('My Puzzles')] class extends Component {
                 @foreach($this->crosswords as $crossword)
                     <div
                         wire:key="crossword-{{ $crossword->id }}"
-                        class="border-line group relative rounded-xl border p-4 transition-colors hover:border-zinc-400 dark:hover:border-zinc-500"
+                        @class([
+                            'border-line group relative rounded-xl border p-4 transition-colors hover:border-zinc-400 dark:hover:border-zinc-500',
+                            'border-blue-400 bg-blue-50/50 dark:border-blue-500 dark:bg-blue-950/30' => in_array($crossword->id, $selectedPuzzles),
+                        ])
                     >
+                        <div class="absolute top-2 left-2 z-10">
+                            <flux:checkbox
+                                :checked="in_array($crossword->id, $selectedPuzzles)"
+                                wire:click="togglePuzzleSelection({{ $crossword->id }})"
+                            />
+                        </div>
                         <a href="{{ route('crosswords.editor', $crossword) }}" wire:navigate class="block">
                             <div class="mb-3 flex justify-center">
                                 <x-grid-thumbnail :grid="$crossword->grid" :width="$crossword->width" :height="$crossword->height" />
@@ -484,6 +584,36 @@ new #[Title('My Puzzles')] class extends Component {
             <div class="flex justify-end gap-2">
                 <flux:button wire:click="$set('showNewModal', false)">{{ __('Cancel') }}</flux:button>
                 <flux:button variant="primary" wire:click="createPuzzle">{{ __('Create') }}</flux:button>
+            </div>
+        </div>
+    </flux:modal>
+
+    {{-- Batch PDF Export Modal --}}
+    <flux:modal wire:model="showBatchPdfModal">
+        <div class="space-y-6">
+            <flux:heading size="lg">{{ __('Export as PDF') }}</flux:heading>
+
+            <flux:text size="sm" class="text-zinc-500">
+                {{ trans_choice(':count puzzle will be combined into a single PDF.|:count puzzles will be combined into a single PDF.', count($selectedPuzzles)) }}
+            </flux:text>
+
+            <flux:field>
+                <flux:label>{{ __('Collection Title') }} <span class="text-xs font-normal text-zinc-500">{{ __('(optional)') }}</span></flux:label>
+                <flux:input wire:model="batchPdfTitle" placeholder="{{ __('e.g. Weekly Puzzle Pack') }}" />
+                <flux:description>{{ __('Adds a cover page with this title.') }}</flux:description>
+            </flux:field>
+
+            <flux:field>
+                <flux:label>{{ __('Orientation') }}</flux:label>
+                <flux:radio.group wire:model="batchPdfOrientation" variant="segmented">
+                    <flux:radio value="portrait" label="{{ __('Portrait') }}" />
+                    <flux:radio value="landscape" label="{{ __('Landscape') }}" />
+                </flux:radio.group>
+            </flux:field>
+
+            <div class="flex justify-end gap-2">
+                <flux:button wire:click="cancelBatchPdfExport">{{ __('Cancel') }}</flux:button>
+                <flux:button variant="primary" icon="document-arrow-down" wire:click="exportBatchPdf">{{ __('Export') }}</flux:button>
             </div>
         </div>
     </flux:modal>
