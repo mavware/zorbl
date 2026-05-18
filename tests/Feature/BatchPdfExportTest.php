@@ -287,3 +287,262 @@ test('opening batch export with no selection does nothing', function () {
         ->call('openBatchPdfExport')
         ->assertSet('showBatchPdfModal', false);
 });
+
+it('renders custom before pages in batch PDF', function () {
+    $html = view('exports.crossword-batch-pdf', [
+        'puzzles' => [[
+            'title' => 'Test Puzzle',
+            'author' => null,
+            'copyright' => null,
+            'notes' => null,
+            'numberedGrid' => [[1, 2], [3, 0]],
+            'solution' => [['A', 'B'], ['C', 'D']],
+            'prefilled' => null,
+            'cluesAcross' => [['number' => 1, 'clue' => 'AB']],
+            'cluesDown' => [['number' => 1, 'clue' => 'AC']],
+            'styles' => [],
+            'cellSize' => 0.33,
+            'numberFontSize' => 6,
+            'letterFontSize' => 9,
+            'numberHeight' => 0.116,
+            'forceCluePageBreak' => false,
+        ]],
+        'collectionTitle' => null,
+        'orientation' => 'portrait',
+        'beforePages' => [
+            ['heading' => 'Welcome to the Pack', 'body' => 'Enjoy these puzzles!'],
+        ],
+        'afterPages' => [],
+    ])->render();
+
+    expect($html)
+        ->toContain('custom-page')
+        ->toContain('Welcome to the Pack')
+        ->toContain('Enjoy these puzzles!');
+});
+
+it('renders custom after pages in batch PDF', function () {
+    $html = view('exports.crossword-batch-pdf', [
+        'puzzles' => [[
+            'title' => 'Test Puzzle',
+            'author' => null,
+            'copyright' => null,
+            'notes' => null,
+            'numberedGrid' => [[1, 2], [3, 0]],
+            'solution' => [['A', 'B'], ['C', 'D']],
+            'prefilled' => null,
+            'cluesAcross' => [['number' => 1, 'clue' => 'AB']],
+            'cluesDown' => [['number' => 1, 'clue' => 'AC']],
+            'styles' => [],
+            'cellSize' => 0.33,
+            'numberFontSize' => 6,
+            'letterFontSize' => 9,
+            'numberHeight' => 0.116,
+            'forceCluePageBreak' => false,
+        ]],
+        'collectionTitle' => null,
+        'orientation' => 'portrait',
+        'beforePages' => [],
+        'afterPages' => [
+            ['heading' => 'Answer Key', 'body' => 'Solutions are on the next page.'],
+        ],
+    ])->render();
+
+    expect($html)
+        ->toContain('Answer Key')
+        ->toContain('Solutions are on the next page.');
+});
+
+it('renders custom page with heading only', function () {
+    $html = view('exports.crossword-batch-pdf', [
+        'puzzles' => [[
+            'title' => 'P',
+            'author' => null,
+            'copyright' => null,
+            'notes' => null,
+            'numberedGrid' => [[1, 2], [3, 0]],
+            'solution' => [['A', 'B'], ['C', 'D']],
+            'prefilled' => null,
+            'cluesAcross' => [['number' => 1, 'clue' => 'AB']],
+            'cluesDown' => [['number' => 1, 'clue' => 'AC']],
+            'styles' => [],
+            'cellSize' => 0.33,
+            'numberFontSize' => 6,
+            'letterFontSize' => 9,
+            'numberHeight' => 0.116,
+            'forceCluePageBreak' => false,
+        ]],
+        'collectionTitle' => null,
+        'orientation' => 'portrait',
+        'beforePages' => [['heading' => 'Intro Page', 'body' => '']],
+        'afterPages' => [],
+    ])->render();
+
+    expect($html)
+        ->toContain('Intro Page')
+        ->toContain('custom-page-heading');
+});
+
+it('renders custom page with body only', function () {
+    $html = view('exports.crossword-batch-pdf', [
+        'puzzles' => [[
+            'title' => 'P',
+            'author' => null,
+            'copyright' => null,
+            'notes' => null,
+            'numberedGrid' => [[1, 2], [3, 0]],
+            'solution' => [['A', 'B'], ['C', 'D']],
+            'prefilled' => null,
+            'cluesAcross' => [['number' => 1, 'clue' => 'AB']],
+            'cluesDown' => [['number' => 1, 'clue' => 'AC']],
+            'styles' => [],
+            'cellSize' => 0.33,
+            'numberFontSize' => 6,
+            'letterFontSize' => 9,
+            'numberHeight' => 0.116,
+            'forceCluePageBreak' => false,
+        ]],
+        'collectionTitle' => null,
+        'orientation' => 'portrait',
+        'beforePages' => [],
+        'afterPages' => [['heading' => '', 'body' => 'Thanks for playing!']],
+    ])->render();
+
+    expect($html)
+        ->toContain('Thanks for playing!')
+        ->not->toContain('class="custom-page-heading"');
+});
+
+it('omits custom pages when none are provided', function () {
+    $html = view('exports.crossword-batch-pdf', [
+        'puzzles' => [[
+            'title' => 'P',
+            'author' => null,
+            'copyright' => null,
+            'notes' => null,
+            'numberedGrid' => [[1, 2], [3, 0]],
+            'solution' => [['A', 'B'], ['C', 'D']],
+            'prefilled' => null,
+            'cluesAcross' => [['number' => 1, 'clue' => 'AB']],
+            'cluesDown' => [['number' => 1, 'clue' => 'AC']],
+            'styles' => [],
+            'cellSize' => 0.33,
+            'numberFontSize' => 6,
+            'letterFontSize' => 9,
+            'numberHeight' => 0.116,
+            'forceCluePageBreak' => false,
+        ]],
+        'collectionTitle' => null,
+        'orientation' => 'portrait',
+        'beforePages' => [],
+        'afterPages' => [],
+    ])->render();
+
+    expect($html)->not->toContain('custom-page"');
+});
+
+it('passes custom pages through PdfExporter::exportBatch', function () {
+    $crosswords = collect([
+        Crossword::factory()->make([
+            'title' => 'CP Test',
+            'width' => 3,
+            'height' => 3,
+            'grid' => [[1, 2, '#'], [3, 0, 4], ['#', 5, 0]],
+            'solution' => [['C', 'A', '#'], ['B', 'O', 'T'], ['#', 'L', 'O']],
+            'clues_across' => [['number' => 1, 'clue' => 'CA']],
+            'clues_down' => [['number' => 1, 'clue' => 'CB']],
+        ]),
+    ]);
+
+    $exporter = app(PdfExporter::class);
+
+    $withPages = $exporter->exportBatch($crosswords, 'portrait', null, [
+        ['heading' => 'Intro', 'body' => 'Welcome', 'position' => 'before'],
+        ['heading' => 'Outro', 'body' => 'Goodbye', 'position' => 'after'],
+    ]);
+
+    $without = $exporter->exportBatch($crosswords);
+
+    expect($withPages)->toStartWith('%PDF');
+    expect(strlen($withPages))->toBeGreaterThan(strlen($without));
+});
+
+test('users can add and remove custom pages in batch export', function () {
+    $user = User::factory()->create();
+    $puzzle = makePuzzle($user);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::crosswords.index')
+        ->call('togglePuzzleSelection', $puzzle->id)
+        ->call('openBatchPdfExport')
+        ->assertSet('batchCustomPages', [])
+        ->call('addCustomPage')
+        ->assertCount('batchCustomPages', 1)
+        ->call('addCustomPage')
+        ->assertCount('batchCustomPages', 2)
+        ->call('removeCustomPage', 0)
+        ->assertCount('batchCustomPages', 1);
+});
+
+test('custom pages are reset when cancelling batch export', function () {
+    $user = User::factory()->create();
+    $puzzle = makePuzzle($user);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::crosswords.index')
+        ->call('togglePuzzleSelection', $puzzle->id)
+        ->call('openBatchPdfExport')
+        ->call('addCustomPage')
+        ->set('batchCustomPages.0.heading', 'Test')
+        ->call('cancelBatchPdfExport')
+        ->assertSet('batchCustomPages', []);
+});
+
+test('batch export with custom pages downloads PDF', function () {
+    $user = User::factory()->create();
+    $puzzle = makePuzzle($user);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::crosswords.index')
+        ->call('togglePuzzleSelection', $puzzle->id)
+        ->call('openBatchPdfExport')
+        ->call('addCustomPage')
+        ->set('batchCustomPages.0.heading', 'Introduction')
+        ->set('batchCustomPages.0.body', 'Welcome to this puzzle collection.')
+        ->set('batchCustomPages.0.position', 'before')
+        ->call('exportBatchPdf')
+        ->assertFileDownloaded('puzzles-collection.pdf');
+});
+
+test('empty custom pages are filtered out during export', function () {
+    $user = User::factory()->create();
+    $puzzle = makePuzzle($user);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::crosswords.index')
+        ->call('togglePuzzleSelection', $puzzle->id)
+        ->call('openBatchPdfExport')
+        ->call('addCustomPage')
+        ->call('exportBatchPdf')
+        ->assertFileDownloaded('puzzles-collection.pdf');
+});
+
+test('custom pages are reset after successful export', function () {
+    $user = User::factory()->create();
+    $puzzle = makePuzzle($user);
+
+    $this->actingAs($user);
+
+    $component = Livewire::test('pages::crosswords.index')
+        ->call('togglePuzzleSelection', $puzzle->id)
+        ->call('openBatchPdfExport')
+        ->call('addCustomPage')
+        ->set('batchCustomPages.0.heading', 'Intro')
+        ->call('exportBatchPdf');
+
+    expect($component->get('batchCustomPages'))->toBe([]);
+});

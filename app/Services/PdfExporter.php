@@ -84,9 +84,10 @@ class PdfExporter
     /**
      * @param  Collection<int, Crossword>  $crosswords
      * @param  'portrait'|'landscape'  $orientation
+     * @param  list<array{heading?: string, body?: string, position: 'before'|'after'}>  $customPages
      * @return string The raw PDF binary content.
      */
-    public function exportBatch(Collection $crosswords, string $orientation = 'portrait', ?string $collectionTitle = null): string
+    public function exportBatch(Collection $crosswords, string $orientation = 'portrait', ?string $collectionTitle = null, array $customPages = []): string
     {
         $isLandscape = $orientation === 'landscape';
         $pageWidth = $isLandscape ? 11.0 : 8.5;
@@ -140,10 +141,15 @@ class PdfExporter
             ];
         }
 
+        $beforePages = array_values(array_filter($customPages, fn (array $p) => ($p['position'] ?? '') === 'before'));
+        $afterPages = array_values(array_filter($customPages, fn (array $p) => ($p['position'] ?? '') === 'after'));
+
         $pdf = Pdf::loadView('exports.crossword-batch-pdf', [
             'puzzles' => $puzzles,
             'collectionTitle' => $collectionTitle,
             'orientation' => $orientation,
+            'beforePages' => $beforePages,
+            'afterPages' => $afterPages,
         ]);
 
         $pdf->setPaper('letter', $orientation);

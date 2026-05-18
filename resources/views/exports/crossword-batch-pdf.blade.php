@@ -115,10 +115,34 @@
         .clue-number {
             font-weight: bold;
         }
+
+        .custom-page {
+            padding-top: 1in;
+        }
+
+        .custom-page-heading {
+            font-size: 22pt;
+            font-weight: bold;
+            margin: 0 0 16pt 0;
+            text-align: center;
+        }
+
+        .custom-page-body {
+            font-size: 12pt;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
     </style>
 </head>
 <body>
+    @php
+        $hasContentBefore = false;
+        $beforePages ??= [];
+        $afterPages ??= [];
+    @endphp
+
     @if ($collectionTitle)
+        @php $hasContentBefore = true; @endphp
         <div class="cover-page">
             <div>
                 <p class="cover-title">{{ $collectionTitle }}</p>
@@ -127,8 +151,23 @@
         </div>
     @endif
 
+    @foreach ($beforePages as $customPage)
+        @if ($hasContentBefore)
+            <div class="page-break"></div>
+        @endif
+        @php $hasContentBefore = true; @endphp
+        <div class="custom-page">
+            @if (!empty($customPage['heading']))
+                <p class="custom-page-heading">{{ $customPage['heading'] }}</p>
+            @endif
+            @if (!empty($customPage['body']))
+                <div class="custom-page-body">{{ $customPage['body'] }}</div>
+            @endif
+        </div>
+    @endforeach
+
     @foreach ($puzzles as $index => $puzzle)
-        @if ($collectionTitle || $index > 0)
+        @if ($hasContentBefore || $index > 0)
             <div class="page-break"></div>
         @endif
 
@@ -261,6 +300,18 @@
                 </div>
             </div>
         @endif
+    @endforeach
+
+    @foreach ($afterPages as $customPage)
+        <div class="page-break"></div>
+        <div class="custom-page">
+            @if (!empty($customPage['heading']))
+                <p class="custom-page-heading">{{ $customPage['heading'] }}</p>
+            @endif
+            @if (!empty($customPage['body']))
+                <div class="custom-page-body">{{ $customPage['body'] }}</div>
+            @endif
+        </div>
     @endforeach
 </body>
 </html>

@@ -40,6 +40,9 @@ new #[Title('My Puzzles')] class extends Component {
 
     public string $batchPdfTitle = '';
 
+    /** @var list<array{heading: string, body: string, position: string}> */
+    public array $batchCustomPages = [];
+
     #[Url]
     public string $search = '';
 
@@ -306,7 +309,19 @@ new #[Title('My Puzzles')] class extends Component {
 
         $this->batchPdfOrientation = 'portrait';
         $this->batchPdfTitle = '';
+        $this->batchCustomPages = [];
         $this->showBatchPdfModal = true;
+    }
+
+    public function addCustomPage(): void
+    {
+        $this->batchCustomPages[] = ['heading' => '', 'body' => '', 'position' => 'before'];
+    }
+
+    public function removeCustomPage(int $index): void
+    {
+        unset($this->batchCustomPages[$index]);
+        $this->batchCustomPages = array_values($this->batchCustomPages);
     }
 
     public function exportBatchPdf(): StreamedResponse
@@ -321,12 +336,18 @@ new #[Title('My Puzzles')] class extends Component {
         $orientation = in_array($this->batchPdfOrientation, ['portrait', 'landscape']) ? $this->batchPdfOrientation : 'portrait';
         $title = trim($this->batchPdfTitle) ?: null;
 
+        $customPages = array_values(array_filter(
+            $this->batchCustomPages,
+            fn (array $page) => filled($page['heading'] ?? '') || filled($page['body'] ?? ''),
+        ));
+
         $exporter = app(PdfExporter::class);
-        $pdf = $exporter->exportBatch($crosswords, $orientation, $title);
+        $pdf = $exporter->exportBatch($crosswords, $orientation, $title, $customPages);
 
         $filename = str($title ?? 'puzzles-collection')->slug()->append('.pdf')->toString();
 
         $this->selectedPuzzles = [];
+        $this->batchCustomPages = [];
 
         return response()->streamDownload(function () use ($pdf) {
             echo $pdf;
@@ -338,6 +359,7 @@ new #[Title('My Puzzles')] class extends Component {
         $this->showBatchPdfModal = false;
         $this->batchPdfOrientation = 'portrait';
         $this->batchPdfTitle = '';
+        $this->batchCustomPages = [];
     }
 }
 ?>
@@ -610,6 +632,45 @@ new #[Title('My Puzzles')] class extends Component {
                     <flux:radio value="landscape" label="{{ __('Landscape') }}" />
                 </flux:radio.group>
             </flux:field>
+
+            {{-- Custom Pages --}}
+            <div>
+                <div class="mb-2 flex items-center justify-between">
+                    <flux:label>{{ __('Custom Pages') }} <span class="text-xs font-normal text-zinc-500">{{ __('(optional)') }}</span></flux:label>
+                    <flux:button variant="ghost" size="sm" icon="plus" wire:click="addCustomPage">
+                        {{ __('Add Page') }}
+                    </flux:button>
+                </div>
+
+                @if (count($batchCustomPages) > 0)
+                    <div class="space-y-3">
+                        @foreach ($batchCustomPages as $pageIndex => $customPage)
+                            <div wire:key="custom-page-{{ $pageIndex }}" class="border-line rounded-lg border p-3">
+                                <div class="mb-2 flex items-center justify-between">
+                                    <flux:text size="sm" class="font-medium">{{ __('Page :number', ['number' => $pageIndex + 1]) }}</flux:text>
+                                    <flux:button variant="ghost" size="sm" icon="trash" wire:click="removeCustomPage({{ $pageIndex }})" />
+                                </div>
+                                <div class="space-y-2">
+                                    <flux:input
+                                        wire:model="batchCustomPages.{{ $pageIndex }}.heading"
+                                        placeholder="{{ __('Page heading (optional)') }}"
+                                        size="sm"
+                                    />
+                                    <flux:textarea
+                                        wire:model="batchCustomPages.{{ $pageIndex }}.body"
+                                        placeholder="{{ __('Page text (optional)') }}"
+                                        rows="3"
+                                    />
+                                    <flux:radio.group wire:model="batchCustomPages.{{ $pageIndex }}.position" variant="segmented" size="sm">
+                                        <flux:radio value="before" label="{{ __('Before puzzles') }}" />
+                                        <flux:radio value="after" label="{{ __('After puzzles') }}" />
+                                    </flux:radio.group>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
+            </div>
 
             <div class="flex justify-end gap-2">
                 <flux:button wire:click="cancelBatchPdfExport">{{ __('Cancel') }}</flux:button>
