@@ -14,7 +14,7 @@ class PdfExporter
      * @param  'portrait'|'landscape'  $orientation
      * @return string The raw PDF binary content.
      */
-    public function export(Crossword $crossword, bool $includeSolution = true, string $orientation = 'portrait', ?string $narrative = null): string
+    public function export(Crossword $crossword, bool $includeSolution = true, string $orientation = 'portrait', ?string $narrative = null, ?string $imagePath = null): string
     {
         $result = $this->numberer->number(
             $crossword->grid,
@@ -47,12 +47,19 @@ class PdfExporter
             $pageHeight - 2 * $margin,
         );
 
+        $imageDataUri = null;
+        if ($imagePath && file_exists($imagePath)) {
+            $mime = mime_content_type($imagePath) ?: 'image/png';
+            $imageDataUri = 'data:'.$mime.';base64,'.base64_encode(file_get_contents($imagePath));
+        }
+
         $pdf = Pdf::loadView('exports.crossword-pdf', [
             'title' => $crossword->displayTitle(),
             'author' => $crossword->author,
             'copyright' => $crossword->copyright,
             'notes' => $crossword->notes,
             'narrative' => $narrative,
+            'imageDataUri' => $imageDataUri,
             'numberedGrid' => $result['grid'],
             'solution' => $crossword->solution,
             'prefilled' => $crossword->prefilled,

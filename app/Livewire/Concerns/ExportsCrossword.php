@@ -5,6 +5,8 @@ namespace App\Livewire\Concerns;
 use App\Models\Crossword;
 use App\Services\PdfExporter;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Zorbl\CrosswordIO\Exceptions\ExportValidationException;
 use Zorbl\CrosswordIO\Exporters\IpuzExporter;
@@ -25,6 +27,11 @@ trait ExportsCrossword
     public string $pdfOrientation = 'portrait';
 
     public string $pdfNarrative = '';
+
+    /** @var TemporaryUploadedFile|null */
+    public $pdfImage = null;
+
+    public bool $pdfRemoveImage = false;
 
     abstract protected function getExportableCrossword(): Crossword;
 
@@ -179,11 +186,19 @@ trait ExportsCrossword
         $crossword = $this->getExportableCrossword();
         $this->pdfOrientation = 'portrait';
         $this->pdfNarrative = $crossword->pdf_narrative ?? '';
+        $this->pdfImage = null;
+        $this->pdfRemoveImage = false;
         $this->showPdfExportModal = true;
     }
 
-    public function confirmPdfExport(): StreamedResponse
+    public function confirmPdfExport(): ?StreamedResponse
     {
+        if ($this->pdfImage instanceof TemporaryUploadedFile) {
+            $this->validate([
+                'pdfImage' => ['image', 'max:2048'],
+            ]);
+        }
+
         $this->showPdfExportModal = false;
 
         $crossword = $this->getExportableCrossword();
@@ -193,6 +208,20 @@ trait ExportsCrossword
             $crossword->update(['pdf_narrative' => $narrative ?: null]);
         }
 
+        if ($this->pdfRemoveImage && $crossword->pdf_image) {
+            Storage::disk('public')->delete($crossword->pdf_image);
+            $crossword->update(['pdf_image' => null]);
+        } elseif ($this->pdfImage instanceof TemporaryUploadedFile) {
+            if ($crossword->pdf_image) {
+                Storage::disk('public')->delete($crossword->pdf_image);
+            }
+            $path = $this->pdfImage->store('pdf-images', 'public');
+            $crossword->update(['pdf_image' => $path]);
+        }
+
+        $this->pdfImage = null;
+        $this->pdfRemoveImage = false;
+
         return $this->exportPdf();
     }
 
@@ -201,6 +230,8 @@ trait ExportsCrossword
         $this->showPdfExportModal = false;
         $this->pdfOrientation = 'portrait';
         $this->pdfNarrative = '';
+        $this->pdfImage = null;
+        $this->pdfRemoveImage = false;
     }
 
     public function exportPdf(): StreamedResponse
@@ -215,12 +246,18 @@ trait ExportsCrossword
         $orientation = in_array($this->pdfOrientation, ['portrait', 'landscape']) ? $this->pdfOrientation : 'portrait';
         $narrative = trim($this->pdfNarrative);
 
+        $imagePath = null;
+        if ($crossword->pdf_image) {
+            $imagePath = Storage::disk('public')->path($crossword->pdf_image);
+        }
+
         $exporter = app(PdfExporter::class);
         $pdf = $exporter->export(
             $crossword,
             includeSolution: $this->getPdfIncludeSolution(),
             orientation: $orientation,
             narrative: $narrative ?: null,
+            imagePath: $imagePath,
         );
         $filename = str($crossword->title ?: 'crossword')->slug()->append('.pdf')->toString();
 
