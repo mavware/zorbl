@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Crossword;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Collection;
 use Zorbl\CrosswordIO\GridNumberer;
 
 class PdfExporter
@@ -65,6 +66,76 @@ class PdfExporter
             'letterFontSize' => $letterFontSize,
             'numberHeight' => $numberHeight,
             'forceCluePageBreak' => $forceCluePageBreak,
+            'orientation' => $orientation,
+        ]);
+
+        $pdf->setPaper('letter', $orientation);
+
+        return $pdf->output();
+    }
+
+    /**
+     * @param  Collection<int, Crossword>  $crosswords
+     * @param  'portrait'|'landscape'  $orientation
+     * @return string The raw PDF binary content.
+     */
+    public function exportBatch(Collection $crosswords, string $orientation = 'portrait', ?string $collectionTitle = null): string
+    {
+        $isLandscape = $orientation === 'landscape';
+        $pageWidth = $isLandscape ? 11.0 : 8.5;
+        $pageHeight = $isLandscape ? 8.5 : 11.0;
+        $margin = 0.75;
+
+        $puzzles = [];
+        foreach ($crosswords as $crossword) {
+            $result = $this->numberer->number(
+                $crossword->grid,
+                $crossword->width,
+                $crossword->height,
+                $crossword->styles ?? [],
+            );
+
+            $maxGridWidth = $pageWidth - 2 * $margin;
+            $maxGridHeight = $pageHeight - 2 * $margin - 1.5;
+            $cellSize = round(min(0.33, $maxGridWidth / $crossword->width, $maxGridHeight / $crossword->height), 3);
+
+            $numberFontSize = round(max(4, $cellSize * 18), 1);
+            $letterFontSize = round(max(6, $cellSize * 28), 1);
+            $numberHeight = round($cellSize * 0.35, 3);
+
+            $cluesAcross = $crossword->clues_across ?? [];
+            $cluesDown = $crossword->clues_down ?? [];
+
+            $forceCluePageBreak = $this->shouldBreakBeforeClues(
+                $crossword->height,
+                $cellSize,
+                count($cluesAcross),
+                count($cluesDown),
+                $pageHeight - 2 * $margin,
+            );
+
+            $puzzles[] = [
+                'title' => $crossword->displayTitle(),
+                'author' => $crossword->author,
+                'copyright' => $crossword->copyright,
+                'notes' => $crossword->notes,
+                'numberedGrid' => $result['grid'],
+                'solution' => $crossword->solution,
+                'prefilled' => $crossword->prefilled,
+                'cluesAcross' => $cluesAcross,
+                'cluesDown' => $cluesDown,
+                'styles' => $crossword->styles ?? [],
+                'cellSize' => $cellSize,
+                'numberFontSize' => $numberFontSize,
+                'letterFontSize' => $letterFontSize,
+                'numberHeight' => $numberHeight,
+                'forceCluePageBreak' => $forceCluePageBreak,
+            ];
+        }
+
+        $pdf = Pdf::loadView('exports.crossword-batch-pdf', [
+            'puzzles' => $puzzles,
+            'collectionTitle' => $collectionTitle,
             'orientation' => $orientation,
         ]);
 
