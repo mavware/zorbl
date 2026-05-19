@@ -5,6 +5,7 @@ use App\Models\Follow;
 use App\Models\User;
 use App\Notifications\NewFollower;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Title;
@@ -16,6 +17,9 @@ new #[Title('Constructor Profile')] class extends Component {
     public int $constructorId;
 
     public string $constructorName = '';
+
+    #[Url]
+    public string $tab = 'puzzles';
 
     #[Url]
     public string $sortBy = 'newest';
@@ -98,6 +102,46 @@ new #[Title('Constructor Profile')] class extends Component {
             ->sum('cached_attempts_count');
     }
 
+    #[Computed]
+    public function followersList()
+    {
+        return User::whereIn('id', Follow::where('following_id', $this->constructorId)->select('follower_id'))
+            ->with('subscriptions')
+            ->withCount([
+                'crosswords as published_puzzles_count' => fn ($q) => $q->where('is_published', true),
+            ])
+            ->addSelect([
+                'total_solves' => DB::table('puzzle_attempts')
+                    ->join('crosswords', 'crosswords.id', '=', 'puzzle_attempts.crossword_id')
+                    ->whereColumn('crosswords.user_id', 'users.id')
+                    ->where('crosswords.is_published', true)
+                    ->where('puzzle_attempts.is_completed', true)
+                    ->selectRaw('count(*)'),
+            ])
+            ->orderBy('name')
+            ->get();
+    }
+
+    #[Computed]
+    public function followingList()
+    {
+        return User::whereIn('id', Follow::where('follower_id', $this->constructorId)->select('following_id'))
+            ->with('subscriptions')
+            ->withCount([
+                'crosswords as published_puzzles_count' => fn ($q) => $q->where('is_published', true),
+            ])
+            ->addSelect([
+                'total_solves' => DB::table('puzzle_attempts')
+                    ->join('crosswords', 'crosswords.id', '=', 'puzzle_attempts.crossword_id')
+                    ->whereColumn('crosswords.user_id', 'users.id')
+                    ->where('crosswords.is_published', true)
+                    ->where('puzzle_attempts.is_completed', true)
+                    ->selectRaw('count(*)'),
+            ])
+            ->orderBy('name')
+            ->get();
+    }
+
     public function toggleFollow(): void
     {
         $user = Auth::user();
@@ -125,7 +169,7 @@ new #[Title('Constructor Profile')] class extends Component {
             }
         }
 
-        unset($this->isFollowing, $this->followersCount);
+        unset($this->isFollowing, $this->followersCount, $this->followersList);
     }
 }
 ?>
@@ -145,8 +189,15 @@ new #[Title('Constructor Profile')] class extends Component {
                     @endif
                 </flux:heading>
                 <div class="mt-1 flex items-center gap-4 text-sm text-zinc-600">
-                    <span>{{ trans_choice(':count puzzle|:count puzzles', $this->publishedPuzzles->count()) }}</span>
-                    <span>{{ trans_choice(':count follower|:count followers', $this->followersCount) }}</span>
+                    <button wire:click="$set('tab', 'puzzles')" class="hover:text-blue-600 dark:hover:text-blue-400">
+                        {{ trans_choice(':count puzzle|:count puzzles', $this->publishedPuzzles->count()) }}
+                    </button>
+                    <button wire:click="$set('tab', 'followers')" class="hover:text-blue-600 dark:hover:text-blue-400">
+                        {{ trans_choice(':count follower|:count followers', $this->followersCount) }}
+                    </button>
+                    <button wire:click="$set('tab', 'following')" class="hover:text-blue-600 dark:hover:text-blue-400">
+                        {{ __(':count following', ['count' => $this->followingCount]) }}
+                    </button>
                     <span>{{ __(':count total solves', ['count' => $this->totalSolves]) }}</span>
                 </div>
                 @if($this->constructor->bio)
@@ -177,90 +228,193 @@ new #[Title('Constructor Profile')] class extends Component {
         @endauth
     </div>
 
+    {{-- Tab Navigation --}}
+    <flux:radio.group wire:model.live="tab" variant="segmented" size="sm">
+        <flux:radio value="puzzles" label="{{ __('Puzzles') }}" />
+        <flux:radio value="followers" label="{{ trans_choice(':count Follower|:count Followers', $this->followersCount) }}" />
+        <flux:radio value="following" label="{{ __(':count Following', ['count' => $this->followingCount]) }}" />
+    </flux:radio.group>
+
     {{-- Published Puzzles --}}
-    <div>
-        <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <flux:heading size="lg">{{ __('Published Puzzles') }}</flux:heading>
+    @if($tab === 'puzzles')
+        <div>
+            <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <flux:heading size="lg">{{ __('Published Puzzles') }}</flux:heading>
 
-            <div class="flex flex-wrap items-center gap-3">
-                <flux:radio.group wire:model.live="difficulty" variant="segmented" size="sm">
-                    <flux:radio value="" label="{{ __('All') }}" />
-                    <flux:radio value="Easy" label="{{ __('Easy') }}" />
-                    <flux:radio value="Medium" label="{{ __('Medium') }}" />
-                    <flux:radio value="Hard" label="{{ __('Hard') }}" />
-                    <flux:radio value="Expert" label="{{ __('Expert') }}" />
-                </flux:radio.group>
+                <div class="flex flex-wrap items-center gap-3">
+                    <flux:radio.group wire:model.live="difficulty" variant="segmented" size="sm">
+                        <flux:radio value="" label="{{ __('All') }}" />
+                        <flux:radio value="Easy" label="{{ __('Easy') }}" />
+                        <flux:radio value="Medium" label="{{ __('Medium') }}" />
+                        <flux:radio value="Hard" label="{{ __('Hard') }}" />
+                        <flux:radio value="Expert" label="{{ __('Expert') }}" />
+                    </flux:radio.group>
 
-                <flux:select wire:model.live="sortBy" size="sm" class="w-36">
-                    <flux:select.option value="newest">{{ __('Newest') }}</flux:select.option>
-                    <flux:select.option value="oldest">{{ __('Oldest') }}</flux:select.option>
-                    <flux:select.option value="most_liked">{{ __('Most Liked') }}</flux:select.option>
-                    <flux:select.option value="most_played">{{ __('Most Played') }}</flux:select.option>
-                </flux:select>
+                    <flux:select wire:model.live="sortBy" size="sm" class="w-36">
+                        <flux:select.option value="newest">{{ __('Newest') }}</flux:select.option>
+                        <flux:select.option value="oldest">{{ __('Oldest') }}</flux:select.option>
+                        <flux:select.option value="most_liked">{{ __('Most Liked') }}</flux:select.option>
+                        <flux:select.option value="most_played">{{ __('Most Played') }}</flux:select.option>
+                    </flux:select>
+                </div>
             </div>
+
+            @if($this->publishedPuzzles->isEmpty())
+                <div class="border-line-strong flex flex-col items-center justify-center rounded-lg border border-dashed py-8">
+                    <flux:icon name="puzzle-piece" class="mb-2 size-8 text-zinc-500" />
+                    <flux:text size="sm" class="text-zinc-500">
+                        @if($this->difficulty !== '')
+                            {{ __('No puzzles match this difficulty.') }}
+                        @else
+                            {{ __('No published puzzles yet.') }}
+                        @endif
+                    </flux:text>
+                </div>
+            @else
+                <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    @foreach($this->publishedPuzzles as $puzzle)
+                        <a
+                            href="{{ route('crosswords.solver', $puzzle) }}"
+                            wire:navigate
+                            class="border-line group rounded-xl border p-4 transition-colors hover:border-zinc-400 dark:hover:border-zinc-600"
+                        >
+                            <div class="mb-3 flex justify-center">
+                                <x-grid-thumbnail :grid="$puzzle->grid" :width="$puzzle->width" :height="$puzzle->height" />
+                            </div>
+                            <div class="mb-2 flex items-start justify-between">
+                                <flux:heading size="sm" class="group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                                    {{ $puzzle->displayTitle() }}
+                                </flux:heading>
+                                @if($puzzle->difficulty_label)
+                                    <span @class([
+                                        'rounded-full px-2 py-0.5 text-xs font-medium',
+                                        'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' => $puzzle->difficulty_label === 'Easy',
+                                        'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' => $puzzle->difficulty_label === 'Medium',
+                                        'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' => $puzzle->difficulty_label === 'Hard',
+                                        'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' => $puzzle->difficulty_label === 'Expert',
+                                    ])>{{ $puzzle->difficulty_label }}</span>
+                                @endif
+                            </div>
+                            <div class="flex items-center gap-3 text-xs text-zinc-500">
+                                <span>{{ $puzzle->width }}&times;{{ $puzzle->height }}</span>
+                                <span class="flex items-center gap-0.5">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="size-3.5" viewBox="0 0 24 24" fill="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" /></svg>
+                                    {{ $puzzle->likes_count }}
+                                </span>
+                                <span class="flex items-center gap-0.5">
+                                    <flux:icon name="play" class="size-3.5" />
+                                    {{ $puzzle->cached_attempts_count }}
+                                </span>
+                                @if($puzzle->cached_attempts_count > 0)
+                                    @php($completionRate = round(($puzzle->cached_completed_count / $puzzle->cached_attempts_count) * 100))
+                                    <span @class([
+                                        'text-emerald-600 dark:text-emerald-400' => $completionRate >= 75,
+                                        'text-amber-600 dark:text-amber-400' => $completionRate >= 40 && $completionRate < 75,
+                                        'text-zinc-600' => $completionRate < 40,
+                                    ])>{{ $completionRate }}% {{ __('solved') }}</span>
+                                @endif
+                            </div>
+                            <flux:text size="sm" class="mt-1 text-zinc-500">
+                                {{ $puzzle->created_at->diffForHumans() }}
+                            </flux:text>
+                        </a>
+                    @endforeach
+                </div>
+            @endif
         </div>
+    @endif
 
-        @if($this->publishedPuzzles->isEmpty())
-            <div class="border-line-strong flex flex-col items-center justify-center rounded-lg border border-dashed py-8">
-                <flux:icon name="puzzle-piece" class="mb-2 size-8 text-zinc-500" />
-                <flux:text size="sm" class="text-zinc-500">
-                    @if($this->difficulty !== '')
-                        {{ __('No puzzles match this difficulty.') }}
-                    @else
-                        {{ __('No published puzzles yet.') }}
-                    @endif
-                </flux:text>
-            </div>
-        @else
-            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                @foreach($this->publishedPuzzles as $puzzle)
-                    <a
-                        href="{{ route('crosswords.solver', $puzzle) }}"
-                        wire:navigate
-                        class="border-line group rounded-xl border p-4 transition-colors hover:border-zinc-400 dark:hover:border-zinc-600"
-                    >
-                        <div class="mb-3 flex justify-center">
-                            <x-grid-thumbnail :grid="$puzzle->grid" :width="$puzzle->width" :height="$puzzle->height" />
-                        </div>
-                        <div class="mb-2 flex items-start justify-between">
-                            <flux:heading size="sm" class="group-hover:text-blue-600 dark:group-hover:text-blue-400">
-                                {{ $puzzle->displayTitle() }}
-                            </flux:heading>
-                            @if($puzzle->difficulty_label)
-                                <span @class([
-                                    'rounded-full px-2 py-0.5 text-xs font-medium',
-                                    'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' => $puzzle->difficulty_label === 'Easy',
-                                    'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' => $puzzle->difficulty_label === 'Medium',
-                                    'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' => $puzzle->difficulty_label === 'Hard',
-                                    'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' => $puzzle->difficulty_label === 'Expert',
-                                ])>{{ $puzzle->difficulty_label }}</span>
-                            @endif
-                        </div>
-                        <div class="flex items-center gap-3 text-xs text-zinc-500">
-                            <span>{{ $puzzle->width }}&times;{{ $puzzle->height }}</span>
-                            <span class="flex items-center gap-0.5">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="size-3.5" viewBox="0 0 24 24" fill="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" /></svg>
-                                {{ $puzzle->likes_count }}
-                            </span>
-                            <span class="flex items-center gap-0.5">
-                                <flux:icon name="play" class="size-3.5" />
-                                {{ $puzzle->cached_attempts_count }}
-                            </span>
-                            @if($puzzle->cached_attempts_count > 0)
-                                @php($completionRate = round(($puzzle->cached_completed_count / $puzzle->cached_attempts_count) * 100))
-                                <span @class([
-                                    'text-emerald-600 dark:text-emerald-400' => $completionRate >= 75,
-                                    'text-amber-600 dark:text-amber-400' => $completionRate >= 40 && $completionRate < 75,
-                                    'text-zinc-600' => $completionRate < 40,
-                                ])>{{ $completionRate }}% {{ __('solved') }}</span>
-                            @endif
-                        </div>
-                        <flux:text size="sm" class="mt-1 text-zinc-500">
-                            {{ $puzzle->created_at->diffForHumans() }}
-                        </flux:text>
-                    </a>
-                @endforeach
-            </div>
-        @endif
-    </div>
+    {{-- Followers --}}
+    @if($tab === 'followers')
+        <div>
+            <flux:heading size="lg" class="mb-4">{{ __('Followers') }}</flux:heading>
+
+            @if($this->followersList->isEmpty())
+                <div class="border-line-strong flex flex-col items-center justify-center rounded-lg border border-dashed py-8">
+                    <flux:icon name="users" class="mb-2 size-8 text-zinc-500" />
+                    <flux:text size="sm" class="text-zinc-500">{{ __('No followers yet.') }}</flux:text>
+                </div>
+            @else
+                <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    @foreach($this->followersList as $follower)
+                        <a
+                            href="{{ route('constructors.show', $follower) }}"
+                            wire:navigate
+                            wire:key="follower-{{ $follower->id }}"
+                            class="border-line group rounded-xl border p-4 transition-colors hover:border-zinc-400 dark:hover:border-zinc-600"
+                        >
+                            <div class="flex items-center gap-3">
+                                <div class="flex size-10 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-sm font-bold text-zinc-700 dark:bg-zinc-700 dark:text-zinc-300">
+                                    {{ $follower->initials() }}
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <flux:heading size="sm" class="truncate group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                                        {{ $follower->name }}
+                                        @if($follower->isPro())
+                                            <flux:badge color="purple" size="sm" class="ml-1 align-middle">{{ __('Pro') }}</flux:badge>
+                                        @endif
+                                    </flux:heading>
+                                    <div class="mt-1 flex items-center gap-3 text-xs text-zinc-500">
+                                        @if($follower->published_puzzles_count > 0)
+                                            <span>{{ trans_choice(':count puzzle|:count puzzles', $follower->published_puzzles_count) }}</span>
+                                        @endif
+                                        @if((int) $follower->total_solves > 0)
+                                            <span>{{ __(':count solves', ['count' => (int) $follower->total_solves]) }}</span>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                        </a>
+                    @endforeach
+                </div>
+            @endif
+        </div>
+    @endif
+
+    {{-- Following --}}
+    @if($tab === 'following')
+        <div>
+            <flux:heading size="lg" class="mb-4">{{ __('Following') }}</flux:heading>
+
+            @if($this->followingList->isEmpty())
+                <div class="border-line-strong flex flex-col items-center justify-center rounded-lg border border-dashed py-8">
+                    <flux:icon name="users" class="mb-2 size-8 text-zinc-500" />
+                    <flux:text size="sm" class="text-zinc-500">{{ __('Not following anyone yet.') }}</flux:text>
+                </div>
+            @else
+                <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    @foreach($this->followingList as $followed)
+                        <a
+                            href="{{ route('constructors.show', $followed) }}"
+                            wire:navigate
+                            wire:key="following-{{ $followed->id }}"
+                            class="border-line group rounded-xl border p-4 transition-colors hover:border-zinc-400 dark:hover:border-zinc-600"
+                        >
+                            <div class="flex items-center gap-3">
+                                <div class="flex size-10 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-sm font-bold text-zinc-700 dark:bg-zinc-700 dark:text-zinc-300">
+                                    {{ $followed->initials() }}
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <flux:heading size="sm" class="truncate group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                                        {{ $followed->name }}
+                                        @if($followed->isPro())
+                                            <flux:badge color="purple" size="sm" class="ml-1 align-middle">{{ __('Pro') }}</flux:badge>
+                                        @endif
+                                    </flux:heading>
+                                    <div class="mt-1 flex items-center gap-3 text-xs text-zinc-500">
+                                        @if($followed->published_puzzles_count > 0)
+                                            <span>{{ trans_choice(':count puzzle|:count puzzles', $followed->published_puzzles_count) }}</span>
+                                        @endif
+                                        @if((int) $followed->total_solves > 0)
+                                            <span>{{ __(':count solves', ['count' => (int) $followed->total_solves]) }}</span>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                        </a>
+                    @endforeach
+                </div>
+            @endif
+        </div>
+    @endif
 </div>

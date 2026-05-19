@@ -393,3 +393,149 @@ test('sort and difficulty filter work together', function () {
 
     $component->assertDontSee('Hard Puzzle');
 });
+
+// --- Followers/Following Tabs ---
+
+test('default tab is puzzles', function () {
+    $constructor = User::factory()->create();
+    $viewer = User::factory()->create();
+    Crossword::factory()->published()->for($constructor)->create(['title' => 'Visible Puzzle']);
+
+    Livewire\Livewire::actingAs($viewer)
+        ->test('pages::constructors.show', ['constructor' => $constructor])
+        ->assertSet('tab', 'puzzles')
+        ->assertSee('Visible Puzzle');
+});
+
+test('followers tab shows list of followers', function () {
+    $constructor = User::factory()->create();
+    $follower1 = User::factory()->create(['name' => 'Alice Follower']);
+    $follower2 = User::factory()->create(['name' => 'Bob Follower']);
+    $viewer = User::factory()->create();
+
+    Follow::create(['follower_id' => $follower1->id, 'following_id' => $constructor->id]);
+    Follow::create(['follower_id' => $follower2->id, 'following_id' => $constructor->id]);
+
+    Livewire\Livewire::actingAs($viewer)
+        ->test('pages::constructors.show', ['constructor' => $constructor])
+        ->set('tab', 'followers')
+        ->assertSee('Alice Follower')
+        ->assertSee('Bob Follower');
+});
+
+test('followers tab shows empty state when no followers', function () {
+    $constructor = User::factory()->create();
+    $viewer = User::factory()->create();
+
+    Livewire\Livewire::actingAs($viewer)
+        ->test('pages::constructors.show', ['constructor' => $constructor])
+        ->set('tab', 'followers')
+        ->assertSee('No followers yet.');
+});
+
+test('following tab shows list of followed users', function () {
+    $constructor = User::factory()->create();
+    $followed1 = User::factory()->create(['name' => 'Carol Creator']);
+    $followed2 = User::factory()->create(['name' => 'Dave Designer']);
+    $viewer = User::factory()->create();
+
+    Follow::create(['follower_id' => $constructor->id, 'following_id' => $followed1->id]);
+    Follow::create(['follower_id' => $constructor->id, 'following_id' => $followed2->id]);
+
+    Livewire\Livewire::actingAs($viewer)
+        ->test('pages::constructors.show', ['constructor' => $constructor])
+        ->set('tab', 'following')
+        ->assertSee('Carol Creator')
+        ->assertSee('Dave Designer');
+});
+
+test('following tab shows empty state when not following anyone', function () {
+    $constructor = User::factory()->create();
+    $viewer = User::factory()->create();
+
+    Livewire\Livewire::actingAs($viewer)
+        ->test('pages::constructors.show', ['constructor' => $constructor])
+        ->set('tab', 'following')
+        ->assertSee('Not following anyone yet.');
+});
+
+test('followers tab shows published puzzle count', function () {
+    $constructor = User::factory()->create();
+    $follower = User::factory()->create(['name' => 'Prolific Builder']);
+    $viewer = User::factory()->create();
+
+    Crossword::factory()->published()->for($follower)->count(3)->create();
+
+    Follow::create(['follower_id' => $follower->id, 'following_id' => $constructor->id]);
+
+    $component = Livewire\Livewire::actingAs($viewer)
+        ->test('pages::constructors.show', ['constructor' => $constructor])
+        ->set('tab', 'followers');
+
+    $followers = $component->get('followersList');
+    expect($followers->first()->published_puzzles_count)->toBe(3);
+});
+
+test('following tab does not show draft puzzles in count', function () {
+    $constructor = User::factory()->create();
+    $followed = User::factory()->create(['name' => 'Has Drafts']);
+    $viewer = User::factory()->create();
+
+    Crossword::factory()->published()->for($followed)->count(2)->create();
+    Crossword::factory()->for($followed)->create(['is_published' => false]);
+
+    Follow::create(['follower_id' => $constructor->id, 'following_id' => $followed->id]);
+
+    $component = Livewire\Livewire::actingAs($viewer)
+        ->test('pages::constructors.show', ['constructor' => $constructor])
+        ->set('tab', 'following');
+
+    $followingList = $component->get('followingList');
+    expect($followingList->first()->published_puzzles_count)->toBe(2);
+});
+
+test('puzzles tab hides when switching to followers', function () {
+    $constructor = User::factory()->create();
+    $viewer = User::factory()->create();
+    Crossword::factory()->published()->for($constructor)->create(['title' => 'Should Hide']);
+
+    Livewire\Livewire::actingAs($viewer)
+        ->test('pages::constructors.show', ['constructor' => $constructor])
+        ->assertSee('Should Hide')
+        ->set('tab', 'followers')
+        ->assertDontSee('Should Hide');
+});
+
+test('following a constructor updates followers list', function () {
+    $constructor = User::factory()->create();
+    $follower = User::factory()->create(['name' => 'New Follower']);
+
+    Notification::fake();
+
+    $component = Livewire\Livewire::actingAs($follower)
+        ->test('pages::constructors.show', ['constructor' => $constructor])
+        ->set('tab', 'followers')
+        ->assertSee('No followers yet.')
+        ->call('toggleFollow')
+        ->assertSee('New Follower');
+});
+
+test('header counts link to the correct tabs', function () {
+    $constructor = User::factory()->create();
+    $viewer = User::factory()->create();
+
+    Livewire\Livewire::actingAs($viewer)
+        ->test('pages::constructors.show', ['constructor' => $constructor])
+        ->assertSeeHtml('wire:click="$set(\'tab\', \'followers\')"')
+        ->assertSeeHtml('wire:click="$set(\'tab\', \'following\')"');
+});
+
+test('tab state persists in URL', function () {
+    $constructor = User::factory()->create();
+    $viewer = User::factory()->create();
+
+    Livewire\Livewire::actingAs($viewer)
+        ->test('pages::constructors.show', ['constructor' => $constructor])
+        ->set('tab', 'followers')
+        ->assertSet('tab', 'followers');
+});
