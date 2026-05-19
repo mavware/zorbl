@@ -34,6 +34,9 @@
                     <flux:sidebar.item icon="trophy" :href="route('leaderboard')" :current="request()->routeIs('leaderboard')" wire:navigate>
                         {{ __('Leaderboard') }}
                     </flux:sidebar.item>
+                    <flux:sidebar.item icon="user-group" :href="route('teams.index')" :current="request()->routeIs('teams.*')" wire:navigate>
+                        {{ __('Teams') }}
+                    </flux:sidebar.item>
                 </flux:sidebar.group>
 
                 <flux:sidebar.group :heading="__('Community')" class="grid">

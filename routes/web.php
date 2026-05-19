@@ -86,6 +86,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('contests/{contest:slug}', 'pages::contests.show')->name('contests.show');
     Route::livewire('contests/{contest:slug}/leaderboard', 'pages::contests.leaderboard')->name('contests.leaderboard');
 
+    Route::livewire('teams', 'pages::teams.index')->name('teams.index');
+    Route::livewire('teams/{team}', 'pages::teams.show')->name('teams.show');
+
     Route::livewire('support', 'pages::support.index')->name('support.index');
     Route::livewire('support/create', 'pages::support.create')->name('support.create');
     Route::livewire('support/{ticket}', 'pages::support.show')->name('support.show');

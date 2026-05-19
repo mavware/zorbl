@@ -63,8 +63,10 @@ use Zorbl\CrosswordIO\GridNumberer;
  * @property-read int|null $likes_count
  * @property-read Collection<int, Tag> $tags
  * @property-read int|null $tags_count
+ * @property int|null $team_id
  * @property-read string $display_title
  * @property-read User $user
+ * @property-read Team|null $team
  *
  * @mixin Eloquent
  */
@@ -77,6 +79,7 @@ use Zorbl\CrosswordIO\GridNumberer;
     'styles', 'metadata', 'is_published', 'allow_embed', 'contains_profanity',
     'difficulty_score', 'difficulty_label',
     'cached_attempts_count', 'cached_completed_count', 'cached_avg_solve_time',
+    'team_id',
 ])]
 #[ObservedBy([CrosswordObserver::class])]
 class Crossword extends Model
@@ -158,6 +161,14 @@ class Crossword extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * @return BelongsTo<Team, $this>
+     */
+    public function team(): BelongsTo
+    {
+        return $this->belongsTo(Team::class);
     }
 
     /**

@@ -81,6 +81,10 @@ use Spatie\Permission\Traits\HasRoles;
  * @property-read int|null $blocked_tags_count
  * @property-read Collection<int, WebhookEndpoint> $webhookEndpoints
  * @property-read int|null $webhook_endpoints_count
+ * @property-read Collection<int, Team> $teams
+ * @property-read int|null $teams_count
+ * @property-read Collection<int, Team> $ownedTeams
+ * @property-read int|null $owned_teams_count
  *
  * @method static UserFactory factory($count = null, $state = [])
  *
@@ -220,6 +224,22 @@ class User extends Authenticatable implements FilamentUser
     public function blockedTags(): BelongsToMany
     {
         return $this->belongsToMany(Tag::class, 'blocked_tags')->withTimestamps();
+    }
+
+    /**
+     * @return BelongsToMany<Team, $this>
+     */
+    public function teams(): BelongsToMany
+    {
+        return $this->belongsToMany(Team::class)->withPivot('role')->withTimestamps();
+    }
+
+    /**
+     * @return HasMany<Team, $this>
+     */
+    public function ownedTeams(): HasMany
+    {
+        return $this->hasMany(Team::class, 'owner_id');
     }
 
     /**
