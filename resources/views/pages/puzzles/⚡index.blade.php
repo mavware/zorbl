@@ -164,6 +164,9 @@ class extends Component {
         match ($this->sortBy) {
             'oldest' => $query->oldest(),
             'most_liked' => $query->orderByDesc('likes_count'),
+            'most_solved' => $query->orderByDesc('cached_completed_count'),
+            'highest_rated' => $query->orderByDesc('avg_rating'),
+            'most_played' => $query->orderByDesc('cached_attempts_count'),
             'largest' => $query->orderByRaw('width * height DESC'),
             'smallest' => $query->orderByRaw('width * height ASC'),
             default => $query->latest(),
@@ -386,10 +389,13 @@ class extends Component {
             />
         </div>
         <div class="flex items-center gap-2">
-            <flux:select wire:model.live="sortBy" size="sm" class="w-40">
+            <flux:select wire:model.live="sortBy" size="sm" class="w-44">
                 <flux:select.option value="newest">{{ __('Newest') }}</flux:select.option>
                 <flux:select.option value="oldest">{{ __('Oldest') }}</flux:select.option>
                 <flux:select.option value="most_liked">{{ __('Most Liked') }}</flux:select.option>
+                <flux:select.option value="most_solved">{{ __('Most Solved') }}</flux:select.option>
+                <flux:select.option value="highest_rated">{{ __('Highest Rated') }}</flux:select.option>
+                <flux:select.option value="most_played">{{ __('Most Played') }}</flux:select.option>
                 <flux:select.option value="largest">{{ __('Largest') }}</flux:select.option>
                 <flux:select.option value="smallest">{{ __('Smallest') }}</flux:select.option>
             </flux:select>
@@ -534,6 +540,42 @@ class extends Component {
                         @foreach($crossword->tags as $crosswordTag)
                             <flux:badge size="sm" color="blue">{{ $crosswordTag->name }}</flux:badge>
                         @endforeach
+                    </div>
+
+                    <div class="mt-2 flex items-center gap-3 text-xs text-zinc-500">
+                        <span class="flex items-center gap-0.5">
+                            <flux:icon name="check-circle" class="size-3.5" />
+                            {{ trans_choice(':count solve|:count solves', $crossword->cached_completed_count) }}
+                        </span>
+                        @if($crossword->cached_avg_solve_time)
+                            <span class="flex items-center gap-0.5">
+                                <flux:icon name="clock" class="size-3.5" />
+                                @php
+                                    $avgSeconds = $crossword->cached_avg_solve_time;
+                                    $avgHours = intdiv($avgSeconds, 3600);
+                                    $avgMinutes = intdiv($avgSeconds % 3600, 60);
+                                    $avgSecs = $avgSeconds % 60;
+                                    $formattedAvg = $avgHours > 0
+                                        ? sprintf('%d:%02d:%02d', $avgHours, $avgMinutes, $avgSecs)
+                                        : sprintf('%d:%02d', $avgMinutes, $avgSecs);
+                                @endphp
+                                {{ __('avg :time', ['time' => $formattedAvg]) }}
+                            </span>
+                        @endif
+                        @if($crossword->avg_rating)
+                            <span class="flex items-center gap-0.5" title="{{ __(':rating out of 5', ['rating' => number_format($crossword->avg_rating, 1)]) }}">
+                                @for($i = 1; $i <= 5; $i++)
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="size-3 {{ $i <= round($crossword->avg_rating) ? 'text-amber-400' : 'text-zinc-300 dark:text-zinc-600' }}" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.006 5.404.434c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.434 2.082-5.005Z" clip-rule="evenodd"/></svg>
+                                @endfor
+                            </span>
+                        @endif
+                        @if($crossword->cached_attempts_count > 0)
+                            @php($completionRate = round(($crossword->cached_completed_count / $crossword->cached_attempts_count) * 100))
+                            <span class="flex items-center gap-0.5" title="{{ __(':rate% of solvers completed this puzzle', ['rate' => $completionRate]) }}">
+                                <flux:icon name="chart-bar" class="size-3.5" />
+                                {{ $completionRate }}%
+                            </span>
+                        @endif
                     </div>
 
                     <div class="mt-3 flex items-center justify-between">

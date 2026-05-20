@@ -450,6 +450,97 @@ test('sort by smallest shows smallest grids first', function () {
         ->assertSeeInOrder(['Small Grid', 'Large Grid']);
 });
 
+test('sort by most solved orders by completed count', function () {
+    $creator = User::factory()->create();
+    $lessPlayed = Crossword::factory()->published()->for($creator)->create([
+        'title' => 'Less Solved',
+        'cached_completed_count' => 2,
+    ]);
+    $morePlayed = Crossword::factory()->published()->for($creator)->create([
+        'title' => 'More Solved',
+        'cached_completed_count' => 20,
+    ]);
+
+    Livewire::test('pages::puzzles.index')
+        ->set('sortBy', 'most_solved')
+        ->assertSeeInOrder(['More Solved', 'Less Solved']);
+});
+
+test('sort by highest rated orders by average rating', function () {
+    $creator = User::factory()->create();
+    $lowRated = Crossword::factory()->published()->for($creator)->create(['title' => 'Low Rated']);
+    $highRated = Crossword::factory()->published()->for($creator)->create(['title' => 'High Rated']);
+
+    PuzzleComment::factory()->create(['crossword_id' => $lowRated->id, 'rating' => 2]);
+    PuzzleComment::factory()->create(['crossword_id' => $highRated->id, 'rating' => 5]);
+
+    Livewire::test('pages::puzzles.index')
+        ->set('sortBy', 'highest_rated')
+        ->assertSeeInOrder(['High Rated', 'Low Rated']);
+});
+
+test('sort by most played orders by attempt count', function () {
+    $creator = User::factory()->create();
+    $lessPlayed = Crossword::factory()->published()->for($creator)->create([
+        'title' => 'Less Played',
+        'cached_attempts_count' => 5,
+    ]);
+    $morePlayed = Crossword::factory()->published()->for($creator)->create([
+        'title' => 'More Played',
+        'cached_attempts_count' => 50,
+    ]);
+
+    Livewire::test('pages::puzzles.index')
+        ->set('sortBy', 'most_played')
+        ->assertSeeInOrder(['More Played', 'Less Played']);
+});
+
+// --- Card Info Display ---
+
+test('puzzle cards show solve count', function () {
+    $creator = User::factory()->create();
+    Crossword::factory()->published()->for($creator)->create([
+        'title' => 'Popular Puzzle',
+        'cached_completed_count' => 42,
+    ]);
+
+    Livewire::test('pages::puzzles.index')
+        ->assertSee('42 solves');
+});
+
+test('puzzle cards show average rating stars when rated', function () {
+    $creator = User::factory()->create();
+    $crossword = Crossword::factory()->published()->for($creator)->create(['title' => 'Rated Puzzle']);
+    PuzzleComment::factory()->create(['crossword_id' => $crossword->id, 'rating' => 4]);
+
+    Livewire::test('pages::puzzles.index')
+        ->assertSee('4.0 out of 5', false);
+});
+
+test('puzzle cards show completion rate when played', function () {
+    $creator = User::factory()->create();
+    Crossword::factory()->published()->for($creator)->create([
+        'title' => 'Played Puzzle',
+        'cached_attempts_count' => 10,
+        'cached_completed_count' => 8,
+    ]);
+
+    Livewire::test('pages::puzzles.index')
+        ->assertSee('80%');
+});
+
+test('puzzle cards do not show completion rate when never played', function () {
+    $creator = User::factory()->create();
+    Crossword::factory()->published()->for($creator)->create([
+        'title' => 'Unplayed Puzzle',
+        'cached_attempts_count' => 0,
+        'cached_completed_count' => 0,
+    ]);
+
+    $component = Livewire::test('pages::puzzles.index');
+    $component->assertDontSee('chart-bar');
+});
+
 // --- Like Toggling ---
 
 test('authenticated user can toggle like on a puzzle', function () {
