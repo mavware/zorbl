@@ -201,3 +201,136 @@ test('format time displays correctly', function () {
         ->and($instance->formatTime(3661))->toBe('1:01:01')
         ->and($instance->formatTime(null))->toBe('—');
 });
+
+test('leaderboard defaults to all-time period', function () {
+    Livewire::actingAs(User::factory()->create())
+        ->test('pages::leaderboard')
+        ->assertSet('period', 'all');
+});
+
+test('period can be set via url parameter', function () {
+    Livewire::actingAs(User::factory()->create())
+        ->test('pages::leaderboard', ['period' => 'week'])
+        ->assertSet('period', 'week');
+});
+
+test('weekly top solvers only counts recent completions', function () {
+    $recentSolver = User::factory()->create(['name' => 'Recent Solver']);
+    $oldSolver = User::factory()->create(['name' => 'Old Solver']);
+
+    PuzzleAttempt::factory()->count(3)->completed()->create([
+        'user_id' => $recentSolver->id,
+        'completed_at' => now()->subDays(2),
+    ]);
+    PuzzleAttempt::factory()->count(5)->completed()->create([
+        'user_id' => $oldSolver->id,
+        'completed_at' => now()->subDays(14),
+    ]);
+
+    $component = Livewire::actingAs(User::factory()->create())
+        ->test('pages::leaderboard', ['period' => 'week']);
+
+    $names = $component->get('topSolvers')->pluck('name')->all();
+
+    expect($names)->toContain('Recent Solver')
+        ->and($names)->not->toContain('Old Solver');
+});
+
+test('monthly top solvers includes this month completions', function () {
+    $thisMonth = User::factory()->create(['name' => 'This Month Solver']);
+    $longAgo = User::factory()->create(['name' => 'Long Ago Solver']);
+
+    PuzzleAttempt::factory()->count(3)->completed()->create([
+        'user_id' => $thisMonth->id,
+        'completed_at' => now()->subDays(10),
+    ]);
+    PuzzleAttempt::factory()->count(5)->completed()->create([
+        'user_id' => $longAgo->id,
+        'completed_at' => now()->subDays(60),
+    ]);
+
+    $component = Livewire::actingAs(User::factory()->create())
+        ->test('pages::leaderboard', ['period' => 'month']);
+
+    $names = $component->get('topSolvers')->pluck('name')->all();
+
+    expect($names)->toContain('This Month Solver')
+        ->and($names)->not->toContain('Long Ago Solver');
+});
+
+test('weekly speed demons filters by period', function () {
+    $recentFast = User::factory()->create(['name' => 'Recent Fast']);
+    $oldFast = User::factory()->create(['name' => 'Old Fast']);
+
+    PuzzleAttempt::factory()->count(3)->completed()->create([
+        'user_id' => $recentFast->id,
+        'solve_time_seconds' => 100,
+        'completed_at' => now()->subDays(2),
+    ]);
+    PuzzleAttempt::factory()->count(5)->completed()->create([
+        'user_id' => $oldFast->id,
+        'solve_time_seconds' => 80,
+        'completed_at' => now()->subDays(14),
+    ]);
+
+    $component = Livewire::actingAs(User::factory()->create())
+        ->test('pages::leaderboard', ['tab' => 'speed', 'period' => 'week']);
+
+    $names = $component->get('speedDemons')->pluck('name')->all();
+
+    expect($names)->toContain('Recent Fast')
+        ->and($names)->not->toContain('Old Fast');
+});
+
+test('weekly speed demons requires minimum 3 solves instead of 5', function () {
+    $eligible = User::factory()->create(['name' => 'Three Solve Eligible']);
+
+    PuzzleAttempt::factory()->count(3)->completed()->create([
+        'user_id' => $eligible->id,
+        'solve_time_seconds' => 200,
+        'completed_at' => now()->subDays(2),
+    ]);
+
+    $component = Livewire::actingAs(User::factory()->create())
+        ->test('pages::leaderboard', ['tab' => 'speed', 'period' => 'week']);
+
+    $names = $component->get('speedDemons')->pluck('name')->all();
+
+    expect($names)->toContain('Three Solve Eligible');
+});
+
+test('weekly top constructors filters solves by period', function () {
+    $constructor = User::factory()->create(['name' => 'Active Constructor']);
+    $puzzle = Crossword::factory()->published()->create(['user_id' => $constructor->id]);
+
+    PuzzleAttempt::factory()->count(3)->completed()->create([
+        'crossword_id' => $puzzle->id,
+        'completed_at' => now()->subDays(2),
+    ]);
+    PuzzleAttempt::factory()->count(5)->completed()->create([
+        'crossword_id' => $puzzle->id,
+        'completed_at' => now()->subDays(14),
+    ]);
+
+    $component = Livewire::actingAs(User::factory()->create())
+        ->test('pages::leaderboard', ['tab' => 'constructors', 'period' => 'week']);
+
+    $constructors = $component->get('topConstructors');
+    $entry = $constructors->firstWhere('name', 'Active Constructor');
+
+    expect($entry->total_solves)->toBe(3);
+});
+
+test('period selector is hidden on streaks tab', function () {
+    Livewire::actingAs(User::factory()->create())
+        ->test('pages::leaderboard', ['tab' => 'streaks'])
+        ->assertDontSee('All Time');
+});
+
+test('period selector is shown on solvers tab', function () {
+    Livewire::actingAs(User::factory()->create())
+        ->test('pages::leaderboard', ['tab' => 'solvers'])
+        ->assertSee('All Time')
+        ->assertSee('This Week')
+        ->assertSee('This Month');
+});
