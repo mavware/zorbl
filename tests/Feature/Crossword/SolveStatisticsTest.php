@@ -583,3 +583,188 @@ test('stats page summary cards show totals across all pages', function () {
     expect($component->get('totalSolved'))->toBe(20);
     expect($component->get('averageTime'))->toBe(120);
 });
+
+test('stats page shows solve activity heatmap section', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::crosswords.stats')
+        ->assertSee('Solve Activity')
+        ->assertSee('Less')
+        ->assertSee('More');
+});
+
+test('activity heatmap counts solves per day', function () {
+    $user = User::factory()->create();
+
+    $crosswords = Crossword::factory()->published()->count(3)->create([
+        'width' => 5,
+        'height' => 5,
+        'grid' => Crossword::emptyGrid(5, 5),
+    ]);
+
+    foreach ($crosswords as $crossword) {
+        PuzzleAttempt::factory()->for($user)->for($crossword)->completed()->create([
+            'completed_at' => today(),
+            'solve_time_seconds' => 120,
+        ]);
+    }
+
+    $this->actingAs($user);
+
+    $component = Livewire::test('pages::crosswords.stats');
+    $heatmap = $component->instance()->activityHeatmap;
+
+    expect($heatmap['totalInRange'])->toBe(3);
+    expect($heatmap['days'][today()->format('Y-m-d')])->toBe(3);
+});
+
+test('activity heatmap excludes incomplete attempts', function () {
+    $user = User::factory()->create();
+
+    $crossword = Crossword::factory()->published()->create([
+        'width' => 5,
+        'height' => 5,
+        'grid' => Crossword::emptyGrid(5, 5),
+    ]);
+
+    PuzzleAttempt::factory()->for($user)->for($crossword)->create([
+        'is_completed' => false,
+        'completed_at' => null,
+        'solve_time_seconds' => null,
+    ]);
+
+    $this->actingAs($user);
+
+    $component = Livewire::test('pages::crosswords.stats');
+    $heatmap = $component->instance()->activityHeatmap;
+
+    expect($heatmap['totalInRange'])->toBe(0);
+    expect($heatmap['days'])->toBeEmpty();
+});
+
+test('activity heatmap excludes other users solves', function () {
+    $user = User::factory()->create();
+    $other = User::factory()->create();
+
+    $crossword = Crossword::factory()->published()->create([
+        'width' => 5,
+        'height' => 5,
+        'grid' => Crossword::emptyGrid(5, 5),
+    ]);
+
+    PuzzleAttempt::factory()->for($other)->for($crossword)->completed()->create([
+        'completed_at' => today(),
+        'solve_time_seconds' => 120,
+    ]);
+
+    $this->actingAs($user);
+
+    $component = Livewire::test('pages::crosswords.stats');
+    $heatmap = $component->instance()->activityHeatmap;
+
+    expect($heatmap['totalInRange'])->toBe(0);
+});
+
+test('activity heatmap returns weeks covering the past year', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user);
+
+    $component = Livewire::test('pages::crosswords.stats');
+    $heatmap = $component->instance()->activityHeatmap;
+
+    expect(count($heatmap['weeks']))->toBeGreaterThanOrEqual(52);
+    expect(count($heatmap['weeks']))->toBeLessThanOrEqual(54);
+});
+
+test('activity heatmap assigns intensity levels based on solve count', function () {
+    $user = User::factory()->create();
+
+    foreach (range(1, 5) as $i) {
+        $crossword = Crossword::factory()->published()->create([
+            'width' => 5,
+            'height' => 5,
+            'grid' => Crossword::emptyGrid(5, 5),
+        ]);
+
+        PuzzleAttempt::factory()->for($user)->for($crossword)->completed()->create([
+            'completed_at' => today(),
+            'solve_time_seconds' => 120,
+        ]);
+    }
+
+    $this->actingAs($user);
+
+    $component = Livewire::test('pages::crosswords.stats');
+    $heatmap = $component->instance()->activityHeatmap;
+
+    $todayKey = today()->format('Y-m-d');
+    $todayCell = null;
+    foreach ($heatmap['weeks'] as $week) {
+        foreach ($week as $day) {
+            if ($day['date'] === $todayKey) {
+                $todayCell = $day;
+                break 2;
+            }
+        }
+    }
+
+    expect($todayCell)->not->toBeNull();
+    expect($todayCell['count'])->toBe(5);
+    expect($todayCell['level'])->toBe(4);
+});
+
+test('activity heatmap shows total solves in the last year', function () {
+    $user = User::factory()->create();
+
+    $crossword = Crossword::factory()->published()->create([
+        'width' => 5,
+        'height' => 5,
+        'grid' => Crossword::emptyGrid(5, 5),
+    ]);
+
+    PuzzleAttempt::factory()->for($user)->for($crossword)->completed()->create([
+        'completed_at' => today(),
+        'solve_time_seconds' => 120,
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::crosswords.stats')
+        ->assertSee('1 puzzle solved in the last year');
+});
+
+test('activity heatmap pluralizes solve count correctly', function () {
+    $user = User::factory()->create();
+
+    foreach (range(1, 2) as $i) {
+        $crossword = Crossword::factory()->published()->create([
+            'width' => 5,
+            'height' => 5,
+            'grid' => Crossword::emptyGrid(5, 5),
+        ]);
+
+        PuzzleAttempt::factory()->for($user)->for($crossword)->completed()->create([
+            'completed_at' => today(),
+            'solve_time_seconds' => 120,
+        ]);
+    }
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::crosswords.stats')
+        ->assertSee('2 puzzles solved in the last year');
+});
+
+test('activity heatmap includes month labels', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user);
+
+    $component = Livewire::test('pages::crosswords.stats');
+    $heatmap = $component->instance()->activityHeatmap;
+
+    expect(count($heatmap['months']))->toBeGreaterThanOrEqual(12);
+});

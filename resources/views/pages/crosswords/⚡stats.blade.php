@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\PuzzleAttempt;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Computed;
@@ -180,6 +181,81 @@ new #[Title('Solve Statistics')] class extends Component {
         ];
     }
 
+    /**
+     * @return array{days: array<string, int>, weeks: list<list<array{date: string, count: int, level: int, day: int}>>, months: list<array{label: string, col: int}>, totalInRange: int}
+     */
+    #[Computed]
+    public function activityHeatmap(): array
+    {
+        $end = CarbonImmutable::today();
+        $start = $end->subWeeks(52)->startOfWeek(CarbonImmutable::SUNDAY);
+
+        $counts = Auth::user()
+            ->puzzleAttempts()
+            ->where('is_completed', true)
+            ->whereNotNull('completed_at')
+            ->where('completed_at', '>=', $start)
+            ->select(DB::raw('DATE(completed_at) as solve_date'), DB::raw('COUNT(*) as cnt'))
+            ->groupBy('solve_date')
+            ->pluck('cnt', 'solve_date')
+            ->all();
+
+        $max = max(1, max($counts ?: [0]));
+        $weeks = [];
+        $currentWeek = [];
+        $months = [];
+        $lastMonth = null;
+        $colIndex = 0;
+        $totalInRange = 0;
+
+        $cursor = $start->copy();
+        while ($cursor->lte($end)) {
+            $key = $cursor->format('Y-m-d');
+            $count = $counts[$key] ?? 0;
+            $totalInRange += $count;
+
+            $level = match (true) {
+                $count === 0 => 0,
+                $count <= ceil($max * 0.25) => 1,
+                $count <= ceil($max * 0.50) => 2,
+                $count <= ceil($max * 0.75) => 3,
+                default => 4,
+            };
+
+            $currentWeek[] = [
+                'date' => $key,
+                'count' => $count,
+                'level' => $level,
+                'day' => $cursor->dayOfWeek,
+            ];
+
+            $monthLabel = $cursor->format('M');
+            if ($monthLabel !== $lastMonth) {
+                $months[] = ['label' => $monthLabel, 'col' => $colIndex];
+                $lastMonth = $monthLabel;
+            }
+
+            if ($cursor->dayOfWeek === CarbonImmutable::SATURDAY) {
+                $weeks[] = $currentWeek;
+                $currentWeek = [];
+                $colIndex++;
+            }
+
+            $cursor = $cursor->addDay();
+        }
+
+        if (! empty($currentWeek)) {
+            $weeks[] = $currentWeek;
+        }
+
+        return [
+            'days' => $counts,
+            'weeks' => $weeks,
+            'months' => $months,
+            'totalInRange' => $totalInRange,
+        ];
+    }
+
     public function formatTime(?int $seconds): string
     {
         if ($seconds === null) {
@@ -258,6 +334,76 @@ new #[Title('Solve Statistics')] class extends Component {
                     @endforeach
                 </div>
             @endif
+        </div>
+    </div>
+
+    {{-- Solve Activity Heatmap --}}
+    @php($heatmap = $this->activityHeatmap)
+    <div class="border-line rounded-xl border p-5">
+        <div class="mb-4 flex items-center justify-between">
+            <flux:heading size="lg">{{ __('Solve Activity') }}</flux:heading>
+            <flux:text size="sm" class="text-zinc-500">
+                {{ trans_choice(':count puzzle solved in the last year|:count puzzles solved in the last year', $heatmap['totalInRange'], ['count' => $heatmap['totalInRange']]) }}
+            </flux:text>
+        </div>
+
+        <div class="overflow-x-auto" data-test="activity-heatmap">
+            <div class="inline-flex flex-col">
+                {{-- Month labels --}}
+                <div class="relative mb-1" style="padding-left: 30px; height: 16px;">
+                    @php($prevCol = -4)
+                    @foreach($heatmap['months'] as $month)
+                        @if($month['col'] - $prevCol >= 3)
+                            <span class="absolute text-[10px] text-zinc-400 dark:text-zinc-500" style="left: {{ 30 + $month['col'] * 15 }}px;">{{ $month['label'] }}</span>
+                            @php($prevCol = $month['col'])
+                        @endif
+                    @endforeach
+                </div>
+
+                <div class="flex gap-[3px]">
+                    {{-- Day labels --}}
+                    <div class="flex flex-col gap-[3px] text-[10px] text-zinc-400 dark:text-zinc-500" style="width: 26px;">
+                        <span class="h-[13px]"></span>
+                        <span class="flex h-[13px] items-center">{{ __('Mon') }}</span>
+                        <span class="h-[13px]"></span>
+                        <span class="flex h-[13px] items-center">{{ __('Wed') }}</span>
+                        <span class="h-[13px]"></span>
+                        <span class="flex h-[13px] items-center">{{ __('Fri') }}</span>
+                        <span class="h-[13px]"></span>
+                    </div>
+
+                    {{-- Grid --}}
+                    @foreach($heatmap['weeks'] as $week)
+                        <div class="flex flex-col gap-[3px]">
+                            @foreach($week as $day)
+                                @php($bgClass = match($day['level']) {
+                                    0 => 'bg-zinc-100 dark:bg-zinc-800',
+                                    1 => 'bg-emerald-200 dark:bg-emerald-900',
+                                    2 => 'bg-emerald-400 dark:bg-emerald-700',
+                                    3 => 'bg-emerald-500 dark:bg-emerald-500',
+                                    4 => 'bg-emerald-700 dark:bg-emerald-400',
+                                    default => 'bg-zinc-100 dark:bg-zinc-800',
+                                })
+                                <div
+                                    class="size-[13px] rounded-sm {{ $bgClass }}"
+                                    title="{{ \Carbon\Carbon::parse($day['date'])->format('M j, Y') }}: {{ trans_choice(':count solve|:count solves', $day['count'], ['count' => $day['count']]) }}"
+                                ></div>
+                            @endforeach
+                        </div>
+                    @endforeach
+                </div>
+
+                {{-- Legend --}}
+                <div class="mt-2 flex items-center justify-end gap-1.5 text-[10px] text-zinc-400 dark:text-zinc-500">
+                    <span>{{ __('Less') }}</span>
+                    <div class="size-[11px] rounded-sm bg-zinc-100 dark:bg-zinc-800"></div>
+                    <div class="size-[11px] rounded-sm bg-emerald-200 dark:bg-emerald-900"></div>
+                    <div class="size-[11px] rounded-sm bg-emerald-400 dark:bg-emerald-700"></div>
+                    <div class="size-[11px] rounded-sm bg-emerald-500 dark:bg-emerald-500"></div>
+                    <div class="size-[11px] rounded-sm bg-emerald-700 dark:bg-emerald-400"></div>
+                    <span>{{ __('More') }}</span>
+                </div>
+            </div>
         </div>
     </div>
 
