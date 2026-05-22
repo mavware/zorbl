@@ -4,6 +4,7 @@ use App\Models\Crossword;
 use App\Models\CrosswordLike;
 use App\Models\Follow;
 use App\Models\PuzzleAttempt;
+use App\Models\PuzzleComment;
 use App\Models\User;
 use App\Notifications\NewFollower;
 use Illuminate\Support\Facades\Notification;
@@ -392,4 +393,125 @@ test('sort and difficulty filter work together', function () {
         ->and($puzzles->last()->title)->toBe('Easy New');
 
     $component->assertDontSee('Hard Puzzle');
+});
+
+// --- Profile Summary Stats ---
+
+test('constructor profile displays total likes', function () {
+    $constructor = User::factory()->create();
+    $viewer = User::factory()->create();
+    $crossword = Crossword::factory()->published()->for($constructor)->create();
+
+    CrosswordLike::factory()->count(7)->create(['crossword_id' => $crossword->id]);
+
+    $component = Livewire\Livewire::actingAs($viewer)
+        ->test('pages::constructors.show', ['constructor' => $constructor]);
+
+    expect($component->get('totalLikes'))->toBe(7);
+});
+
+test('constructor profile hides likes when zero', function () {
+    $constructor = User::factory()->create();
+    $viewer = User::factory()->create();
+    Crossword::factory()->published()->for($constructor)->create();
+
+    $component = Livewire\Livewire::actingAs($viewer)
+        ->test('pages::constructors.show', ['constructor' => $constructor]);
+
+    expect($component->get('totalLikes'))->toBe(0);
+});
+
+test('constructor profile only counts likes on published puzzles', function () {
+    $constructor = User::factory()->create();
+    $viewer = User::factory()->create();
+
+    $published = Crossword::factory()->published()->for($constructor)->create();
+    $draft = Crossword::factory()->for($constructor)->create(['is_published' => false]);
+
+    CrosswordLike::factory()->count(3)->create(['crossword_id' => $published->id]);
+    CrosswordLike::factory()->count(5)->create(['crossword_id' => $draft->id]);
+
+    $component = Livewire\Livewire::actingAs($viewer)
+        ->test('pages::constructors.show', ['constructor' => $constructor]);
+
+    expect($component->get('totalLikes'))->toBe(3);
+});
+
+test('constructor profile displays average rating', function () {
+    $constructor = User::factory()->create();
+    $viewer = User::factory()->create();
+    $crossword = Crossword::factory()->published()->for($constructor)->create();
+
+    PuzzleComment::factory()->create(['crossword_id' => $crossword->id, 'rating' => 4]);
+    PuzzleComment::factory()->create(['crossword_id' => $crossword->id, 'rating' => 5]);
+
+    $component = Livewire\Livewire::actingAs($viewer)
+        ->test('pages::constructors.show', ['constructor' => $constructor]);
+
+    expect($component->get('averageRating'))->toBe(4.5)
+        ->and($component->get('reviewCount'))->toBe(2);
+});
+
+test('constructor profile returns null average rating with no reviews', function () {
+    $constructor = User::factory()->create();
+    $viewer = User::factory()->create();
+    Crossword::factory()->published()->for($constructor)->create();
+
+    $component = Livewire\Livewire::actingAs($viewer)
+        ->test('pages::constructors.show', ['constructor' => $constructor]);
+
+    expect($component->get('averageRating'))->toBeNull()
+        ->and($component->get('reviewCount'))->toBe(0);
+});
+
+test('constructor profile ignores comments without ratings in average', function () {
+    $constructor = User::factory()->create();
+    $viewer = User::factory()->create();
+    $crossword = Crossword::factory()->published()->for($constructor)->create();
+
+    PuzzleComment::factory()->create(['crossword_id' => $crossword->id, 'rating' => 4]);
+    PuzzleComment::factory()->create(['crossword_id' => $crossword->id, 'rating' => null]);
+
+    $component = Livewire\Livewire::actingAs($viewer)
+        ->test('pages::constructors.show', ['constructor' => $constructor]);
+
+    expect($component->get('averageRating'))->toBe(4.0)
+        ->and($component->get('reviewCount'))->toBe(1);
+});
+
+test('constructor profile displays average solve time', function () {
+    $constructor = User::factory()->create();
+    $viewer = User::factory()->create();
+
+    Crossword::factory()->published()->for($constructor)->create(['cached_avg_solve_time' => 120]);
+    Crossword::factory()->published()->for($constructor)->create(['cached_avg_solve_time' => 180]);
+
+    $component = Livewire\Livewire::actingAs($viewer)
+        ->test('pages::constructors.show', ['constructor' => $constructor]);
+
+    expect($component->get('averageSolveTime'))->toBe(150);
+});
+
+test('constructor profile returns null average solve time when no data', function () {
+    $constructor = User::factory()->create();
+    $viewer = User::factory()->create();
+    Crossword::factory()->published()->for($constructor)->create(['cached_avg_solve_time' => null]);
+
+    $component = Livewire\Livewire::actingAs($viewer)
+        ->test('pages::constructors.show', ['constructor' => $constructor]);
+
+    expect($component->get('averageSolveTime'))->toBeNull();
+});
+
+test('constructor profile skips puzzles without solve times in average', function () {
+    $constructor = User::factory()->create();
+    $viewer = User::factory()->create();
+
+    Crossword::factory()->published()->for($constructor)->create(['cached_avg_solve_time' => 200]);
+    Crossword::factory()->published()->for($constructor)->create(['cached_avg_solve_time' => null]);
+
+    $component = Livewire\Livewire::actingAs($viewer)
+        ->test('pages::constructors.show', ['constructor' => $constructor]);
+
+    expect($component->get('averageSolveTime'))->toBe(200);
 });
