@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Models\Achievement;
 use App\Models\ContestEntry;
+use App\Models\Crossword;
+use App\Models\CrosswordLike;
 use App\Models\User;
 use Illuminate\Support\Carbon;
 
@@ -64,6 +66,36 @@ class AchievementService
             'label' => 'Champion',
             'description' => 'Finished 1st place in a contest',
             'icon' => 'trophy',
+        ],
+        'first_publish' => [
+            'label' => 'First Creation',
+            'description' => 'Published your first crossword puzzle',
+            'icon' => 'pencil-square',
+        ],
+        'published_5' => [
+            'label' => 'Prolific Builder',
+            'description' => 'Published 5 crossword puzzles',
+            'icon' => 'squares-2x2',
+        ],
+        'published_25' => [
+            'label' => 'Master Constructor',
+            'description' => 'Published 25 crossword puzzles',
+            'icon' => 'academic-cap',
+        ],
+        'first_like_received' => [
+            'label' => 'Crowd Pleaser',
+            'description' => 'Your puzzle received its first like',
+            'icon' => 'heart',
+        ],
+        'total_solves_100' => [
+            'label' => 'Popular Creator',
+            'description' => 'Your puzzles have been solved 100 times',
+            'icon' => 'user-group',
+        ],
+        'total_solves_1000' => [
+            'label' => 'Legendary Constructor',
+            'description' => 'Your puzzles have been solved 1,000 times',
+            'icon' => 'globe-alt',
         ],
     ];
 
@@ -201,8 +233,103 @@ class AchievementService
     }
 
     /**
-     * Award an achievement if not already earned.
+     * Check and award constructor achievements after publishing a puzzle.
+     *
+     * @return array<int, Achievement>
      */
+    public function processPublish(User $user): array
+    {
+        $earned = [];
+        $existingTypes = Achievement::where('user_id', $user->id)->pluck('type')->all();
+
+        $publishedCount = $user->crosswords()->where('is_published', true)->count();
+
+        $milestones = [
+            'first_publish' => 1,
+            'published_5' => 5,
+            'published_25' => 25,
+        ];
+
+        foreach ($milestones as $type => $threshold) {
+            if ($publishedCount >= $threshold) {
+                $achievement = $this->award($user, $type, $existingTypes);
+                if ($achievement) {
+                    $earned[] = $achievement;
+                }
+            }
+        }
+
+        $earned = array_merge($earned, $this->checkSolvesMilestones($user, $existingTypes));
+
+        return $earned;
+    }
+
+    /**
+     * Check and award constructor achievements when a like is received.
+     *
+     * @return array<int, Achievement>
+     */
+    public function processLikeReceived(User $constructor): array
+    {
+        $earned = [];
+        $existingTypes = Achievement::where('user_id', $constructor->id)->pluck('type')->all();
+
+        $totalLikes = CrosswordLike::whereIn(
+            'crossword_id',
+            $constructor->crosswords()->where('is_published', true)->select('id')
+        )->count();
+
+        if ($totalLikes >= 1) {
+            $achievement = $this->award($constructor, 'first_like_received', $existingTypes);
+            if ($achievement) {
+                $earned[] = $achievement;
+            }
+        }
+
+        return $earned;
+    }
+
+    /**
+     * Check and award constructor achievements when one of their puzzles is solved.
+     *
+     * @return array<int, Achievement>
+     */
+    public function processConstructorSolve(User $constructor): array
+    {
+        $existingTypes = Achievement::where('user_id', $constructor->id)->pluck('type')->all();
+
+        return $this->checkSolvesMilestones($constructor, $existingTypes);
+    }
+
+    /**
+     * @param  array<int, string>  $existingTypes
+     * @return array<int, Achievement>
+     */
+    private function checkSolvesMilestones(User $user, array $existingTypes): array
+    {
+        $earned = [];
+
+        $totalSolves = (int) Crossword::where('user_id', $user->id)
+            ->where('is_published', true)
+            ->sum('cached_completed_count');
+
+        $milestones = [
+            'total_solves_100' => 100,
+            'total_solves_1000' => 1000,
+        ];
+
+        foreach ($milestones as $type => $threshold) {
+            if ($totalSolves >= $threshold) {
+                $achievement = $this->award($user, $type, $existingTypes);
+                if ($achievement) {
+                    $earned[] = $achievement;
+                }
+            }
+        }
+
+        return $earned;
+    }
+
     /**
      * @param  array<int, string>  $existingTypes
      */

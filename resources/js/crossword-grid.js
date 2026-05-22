@@ -75,6 +75,8 @@ export function crosswordGrid({
         cellsCompleteFlash: false,
         cellsCompleteRippleOrigin: null,
         cluesCompleteFlash: false,
+        achievementToasts: [],
+        _achievementTimers: [],
 
         // Internal: timers and listeners. Kept on `this` so destroy() can clean them up.
         _autosave: null,
@@ -1559,6 +1561,23 @@ export function crosswordGrid({
             apply(this.cluesAcross, clues.across);
             apply(this.cluesDown, clues.down);
             this.markDirty();
+        },
+
+        showAchievements(achievements) {
+            if (!achievements || achievements.length === 0) return;
+            achievements.forEach((a, i) => {
+                const stagger = setTimeout(() => {
+                    const toast = { ...a, id: Date.now() + i };
+                    this.achievementToasts.push(toast);
+                    const dismiss = setTimeout(() => {
+                        this.achievementToasts = this.achievementToasts.filter(t => t.id !== toast.id);
+                        this._achievementTimers = this._achievementTimers.filter(t => t !== dismiss);
+                    }, 5000);
+                    this._achievementTimers.push(dismiss);
+                    this._achievementTimers = this._achievementTimers.filter(t => t !== stagger);
+                }, i * 800);
+                this._achievementTimers.push(stagger);
+            });
         },
     };
 }

@@ -11,6 +11,7 @@ use App\Livewire\Concerns\ExportsCrossword;
 use Illuminate\Support\Facades\Notification;
 use Zorbl\CrosswordIO\GridNumberer;
 use App\Services\WordSuggester;
+use App\Services\AchievementService;
 use App\Services\DifficultyRater;
 use App\Services\GridFiller;
 use App\Services\AiFillPicker;
@@ -434,6 +435,15 @@ class extends Component {
             if ($followers->isNotEmpty()) {
                 Notification::send($followers, new NewPuzzlePublished($crossword, $user));
             }
+
+            $achievements = app(AchievementService::class)->processPublish($user);
+            if (count($achievements) > 0) {
+                $this->dispatch('achievements-earned', achievements: collect($achievements)->map(fn ($a) => [
+                    'label' => $a->label,
+                    'description' => $a->description,
+                    'icon' => $a->icon,
+                ])->all());
+            }
         } else {
             $harvester->purge($crossword);
         }
@@ -828,6 +838,7 @@ class extends Component {
     x-on:grid-resized.window="onGridResized()"
     x-on:settings-updated.window="onSettingsUpdated()"
     x-on:highlight-incomplete.window="highlightIncomplete($event.detail.checks)"
+    x-on:achievements-earned.window="showAchievements($event.detail.achievements)"
     class="flex h-full flex-col"
 >
     {{-- Toolbar --}}
@@ -1449,4 +1460,27 @@ class extends Component {
             </div>
         </div>
     </flux:modal>
+
+    {{-- Achievement Toasts --}}
+    <div class="fixed right-4 bottom-4 z-50 space-y-2">
+        <template x-for="toast in achievementToasts" :key="toast.id">
+            <div
+                x-transition:enter="transition ease-out duration-300"
+                x-transition:enter-start="translate-y-4 opacity-0"
+                x-transition:enter-end="translate-y-0 opacity-100"
+                x-transition:leave="transition ease-in duration-200"
+                x-transition:leave-start="translate-y-0 opacity-100"
+                x-transition:leave-end="translate-y-4 opacity-0"
+                class="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 shadow-lg dark:border-amber-800 dark:bg-amber-950"
+            >
+                <div class="flex size-8 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="size-5 text-amber-600 dark:text-amber-400" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.006 5.404.434c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.434 2.082-5.005Z" clip-rule="evenodd"/></svg>
+                </div>
+                <div>
+                    <div class="text-sm font-semibold text-amber-900 dark:text-amber-100" x-text="toast.label"></div>
+                    <div class="text-xs text-amber-700 dark:text-amber-300" x-text="toast.description"></div>
+                </div>
+            </div>
+        </template>
+    </div>
 </div>

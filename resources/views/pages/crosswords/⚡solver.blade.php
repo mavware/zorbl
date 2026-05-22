@@ -349,6 +349,11 @@ new #[Title('Solve Crossword')] class extends Component {
                 'user_id' => Auth::id(),
                 'crossword_id' => $this->crosswordId,
             ]);
+
+            $crossword = Crossword::find($this->crosswordId);
+            if ($crossword && $crossword->user_id !== Auth::id()) {
+                app(AchievementService::class)->processLikeReceived($crossword->user);
+            }
         }
 
         unset($this->isLiked, $this->likesCount);
@@ -454,6 +459,7 @@ new #[Title('Solve Crossword')] class extends Component {
 
             if ($constructor && $constructor->id !== Auth::id()) {
                 $constructor->notify(new PuzzleCompleted($crossword, Auth::user(), $elapsedSeconds ?: null));
+                app(AchievementService::class)->processConstructorSolve($constructor);
             }
         }
 
