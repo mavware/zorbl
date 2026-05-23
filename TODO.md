@@ -63,6 +63,8 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [x] It doesn't feel snappy enough when the puzzle is solved.  maybe the green ripple immediately when solved?
 - [x] Let constructor decide if the player can embed the puzzle in their own site. The user can always embed the puzzle in their own site.
 - [x] There seems to be duplicated functionality in the "Share Results", "Share", and possibly a third icon buttons when the puzzle is solved.
+- [ ] Send a notification to solvers when a constructor replies to their review
+- [ ] Fix pre-existing solver Livewire component test rendering failure (Property [$crossword] not found on component) — affects PuzzleCommentsTest, CrosswordSolverTest, and other solver-based tests
  
 ## For later
 
