@@ -6,6 +6,7 @@ use App\Models\CrosswordLike;
 use App\Models\DailyPuzzle;
 use App\Models\Follow;
 use App\Models\PuzzleAttempt;
+use App\Services\RecommendationService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Livewire\Attributes\Computed;
@@ -173,6 +174,12 @@ new #[Title('Dashboard')] class extends Component {
             && $this->draftCount === 0
             && $this->solvedCount === 0
             && $this->inProgressAttempts->isEmpty();
+    }
+
+    #[Computed]
+    public function recommendedPuzzles()
+    {
+        return app(RecommendationService::class)->recommend(Auth::user(), 6);
     }
 
     #[Computed]
@@ -503,6 +510,67 @@ new #[Title('Dashboard')] class extends Component {
                     @endforeach
                 </div>
             @endif
+        </div>
+    @endif
+
+    {{-- Recommended for You --}}
+    @if($this->recommendedPuzzles->isNotEmpty())
+        <div class="border-line rounded-xl border p-5">
+            <div class="mb-4 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <flux:heading size="lg">{{ __('Recommended for You') }}</flux:heading>
+                    <flux:badge size="sm" color="purple">{{ __('Personalized') }}</flux:badge>
+                </div>
+                <flux:button variant="ghost" size="sm" :href="route('crosswords.solving')" wire:navigate>
+                    {{ __('Browse All') }}
+                </flux:button>
+            </div>
+
+            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                @foreach($this->recommendedPuzzles as $crossword)
+                    <a
+                        href="{{ route('crosswords.solver', $crossword) }}"
+                        wire:navigate
+                        wire:key="rec-{{ $crossword->id }}"
+                        class="border-line group rounded-xl border p-4 transition-colors hover:border-zinc-400 dark:hover:border-zinc-600"
+                    >
+                        <div class="mb-3 flex justify-center">
+                            <x-grid-thumbnail :grid="$crossword->grid" :width="$crossword->width" :height="$crossword->height" :cell-size="5" :max-width="80" />
+                        </div>
+                        <flux:heading size="sm" class="truncate group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                            {{ $crossword->displayTitle() }}
+                        </flux:heading>
+                        <flux:text size="sm" class="mt-1 text-zinc-500">
+                            {{ __('by :author', ['author' => $crossword->user->name ?? __('Unknown')]) }}
+                            &middot;
+                            {{ $crossword->width }}&times;{{ $crossword->height }}
+                        </flux:text>
+                        <div class="mt-1.5 flex flex-wrap items-center gap-1.5">
+                            @if($crossword->difficulty_label)
+                                <flux:badge
+                                    size="sm"
+                                    :color="match($crossword->difficulty_label) { 'Easy' => 'green', 'Medium' => 'amber', 'Hard' => 'orange', 'Expert' => 'red', default => 'zinc' }"
+                                >{{ __($crossword->difficulty_label) }}</flux:badge>
+                            @endif
+                            @foreach($crossword->tags->take(2) as $tag)
+                                <flux:badge size="sm" color="blue">{{ $tag->name }}</flux:badge>
+                            @endforeach
+                        </div>
+                        <div class="mt-2 flex items-center gap-2 text-xs text-zinc-500">
+                            <span class="flex items-center gap-0.5">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="size-3.5 text-red-400" viewBox="0 0 24 24" fill="currentColor"><path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" /></svg>
+                                {{ $crossword->likes_count }}
+                            </span>
+                            @if($crossword->cached_completed_count > 0)
+                                <span class="flex items-center gap-0.5">
+                                    <flux:icon name="check-circle" class="size-3.5" />
+                                    {{ trans_choice(':count solve|:count solves', $crossword->cached_completed_count) }}
+                                </span>
+                            @endif
+                        </div>
+                    </a>
+                @endforeach
+            </div>
         </div>
     @endif
 
