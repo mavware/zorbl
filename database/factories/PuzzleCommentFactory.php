@@ -26,4 +26,12 @@ class PuzzleCommentFactory extends Factory
             'rating' => fake()->numberBetween(1, 5),
         ];
     }
+
+    public function withReply(): static
+    {
+        return $this->state(fn () => [
+            'constructor_reply' => fake()->sentence(),
+            'constructor_reply_at' => now(),
+        ]);
+    }
 }

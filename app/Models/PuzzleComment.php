@@ -18,6 +18,8 @@ class PuzzleComment extends Model
         'crossword_id',
         'body',
         'rating',
+        'constructor_reply',
+        'constructor_reply_at',
     ];
 
     /**
@@ -27,6 +29,7 @@ class PuzzleComment extends Model
     {
         return [
             'rating' => 'integer',
+            'constructor_reply_at' => 'datetime',
         ];
     }
 

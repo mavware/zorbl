@@ -19,6 +19,8 @@ class PuzzleCommentResource extends JsonApiResource
         return [
             'body' => $this->body,
             'rating' => $this->rating,
+            'constructor_reply' => $this->constructor_reply,
+            'constructor_reply_at' => $this->constructor_reply_at,
             'created_at' => $this->created_at,
         ];
     }

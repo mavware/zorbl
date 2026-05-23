@@ -87,6 +87,10 @@ new #[Title('Solve Crossword')] class extends Component {
 
     public int $commentRating = 0;
 
+    public ?int $replyingToCommentId = null;
+
+    public string $replyBody = '';
+
     #[Computed]
     public function communityStats(): ?array
     {
@@ -248,6 +252,56 @@ new #[Title('Solve Crossword')] class extends Component {
             ->delete();
 
         unset($this->comments, $this->averageRating, $this->userComment);
+    }
+
+    public function startReply(int $commentId): void
+    {
+        $this->replyingToCommentId = $commentId;
+        $this->replyBody = '';
+    }
+
+    public function cancelReply(): void
+    {
+        $this->replyingToCommentId = null;
+        $this->replyBody = '';
+    }
+
+    public function submitReply(int $commentId): void
+    {
+        abort_unless($this->isOwner, 403);
+
+        $this->validate([
+            'replyBody' => 'required|string|max:1000',
+        ]);
+
+        $comment = PuzzleComment::where('id', $commentId)
+            ->where('crossword_id', $this->crosswordId)
+            ->firstOrFail();
+
+        $comment->update([
+            'constructor_reply' => $this->replyBody,
+            'constructor_reply_at' => now(),
+        ]);
+
+        $this->replyingToCommentId = null;
+        $this->replyBody = '';
+        unset($this->comments);
+    }
+
+    public function deleteReply(int $commentId): void
+    {
+        abort_unless($this->isOwner, 403);
+
+        $comment = PuzzleComment::where('id', $commentId)
+            ->where('crossword_id', $this->crosswordId)
+            ->firstOrFail();
+
+        $comment->update([
+            'constructor_reply' => null,
+            'constructor_reply_at' => null,
+        ]);
+
+        unset($this->comments);
     }
 
     public function mount(Crossword $crossword): void
@@ -1235,6 +1289,17 @@ new #[Title('Solve Crossword')] class extends Component {
                         <flux:button wire:click="deleteComment" variant="ghost" size="sm" icon="trash" />
                     </div>
                     <flux:text size="sm">{{ $this->userComment->body }}</flux:text>
+
+                    @if($this->userComment->constructor_reply)
+                        <div class="mt-2 rounded-lg border border-purple-100 bg-purple-50/50 p-3 dark:border-purple-900/30 dark:bg-purple-950/20">
+                            <div class="flex items-center gap-1.5">
+                                <flux:icon name="chat-bubble-left-ellipsis" class="size-3.5 text-purple-500" />
+                                <flux:text size="sm" class="font-medium text-purple-700 dark:text-purple-300">{{ __('Constructor Reply') }}</flux:text>
+                                <flux:text size="sm" class="text-zinc-500">{{ $this->userComment->constructor_reply_at->diffForHumans() }}</flux:text>
+                            </div>
+                            <flux:text size="sm" class="mt-1">{{ $this->userComment->constructor_reply }}</flux:text>
+                        </div>
+                    @endif
                 </div>
             @endif
 
@@ -1265,6 +1330,42 @@ new #[Title('Solve Crossword')] class extends Component {
                                         </div>
                                     </div>
                                     <flux:text size="sm" class="mt-1">{{ $comment->body }}</flux:text>
+
+                                    {{-- Constructor reply --}}
+                                    @if($comment->constructor_reply)
+                                        <div class="mt-2 ml-2 rounded-lg border border-purple-100 bg-purple-50/50 p-3 dark:border-purple-900/30 dark:bg-purple-950/20">
+                                            <div class="flex items-center justify-between">
+                                                <div class="flex items-center gap-1.5">
+                                                    <flux:icon name="chat-bubble-left-ellipsis" class="size-3.5 text-purple-500" />
+                                                    <flux:text size="sm" class="font-medium text-purple-700 dark:text-purple-300">{{ __('Constructor Reply') }}</flux:text>
+                                                    <flux:text size="sm" class="text-zinc-500">{{ $comment->constructor_reply_at->diffForHumans() }}</flux:text>
+                                                </div>
+                                                @if($this->isOwner)
+                                                    <flux:button wire:click="deleteReply({{ $comment->id }})" variant="ghost" size="sm" icon="trash" />
+                                                @endif
+                                            </div>
+                                            <flux:text size="sm" class="mt-1">{{ $comment->constructor_reply }}</flux:text>
+                                        </div>
+                                    @endif
+
+                                    {{-- Reply form for constructor --}}
+                                    @if($this->isOwner && !$comment->constructor_reply)
+                                        @if($replyingToCommentId === $comment->id)
+                                            <div class="mt-2 ml-2 space-y-2">
+                                                <flux:textarea wire:model="replyBody" :placeholder="__('Write a reply...')" rows="2" />
+                                                @error('replyBody') <flux:text size="sm" class="text-red-500">{{ $message }}</flux:text> @enderror
+                                                <div class="flex items-center gap-2">
+                                                    <flux:button wire:click="submitReply({{ $comment->id }})" size="sm" variant="primary">{{ __('Reply') }}</flux:button>
+                                                    <flux:button wire:click="cancelReply" size="sm" variant="ghost">{{ __('Cancel') }}</flux:button>
+                                                </div>
+                                            </div>
+                                        @else
+                                            <button wire:click="startReply({{ $comment->id }})" class="mt-1.5 flex items-center gap-1 text-xs text-zinc-500 hover:text-purple-600 dark:hover:text-purple-400">
+                                                <flux:icon name="chat-bubble-left-ellipsis" class="size-3.5" />
+                                                {{ __('Reply') }}
+                                            </button>
+                                        @endif
+                                    @endif
                                 </div>
                             </div>
                         @endif
