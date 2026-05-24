@@ -108,6 +108,44 @@ test('harvest upserts on re-save without duplicating', function () {
         ->and(ClueEntry::first()->clue)->toBe('Updated clue');
 });
 
+test('harvest handles the same answer+clue repeated across multiple slots', function () {
+    // Regression for a partial-index drift on SQLite: the unique index on
+    // (answer, clue, user_id) is meant to be partial WHERE crossword_id IS NULL,
+    // so crossword-attached rows can share the same tuple. If the WHERE
+    // predicate gets stripped, the upsert here throws a unique-constraint
+    // violation instead of inserting all 6 rows.
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create([
+        'width' => 3,
+        'height' => 3,
+        'grid' => [
+            [1, 0, 0],
+            [2, 0, 0],
+            [3, 0, 0],
+        ],
+        'solution' => [
+            ['A', 'A', 'A'],
+            ['A', 'A', 'A'],
+            ['A', 'A', 'A'],
+        ],
+        'clues_across' => [
+            ['number' => 1, 'clue' => 'aaa'],
+            ['number' => 4, 'clue' => 'aaa'],
+            ['number' => 5, 'clue' => 'aaa'],
+        ],
+        'clues_down' => [
+            ['number' => 1, 'clue' => 'aaa'],
+            ['number' => 2, 'clue' => 'aaa'],
+            ['number' => 3, 'clue' => 'aaa'],
+        ],
+    ]);
+
+    $harvester = app(ClueHarvester::class);
+    $harvester->harvest($crossword);
+
+    expect(ClueEntry::where('crossword_id', $crossword->id)->count())->toBe(6);
+});
+
 test('purge removes all entries for a crossword', function () {
     $user = User::factory()->create();
     $crossword = Crossword::factory()->for($user)->create([

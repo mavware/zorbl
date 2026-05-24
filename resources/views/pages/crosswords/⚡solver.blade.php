@@ -23,6 +23,12 @@ new #[Title('Solve Crossword')] class extends Component {
     #[Locked]
     public int $crosswordId;
 
+    #[Computed]
+    public function crossword(): Crossword
+    {
+        return Crossword::findOrFail($this->crosswordId);
+    }
+
     #[Locked]
     public int $attemptId;
 
