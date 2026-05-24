@@ -10,6 +10,7 @@ use App\Services\AchievementService;
 use App\Services\ContestService;
 use App\Livewire\Concerns\ExportsCrossword;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Title;
@@ -211,6 +212,87 @@ new #[Title('Solve Crossword')] class extends Component {
             ->avg('rating');
 
         return $avg ? round($avg, 1) : null;
+    }
+
+    #[Computed]
+    public function similarPuzzles()
+    {
+        if (! $this->isSolved) {
+            return collect();
+        }
+
+        return Cache::remember(
+            "similar_puzzles:{$this->crosswordId}:" . Auth::id(),
+            300,
+            function () {
+                $crossword = Crossword::with('tags:id')->find($this->crosswordId);
+
+                if (! $crossword) {
+                    return collect();
+                }
+
+                $tagIds = $crossword->tags->pluck('id');
+                $solvedIds = Auth::user()
+                    ->puzzleAttempts()
+                    ->where('is_completed', true)
+                    ->pluck('crossword_id');
+
+                $blockedTagIds = Auth::user()->blockedTags()->pluck('tags.id');
+
+                $baseQuery = fn () => Crossword::where('is_published', true)
+                    ->where('id', '!=', $this->crosswordId)
+                    ->whereNotIn('id', $solvedIds)
+                    ->safeFor(Auth::user())
+                    ->when($blockedTagIds->isNotEmpty(), fn ($q) => $q->whereDoesntHave('tags', fn ($q) => $q->whereIn('tags.id', $blockedTagIds)))
+                    ->with('user:id,name')
+                    ->withCount('likes');
+
+                $collected = collect();
+
+                if ($tagIds->isNotEmpty()) {
+                    $collected = $baseQuery()
+                        ->whereHas('tags', fn ($q) => $q->whereIn('tags.id', $tagIds))
+                        ->inRandomOrder()
+                        ->limit(4)
+                        ->get();
+                }
+
+                if ($collected->count() < 4 && $crossword->difficulty_label) {
+                    $remaining = 4 - $collected->count();
+                    $byDifficulty = $baseQuery()
+                        ->whereNotIn('id', $collected->pluck('id'))
+                        ->where('difficulty_label', $crossword->difficulty_label)
+                        ->inRandomOrder()
+                        ->limit($remaining)
+                        ->get();
+                    $collected = $collected->concat($byDifficulty);
+                }
+
+                if ($collected->count() < 4) {
+                    $remaining = 4 - $collected->count();
+                    $cells = $crossword->width * $crossword->height;
+                    $bySize = $baseQuery()
+                        ->whereNotIn('id', $collected->pluck('id'))
+                        ->whereRaw('ABS(width * height - ?) <= 30', [$cells])
+                        ->inRandomOrder()
+                        ->limit($remaining)
+                        ->get();
+                    $collected = $collected->concat($bySize);
+                }
+
+                if ($collected->count() < 4) {
+                    $remaining = 4 - $collected->count();
+                    $fallback = $baseQuery()
+                        ->whereNotIn('id', $collected->pluck('id'))
+                        ->inRandomOrder()
+                        ->limit($remaining)
+                        ->get();
+                    $collected = $collected->concat($fallback);
+                }
+
+                return $collected->take(4)->values();
+            },
+        );
     }
 
     #[Computed]
@@ -1184,6 +1266,56 @@ new #[Title('Solve Crossword')] class extends Component {
     @endif
 
 
+    {{-- Similar Puzzles (visible when solved) --}}
+    @if($isSolved && $this->similarPuzzles->isNotEmpty())
+        <div class="border-line mt-6 rounded-xl border p-5" wire:key="similar-puzzles-section">
+            <div class="mb-4 flex items-center justify-between">
+                <flux:heading size="lg">{{ __('You Might Also Enjoy') }}</flux:heading>
+                <flux:button variant="ghost" size="sm" :href="route('puzzles.index')" wire:navigate icon="arrow-right" iconTrailing>
+                    {{ __('Browse All') }}
+                </flux:button>
+            </div>
+
+            <div class="grid gap-3 sm:grid-cols-2">
+                @foreach($this->similarPuzzles as $similar)
+                    <a
+                        href="{{ route('crosswords.solver', $similar) }}"
+                        wire:navigate
+                        wire:key="similar-{{ $similar->id }}"
+                        class="border-line group flex items-center gap-3 rounded-lg border p-3 transition-colors hover:border-zinc-400 dark:hover:border-zinc-600"
+                    >
+                        <x-grid-thumbnail class="shrink-0" :grid="$similar->grid" :width="$similar->width" :height="$similar->height" :cell-size="4" :max-width="48" />
+                        <div class="min-w-0 flex-1">
+                            <div class="truncate text-sm font-medium text-fg group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                                {{ $similar->displayTitle() }}
+                            </div>
+                            <div class="mt-0.5 text-xs text-zinc-500">
+                                {{ __('by :author', ['author' => $similar->user->name ?? __('Unknown')]) }}
+                                &middot;
+                                {{ $similar->width }}&times;{{ $similar->height }}
+                            </div>
+                            <div class="mt-1 flex items-center gap-2 text-xs text-zinc-500">
+                                @if($similar->difficulty_label)
+                                    <span @class([
+                                        'rounded-full px-1.5 py-0.5 text-[10px] font-medium',
+                                        'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' => $similar->difficulty_label === 'Easy',
+                                        'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' => $similar->difficulty_label === 'Medium',
+                                        'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' => $similar->difficulty_label === 'Hard',
+                                        'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' => $similar->difficulty_label === 'Expert',
+                                    ])>{{ $similar->difficulty_label }}</span>
+                                @endif
+                                <span class="flex items-center gap-0.5">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="size-3" viewBox="0 0 24 24" fill="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" /></svg>
+                                    {{ $similar->likes_count }}
+                                </span>
+                            </div>
+                        </div>
+                    </a>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
     {{-- Comments & Ratings (visible when solved) --}}
     @if($isSolved)
         <div class="border-line mt-6 rounded-xl border p-5" wire:key="comments-section">
@@ -1434,7 +1566,7 @@ new #[Title('Solve Crossword')] class extends Component {
             <div>
                 <flux:input type="file" wire:model="pdfImage" label="{{ __('Header Image') }}" accept="image/png,image/jpeg,image/gif,image/webp" />
                 <flux:text class="mt-1">{{ __('Optional image displayed above the puzzle grid (max 2 MB).') }}</flux:text>
-                @if ($this->crossword->pdf_image && !$pdfRemoveImage)
+                @if ($this->getExportableCrossword()->pdf_image && !$pdfRemoveImage)
                     <div class="mt-2 flex items-center gap-2">
                         <flux:text class="text-sm text-green-600 dark:text-green-400">{{ __('Current image saved.') }}</flux:text>
                         <flux:button size="xs" variant="danger" wire:click="$set('pdfRemoveImage', true)">{{ __('Remove') }}</flux:button>
