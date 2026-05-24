@@ -415,6 +415,11 @@ class extends Component {
         $this->authorize('update', $crossword);
 
         $this->isPublished = !$this->isPublished;
+
+        if ($this->isPublished) {
+            $this->authorize('publish', $crossword);
+        }
+
         $crossword->update(['is_published' => $this->isPublished]);
 
         $harvester = app(ClueHarvester::class);
@@ -830,6 +835,20 @@ class extends Component {
     x-on:highlight-incomplete.window="highlightIncomplete($event.detail.checks)"
     class="flex h-full flex-col"
 >
+    @if(auth()->user()?->isAnonymous())
+        <div class="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-2.5 text-sm">
+            <div class="text-amber-900 dark:text-amber-200">
+                {{ __("You're building as a guest. Sign up to publish your puzzle and keep it forever.") }}
+            </div>
+            <a
+                href="{{ route('register') }}"
+                class="rounded-md bg-amber-500 px-3 py-1.5 text-xs font-semibold text-zinc-950 hover:bg-amber-400 transition"
+            >
+                {{ __('Sign up') }}
+            </a>
+        </div>
+    @endif
+
     {{-- Toolbar --}}
     <div class="mb-4 flex flex-wrap items-center gap-2">
         {{-- Title --}}
@@ -983,14 +1002,26 @@ class extends Component {
             @endif
 
             {{-- Publish toggle --}}
-            <flux:tooltip content="{{ $isPublished ? __('Unpublish puzzle') : __('Publish for others to solve') }}">
-                <flux:button
-                    variant="{{ $isPublished ? 'primary' : 'ghost' }}"
-                    size="sm"
-                    icon="{{ $isPublished ? 'eye' : 'eye-slash' }}"
-                    wire:click="attemptPublish"
-                />
-            </flux:tooltip>
+            @if(auth()->user()?->isAnonymous())
+                <flux:tooltip content="{{ __('Sign up to publish') }}">
+                    <flux:button
+                        variant="ghost"
+                        size="sm"
+                        icon="eye-slash"
+                        :href="route('register')"
+                        wire:navigate.hover
+                    />
+                </flux:tooltip>
+            @else
+                <flux:tooltip content="{{ $isPublished ? __('Unpublish puzzle') : __('Publish for others to solve') }}">
+                    <flux:button
+                        variant="{{ $isPublished ? 'primary' : 'ghost' }}"
+                        size="sm"
+                        icon="{{ $isPublished ? 'eye' : 'eye-slash' }}"
+                        wire:click="attemptPublish"
+                    />
+                </flux:tooltip>
+            @endif
 
             {{-- Export --}}
             <flux:dropdown position="bottom" align="end">

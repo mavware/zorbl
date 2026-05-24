@@ -40,4 +40,9 @@ class CrosswordPolicy
     {
         return $user->id === $crossword->user_id;
     }
+
+    public function publish(User $user, Crossword $crossword): bool
+    {
+        return $user->id === $crossword->user_id && ! $user->isAnonymous();
+    }
 }

@@ -58,15 +58,20 @@ Route::middleware('auth')->group(function () {
     Route::post('impersonate/{user}', [ImpersonationController::class, 'start'])->name('impersonate.start');
 });
 
-Route::middleware(['auth', 'verified'])->group(function () {
+// Builder surface — anonymous "guest builder" users are allowed in.
+// CrosswordPolicy::update prevents them from opening anyone else's puzzle.
+Route::middleware(['auth'])->group(function () {
+    Route::livewire('crosswords/{crossword}', 'pages::crosswords.editor')->name('crosswords.editor');
+    Route::livewire('crosswords/{crossword}/solve', 'pages::crosswords.solver')->name('crosswords.solver');
+});
+
+Route::middleware(['auth', 'verified', 'not-anonymous'])->group(function () {
     Route::livewire('dashboard', 'pages::dashboard')->name('dashboard');
 
     Route::livewire('crosswords', 'pages::crosswords.index')->name('crosswords.index');
     Route::livewire('crosswords/analytics', 'pages::crosswords.analytics')->name('crosswords.analytics');
     Route::livewire('solving', 'pages::crosswords.solving')->name('crosswords.solving');
     Route::livewire('solving/stats', 'pages::crosswords.stats')->name('crosswords.stats');
-    Route::livewire('crosswords/{crossword}', 'pages::crosswords.editor')->name('crosswords.editor');
-    Route::livewire('crosswords/{crossword}/solve', 'pages::crosswords.solver')->name('crosswords.solver');
 
     Route::livewire('clues', 'pages::clues.index')->name('clues.index');
 

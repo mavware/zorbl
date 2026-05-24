@@ -14,6 +14,9 @@ class CrosswordObserver
     /**
      * Recompute the contains_profanity flag before each save so the column
      * stays in sync with title/clue edits without any extra controller code.
+     *
+     * Also enforces that anonymous users cannot publish — defense in depth on
+     * top of CrosswordPolicy::publish.
      */
     public function saving(Crossword $crossword): void
     {
@@ -24,6 +27,14 @@ class CrosswordObserver
 
         $crossword->contains_profanity = $this->filter->contains((string) $crossword->title)
             || $this->filter->containsAny($clueText);
+
+        if (
+            $crossword->is_published
+            && $crossword->isDirty('is_published')
+            && $crossword->user?->isAnonymous()
+        ) {
+            throw new \RuntimeException('Anonymous users cannot publish puzzles.');
+        }
     }
 
     public function saved(Crossword $crossword): void

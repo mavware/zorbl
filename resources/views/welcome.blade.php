@@ -102,43 +102,55 @@
             <div class="absolute inset-0 bg-gradient-to-b from-amber-500/5 via-transparent to-transparent"></div>
             <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-500/10 via-transparent to-transparent"></div>
 
-            <div class="relative mx-auto max-w-6xl px-6 py-20 text-center">
-{{--                <h1 class="text-5xl font-bold tracking-tight sm:text-7xl">--}}
-{{--                    From blank grid to<br>--}}
-{{--                    published puzzle in <span class="text-amber-500">10 minutes</span>.--}}
-{{--                </h1>--}}
-                <p class="font-bold tracking-tight text-white text-3xl sm:text-5xl">
-                    A visual editor, a clue library, and a community of solvers. <span class="text-amber-500">Free forever.</span>
-                </p>
-                <div class="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-                    @auth
-                        <a href="{{ route('crosswords.index') }}" class="rounded-xl bg-amber-500 px-8 py-3.5 text-base font-semibold text-zinc-950 shadow-lg shadow-amber-500/20 hover:bg-amber-400 transition">
-                            Build a puzzle
-                        </a>
-                        <a href="{{ route('crosswords.solving') }}" class="rounded-xl border border-zinc-700 px-8 py-3.5 text-base font-semibold text-zinc-100 hover:border-zinc-500 hover:bg-zinc-800 transition">
-                            Solve puzzles
-                        </a>
-                    @else
-                        <a href="{{ route('register') }}" class="rounded-xl bg-amber-500 px-8 py-3.5 text-base font-semibold text-zinc-950 shadow-lg shadow-amber-500/20 hover:bg-amber-400 transition">
-                            Start building
-                        </a>
-                        <a href="{{ route('puzzles.index') }}" class="rounded-xl border border-zinc-700 px-8 py-3.5 text-base font-semibold text-zinc-100 hover:border-zinc-500 hover:bg-zinc-800 transition">
-                            Solve a puzzle
-                        </a>
-                    @endauth
+            <div class="relative mx-auto max-w-6xl px-6 py-20 text-center" x-data="{ tab: 'solve' }">
+                {{-- Solve / Build Toggle --}}
+                <div class="mx-auto mb-10 inline-flex rounded-full border border-zinc-800 bg-zinc-900/60 p-1">
+                    <button
+                        type="button"
+                        @click="tab = 'solve'"
+                        :class="tab === 'solve' ? 'bg-amber-500 text-zinc-950 shadow-lg shadow-amber-500/20' : 'text-zinc-400 hover:text-zinc-100'"
+                        class="rounded-full px-8 py-2.5 text-base font-semibold transition"
+                    >
+                        Solve
+                    </button>
+                    <button
+                        type="button"
+                        @click="tab = 'build'"
+                        :class="tab === 'build' ? 'bg-amber-500 text-zinc-950 shadow-lg shadow-amber-500/20' : 'text-zinc-400 hover:text-zinc-100'"
+                        class="rounded-full px-8 py-2.5 text-base font-semibold transition"
+                    >
+                        Build
+                    </button>
                 </div>
 
-                {{-- Puzzle of the Day --}}
-                @if($dailyPuzzle)
-                    <div class="mx-auto mt-16 w-full max-w-sm text-left">
-                        <p class="mb-3 text-center text-xs uppercase tracking-wider text-amber-500">{{ __('Puzzle of the Day') }} &middot; {{ today()->format('M j') }}</p>
-                        <x-puzzle-card
-                            :crossword="$dailyPuzzle"
-                            :href="auth()->check() ? route('crosswords.solver', $dailyPuzzle) : route('puzzles.solve', $dailyPuzzle)"
-                            class="border-zinc-800 bg-zinc-900/50 shadow-2xl shadow-amber-500/5 hover:border-amber-500/30"
-                        />
+                {{-- Solve panel --}}
+                <div x-show="tab === 'solve'" x-cloak>
+{{--                    <p class="font-bold tracking-tight text-white text-3xl sm:text-5xl">--}}
+{{--                        A visual editor, a clue library, and a community of solvers. <span class="text-amber-500">Free forever.</span>--}}
+{{--                    </p>--}}
+
+                    {{-- Puzzle of the Day --}}
+                    @if($dailyPuzzle)
+                        <div class="mx-auto mt-16 w-full max-w-sm text-left">
+                            <p class="mb-3 text-center text-xs uppercase tracking-wider text-amber-500">{{ __('Puzzle of the Day') }} &middot; {{ today()->format('M j') }}</p>
+                            <x-puzzle-card
+                                :crossword="$dailyPuzzle"
+                                :href="auth()->check() ? route('crosswords.solver', $dailyPuzzle) : route('puzzles.solve', $dailyPuzzle)"
+                                class="border-zinc-800 bg-zinc-900/50 shadow-2xl shadow-amber-500/5 hover:border-amber-500/30"
+                            />
+                        </div>
+                    @endif
+                </div>
+
+                {{-- Build panel --}}
+                <div x-show="tab === 'build'" x-cloak style="display: none">
+                    <p class="font-bold tracking-tight text-white text-3xl sm:text-5xl">
+                        Start with a shape. <span class="text-amber-500">Build from there.</span>
+                    </p>
+                    <div class="mx-auto mt-10 w-full max-w-2xl rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 shadow-2xl shadow-amber-500/5 sm:p-8">
+                        <livewire:welcome-builder />
                     </div>
-                @endif
+                </div>
             </div>
         </section>
 

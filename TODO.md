@@ -64,6 +64,7 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [x] Let constructor decide if the player can embed the puzzle in their own site. The user can always embed the puzzle in their own site.
 - [x] There seems to be duplicated functionality in the "Share Results", "Share", and possibly a third icon buttons when the puzzle is solved.
 - [ ] Welcome page should have a toggle that switches between solver welcome page and constructor welcome page.  the constructor welcome page should start with the choice of what kind of crossword to build and go from there.
+- [ ] Show puzzle of the day as the first entry in the Puzzle Search results when the search is at default settings.
  
 ## For later
 

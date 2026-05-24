@@ -2,6 +2,19 @@
     <div class="flex flex-col gap-6">
         <x-auth-header :title="__('Create an account')" :description="__('Enter your details below to create your account')" />
 
+        @auth
+            @if(auth()->user()->isAnonymous())
+                <div class="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-900 dark:text-amber-200">
+                    {{ __('Finish signing up to publish your puzzle and keep it forever.') }}
+                    <span class="block text-xs text-amber-800/80 dark:text-amber-300/80 mt-1">
+                        {{ __('Already have an account?') }}
+                        <a href="{{ route('login') }}" class="font-semibold underline">{{ __('Log in instead') }}</a>
+                        {{ __('and we\'ll move your puzzle over.') }}
+                    </span>
+                </div>
+            @endif
+        @endauth
+
         <!-- Session Status -->
         <x-auth-session-status class="text-center" :status="session('status')" />
 

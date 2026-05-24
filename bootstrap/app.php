@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Middleware\EnsureNotAnonymous;
+use App\Http\Middleware\RedirectIfAuthenticated;
 use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Application;
@@ -17,10 +19,15 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withSchedule(function (Schedule $schedule): void {
         $schedule->command('contests:process-ended')->hourly();
+        $schedule->command('users:prune-anonymous')->dailyAt('03:30');
     })
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->validateCsrfTokens(except: ['stripe/*']);
         $middleware->append(SecurityHeaders::class);
+        $middleware->alias([
+            'not-anonymous' => EnsureNotAnonymous::class,
+            'guest' => RedirectIfAuthenticated::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         Integration::handles($exceptions);

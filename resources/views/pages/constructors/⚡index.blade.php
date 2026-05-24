@@ -20,7 +20,8 @@ new #[Title('Constructors')] class extends Component {
     #[Computed]
     public function constructors()
     {
-        $query = User::whereHas('crosswords', fn ($q) => $q->where('is_published', true))
+        $query = User::where('is_anonymous', false)
+            ->whereHas('crosswords', fn ($q) => $q->where('is_published', true))
             ->with('subscriptions')
             ->withCount([
                 'crosswords as published_puzzles_count' => fn ($q) => $q->where('is_published', true),

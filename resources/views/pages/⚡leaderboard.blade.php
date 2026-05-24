@@ -17,6 +17,7 @@ new #[Title('Leaderboard')] class extends Component {
     {
         return Cache::remember('leaderboard:top_solvers', 300, function () {
             return User::select('users.id', 'users.name')
+                ->where('users.is_anonymous', false)
                 ->join('puzzle_attempts', 'users.id', '=', 'puzzle_attempts.user_id')
                 ->where('puzzle_attempts.is_completed', true)
                 ->groupBy('users.id', 'users.name')
@@ -32,6 +33,7 @@ new #[Title('Leaderboard')] class extends Component {
     {
         return Cache::remember('leaderboard:speed_demons', 300, function () {
             return User::select('users.id', 'users.name')
+                ->where('users.is_anonymous', false)
                 ->join('puzzle_attempts', 'users.id', '=', 'puzzle_attempts.user_id')
                 ->where('puzzle_attempts.is_completed', true)
                 ->whereNotNull('puzzle_attempts.solve_time_seconds')
@@ -50,6 +52,7 @@ new #[Title('Leaderboard')] class extends Component {
     {
         return Cache::remember('leaderboard:top_constructors', 300, function () {
             return User::select('users.id', 'users.name')
+                ->where('users.is_anonymous', false)
                 ->join('crosswords', 'users.id', '=', 'crosswords.user_id')
                 ->where('crosswords.is_published', true)
                 ->leftJoin('puzzle_attempts', function ($join) {
@@ -70,6 +73,7 @@ new #[Title('Leaderboard')] class extends Component {
     {
         return Cache::remember('leaderboard:streak_leaders', 300, function () {
             return User::select('id', 'name', 'current_streak', 'longest_streak')
+                ->where('is_anonymous', false)
                 ->where('longest_streak', '>', 0)
                 ->orderByDesc('longest_streak')
                 ->orderByDesc('current_streak')

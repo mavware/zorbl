@@ -86,7 +86,7 @@ use Spatie\Permission\Traits\HasRoles;
  *
  * @mixin Eloquent
  */
-#[Fillable(['name', 'email', 'password', 'copyright_name', 'bio', 'google_id', 'current_streak', 'longest_streak', 'last_solve_date', 'notification_preferences', 'safe_search_enabled', 'grandfathered_at', 'manual_pro_started_at', 'manual_pro_ended_at'])]
+#[Fillable(['name', 'email', 'password', 'copyright_name', 'bio', 'google_id', 'current_streak', 'longest_streak', 'last_solve_date', 'notification_preferences', 'safe_search_enabled', 'grandfathered_at', 'manual_pro_started_at', 'manual_pro_ended_at', 'is_anonymous', 'anonymous_token', 'anonymous_created_at', 'converted_at'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements FilamentUser
 {
@@ -108,6 +108,9 @@ class User extends Authenticatable implements FilamentUser
             'notification_preferences' => 'array',
             'safe_search_enabled' => 'boolean',
             'password' => 'hashed',
+            'is_anonymous' => 'boolean',
+            'anonymous_created_at' => 'datetime',
+            'converted_at' => 'datetime',
         ];
     }
 
@@ -299,7 +302,19 @@ class User extends Authenticatable implements FilamentUser
      */
     public function planLimits(): PlanLimits
     {
-        return new PlanLimits($this->isPro(), $this->grandfathered_at !== null);
+        return new PlanLimits(
+            isPro: $this->isPro(),
+            isGrandfathered: $this->grandfathered_at !== null,
+            isAnonymous: $this->isAnonymous(),
+        );
+    }
+
+    /**
+     * Whether this user is a guest (created automatically; no email/password yet).
+     */
+    public function isAnonymous(): bool
+    {
+        return (bool) $this->is_anonymous;
     }
 
     public function canAccessPanel(Panel $panel): bool
