@@ -28,14 +28,7 @@
         ['value' => $stats['solves_week'], 'label' => 'solves this week'],
     ])->filter(fn ($s) => $s['value'] >= $statFloor)->values();
 
-    // Demo word-square: every row and every column is a real word (PACT/ARIA/CIAO/TAOS).
-    $demoGrid = [
-        ['P', 'A', 'C', 'T'],
-        ['A', 'R', 'I', 'A'],
-        ['C', 'I', 'A', 'O'],
-        ['T', 'A', 'O', 'S'],
-    ];
-    $highlightRow = 0; // Highlight 1-Across (PACT)
+    $dailyPuzzle = \App\Models\DailyPuzzle::todayOrAuto()?->load('tags');
 @endphp
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="dark">
@@ -110,12 +103,12 @@
             <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-500/10 via-transparent to-transparent"></div>
 
             <div class="relative mx-auto max-w-6xl px-6 py-20 text-center">
-                <h1 class="text-5xl font-bold tracking-tight sm:text-7xl">
-                    From blank grid to<br>
-                    published puzzle in <span class="text-amber-500">10 minutes</span>.
-                </h1>
-                <p class="mx-auto mt-6 max-w-2xl text-lg text-zinc-500 sm:text-xl">
-                    A visual editor, a clue library, and a community of solvers. Free forever.
+{{--                <h1 class="text-5xl font-bold tracking-tight sm:text-7xl">--}}
+{{--                    From blank grid to<br>--}}
+{{--                    published puzzle in <span class="text-amber-500">10 minutes</span>.--}}
+{{--                </h1>--}}
+                <p class="font-bold tracking-tight text-white text-3xl sm:text-5xl">
+                    A visual editor, a clue library, and a community of solvers. <span class="text-amber-500">Free forever.</span>
                 </p>
                 <div class="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
                     @auth
@@ -127,37 +120,25 @@
                         </a>
                     @else
                         <a href="{{ route('register') }}" class="rounded-xl bg-amber-500 px-8 py-3.5 text-base font-semibold text-zinc-950 shadow-lg shadow-amber-500/20 hover:bg-amber-400 transition">
-                            Start building free
+                            Start building
                         </a>
                         <a href="{{ route('puzzles.index') }}" class="rounded-xl border border-zinc-700 px-8 py-3.5 text-base font-semibold text-zinc-100 hover:border-zinc-500 hover:bg-zinc-800 transition">
-                            Solve a puzzle now
+                            Solve a puzzle
                         </a>
                     @endauth
                 </div>
-                @guest
-                    <p class="mt-4 text-sm text-zinc-600">Free forever — no credit card.</p>
-                @endguest
 
-                {{-- Mini word-square preview --}}
-                <div class="mx-auto mt-16 flex max-w-md flex-col items-center gap-4 sm:max-w-lg sm:flex-row sm:items-center sm:justify-center sm:gap-8">
-                    <div class="w-full max-w-[15rem]" aria-label="Sample crossword grid">
-                        <div class="grid grid-cols-4 gap-1 rounded-xl border border-zinc-800 bg-zinc-900 p-3 shadow-2xl shadow-amber-500/5">
-                            @foreach ($demoGrid as $r => $row)
-                                @foreach ($row as $c => $cell)
-                                    @php $isHighlighted = $r === $highlightRow; @endphp
-                                    <div class="flex aspect-square items-center justify-center rounded-sm text-base font-bold {{ $isHighlighted ? 'bg-amber-500 text-zinc-950' : 'bg-zinc-800 text-zinc-300' }}">
-                                        {{ $cell }}
-                                    </div>
-                                @endforeach
-                            @endforeach
-                        </div>
+                {{-- Puzzle of the Day --}}
+                @if($dailyPuzzle)
+                    <div class="mx-auto mt-16 w-full max-w-sm text-left">
+                        <p class="mb-3 text-center text-xs uppercase tracking-wider text-amber-500">{{ __('Puzzle of the Day') }} &middot; {{ today()->format('M j') }}</p>
+                        <x-puzzle-card
+                            :crossword="$dailyPuzzle"
+                            :href="auth()->check() ? route('crosswords.solver', $dailyPuzzle) : route('puzzles.solve', $dailyPuzzle)"
+                            class="border-zinc-800 bg-zinc-900/50 shadow-2xl shadow-amber-500/5 hover:border-amber-500/30"
+                        />
                     </div>
-                    <div class="text-left text-sm text-zinc-500 sm:max-w-[12rem]">
-                        <p class="font-mono text-amber-500">1 Across</p>
-                        <p class="mt-1 text-zinc-300">Treaty between nations</p>
-                        <p class="mt-3 text-xs text-zinc-700">Every row and column is a real word.</p>
-                    </div>
-                </div>
+                @endif
             </div>
         </section>
 
@@ -342,9 +323,6 @@
                         </a>
                     @endauth
                 </div>
-                @guest
-                    <p class="mt-4 text-sm text-zinc-600">Free forever — no credit card.</p>
-                @endguest
             </div>
         </section>
 

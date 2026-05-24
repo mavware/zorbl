@@ -1,12 +1,15 @@
 <?php
 
 use App\Models\Crossword;
+use App\Models\DailyPuzzle;
 use App\Models\PuzzleAttempt;
 use App\Models\User;
 use Illuminate\Support\Facades\Cache;
 
 beforeEach(function (): void {
     Cache::forget('marketing.welcome_stats');
+    Cache::forget('daily_puzzle_id:'.today()->toDateString());
+    Cache::forget('daily_puzzle_auto_id:'.today()->toDateString());
 });
 
 test('welcome page renders for guests with hero, register CTA, and SEO meta', function () {
@@ -15,8 +18,7 @@ test('welcome page renders for guests with hero, register CTA, and SEO meta', fu
     $response->assertOk()
         ->assertSee('From blank grid', false)
         ->assertSee('published puzzle in', false)
-        ->assertSee('Start building free', false)
-        ->assertSee('Free forever — no credit card.', false)
+        ->assertSee('Start building', false)
         ->assertSee(route('register'), false)
         ->assertSee('<meta name="description"', false)
         ->assertSee('<meta property="og:title"', false)
@@ -32,7 +34,7 @@ test('welcome page swaps CTAs for authenticated users', function () {
         ->assertSee('Build a puzzle', false)
         ->assertSee('Solve puzzles', false)
         ->assertSee('Go to dashboard', false)
-        ->assertDontSee('Start building free', false)
+        ->assertDontSee('Start building', false)
         ->assertDontSee('Create your free account', false);
 });
 
@@ -55,6 +57,46 @@ test('trust strip renders stats that clear the credibility floor', function () {
     $response->assertOk()
         ->assertSee('puzzles published', false)
         ->assertSee('50', false);
+});
+
+test('welcome page shows the puzzle of the day card linking to the solver', function () {
+    $constructor = User::factory()->create(['name' => 'Ada Lovelace']);
+    $crossword = Crossword::factory()->published()->for($constructor)->create([
+        'title' => 'Daily Delight',
+    ]);
+
+    DailyPuzzle::create([
+        'date' => today(),
+        'crossword_id' => $crossword->id,
+    ]);
+
+    $response = $this->get('/');
+
+    $response->assertOk()
+        ->assertSee('Puzzle of the Day', false)
+        ->assertSee('Daily Delight', false)
+        ->assertSee('Ada Lovelace', false)
+        ->assertSee(route('puzzles.solve', $crossword), false);
+});
+
+test('welcome page links the daily puzzle to the auth solver for signed-in users', function () {
+    $constructor = User::factory()->create();
+    $crossword = Crossword::factory()->published()->for($constructor)->create([
+        'title' => 'Daily Delight',
+    ]);
+
+    DailyPuzzle::create([
+        'date' => today(),
+        'crossword_id' => $crossword->id,
+    ]);
+
+    $user = User::factory()->create();
+
+    $response = $this->actingAs($user)->get('/');
+
+    $response->assertOk()
+        ->assertSee('Daily Delight', false)
+        ->assertSee(route('crosswords.solver', $crossword), false);
 });
 
 test('low solve counts are suppressed even when other stats appear', function () {
