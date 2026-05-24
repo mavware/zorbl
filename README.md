@@ -4,6 +4,8 @@ A crossword puzzle platform for constructors and solvers. Build puzzles with a v
 
 Built with Laravel 13, Livewire 4, Alpine.js, and Tailwind CSS 4.
 
+<!-- MCP PR test: 2026-05-24 -->
+
 ---
 
 ## Features
