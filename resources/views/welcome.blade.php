@@ -133,7 +133,7 @@
                     @if($dailyPuzzle)
                         <div class="mx-auto mt-16 w-full max-w-sm text-left">
                             <p class="mb-3 text-center text-xs uppercase tracking-wider text-amber-500">{{ __('Puzzle of the Day') }} &middot; {{ today()->format('M j') }}</p>
-                            <x-puzzle-card
+                            <x-puzzle-card-old
                                 :crossword="$dailyPuzzle"
                                 :href="auth()->check() ? route('crosswords.solver', $dailyPuzzle) : route('puzzles.solve', $dailyPuzzle)"
                                 class="border-zinc-800 bg-zinc-900/50 shadow-2xl shadow-amber-500/5 hover:border-amber-500/30"

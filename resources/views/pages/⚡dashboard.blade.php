@@ -590,13 +590,6 @@ new #[Title('Dashboard')] class extends Component {
 
     {{-- Discover Puzzles --}}
     <div class="border-line rounded-xl border p-5">
-        <div class="mb-4 flex items-center justify-between">
-            <flux:heading size="lg">{{ __('Discover Puzzles') }}</flux:heading>
-            <flux:button variant="ghost" size="sm" :href="route('crosswords.solving')" wire:navigate>
-                {{ __('Browse All') }}
-            </flux:button>
-        </div>
-
         <livewire:puzzle-discovery :limit="3" :exclude-attempted="true" />
     </div>
 

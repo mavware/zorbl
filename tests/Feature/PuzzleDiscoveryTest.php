@@ -344,40 +344,40 @@ test('discovery paginates when limit is zero', function () {
     $component->assertDontSee('Oldest Puzzle Here');
 });
 
-test('discovery toggle like creates and removes likes', function () {
+test('puzzle card toggle like creates and removes likes', function () {
     $user = User::factory()->create();
     $creator = User::factory()->create();
     $crossword = Crossword::factory()->published()->for($creator)->create();
 
     $component = Livewire::actingAs($user)
-        ->test('puzzle-discovery', ['excludeAttempted' => true]);
+        ->test('puzzle-card', ['crossword' => $crossword]);
 
-    $component->call('toggleLike', $crossword->id);
+    $component->call('toggleLike');
     expect(CrosswordLike::where('user_id', $user->id)->where('crossword_id', $crossword->id)->exists())->toBeTrue();
 
-    $component->call('toggleLike', $crossword->id);
+    $component->call('toggleLike');
     expect(CrosswordLike::where('user_id', $user->id)->where('crossword_id', $crossword->id)->exists())->toBeFalse();
 });
 
-test('discovery start solving redirects to solver', function () {
+test('puzzle card start solving redirects to solver', function () {
     $user = User::factory()->create();
     $creator = User::factory()->create();
     $crossword = Crossword::factory()->published()->for($creator)->create();
 
     Livewire::actingAs($user)
-        ->test('puzzle-discovery', ['excludeAttempted' => true])
-        ->call('startSolving', $crossword->id)
+        ->test('puzzle-card', ['crossword' => $crossword])
+        ->call('startSolving')
         ->assertRedirect(route('crosswords.solver', $crossword));
 });
 
-test('discovery start solving rejects unpublished puzzle', function () {
+test('puzzle card start solving rejects unpublished puzzle', function () {
     $user = User::factory()->create();
     $creator = User::factory()->create();
     $crossword = Crossword::factory()->for($creator)->create();
 
     Livewire::actingAs($user)
-        ->test('puzzle-discovery')
-        ->call('startSolving', $crossword->id)
+        ->test('puzzle-card', ['crossword' => $crossword])
+        ->call('startSolving')
         ->assertForbidden();
 });
 

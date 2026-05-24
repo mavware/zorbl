@@ -3,12 +3,27 @@
     'href' => null,
     'showLike' => false,
     'isLiked' => false,
+    'isDaily' => false,
+    'isSolved' => false,
 ])
 
 <div
-    @if(! $href) wire:key="puzzle-card-{{ $crossword->id }}" @endif
-    {{ $attributes->class(['border-line group rounded-xl border p-4 transition-colors transition-transform hover:scale-105 hover:border-zinc-400 dark:hover:border-zinc-500 cursor-pointer']) }}
+    @if(! $href) wire:key="puzzle-card-{{ $crossword->id }}" wire:click="startSolving({{ $crossword->id }})" @endif
+    {{ $attributes->class(['border-line group relative rounded-xl border p-4 transition-colors transition-transform hover:scale-105 hover:border-zinc-400 dark:hover:border-zinc-500 cursor-pointer']) }}
 >
+    @if($isSolved)
+        <span class="absolute right-2 top-2 inline-flex" title="{{ __('Solved') }}">
+            <flux:icon name="check-circle" class="size-5 text-emerald-500" />
+        </span>
+    @endif
+
+    @if($isDaily)
+        <div class="mb-3 flex flex-wrap items-center justify-center gap-1.5">
+            <flux:icon name="star" class="size-4 text-amber-500" />
+            <flux:heading size="sm">{{ __('Puzzle of the Day') }}</flux:heading>
+        </div>
+    @endif
+
     <div class="mb-3 flex justify-center">
         <x-grid-thumbnail :grid="$crossword->grid" :width="$crossword->width" :height="$crossword->height" />
     </div>
@@ -42,7 +57,7 @@
                 @endauth
             </flux:button>
         @else
-            <flux:button size="sm" variant="primary" wire:click="startSolving({{ $crossword->id }})">
+            <flux:button size="sm" variant="primary" wire:click.stop="startSolving({{ $crossword->id }})">
                 @auth
                     {{ __('Start Solving') }}
                 @else

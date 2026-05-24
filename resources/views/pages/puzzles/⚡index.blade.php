@@ -75,6 +75,16 @@ class extends Component {
     }
 
     #[Computed]
+    public function pinnedDailyPuzzle(): ?Crossword
+    {
+        if ($this->hasActiveFilters()) {
+            return null;
+        }
+
+        return $this->dailyPuzzle;
+    }
+
+    #[Computed]
     public function puzzles()
     {
         $query = Crossword::where('is_published', true)
@@ -82,6 +92,10 @@ class extends Component {
             ->with('user:id,name', 'tags:id,name,slug')
             ->withCount('likes')
             ->withAvg('comments as avg_rating', 'rating');
+
+        if ($pinnedId = $this->pinnedDailyPuzzle?->id) {
+            $query->where('id', '!=', $pinnedId);
+        }
 
         if ($this->search !== '') {
             $term = $this->search;
@@ -182,6 +196,23 @@ class extends Component {
 
         return Auth::user()
             ->crosswordLikes()
+            ->pluck('crossword_id')
+            ->flip()
+            ->map(fn () => true)
+            ->all();
+    }
+
+    /** @return array<int, bool> */
+    #[Computed]
+    public function solvedIds(): array
+    {
+        if (! Auth::check()) {
+            return [];
+        }
+
+        return Auth::user()
+            ->puzzleAttempts()
+            ->where('is_completed', true)
             ->pluck('crossword_id')
             ->flip()
             ->map(fn () => true)
@@ -318,63 +349,12 @@ class extends Component {
 >
     <div>
         <flux:heading size="xl">{{ __('Browse Puzzles') }}</flux:heading>
-        <flux:text class="mt-1 text-zinc-600">{{ __('Discover and solve crosswords from the community.') }}</flux:text>
     </div>
 
     {{-- Puzzle of the Day --}}
-    @if($dailyPuzzle = $this->dailyPuzzle)
-        @php
-            $dailySolved = $this->dailyPuzzleSolved;
-            $dailyIconName = $dailySolved ? 'check-circle' : 'star';
-            $dailyIconClass = $dailySolved ? 'text-emerald-500' : 'text-amber-500';
-            $dailyBorderClass = $dailySolved
-                ? 'border-emerald-200 bg-gradient-to-r from-emerald-50 to-green-50 dark:border-emerald-800/50 dark:from-emerald-950/30 dark:to-green-950/30'
-                : 'border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 dark:border-amber-800/50 dark:from-amber-950/30 dark:to-orange-950/30';
-        @endphp
-        <div class="relative overflow-hidden rounded-xl border {{ $dailyBorderClass }} p-5">
-            <div class="flex flex-col gap-4 sm:flex-row sm:items-center">
-                <div class="flex shrink-0 justify-center sm:justify-start">
-                    <x-grid-thumbnail :grid="$dailyPuzzle->grid" :width="$dailyPuzzle->width" :height="$dailyPuzzle->height" :cell-size="5" :max-width="64" />
-                </div>
-                <div class="min-w-0 flex-1">
-                    <div class="flex items-center gap-2">
-                        <flux:icon :name="$dailyIconName" class="size-5 {{ $dailyIconClass }}" />
-                        <flux:heading size="lg">{{ __('Puzzle of the Day') }}</flux:heading>
-                        <flux:badge size="sm" color="amber">{{ today()->format('M j') }}</flux:badge>
-                        @if($dailySolved)
-                            <flux:badge size="sm" color="green" icon="check-circle">{{ __('Solved') }}</flux:badge>
-                        @endif
-                    </div>
-                    <div class="mt-1">
-                        <span class="font-medium text-fg">{{ $dailyPuzzle->displayTitle() }}</span>
-                        <flux:text size="sm" class="mt-0.5 text-zinc-600 dark:text-zinc-400">
-                            {{ __('by :author', ['author' => $dailyPuzzle->user->name ?? __('Unknown')]) }}
-                            &middot;
-                            {{ $dailyPuzzle->width }}&times;{{ $dailyPuzzle->height }}
-                            @if($dailyPuzzle->difficulty_label)
-                                &middot;
-                                {{ __($dailyPuzzle->difficulty_label) }}
-                            @endif
-                        </flux:text>
-                    </div>
-                </div>
-                <div class="flex shrink-0 flex-col items-end gap-2">
-                    @if($dailySolved)
-                        <flux:button variant="filled" size="sm" wire:click="startSolving({{ $dailyPuzzle->id }})" icon="eye">
-                            {{ __('View Solution') }}
-                        </flux:button>
-                    @else
-                        <flux:button variant="primary" size="sm" wire:click="startSolving({{ $dailyPuzzle->id }})" icon="play">
-                            {{ __('Solve Now') }}
-                        </flux:button>
-                    @endif
-                    <a href="{{ route('puzzles.daily-history') }}" wire:navigate class="text-xs text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300">
-                        {{ __('View past puzzles') }} &rarr;
-                    </a>
-                </div>
-            </div>
-        </div>
-    @endif
+{{--    @if($dailyPuzzle = $this->dailyPuzzle)--}}
+{{--        <x-daily-puzzle-banner :puzzle="$dailyPuzzle" :solved="$this->dailyPuzzleSolved" />--}}
+{{--    @endif--}}
 
     {{-- Search Bar --}}
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -491,9 +471,15 @@ class extends Component {
     @endif
 
     {{-- Results --}}
-    @php $results = $this->puzzles; @endphp
+    @php
+        $results = $this->puzzles;
+        $pinnedDaily = $this->pinnedDailyPuzzle;
+        $showPinned = $pinnedDaily !== null && $results->currentPage() === 1;
+        $dailyPuzzleId = $this->dailyPuzzle?->id;
+        $dailyRingClass = 'border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-950/30';
+    @endphp
 
-    @if($results->isEmpty())
+    @if($results->isEmpty() && ! $showPinned)
         <div class="border-line-strong flex flex-col items-center justify-center rounded-xl border border-dashed py-12">
             <flux:icon name="magnifying-glass" class="mb-4 size-12 text-zinc-500" />
             <flux:heading size="lg" class="mb-2">{{ __('No puzzles found') }}</flux:heading>
@@ -507,11 +493,25 @@ class extends Component {
         </div>
     @else
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            @if($showPinned)
+                <x-puzzle-card-old
+                    :crossword="$pinnedDaily"
+                    :show-like="true"
+                    :is-liked="isset($this->likedIds[$pinnedDaily->id])"
+                    :is-solved="isset($this->solvedIds[$pinnedDaily->id])"
+                    :class="$dailyRingClass"
+                    :is-daily="true"
+                />
+            @endif
             @foreach($results as $crossword)
-                <x-puzzle-card
+                @php $isDaily = $crossword->id === $dailyPuzzleId; @endphp
+                <x-puzzle-card-old
                     :crossword="$crossword"
                     :show-like="true"
                     :is-liked="isset($this->likedIds[$crossword->id])"
+                    :is-solved="isset($this->solvedIds[$crossword->id])"
+                    :class="$isDaily ? $dailyRingClass : ''"
+                    :is-daily="$isDaily"
                 />
             @endforeach
         </div>

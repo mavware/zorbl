@@ -1,10 +1,9 @@
 <?php
 
 use App\Models\Crossword;
-use App\Models\CrosswordLike;
+use App\Models\DailyPuzzle;
 use App\Models\Tag;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -75,6 +74,22 @@ new class extends Component {
     }
 
     #[Computed]
+    public function dailyPuzzle(): ?Crossword
+    {
+        return DailyPuzzle::todayOrAuto();
+    }
+
+    #[Computed]
+    public function pinnedDailyPuzzle(): ?Crossword
+    {
+        if ($this->hasActiveFilters()) {
+            return null;
+        }
+
+        return $this->dailyPuzzle;
+    }
+
+    #[Computed]
     public function puzzles()
     {
         $query = Crossword::where('is_published', true)
@@ -82,6 +97,10 @@ new class extends Component {
             ->with('user:id,name', 'tags:id,name,slug')
             ->withCount('likes')
             ->withAvg('comments as avg_rating', 'rating');
+
+        if ($pinnedId = $this->pinnedDailyPuzzle?->id) {
+            $query->where('id', '!=', $pinnedId);
+        }
 
         $hasExplicitFilters = $this->search !== '' || $this->constructor !== '';
 
@@ -185,6 +204,10 @@ new class extends Component {
     #[Computed]
     public function likedIds(): array
     {
+        if (! Auth::check()) {
+            return [];
+        }
+
         return Auth::user()
             ->crosswordLikes()
             ->pluck('crossword_id')
@@ -193,30 +216,21 @@ new class extends Component {
             ->all();
     }
 
-    public function toggleLike(int $crosswordId): void
+    /** @return array<int, bool> */
+    #[Computed]
+    public function solvedIds(): array
     {
-        $like = CrosswordLike::where('user_id', Auth::id())
-            ->where('crossword_id', $crosswordId)
-            ->first();
-
-        if ($like) {
-            $like->delete();
-        } else {
-            CrosswordLike::create([
-                'user_id' => Auth::id(),
-                'crossword_id' => $crosswordId,
-            ]);
+        if (! Auth::check()) {
+            return [];
         }
 
-        unset($this->likedIds, $this->puzzles);
-    }
-
-    public function startSolving(int $crosswordId): void
-    {
-        $crossword = Crossword::findOrFail($crosswordId);
-        $this->authorize('solve', $crossword);
-
-        $this->redirect(route('crosswords.solver', $crossword), navigate: true);
+        return Auth::user()
+            ->puzzleAttempts()
+            ->where('is_completed', true)
+            ->pluck('crossword_id')
+            ->flip()
+            ->map(fn () => true)
+            ->all();
     }
 
     public function updatedDifficulty(): void
@@ -296,61 +310,53 @@ new class extends Component {
 ?>
 
 <div class="space-y-4">
-    {{-- Search Bar --}}
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div class="flex-1">
+
+    <div class="mb-4 flex items-center justify-between gap-3">
+        <flux:heading size="lg">{{ __('Discover Puzzles') }}</flux:heading>
+        <flux:select wire:model.live="sortBy" size="sm" class="w-40">
+            <flux:select.option value="newest">{{ __('Sort: Newest') }}</flux:select.option>
+            <flux:select.option value="oldest">{{ __('Sort: Oldest') }}</flux:select.option>
+            <flux:select.option value="most_liked">{{ __('Sort: Most Liked') }}</flux:select.option>
+            <flux:select.option value="most_solved">{{ __('Sort: Most Solved') }}</flux:select.option>
+            <flux:select.option value="highest_rated">{{ __('Sort: Highest Rated') }}</flux:select.option>
+            <flux:select.option value="most_played">{{ __('Sort: Most Played') }}</flux:select.option>
+            <flux:select.option value="largest">{{ __('Sort: Largest') }}</flux:select.option>
+            <flux:select.option value="smallest">{{ __('Sort: Smallest') }}</flux:select.option>
+        </flux:select>
+    </div>
+
+    {{-- Search + Primary Filters (single row on desktop) --}}
+    <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+        <div class="min-w-0 flex-1 sm:basis-64">
             <flux:input
                 icon="magnifying-glass"
+                size="sm"
                 placeholder="{{ __('Search by title or constructor...') }}"
                 wire:model.live.debounce.300ms="search"
             />
         </div>
-        <div class="flex items-center gap-2">
-            <flux:select wire:model.live="sortBy" size="sm" class="w-40">
-                <flux:select.option value="newest">{{ __('Newest') }}</flux:select.option>
-                <flux:select.option value="oldest">{{ __('Oldest') }}</flux:select.option>
-                <flux:select.option value="most_liked">{{ __('Most Liked') }}</flux:select.option>
-                <flux:select.option value="most_solved">{{ __('Most Solved') }}</flux:select.option>
-                <flux:select.option value="highest_rated">{{ __('Highest Rated') }}</flux:select.option>
-                <flux:select.option value="most_played">{{ __('Most Played') }}</flux:select.option>
-                <flux:select.option value="largest">{{ __('Largest') }}</flux:select.option>
-                <flux:select.option value="smallest">{{ __('Smallest') }}</flux:select.option>
-            </flux:select>
-        </div>
-    </div>
 
-    {{-- Primary Filters (always visible) --}}
-    <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:gap-4">
-        <flux:field>
-            <flux:label size="sm">{{ __('Difficulty') }}</flux:label>
-            <flux:radio.group wire:model.live="difficulty" variant="segmented" size="sm">
-                <flux:radio value="" label="{{ __('All') }}" />
-                <flux:radio value="Easy" label="{{ __('Easy') }}" />
-                <flux:radio value="Medium" label="{{ __('Medium') }}" />
-                <flux:radio value="Hard" label="{{ __('Hard') }}" />
-                <flux:radio value="Expert" label="{{ __('Expert') }}" />
-            </flux:radio.group>
-        </flux:field>
+        <flux:select wire:model.live="difficulty" size="sm" class="sm:w-36">
+            <flux:select.option value="">{{ __('Any Difficulty') }}</flux:select.option>
+            <flux:select.option value="Easy">{{ __('Easy') }}</flux:select.option>
+            <flux:select.option value="Medium">{{ __('Medium') }}</flux:select.option>
+            <flux:select.option value="Hard">{{ __('Hard') }}</flux:select.option>
+            <flux:select.option value="Expert">{{ __('Expert') }}</flux:select.option>
+        </flux:select>
 
-        <flux:field>
-            <flux:label size="sm">{{ __('Size') }}</flux:label>
-            <flux:radio.group wire:model.live="gridSize" variant="segmented" size="sm">
-                <flux:radio value="" label="{{ __('All') }}" />
-                <flux:radio value="small" label="{{ __('Small') }}" />
-                <flux:radio value="medium" label="{{ __('Medium') }}" />
-                <flux:radio value="large" label="{{ __('Large') }}" />
-            </flux:radio.group>
-        </flux:field>
+        <flux:select wire:model.live="gridSize" size="sm" class="sm:w-32">
+            <flux:select.option value="">{{ __('Any Size') }}</flux:select.option>
+            <flux:select.option value="small">{{ __('Small') }}</flux:select.option>
+            <flux:select.option value="medium">{{ __('Medium') }}</flux:select.option>
+            <flux:select.option value="large">{{ __('Large') }}</flux:select.option>
+        </flux:select>
 
-        <flux:field>
-            <flux:label size="sm">{{ __('Type') }}</flux:label>
-            <flux:radio.group wire:model.live="puzzleType" variant="segmented" size="sm">
-                <flux:radio value="" label="{{ __('All') }}" />
-                <flux:radio value="standard" label="{{ __('Standard') }}" />
-                <flux:radio value="diamond" label="{{ __('Diamond') }}" />
-                <flux:radio value="freestyle" label="{{ __('Freestyle') }}" />
-            </flux:radio.group>
-        </flux:field>
+        <flux:select wire:model.live="puzzleType" size="sm" class="sm:w-32">
+            <flux:select.option value="">{{ __('Any Type') }}</flux:select.option>
+            <flux:select.option value="standard">{{ __('Standard') }}</flux:select.option>
+            <flux:select.option value="diamond">{{ __('Diamond') }}</flux:select.option>
+            <flux:select.option value="freestyle">{{ __('Freestyle') }}</flux:select.option>
+        </flux:select>
 
         <div class="flex items-center gap-2 sm:ml-auto">
             <flux:button
@@ -415,9 +421,12 @@ new class extends Component {
     @php
         $results = $this->puzzles;
         $items = ($limit ?? 0) > 0 ? $results : $results->items();
+        $pinnedDaily = $this->pinnedDailyPuzzle;
+        $onFirstPage = ($limit ?? 0) > 0 || $results->currentPage() === 1;
+        $showPinned = $pinnedDaily !== null && $onFirstPage;
     @endphp
 
-    @if(count($items) === 0)
+    @if(count($items) === 0 && ! $showPinned)
         <div class="border-line-strong flex flex-col items-center justify-center rounded-xl border border-dashed py-12">
             <flux:icon name="magnifying-glass" class="mb-4 size-12 text-zinc-500" />
             <flux:heading size="lg" class="mb-2">{{ __('No puzzles found') }}</flux:heading>
@@ -431,93 +440,22 @@ new class extends Component {
         </div>
     @else
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            @if($showPinned)
+                <livewire:puzzle-card
+                    :crossword="$pinnedDaily"
+                    :is-liked="isset($this->likedIds[$pinnedDaily->id])"
+                    :is-solved="isset($this->solvedIds[$pinnedDaily->id])"
+                    :is-daily="true"
+                    :wire:key="'card-daily-'.$pinnedDaily->id"
+                />
+            @endif
             @foreach($items as $crossword)
-                <div
-                    wire:key="discover-{{ $crossword->id }}"
-                    wire:click="startSolving({{ $crossword->id }})"
-                    class="border-line group rounded-xl border p-4 transition-colors hover:border-zinc-400 dark:hover:border-zinc-500 cursor-pointer"
-                >
-                    <div class="mb-3 flex justify-center">
-                        <x-grid-thumbnail :grid="$crossword->grid" :width="$crossword->width" :height="$crossword->height" />
-                    </div>
-
-                    <flux:heading size="sm" class="truncate">{{ $crossword->displayTitle() }}</flux:heading>
-                    <flux:text size="sm" class="mt-1">
-                        {{ __('by :author', ['author' => $crossword->user->name ?? __('Unknown')]) }}
-                        &middot;
-                        {{ $crossword->width }}&times;{{ $crossword->height }}
-                    </flux:text>
-
-                    <div class="mt-1.5 flex flex-wrap items-center gap-1.5">
-                        <flux:badge size="sm" variant="outline">{{ __($crossword->puzzleTypeLabel()) }}</flux:badge>
-                        @if($crossword->difficulty_label)
-                            <flux:badge
-                                size="sm"
-                                :color="match($crossword->difficulty_label) { 'Easy' => 'green', 'Medium' => 'amber', 'Hard' => 'orange', 'Expert' => 'red', default => 'zinc' }"
-                            >{{ __($crossword->difficulty_label) }}</flux:badge>
-                        @endif
-                        @foreach($crossword->tags as $crosswordTag)
-                            <flux:badge size="sm" color="blue">{{ $crosswordTag->name }}</flux:badge>
-                        @endforeach
-                    </div>
-
-                    <div class="mt-2 flex items-center gap-3 text-xs text-zinc-500">
-                        <span class="flex items-center gap-0.5">
-                            <flux:icon name="check-circle" class="size-3.5" />
-                            {{ trans_choice(':count solve|:count solves', $crossword->cached_completed_count) }}
-                        </span>
-                        @if($crossword->cached_avg_solve_time)
-                            <span class="flex items-center gap-0.5">
-                                <flux:icon name="clock" class="size-3.5" />
-                                @php
-                                    $avgSeconds = $crossword->cached_avg_solve_time;
-                                    $avgHours = intdiv($avgSeconds, 3600);
-                                    $avgMinutes = intdiv($avgSeconds % 3600, 60);
-                                    $avgSecs = $avgSeconds % 60;
-                                    $formattedAvg = $avgHours > 0
-                                        ? sprintf('%d:%02d:%02d', $avgHours, $avgMinutes, $avgSecs)
-                                        : sprintf('%d:%02d', $avgMinutes, $avgSecs);
-                                @endphp
-                                {{ __('avg :time', ['time' => $formattedAvg]) }}
-                            </span>
-                        @endif
-                        @if($crossword->avg_rating)
-                            <span class="flex items-center gap-0.5" title="{{ __(':rating out of 5', ['rating' => number_format($crossword->avg_rating, 1)]) }}">
-                                @for($i = 1; $i <= 5; $i++)
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="size-3 {{ $i <= round($crossword->avg_rating) ? 'text-amber-400' : 'text-zinc-300 dark:text-zinc-600' }}" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.006 5.404.434c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.434 2.082-5.005Z" clip-rule="evenodd"/></svg>
-                                @endfor
-                            </span>
-                        @endif
-                        @if($crossword->cached_attempts_count > 0)
-                            <span class="flex items-center gap-0.5">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="size-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                                {{ $crossword->cached_attempts_count }} {{ trans_choice('play|plays', $crossword->cached_attempts_count) }}
-                            </span>
-                            @php
-                                $completionRate = round(($crossword->cached_completed_count / $crossword->cached_attempts_count) * 100);
-                            @endphp
-                            <span class="flex items-center gap-0.5" title="{{ __(':rate% of solvers completed this puzzle', ['rate' => $completionRate]) }}">
-                                <flux:icon name="chart-bar" class="size-3.5" />
-                                {{ $completionRate }}%
-                            </span>
-                        @endif
-                    </div>
-
-                    <div class="mt-3 flex items-center justify-between">
-                        <flux:button size="sm" variant="primary">
-                            {{ __('Start Solving') }}
-                        </flux:button>
-                        <button
-                            wire:click.stop="toggleLike({{ $crossword->id }})"
-                            class="flex items-center gap-1 rounded-lg px-2 py-1 text-xs transition-colors {{ isset($this->likedIds[$crossword->id]) ? 'text-red-500' : 'text-zinc-500 hover:text-red-400' }}"
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" class="size-4" viewBox="0 0 24 24" fill="{{ isset($this->likedIds[$crossword->id]) ? 'currentColor' : 'none' }}" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
-                            </svg>
-                            <span>{{ $crossword->likes_count }}</span>
-                        </button>
-                    </div>
-                </div>
+                <livewire:puzzle-card
+                    :crossword="$crossword"
+                    :is-liked="isset($this->likedIds[$crossword->id])"
+                    :is-solved="isset($this->solvedIds[$crossword->id])"
+                    :wire:key="'card-'.$crossword->id"
+                />
             @endforeach
         </div>
 

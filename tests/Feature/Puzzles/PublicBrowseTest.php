@@ -2,9 +2,56 @@
 
 use App\Models\Crossword;
 use App\Models\CrosswordLike;
+use App\Models\DailyPuzzle;
+use App\Models\PuzzleAttempt;
 use App\Models\PuzzleComment;
 use App\Models\User;
+use Illuminate\Support\Facades\Cache;
 use Livewire\Livewire;
+
+/**
+ * Extract the class attribute of the puzzle-card div for the given crossword id.
+ * Searches forward from the wire:key marker since `class` follows `wire:key`.
+ */
+function cardClasses(string $html, int $crosswordId): string
+{
+    $marker = "puzzle-card-{$crosswordId}";
+    $markerPos = strpos($html, $marker);
+
+    if ($markerPos === false) {
+        return '';
+    }
+
+    $classStart = strpos($html, 'class="', $markerPos);
+
+    if ($classStart === false) {
+        return '';
+    }
+
+    $classEnd = strpos($html, '"', $classStart + 7);
+
+    return substr($html, $classStart + 7, $classEnd - $classStart - 7);
+}
+
+/**
+ * Extract the inner HTML slice for the puzzle-card div of the given crossword id,
+ * up to the next puzzle-card marker or end of document.
+ */
+function cardSlice(string $html, int $crosswordId): string
+{
+    $marker = "puzzle-card-{$crosswordId}";
+    $start = strpos($html, $marker);
+
+    if ($start === false) {
+        return '';
+    }
+
+    $nextMarker = strpos($html, 'puzzle-card-', $start + strlen($marker));
+
+    return $nextMarker === false
+        ? substr($html, $start)
+        : substr($html, $start, $nextMarker - $start);
+}
 
 test('browse page loads without authentication', function () {
     Crossword::factory()->published()->create(['title' => 'Public Puzzle']);
@@ -728,6 +775,356 @@ test('hasActiveFilters returns true when minimum rating is set', function () {
     Livewire::test('pages::puzzles.index')
         ->set('minRating', '3')
         ->assertSee('Clear All');
+});
+
+// --- Solved Indicator ---
+
+test('solved puzzle card shows the green check indicator', function () {
+    $user = User::factory()->create();
+    $creator = User::factory()->create();
+    $crossword = Crossword::factory()->published()->for($creator)->create([
+        'title' => 'Solved Marker Puzzle',
+    ]);
+
+    PuzzleAttempt::factory()->for($user)->completed()->create([
+        'crossword_id' => $crossword->id,
+    ]);
+
+    $html = Livewire::actingAs($user)->test('pages::puzzles.index')->html();
+    $slice = cardSlice($html, $crossword->id);
+
+    expect($slice)->toContain('title="Solved"')
+        ->and($slice)->toContain('text-emerald-500');
+});
+
+test('unsolved puzzle card does not show solved indicator', function () {
+    $user = User::factory()->create();
+    $creator = User::factory()->create();
+    $crossword = Crossword::factory()->published()->for($creator)->create([
+        'title' => 'Unsolved Marker Puzzle',
+    ]);
+
+    $html = Livewire::actingAs($user)->test('pages::puzzles.index')->html();
+    $slice = cardSlice($html, $crossword->id);
+
+    expect($slice)->not->toContain('title="Solved"');
+});
+
+test('unauthenticated user sees no solved indicators', function () {
+    $creator = User::factory()->create();
+    $crossword = Crossword::factory()->published()->for($creator)->create([
+        'title' => 'Public Card',
+    ]);
+
+    // Another user solved the puzzle — guests should never see solved indicators.
+    PuzzleAttempt::factory()->completed()->create(['crossword_id' => $crossword->id]);
+
+    $html = Livewire::test('pages::puzzles.index')->html();
+    $slice = cardSlice($html, $crossword->id);
+
+    expect($slice)->not->toContain('title="Solved"');
+});
+
+test('solved daily puzzle uses corner check, not inline Solved badge', function () {
+    Cache::flush();
+    $user = User::factory()->create();
+    $creator = User::factory()->create();
+
+    $daily = Crossword::factory()->published()->for($creator)->create([
+        'title' => 'Solved Daily Puzzle',
+    ]);
+    DailyPuzzle::create([
+        'date' => today()->toDateString(),
+        'crossword_id' => $daily->id,
+    ]);
+
+    PuzzleAttempt::factory()->for($user)->completed()->create([
+        'crossword_id' => $daily->id,
+    ]);
+
+    $html = Livewire::actingAs($user)->test('pages::puzzles.index')->html();
+    $slice = cardSlice($html, $daily->id);
+
+    // Corner check indicator should be present on the card slice.
+    expect($slice)->toContain('title="Solved"');
+
+    // The old inline "Solved" badge (a flux:badge) should be gone from the card.
+    // The badge rendered an element containing the text "Solved" without the
+    // title attribute — confirm we don't see a stray "Solved" outside the
+    // title attribute by counting title="Solved" occurrences (should be 1).
+    expect(substr_count($slice, 'title="Solved"'))->toBe(1);
+});
+
+// --- Card Click Navigation ---
+
+test('puzzle card outer div has wire:click to start solving', function () {
+    $creator = User::factory()->create();
+    $crossword = Crossword::factory()->published()->for($creator)->create([
+        'title' => 'Clickable Puzzle',
+    ]);
+
+    $html = Livewire::test('pages::puzzles.index')->html();
+
+    // Find the opening tag of the card's outer div (starts at wire:key marker
+    // and ends at the next `>`). The tag should contain the wire:click attribute.
+    $markerPos = strpos($html, "wire:key=\"puzzle-card-{$crossword->id}\"");
+    expect($markerPos)->not->toBeFalse();
+
+    $tagEnd = strpos($html, '>', $markerPos);
+    $openingTag = substr($html, $markerPos, $tagEnd - $markerPos);
+
+    expect($openingTag)->toContain("wire:click=\"startSolving({$crossword->id})\"");
+});
+
+// --- Puzzle of the Day Pinning ---
+
+test('daily puzzle is pinned as first card in grid at default settings', function () {
+    Cache::flush();
+    $creator = User::factory()->create();
+
+    $daily = Crossword::factory()->published()->for($creator)->create([
+        'title' => 'Daily Featured Puzzle',
+        'created_at' => now()->subDays(10),
+    ]);
+    DailyPuzzle::create([
+        'date' => today()->toDateString(),
+        'crossword_id' => $daily->id,
+    ]);
+
+    $newer = Crossword::factory()->published()->for($creator)->create([
+        'title' => 'Newer Regular Puzzle',
+        'created_at' => now(),
+    ]);
+
+    Livewire::test('pages::puzzles.index')
+        ->assertSeeHtmlInOrder([
+            "puzzle-card-{$daily->id}",
+            "puzzle-card-{$newer->id}",
+        ]);
+});
+
+test('daily puzzle is not pinned when search filter is active', function () {
+    Cache::flush();
+    $creator = User::factory()->create();
+
+    $daily = Crossword::factory()->published()->for($creator)->create([
+        'title' => 'Daily Featured Puzzle',
+    ]);
+    DailyPuzzle::create([
+        'date' => today()->toDateString(),
+        'crossword_id' => $daily->id,
+    ]);
+
+    Crossword::factory()->published()->for($creator)->create(['title' => 'Searchable Puzzle']);
+
+    Livewire::test('pages::puzzles.index')
+        ->set('search', 'Searchable')
+        ->assertDontSeeHtml("puzzle-card-{$daily->id}")
+        ->assertSee('Searchable Puzzle');
+});
+
+test('daily puzzle is not pinned when sort is changed from default', function () {
+    Cache::flush();
+    $creator = User::factory()->create();
+
+    $daily = Crossword::factory()->published()->for($creator)->create([
+        'title' => 'Daily Featured Puzzle',
+        'created_at' => now()->subDays(10),
+    ]);
+    DailyPuzzle::create([
+        'date' => today()->toDateString(),
+        'crossword_id' => $daily->id,
+    ]);
+
+    $newer = Crossword::factory()->published()->for($creator)->create([
+        'title' => 'Newer Regular Puzzle',
+        'created_at' => now(),
+    ]);
+
+    // With sortBy=oldest, daily (older) sorts first naturally, then newer.
+    // Without pinning, the order is purely by created_at ASC.
+    Livewire::test('pages::puzzles.index')
+        ->set('sortBy', 'oldest')
+        ->assertSeeHtmlInOrder([
+            "puzzle-card-{$daily->id}",
+            "puzzle-card-{$newer->id}",
+        ]);
+
+    // With sortBy=most_liked and the newer puzzle having a like, newer should
+    // come first — proving pinning does not apply when sort is non-default.
+    CrosswordLike::factory()->create(['crossword_id' => $newer->id]);
+
+    Livewire::test('pages::puzzles.index')
+        ->set('sortBy', 'most_liked')
+        ->assertSeeHtmlInOrder([
+            "puzzle-card-{$newer->id}",
+            "puzzle-card-{$daily->id}",
+        ]);
+});
+
+test('daily puzzle is not duplicated in grid when pinned', function () {
+    Cache::flush();
+    $creator = User::factory()->create();
+
+    $daily = Crossword::factory()->published()->for($creator)->create([
+        'title' => 'Only Daily Puzzle',
+        'created_at' => now(),
+    ]);
+    DailyPuzzle::create([
+        'date' => today()->toDateString(),
+        'crossword_id' => $daily->id,
+    ]);
+
+    // The daily puzzle would naturally appear in the grid by created_at order.
+    // When pinned, it should be excluded from the regular query to avoid
+    // appearing twice as a grid card.
+    $component = Livewire::test('pages::puzzles.index');
+
+    $html = $component->html();
+    $occurrences = substr_count($html, "puzzle-card-{$daily->id}");
+
+    expect($occurrences)->toBe(1);
+});
+
+test('daily puzzle card has amber highlight when shown via active filter', function () {
+    Cache::flush();
+    $creator = User::factory()->create();
+
+    $daily = Crossword::factory()->published()->for($creator)->create([
+        'title' => 'Daily Filterable Puzzle',
+    ]);
+    DailyPuzzle::create([
+        'date' => today()->toDateString(),
+        'crossword_id' => $daily->id,
+    ]);
+
+    Crossword::factory()->published()->for($creator)->create(['title' => 'Other Puzzle']);
+
+    // Search filters out 'Other Puzzle', leaving only the daily — but since
+    // a filter is active, the daily is not "pinned"; it lands in the grid via
+    // the natural query. The highlight should still be applied to its card.
+    $html = Livewire::test('pages::puzzles.index')
+        ->set('search', 'Filterable')
+        ->html();
+
+    expect(cardClasses($html, $daily->id))
+        ->toContain('bg-amber-50')
+        ->toContain('border-amber-200');
+});
+
+test('non-daily puzzle card does not have amber highlight', function () {
+    Cache::flush();
+    $creator = User::factory()->create();
+
+    $daily = Crossword::factory()->published()->for($creator)->create([
+        'title' => 'Daily Featured Puzzle',
+    ]);
+    DailyPuzzle::create([
+        'date' => today()->toDateString(),
+        'crossword_id' => $daily->id,
+    ]);
+
+    $regular = Crossword::factory()->published()->for($creator)->create(['title' => 'Regular Puzzle']);
+
+    $html = Livewire::test('pages::puzzles.index')->html();
+
+    expect(cardClasses($html, $regular->id))->not->toContain('bg-amber-50');
+});
+
+test('daily puzzle card includes Puzzle of the Day header in grid', function () {
+    Cache::flush();
+    $creator = User::factory()->create();
+
+    $daily = Crossword::factory()->published()->for($creator)->create([
+        'title' => 'Daily Header Test',
+    ]);
+    DailyPuzzle::create([
+        'date' => today()->toDateString(),
+        'crossword_id' => $daily->id,
+    ]);
+
+    Crossword::factory()->published()->for($creator)->create(['title' => 'Other Header Test']);
+
+    $html = Livewire::test('pages::puzzles.index')->html();
+
+    // The banner shows "Puzzle of the Day" once. With the pinned daily card
+    // also rendering the header, the phrase should appear at least twice.
+    $occurrences = substr_count($html, 'Puzzle of the Day');
+    expect($occurrences)->toBeGreaterThanOrEqual(2);
+});
+
+test('daily puzzle card shows Puzzle of the Day header when surfaced via filter', function () {
+    Cache::flush();
+    $creator = User::factory()->create();
+
+    $daily = Crossword::factory()->published()->for($creator)->create([
+        'title' => 'Daily Filtered Header',
+    ]);
+    DailyPuzzle::create([
+        'date' => today()->toDateString(),
+        'crossword_id' => $daily->id,
+    ]);
+
+    Crossword::factory()->published()->for($creator)->create(['title' => 'Excluded Result']);
+
+    $html = Livewire::test('pages::puzzles.index')
+        ->set('search', 'Filtered')
+        ->html();
+
+    // Banner header + grid card header = at least 2 occurrences when the
+    // daily puzzle surfaces via a filter.
+    $occurrences = substr_count($html, 'Puzzle of the Day');
+    expect($occurrences)->toBeGreaterThanOrEqual(2);
+});
+
+test('non-daily puzzle card does not include Puzzle of the Day header', function () {
+    Cache::flush();
+    $creator = User::factory()->create();
+
+    // Set a daily puzzle so the banner appears, but isolate a different card
+    // and ensure its rendered markup does not contain the header phrase.
+    $daily = Crossword::factory()->published()->for($creator)->create([
+        'title' => 'Daily Marker',
+    ]);
+    DailyPuzzle::create([
+        'date' => today()->toDateString(),
+        'crossword_id' => $daily->id,
+    ]);
+
+    $regular = Crossword::factory()->published()->for($creator)->create([
+        'title' => 'Regular Marker',
+    ]);
+
+    $html = Livewire::test('pages::puzzles.index')->html();
+
+    $startPos = strpos($html, "puzzle-card-{$regular->id}");
+    expect($startPos)->not->toBeFalse();
+
+    // Look at the slice of HTML for this card up to the next card's marker
+    // (or end of document) — that slice should not contain the header phrase.
+    $nextCardPos = strpos($html, 'puzzle-card-', $startPos + 20);
+    $slice = $nextCardPos === false
+        ? substr($html, $startPos)
+        : substr($html, $startPos, $nextCardPos - $startPos);
+
+    expect($slice)->not->toContain('Puzzle of the Day');
+});
+
+test('grid still renders pinned daily when no other puzzles exist', function () {
+    Cache::flush();
+    $creator = User::factory()->create();
+
+    $daily = Crossword::factory()->published()->for($creator)->create([
+        'title' => 'Solo Daily Puzzle',
+    ]);
+    DailyPuzzle::create([
+        'date' => today()->toDateString(),
+        'crossword_id' => $daily->id,
+    ]);
+
+    Livewire::test('pages::puzzles.index')
+        ->assertSeeHtml("puzzle-card-{$daily->id}")
+        ->assertDontSee('No puzzles found');
 });
 
 test('minimum rating filter combines with other filters', function () {
