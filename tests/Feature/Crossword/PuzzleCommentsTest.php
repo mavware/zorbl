@@ -157,6 +157,100 @@ test('average rating is calculated correctly', function () {
     expect(round($avg, 1))->toBe(3.0);
 });
 
+test('user can enter edit mode for their comment', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->published()->create([
+        'width' => 2,
+        'height' => 2,
+        'grid' => [[1, 2], [3, 0]],
+        'solution' => [['A', 'B'], ['C', 'D']],
+    ]);
+
+    PuzzleAttempt::factory()->for($user)->for($crossword)->completed()->create([
+        'progress' => [['A', 'B'], ['C', 'D']],
+    ]);
+
+    PuzzleComment::create([
+        'user_id' => $user->id,
+        'crossword_id' => $crossword->id,
+        'body' => 'Original comment',
+        'rating' => 3,
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire\Livewire::test('pages::crosswords.solver', ['crossword' => $crossword])
+        ->call('editComment')
+        ->assertSet('editingComment', true)
+        ->assertSet('commentBody', 'Original comment')
+        ->assertSet('commentRating', 3);
+});
+
+test('user can cancel editing their comment', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->published()->create([
+        'width' => 2,
+        'height' => 2,
+        'grid' => [[1, 2], [3, 0]],
+        'solution' => [['A', 'B'], ['C', 'D']],
+    ]);
+
+    PuzzleAttempt::factory()->for($user)->for($crossword)->completed()->create([
+        'progress' => [['A', 'B'], ['C', 'D']],
+    ]);
+
+    PuzzleComment::create([
+        'user_id' => $user->id,
+        'crossword_id' => $crossword->id,
+        'body' => 'Original comment',
+        'rating' => 3,
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire\Livewire::test('pages::crosswords.solver', ['crossword' => $crossword])
+        ->call('editComment')
+        ->assertSet('editingComment', true)
+        ->call('cancelEditComment')
+        ->assertSet('editingComment', false)
+        ->assertSet('commentBody', '')
+        ->assertSet('commentRating', 0);
+});
+
+test('user can edit and save their comment', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->published()->create([
+        'width' => 2,
+        'height' => 2,
+        'grid' => [[1, 2], [3, 0]],
+        'solution' => [['A', 'B'], ['C', 'D']],
+    ]);
+
+    PuzzleAttempt::factory()->for($user)->for($crossword)->completed()->create([
+        'progress' => [['A', 'B'], ['C', 'D']],
+    ]);
+
+    PuzzleComment::create([
+        'user_id' => $user->id,
+        'crossword_id' => $crossword->id,
+        'body' => 'Original comment',
+        'rating' => 3,
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire\Livewire::test('pages::crosswords.solver', ['crossword' => $crossword])
+        ->call('editComment')
+        ->set('commentBody', 'Edited comment')
+        ->set('commentRating', 5)
+        ->call('submitComment')
+        ->assertSet('editingComment', false);
+
+    $comment = PuzzleComment::where('user_id', $user->id)->where('crossword_id', $crossword->id)->first();
+    expect($comment->body)->toBe('Edited comment')
+        ->and($comment->rating)->toBe(5);
+});
+
 test('comments section is visible when puzzle is solved', function () {
     $user = User::factory()->create();
     $crossword = Crossword::factory()->published()->create([
