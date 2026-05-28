@@ -267,6 +267,34 @@ class extends Component {
         $this->redirect(route('puzzles.solve', $crossword), navigate: true);
     }
 
+    public function surpriseMe(): void
+    {
+        $query = Crossword::where('is_published', true)
+            ->safeFor(Auth::user());
+
+        if (Auth::check()) {
+            $blockedTagIds = Auth::user()->blockedTags()->pluck('tags.id');
+
+            if ($blockedTagIds->isNotEmpty()) {
+                $query->whereDoesntHave('tags', fn ($q) => $q->whereIn('tags.id', $blockedTagIds));
+            }
+        }
+
+        $crossword = $query->inRandomOrder()->first();
+
+        if (! $crossword) {
+            return;
+        }
+
+        if (Auth::check()) {
+            $this->redirect(route('crosswords.solver', $crossword), navigate: true);
+
+            return;
+        }
+
+        $this->redirect(route('puzzles.solve', $crossword), navigate: true);
+    }
+
     public function clearFilters(): void
     {
         $this->reset('search', 'gridSize', 'puzzleType', 'constructor', 'dateRange', 'difficulty', 'tag', 'minRating', 'sortBy');
@@ -347,8 +375,17 @@ class extends Component {
     x-data="{ showSignup: false }"
     x-on:show-signup-prompt.window="showSignup = true"
 >
-    <div>
+    <div class="flex items-center justify-between">
         <flux:heading size="xl">{{ __('Browse Puzzles') }}</flux:heading>
+        <flux:button
+            wire:click="surpriseMe"
+            variant="ghost"
+            size="sm"
+            icon="sparkles"
+            data-test="surprise-me-button"
+        >
+            {{ __('Surprise Me') }}
+        </flux:button>
     </div>
 
     {{-- Puzzle of the Day --}}
