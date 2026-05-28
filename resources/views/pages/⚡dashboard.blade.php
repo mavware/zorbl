@@ -194,11 +194,43 @@ new #[Title('Dashboard')] class extends Component {
             ->limit(3)
             ->get();
     }
+
+    public function surpriseMe(): void
+    {
+        $query = Crossword::where('is_published', true)
+            ->where('user_id', '!=', Auth::id())
+            ->safeFor(Auth::user());
+
+        $blockedTagIds = Auth::user()->blockedTags()->pluck('tags.id');
+
+        if ($blockedTagIds->isNotEmpty()) {
+            $query->whereDoesntHave('tags', fn ($q) => $q->whereIn('tags.id', $blockedTagIds));
+        }
+
+        $crossword = $query->inRandomOrder()->first();
+
+        if (! $crossword) {
+            return;
+        }
+
+        $this->redirect(route('crosswords.solver', $crossword), navigate: true);
+    }
 }
 ?>
 
 <div class="space-y-6">
-    <flux:heading size="xl">{{ __('Dashboard') }}</flux:heading>
+    <div class="flex items-center justify-between">
+        <flux:heading size="xl">{{ __('Dashboard') }}</flux:heading>
+        <flux:button
+            wire:click="surpriseMe"
+            variant="ghost"
+            size="sm"
+            icon="sparkles"
+            data-test="surprise-me-button"
+        >
+            {{ __('Surprise Me') }}
+        </flux:button>
+    </div>
 
     {{-- First-run welcome — only visible to brand-new accounts with zero activity. --}}
     @if($this->isNewUser)
