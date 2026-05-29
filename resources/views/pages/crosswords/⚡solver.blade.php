@@ -6,6 +6,7 @@ use App\Models\FavoriteList;
 use App\Models\PuzzleAttempt;
 use App\Models\PuzzleComment;
 use App\Notifications\PuzzleCompleted;
+use App\Notifications\PuzzleMilestone;
 use App\Services\AchievementService;
 use App\Services\ContestService;
 use App\Livewire\Concerns\ExportsCrossword;
@@ -431,7 +432,9 @@ new #[Title('Solve Crossword')] class extends Component {
             'solve_time_seconds' => $elapsedSeconds,
         ];
 
-        if ($isCompleted && ! $attempt->completed_at) {
+        $isNewCompletion = $isCompleted && ! $attempt->completed_at;
+
+        if ($isNewCompletion) {
             $data['completed_at'] = now();
             $this->isSolved = true;
 
@@ -464,6 +467,18 @@ new #[Title('Solve Crossword')] class extends Component {
         }
 
         $attempt->update($data);
+
+        if ($isNewCompletion) {
+            $crossword ??= Crossword::find($this->crosswordId);
+            if ($crossword) {
+                $crossword->refresh();
+                $milestone = PuzzleMilestone::reachedMilestone($crossword->cached_completed_count);
+                $constructor ??= $crossword->user;
+                if ($milestone !== null && $constructor && $constructor->id !== Auth::id()) {
+                    $constructor->notify(new PuzzleMilestone($crossword, $milestone));
+                }
+            }
+        }
 
         $this->dispatch('progress-saved');
     }
