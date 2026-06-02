@@ -2,7 +2,7 @@
 
 A crossword puzzle platform for constructors and solvers. Build puzzles with a visual grid editor, solve community puzzles with auto-saved progress, run contests, and share your creations — all from the browser.
 
-Built with Laravel 13, Livewire 4, Alpine.js, and Tailwind CSS 4.
+Built with **Laravel 13**, **Livewire 4**, **Alpine.js**, and **Tailwind CSS 4**.
 
 ---
 
