@@ -6,6 +6,7 @@ use App\Models\DailyPuzzle;
 use App\Models\PuzzleAttempt;
 use App\Models\Tag;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -327,6 +328,24 @@ class extends Component {
         return Tag::orderBy('name')->get(['id', 'name', 'slug']);
     }
 
+    /** @return \Illuminate\Support\Collection<int, object{id: int, name: string, slug: string, published_count: int}> */
+    #[Computed]
+    public function popularTags(): \Illuminate\Support\Collection
+    {
+        return Cache::remember('browse:popular_tags', 300, fn () => Tag::whereHas('crosswords', fn ($q) => $q->where('is_published', true))
+            ->withCount(['crosswords as published_count' => fn ($q) => $q->where('is_published', true)])
+            ->orderByDesc('published_count')
+            ->limit(12)
+            ->get(['id', 'name', 'slug']));
+    }
+
+    public function selectTag(string $slug): void
+    {
+        $this->tag = $this->tag === $slug ? '' : $slug;
+        $this->resetPage();
+        unset($this->puzzles);
+    }
+
     public function hasActiveFilters(): bool
     {
         return $this->search !== ''
@@ -375,6 +394,32 @@ class extends Component {
             </flux:select>
         </div>
     </div>
+
+    {{-- Popular Tags --}}
+    @if($this->popularTags->isNotEmpty())
+        <div class="flex flex-wrap items-center gap-2" data-test="popular-tags">
+            <flux:text size="sm" class="text-zinc-500">{{ __('Popular:') }}</flux:text>
+            @foreach($this->popularTags as $popularTag)
+                <button
+                    type="button"
+                    wire:click="selectTag('{{ $popularTag->slug }}')"
+                    wire:key="popular-tag-{{ $popularTag->slug }}"
+                    @class([
+                        'inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition',
+                        'bg-amber-500 text-zinc-950' => $tag === $popularTag->slug,
+                        'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700' => $tag !== $popularTag->slug,
+                    ])
+                >
+                    {{ $popularTag->name }}
+                    <span @class([
+                        'text-[10px] tabular-nums',
+                        'text-zinc-800/70' => $tag === $popularTag->slug,
+                        'text-zinc-500 dark:text-zinc-500' => $tag !== $popularTag->slug,
+                    ])>{{ $popularTag->published_count }}</span>
+                </button>
+            @endforeach
+        </div>
+    @endif
 
     {{-- Primary Filters (always visible) --}}
     <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:gap-4">
