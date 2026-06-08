@@ -9,6 +9,7 @@ enum NotificationType: string
     case NewFollower = 'new_follower';
     case NewPuzzlePublished = 'new_puzzle_published';
     case NewPuzzleComment = 'new_puzzle_comment';
+    case WeeklyDigest = 'weekly_digest';
 
     public function label(): string
     {
@@ -18,6 +19,7 @@ enum NotificationType: string
             self::NewFollower => __('New followers'),
             self::NewPuzzlePublished => __('New puzzles from followed constructors'),
             self::NewPuzzleComment => __('Puzzle comments'),
+            self::WeeklyDigest => __('Weekly activity digest'),
         };
     }
 
@@ -29,6 +31,7 @@ enum NotificationType: string
             self::NewFollower => __('When someone starts following you'),
             self::NewPuzzlePublished => __('When a constructor you follow publishes a new puzzle'),
             self::NewPuzzleComment => __('When someone comments on one of your puzzles'),
+            self::WeeklyDigest => __('A weekly email summarizing activity on your published puzzles'),
         };
     }
 }
