@@ -66,6 +66,7 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [ ] Show puzzle of the day as the first entry in the Puzzle Search results when the search is at default settings.
 - [ ] Put the puzzle ratings and comments in the Puzzle Complete modal
 - [ ] Need ability to edit your comments on a puzzle
+- [ ] Add a weekly digest email for solvers (puzzles solved, streak status, leaderboard position changes)
  
 ## For later
 
