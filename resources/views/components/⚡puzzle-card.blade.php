@@ -126,7 +126,7 @@ new class extends Component {
 
         $solved = json_decode(request()->cookie('zorbl_guest_solved', '[]'), true) ?: [];
 
-        if (count($solved) > 0 && ! in_array($crossword->id, $solved)) {
+        if (count($solved) >= config('zorbl.guest_solve_limit') && ! in_array($crossword->id, $solved)) {
             $this->dispatch('show-signup-prompt');
 
             return;

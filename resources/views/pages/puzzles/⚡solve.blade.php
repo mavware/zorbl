@@ -37,10 +37,10 @@ class extends Component {
             return;
         }
 
-        // Check guest solve cookie — allow only one puzzle
+        // Check guest solve cookie against the configured limit
         $solved = json_decode(request()->cookie('zorbl_guest_solved', '[]'), true) ?: [];
 
-        if (count($solved) > 0 && ! in_array($crossword->id, $solved)) {
+        if (count($solved) >= config('zorbl.guest_solve_limit') && ! in_array($crossword->id, $solved)) {
             session()->flash('message', __('Create a free account to solve unlimited puzzles.'));
             $this->redirect(route('register'));
 
