@@ -56,6 +56,9 @@ new #[Title('Solve Crossword')] class extends Component {
     public ?array $styles = null;
     public ?array $prefilled = null;
 
+    /** @var array{cell?: string, block?: string, circle?: string, letter?: string, line?: string} */
+    public array $defaultColors = [];
+
     #[Computed]
     public function isLiked(): bool
     {
@@ -324,6 +327,7 @@ new #[Title('Solve Crossword')] class extends Component {
         $this->cluesDown = $crossword->clues_down ?? [];
         $this->styles = $crossword->styles;
         $this->prefilled = $crossword->prefilled;
+        $this->defaultColors = $crossword->metadata['colors'] ?? [];
         $this->pencilCells = $attempt->pencil_cells ?? [];
         $this->revealedCells = $attempt->revealed_cells ?? [];
         $this->elapsedSeconds = $attempt->solve_time_seconds ?? 0;
@@ -537,6 +541,7 @@ new #[Title('Solve Crossword')] class extends Component {
         progress: @js($progress),
         styles: @js($styles ?? []),
         prefilled: @js($prefilled),
+        defaultColors: @js((object) $defaultColors),
         cluesAcross: @js($cluesAcross),
         cluesDown: @js($cluesDown),
         initialElapsed: @js($elapsedSeconds),
@@ -858,7 +863,7 @@ new #[Title('Solve Crossword')] class extends Component {
             >
                 <div
                     class="grid border border-zinc-800 dark:border-zinc-300 [--bar-color:var(--color-zinc-800)] dark:[--bar-color:var(--color-zinc-300)]"
-                    :style="'grid-template-columns: repeat(' + width + ', minmax(0, 1fr));'"
+                    :style="'grid-template-columns: repeat(' + width + ', minmax(0, 1fr));' + (defaultColors.line ? ' --bar-color: ' + defaultColors.line + '; --color-line-strong: ' + defaultColors.line + '; border-color: ' + defaultColors.line + ';' : '')"
                     role="presentation"
                 >
                     <template x-for="(row, rowIdx) in grid" :key="'row-' + rowIdx">
@@ -887,7 +892,9 @@ new #[Title('Solve Crossword')] class extends Component {
                                 {{-- Circle annotation --}}
                                 <template x-if="hasCircle(rowIdx, colIdx)">
                                     <svg class="pointer-events-none absolute inset-0.5 size-[calc(100%-4px)]" viewBox="0 0 100 100">
-                                        <circle cx="50" cy="50" r="46" fill="none" stroke="currentColor" stroke-width="2" class="text-fg-subtle" />
+                                        <circle cx="50" cy="50" r="46" fill="none"
+                                                :stroke="defaultColors.circle || 'currentColor'"
+                                                stroke-width="2" class="text-fg-subtle" />
                                     </svg>
                                 </template>
 
@@ -900,7 +907,7 @@ new #[Title('Solve Crossword')] class extends Component {
                                 <span
                                     class="font-semibold uppercase"
                                     :class="letterClass(rowIdx, colIdx)"
-                                    :style="letterFontStyle(rowIdx, colIdx)"
+                                    :style="letterFontStyle(rowIdx, colIdx) + letterColorStyle(rowIdx, colIdx)"
                                     x-text="isBlock(rowIdx, colIdx) ? '' : (progress[rowIdx]?.[colIdx] || '')"
                                 ></span>
 
