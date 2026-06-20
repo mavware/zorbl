@@ -10,6 +10,7 @@ use App\Jobs\DispatchWebhooks;
 use App\Models\Crossword;
 use App\Models\PuzzleAttempt;
 use App\Notifications\PuzzleCompleted;
+use App\Notifications\PuzzleMilestone;
 use App\Services\AchievementService;
 use App\Services\ContestService;
 use Illuminate\Http\JsonResponse;
@@ -99,6 +100,12 @@ class PuzzleAttemptController extends Controller
             $constructor = $crossword->user;
             if ($constructor && $constructor->id !== $user->id) {
                 $constructor->notify(new PuzzleCompleted($crossword, $user, $data['solve_time_seconds'] ?? null));
+            }
+
+            $crossword->refresh();
+            $milestone = PuzzleMilestone::reachedMilestone($crossword->cached_completed_count);
+            if ($milestone !== null && $constructor && $constructor->id !== $user->id) {
+                $constructor->notify(new PuzzleMilestone($crossword, $milestone));
             }
 
             DispatchWebhooks::dispatch(WebhookEvent::PuzzleCompleted, $crossword->user_id, [
