@@ -11,3 +11,4 @@ Artisan::command('inspire', function () {
 Schedule::command('simulate:activity')->everyTenMinutes();
 Schedule::command('contests:publish-scheduled')->everyMinute();
 Schedule::command('contests:process-ended')->everyMinute();
+Schedule::command('constructors:send-weekly-digest')->weeklyOn(1, '9:00');
