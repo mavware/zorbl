@@ -321,6 +321,12 @@ Access the Filament admin panel at `/admin` (requires the Admin role). Manage:
 
 ---
 
+## Contributing
+
+Pull requests are welcome. Please open an issue first to discuss what you'd like to change.
+
+---
+
 ## License
 
 MIT
