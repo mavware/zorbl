@@ -63,7 +63,7 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [x] It doesn't feel snappy enough when the puzzle is solved.  maybe the green ripple immediately when solved?
 - [x] Let constructor decide if the player can embed the puzzle in their own site. The user can always embed the puzzle in their own site.
 - [x] There seems to be duplicated functionality in the "Share Results", "Share", and possibly a third icon buttons when the puzzle is solved.
-- [ ] Show puzzle of the day as the first entry in the Puzzle Search results when the search is at default settings.
+- [x] Show puzzle of the day as the first entry in the Puzzle Search results when the search is at default settings.
 - [ ] Put the puzzle ratings and comments in the Puzzle Complete modal
 - [ ] Need ability to edit your comments on a puzzle
  
