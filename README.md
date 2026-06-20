@@ -48,7 +48,7 @@ Built with Laravel 13, Livewire 4, Alpine.js, and Tailwind CSS 4.
 
 | Layer | Technology |
 |-------|-----------|
-| Backend | PHP 8.3+, Laravel 13, Livewire 4 |
+| Backend | PHP 8.5+, Laravel 13, Livewire 4 |
 | Frontend | Alpine.js 3, Tailwind CSS 4, Vite 8 |
 | UI Components | Flux UI 2, Heroicons |
 | Auth | Laravel Fortify (2FA/TOTP), Laravel Sanctum (API tokens) |
@@ -66,7 +66,7 @@ Built with Laravel 13, Livewire 4, Alpine.js, and Tailwind CSS 4.
 
 ### Prerequisites
 
-- PHP 8.3+
+- PHP 8.5+
 - Composer
 - Node.js 20+
 - SQLite (default) or MySQL/PostgreSQL
@@ -153,7 +153,7 @@ routes/
 ### Key Services
 
 | Service | Purpose |
-|---------|---------|
+|---------|-------|
 | `GridFiller` | Backtracking constraint-propagation solver for heuristic autofill |
 | `AiGridFiller` | Claude API integration for thematic grid filling |
 | `AiClueGenerator` | Claude API integration for clue writing |
@@ -207,7 +207,7 @@ curl https://zorbl.test/api/v1/me \
 ### Public Endpoints
 
 | Method | Endpoint | Description |
-|--------|----------|-------------|
+|--------|----------|--------------|
 | `GET` | `/crosswords` | Browse published puzzles |
 | `GET` | `/crosswords/{id}` | Puzzle detail with grid and clues |
 | `GET` | `/crosswords/{id}/comments` | Puzzle comments |
@@ -221,7 +221,7 @@ curl https://zorbl.test/api/v1/me \
 ### Authenticated Endpoints
 
 | Method | Endpoint | Description |
-|--------|----------|-------------|
+|--------|----------|--------------|
 | `GET` | `/me` | Current user profile |
 | `PATCH` | `/me` | Update profile |
 | `GET` | `/me/stats` | Solving statistics |
