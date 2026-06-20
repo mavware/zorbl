@@ -63,6 +63,7 @@ export function crosswordSolver({
         pencilCells: (initialPencilCells && !Array.isArray(initialPencilCells)) ? initialPencilCells : {},
         achievementToasts: [],
         showCelebration: false,
+        showShortcuts: false,
         celebrationTime: '',
         shareCopied: false,
         persistence: persistence || null,
@@ -385,8 +386,14 @@ export function crosswordSolver({
             }
 
             if (key === 'Escape') {
+                if (this.showShortcuts) { this.showShortcuts = false; return; }
                 if (this.rebusMode) { this.rebusMode = false; return; }
                 this.selectedRow = -1; this.selectedCol = -1; return;
+            }
+            if (key === '?' && !e.ctrlKey && !e.metaKey) {
+                e.preventDefault();
+                this.showShortcuts = !this.showShortcuts;
+                return;
             }
             if (this.selectedRow < 0) return;
 
