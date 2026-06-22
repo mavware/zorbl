@@ -10,12 +10,18 @@ use Livewire\Attributes\Locked;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
+use Livewire\WithPagination;
 
 new #[Title('Constructor Profile')] class extends Component {
+    use WithPagination;
+
     #[Locked]
     public int $constructorId;
 
     public string $constructorName = '';
+
+    #[Url]
+    public string $search = '';
 
     #[Url]
     public string $sortBy = 'newest';
@@ -42,6 +48,10 @@ new #[Title('Constructor Profile')] class extends Component {
             ->where('is_published', true)
             ->withCount('likes');
 
+        if ($this->search !== '') {
+            $query->whereLike('title', "%{$this->search}%");
+        }
+
         if ($this->difficulty !== '') {
             $query->where('difficulty_label', $this->difficulty);
         }
@@ -53,17 +63,22 @@ new #[Title('Constructor Profile')] class extends Component {
             default => $query->latest(),
         };
 
-        return $query->get();
+        return $query->paginate(12);
+    }
+
+    public function updatedSearch(): void
+    {
+        $this->resetPage();
     }
 
     public function updatedSortBy(): void
     {
-        unset($this->publishedPuzzles);
+        $this->resetPage();
     }
 
     public function updatedDifficulty(): void
     {
-        unset($this->publishedPuzzles);
+        $this->resetPage();
     }
 
     #[Computed]
@@ -145,7 +160,7 @@ new #[Title('Constructor Profile')] class extends Component {
                     @endif
                 </flux:heading>
                 <div class="mt-1 flex items-center gap-4 text-sm text-zinc-600">
-                    <span>{{ trans_choice(':count puzzle|:count puzzles', $this->publishedPuzzles->count()) }}</span>
+                    <span>{{ trans_choice(':count puzzle|:count puzzles', $this->publishedPuzzles->total()) }}</span>
                     <span>{{ trans_choice(':count follower|:count followers', $this->followersCount) }}</span>
                     <span>{{ __(':count total solves', ['count' => $this->totalSolves]) }}</span>
                 </div>
@@ -183,6 +198,14 @@ new #[Title('Constructor Profile')] class extends Component {
             <flux:heading size="lg">{{ __('Published Puzzles') }}</flux:heading>
 
             <div class="flex flex-wrap items-center gap-3">
+                <flux:input
+                    icon="magnifying-glass"
+                    placeholder="{{ __('Search puzzles...') }}"
+                    wire:model.live.debounce.300ms="search"
+                    size="sm"
+                    class="w-48"
+                />
+
                 <flux:radio.group wire:model.live="difficulty" variant="segmented" size="sm">
                     <flux:radio value="" label="{{ __('All') }}" />
                     <flux:radio value="Easy" label="{{ __('Easy') }}" />
@@ -204,7 +227,9 @@ new #[Title('Constructor Profile')] class extends Component {
             <div class="border-line-strong flex flex-col items-center justify-center rounded-lg border border-dashed py-8">
                 <flux:icon name="puzzle-piece" class="mb-2 size-8 text-zinc-500" />
                 <flux:text size="sm" class="text-zinc-500">
-                    @if($this->difficulty !== '')
+                    @if($this->search !== '')
+                        {{ __('No puzzles match your search.') }}
+                    @elseif($this->difficulty !== '')
                         {{ __('No puzzles match this difficulty.') }}
                     @else
                         {{ __('No published puzzles yet.') }}
@@ -261,6 +286,12 @@ new #[Title('Constructor Profile')] class extends Component {
                     </a>
                 @endforeach
             </div>
+
+            @if($this->publishedPuzzles->hasPages())
+                <div class="mt-4">
+                    {{ $this->publishedPuzzles->links() }}
+                </div>
+            @endif
         @endif
     </div>
 </div>
