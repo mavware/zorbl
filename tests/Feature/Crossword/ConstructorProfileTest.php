@@ -393,3 +393,157 @@ test('sort and difficulty filter work together', function () {
 
     $component->assertDontSee('Hard Puzzle');
 });
+
+// --- Search ---
+
+test('puzzles can be searched by title', function () {
+    $constructor = User::factory()->create();
+    $viewer = User::factory()->create();
+
+    Crossword::factory()->published()->for($constructor)->create(['title' => 'Ocean Adventure']);
+    Crossword::factory()->published()->for($constructor)->create(['title' => 'Mountain Trek']);
+
+    Livewire\Livewire::actingAs($viewer)
+        ->test('pages::constructors.show', ['constructor' => $constructor])
+        ->set('search', 'Ocean')
+        ->assertSee('Ocean Adventure')
+        ->assertDontSee('Mountain Trek');
+});
+
+test('search shows contextual empty state', function () {
+    $constructor = User::factory()->create();
+    $viewer = User::factory()->create();
+
+    Crossword::factory()->published()->for($constructor)->create(['title' => 'Some Puzzle']);
+
+    Livewire\Livewire::actingAs($viewer)
+        ->test('pages::constructors.show', ['constructor' => $constructor])
+        ->set('search', 'Nonexistent')
+        ->assertSee('No puzzles match your search.');
+});
+
+test('clearing search shows all puzzles', function () {
+    $constructor = User::factory()->create();
+    $viewer = User::factory()->create();
+
+    Crossword::factory()->published()->for($constructor)->create(['title' => 'First Puzzle']);
+    Crossword::factory()->published()->for($constructor)->create(['title' => 'Second Puzzle']);
+
+    Livewire\Livewire::actingAs($viewer)
+        ->test('pages::constructors.show', ['constructor' => $constructor])
+        ->set('search', 'First')
+        ->assertDontSee('Second Puzzle')
+        ->set('search', '')
+        ->assertSee('First Puzzle')
+        ->assertSee('Second Puzzle');
+});
+
+test('search and difficulty filter work together', function () {
+    $constructor = User::factory()->create();
+    $viewer = User::factory()->create();
+
+    Crossword::factory()->published()->for($constructor)->create([
+        'title' => 'Easy Ocean',
+        'difficulty_label' => 'Easy',
+    ]);
+    Crossword::factory()->published()->for($constructor)->create([
+        'title' => 'Hard Ocean',
+        'difficulty_label' => 'Hard',
+    ]);
+    Crossword::factory()->published()->for($constructor)->create([
+        'title' => 'Easy Mountain',
+        'difficulty_label' => 'Easy',
+    ]);
+
+    Livewire\Livewire::actingAs($viewer)
+        ->test('pages::constructors.show', ['constructor' => $constructor])
+        ->set('search', 'Ocean')
+        ->set('difficulty', 'Easy')
+        ->assertSee('Easy Ocean')
+        ->assertDontSee('Hard Ocean')
+        ->assertDontSee('Easy Mountain');
+});
+
+test('search resets pagination', function () {
+    $constructor = User::factory()->create();
+    $viewer = User::factory()->create();
+
+    Crossword::factory()->published()->count(15)->for($constructor)->create();
+
+    $component = Livewire\Livewire::actingAs($viewer)
+        ->test('pages::constructors.show', ['constructor' => $constructor])
+        ->call('gotoPage', 2)
+        ->set('search', 'test');
+
+    $puzzles = $component->get('publishedPuzzles');
+    expect($puzzles->currentPage())->toBe(1);
+});
+
+// --- Pagination ---
+
+test('published puzzles are paginated', function () {
+    $constructor = User::factory()->create();
+    $viewer = User::factory()->create();
+
+    Crossword::factory()->published()->count(15)->for($constructor)->create();
+
+    $component = Livewire\Livewire::actingAs($viewer)
+        ->test('pages::constructors.show', ['constructor' => $constructor]);
+
+    $puzzles = $component->get('publishedPuzzles');
+    expect($puzzles)->toHaveCount(12)
+        ->and($puzzles->hasPages())->toBeTrue()
+        ->and($puzzles->total())->toBe(15);
+});
+
+test('pagination links are shown when needed', function () {
+    $constructor = User::factory()->create();
+    $viewer = User::factory()->create();
+
+    Crossword::factory()->published()->count(15)->for($constructor)->create();
+
+    Livewire\Livewire::actingAs($viewer)
+        ->test('pages::constructors.show', ['constructor' => $constructor])
+        ->assertSee('Next');
+});
+
+test('pagination links are hidden when all puzzles fit on one page', function () {
+    $constructor = User::factory()->create();
+    $viewer = User::factory()->create();
+
+    Crossword::factory()->published()->count(5)->for($constructor)->create();
+
+    Livewire\Livewire::actingAs($viewer)
+        ->test('pages::constructors.show', ['constructor' => $constructor])
+        ->assertDontSee('Next');
+});
+
+test('difficulty filter resets pagination', function () {
+    $constructor = User::factory()->create();
+    $viewer = User::factory()->create();
+
+    Crossword::factory()->published()->count(15)->for($constructor)->create();
+
+    $component = Livewire\Livewire::actingAs($viewer)
+        ->test('pages::constructors.show', ['constructor' => $constructor])
+        ->call('gotoPage', 2)
+        ->set('difficulty', 'Easy');
+
+    $puzzles = $component->get('publishedPuzzles');
+    expect($puzzles->currentPage())->toBe(1);
+});
+
+test('sort resets pagination', function () {
+    $constructor = User::factory()->create();
+    $viewer = User::factory()->create();
+
+    Crossword::factory()->published()->count(15)->for($constructor)->create();
+
+    $component = Livewire\Livewire::actingAs($viewer)
+        ->test('pages::constructors.show', ['constructor' => $constructor])
+        ->call('gotoPage', 2)
+        ->set('sortBy', 'oldest');
+
+    $puzzles = $component->get('publishedPuzzles');
+    expect($puzzles->currentPage())->toBe(1);
+});
