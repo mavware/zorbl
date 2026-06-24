@@ -35,6 +35,14 @@ enum PuzzleType: string
         };
     }
 
+    public function isSymmetric(): bool
+    {
+        return match ($this) {
+            self::Standard, self::Diamond => true,
+            self::Freestyle => false,
+        };
+    }
+
     public function requiresSquare(): bool
     {
         return match ($this) {
