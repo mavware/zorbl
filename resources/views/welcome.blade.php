@@ -131,7 +131,7 @@
                         Thousands of puzzles. <span class="text-amber-500">One click away.</span>
                     </p>
                     <div class="mx-auto mt-10 w-full max-w-7xl rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 shadow-2xl shadow-amber-500/5 sm:p-8">
-                        <livewire:puzzle-discovery />
+                        <livewire:puzzle-discovery :limit="7" />
                     </div>
                 </div>
 
