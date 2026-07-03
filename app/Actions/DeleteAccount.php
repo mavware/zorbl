@@ -39,7 +39,7 @@ class DeleteAccount
     {
         try {
             foreach ($user->subscriptions as $subscription) {
-                if ($subscription->active() || $subscription->onTrial() || $subscription->onGracePeriod()) {
+                if ($subscription->active() || $subscription->onTrial() || $subscription->onGracePeriod() || $subscription->pastDue()) {
                     $subscription->cancelNow();
                 }
             }
