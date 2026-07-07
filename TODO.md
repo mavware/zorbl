@@ -66,6 +66,7 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [ ] Show puzzle of the day as the first entry in the Puzzle Search results when the search is at default settings.
 - [ ] Put the puzzle ratings and comments in the Puzzle Complete modal
 - [ ] Need ability to edit your comments on a puzzle
+- [ ] Add keyboard shortcuts reference page or modal so users can discover available shortcuts
  
 ## For later
 
@@ -81,4 +82,3 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 ## Done
 
 <!-- completed items move here, preserving their `- [x]` state -->
-
