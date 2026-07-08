@@ -10,6 +10,7 @@ trait PasswordValidationRules
     /**
      * Get the validation rules used to validate passwords.
      *
+     * @param  bool  $confirmed  Whether to require the password confirmation field.
      * @return array<int, Rule|array<mixed>|string>
      */
     protected function passwordRules(bool $confirmed = true): array
