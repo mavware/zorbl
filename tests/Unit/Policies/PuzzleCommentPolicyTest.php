@@ -26,6 +26,14 @@ test('create allows any authenticated user', function () {
     expect($this->policy->create($this->owner))->toBeTrue();
 });
 
+test('update allows the owner', function () {
+    expect($this->policy->update($this->owner, makeComment(1)))->toBeTrue();
+});
+
+test('update denies non-owners', function () {
+    expect($this->policy->update($this->otherUser, makeComment(1)))->toBeFalse();
+});
+
 test('delete allows the owner', function () {
     expect($this->policy->delete($this->owner, makeComment(1)))->toBeTrue();
 });
