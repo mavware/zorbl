@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Enums\WebhookEvent;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\StorePuzzleCommentRequest;
+use App\Http\Requests\Api\V1\UpdatePuzzleCommentRequest;
 use App\Http\Resources\Api\V1\PuzzleCommentResource;
 use App\Jobs\DispatchWebhooks;
 use App\Models\Crossword;
@@ -53,6 +54,13 @@ class PuzzleCommentController extends Controller
         return (new PuzzleCommentResource($comment->load('user:id,name')))
             ->response()
             ->setStatusCode(201);
+    }
+
+    public function update(UpdatePuzzleCommentRequest $request, PuzzleComment $comment): PuzzleCommentResource
+    {
+        $comment->update($request->validated());
+
+        return new PuzzleCommentResource($comment->load('user:id,name'));
     }
 
     public function destroy(Request $request, PuzzleComment $comment): JsonResponse

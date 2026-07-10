@@ -66,6 +66,49 @@ it('deletes own comment', function () {
     ]);
 });
 
+it('updates own comment', function () {
+    $user = User::factory()->create();
+    $comment = PuzzleComment::factory()->for($user)->create([
+        'body' => 'Original body',
+        'rating' => 3,
+    ]);
+
+    Sanctum::actingAs($user);
+
+    $this->patchJson("/api/v1/comments/{$comment->id}", [
+        'body' => 'Updated body',
+        'rating' => 5,
+    ])->assertSuccessful()
+        ->assertJsonPath('data.attributes.body', 'Updated body')
+        ->assertJsonPath('data.attributes.rating', 5);
+
+    $this->assertDatabaseHas('puzzle_comments', [
+        'id' => $comment->id,
+        'body' => 'Updated body',
+        'rating' => 5,
+    ]);
+});
+
+it('cannot update other user comment', function () {
+    $user = User::factory()->create();
+    $otherUser = User::factory()->create();
+    $comment = PuzzleComment::factory()->for($otherUser)->create();
+
+    Sanctum::actingAs($user);
+
+    $this->patchJson("/api/v1/comments/{$comment->id}", [
+        'body' => 'Hijacked!',
+    ])->assertForbidden();
+});
+
+it('requires auth to update comment', function () {
+    $comment = PuzzleComment::factory()->create();
+
+    $this->patchJson("/api/v1/comments/{$comment->id}", [
+        'body' => 'Updated',
+    ])->assertUnauthorized();
+});
+
 it('cannot delete other user comment', function () {
     $user = User::factory()->create();
     $otherUser = User::factory()->create();

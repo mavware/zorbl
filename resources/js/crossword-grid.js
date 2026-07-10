@@ -27,7 +27,7 @@ const LONG_PRESS_MS = 500;
 
 export function crosswordGrid({
     width, height, grid, solution, styles, cluesAcross, cluesDown,
-    minAnswerLength, prefilled, gridLocked, puzzleType,
+    minAnswerLength, prefilled, gridLocked, puzzleType, defaultColors,
 }) {
     const caps = puzzleTypeCapabilities(puzzleType);
 
@@ -38,6 +38,7 @@ export function crosswordGrid({
         grid,
         solution,
         styles: (styles && !Array.isArray(styles)) ? styles : {},
+        defaultColors: defaultColors || {},
         cluesAcross: cluesAcross || [],
         cluesDown: cluesDown || [],
         minAnswerLength: minAnswerLength || 3,
@@ -267,6 +268,11 @@ export function crosswordGrid({
                     : 'invisible';
             }
             if (this.isBlock(row, col)) {
+                // Background-color is set inline in cellBarStyles when a default
+                // block color is configured; darken via brightness on hover.
+                if (this.defaultColors.block) {
+                    return 'cursor-pointer transition-[filter] hover:brightness-95 dark:hover:brightness-110';
+                }
                 return 'bg-zinc-800 hover:bg-zinc-700 dark:bg-zinc-300 dark:hover:bg-zinc-200 cursor-pointer';
             }
 
@@ -286,7 +292,7 @@ export function crosswordGrid({
             if (isInWord) {
                 return 'bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/50 dark:hover:bg-blue-900/70 cursor-pointer' + emptyHighlight;
             }
-            if (this.getCellColor(row, col)) {
+            if (this.getCellColor(row, col) || this.defaultColors.cell) {
                 // Background-color is set inline in cellBarStyles; CSS hover
                 // can't override it, so darken via brightness instead.
                 return 'cursor-pointer transition-[filter] hover:brightness-95 dark:hover:brightness-110' + emptyHighlight;
@@ -344,12 +350,18 @@ export function crosswordGrid({
 
             if (shadows.length > 0) parts.push('box-shadow: ' + shadows.join(', '));
 
-            const color = entry?.color;
-            if (color && !this.isBlock(row, col)) {
-                const isSelected = row === this.selectedRow && col === this.selectedCol;
-                const isMulti = this.isMultiSelected(row, col);
-                const isInWord = this.activeWordCellSet.has(key);
-                if (!isSelected && !isMulti && !isInWord) parts.push('background-color: ' + color);
+            if (this.isBlock(row, col)) {
+                if (this.defaultColors.block) parts.push('background-color: ' + this.defaultColors.block);
+            } else {
+                // Per-cell color (from the right-click menu) wins over the
+                // puzzle-wide default cell color.
+                const color = entry?.color || this.defaultColors.cell;
+                if (color) {
+                    const isSelected = row === this.selectedRow && col === this.selectedCol;
+                    const isMulti = this.isMultiSelected(row, col);
+                    const isInWord = this.activeWordCellSet.has(key);
+                    if (!isSelected && !isMulti && !isInWord) parts.push('background-color: ' + color);
+                }
             }
 
             return parts.join('; ');
@@ -1151,6 +1163,14 @@ export function crosswordGrid({
                 this.numberGrid();
                 this.markDirty();
             }
+
+            this.defaultColors = {
+                cell: this.$wire.cellColor,
+                block: this.$wire.blockColor,
+                circle: this.$wire.circleColor,
+                letter: this.$wire.letterColor,
+                line: this.$wire.lineColor,
+            };
         },
 
         // --- Highlights ------------------------------------------------------

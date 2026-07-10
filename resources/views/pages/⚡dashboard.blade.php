@@ -616,7 +616,7 @@ new #[Title('Dashboard')] class extends Component {
 
     {{-- Discover Puzzles --}}
     <div class="border-line rounded-xl border p-5">
-        <livewire:puzzle-discovery :limit="3" :exclude-attempted="true" />
+        <livewire:puzzle-discovery :limit="5" :exclude-attempted="true" />
     </div>
 
     {{-- Solving Streak --}}

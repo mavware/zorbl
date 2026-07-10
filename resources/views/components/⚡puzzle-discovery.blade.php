@@ -104,11 +104,11 @@ new class extends Component {
 
         $hasExplicitFilters = $this->search !== '' || $this->constructor !== '';
 
-        if ($this->excludeOwn && ! $hasExplicitFilters) {
+        if ($this->excludeOwn && ! $hasExplicitFilters && Auth::check()) {
             $query->where('user_id', '!=', Auth::id());
         }
 
-        if ($this->excludeAttempted && ! $hasExplicitFilters) {
+        if ($this->excludeAttempted && ! $hasExplicitFilters && Auth::check()) {
             $attemptedIds = Auth::user()
                 ->puzzleAttempts()
                 ->pluck('crossword_id');
@@ -439,7 +439,7 @@ new class extends Component {
             </flux:text>
         </div>
     @else
-        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             @if($showPinned)
                 <livewire:puzzle-card
                     :crossword="$pinnedDaily"

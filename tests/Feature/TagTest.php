@@ -261,10 +261,12 @@ test('browse page filters puzzles by tag', function () {
     $tagged->tags()->attach($tag);
     $untagged = Crossword::factory()->published()->create(['title' => 'Plain Crossword']);
 
-    Livewire::test('pages::puzzles.index')
+    // Cards render as child Livewire components, so assert on the wire:key
+    // marker (present in the parent HTML) rather than the card's inner title.
+    Livewire::test('puzzle-discovery')
         ->set('tag', 'animals')
-        ->assertSee('Animal Crossword')
-        ->assertDontSee('Plain Crossword');
+        ->assertSeeHtml('wire:key="card-'.$tagged->id.'"')
+        ->assertDontSeeHtml('wire:key="card-'.$untagged->id.'"');
 });
 
 test('browse page shows all puzzles when no tag filter is set', function () {

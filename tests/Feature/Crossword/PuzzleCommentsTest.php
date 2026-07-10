@@ -157,6 +157,100 @@ test('average rating is calculated correctly', function () {
     expect(round($avg, 1))->toBe(3.0);
 });
 
+test('user can enter edit mode for their comment', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->published()->create([
+        'width' => 2,
+        'height' => 2,
+        'grid' => [[1, 2], [3, 0]],
+        'solution' => [['A', 'B'], ['C', 'D']],
+    ]);
+
+    PuzzleAttempt::factory()->for($user)->for($crossword)->completed()->create([
+        'progress' => [['A', 'B'], ['C', 'D']],
+    ]);
+
+    PuzzleComment::create([
+        'user_id' => $user->id,
+        'crossword_id' => $crossword->id,
+        'body' => 'Original comment',
+        'rating' => 3,
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire\Livewire::test('pages::crosswords.solver', ['crossword' => $crossword])
+        ->call('editComment')
+        ->assertSet('editingComment', true)
+        ->assertSet('commentBody', 'Original comment')
+        ->assertSet('commentRating', 3);
+});
+
+test('user can cancel editing their comment', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->published()->create([
+        'width' => 2,
+        'height' => 2,
+        'grid' => [[1, 2], [3, 0]],
+        'solution' => [['A', 'B'], ['C', 'D']],
+    ]);
+
+    PuzzleAttempt::factory()->for($user)->for($crossword)->completed()->create([
+        'progress' => [['A', 'B'], ['C', 'D']],
+    ]);
+
+    PuzzleComment::create([
+        'user_id' => $user->id,
+        'crossword_id' => $crossword->id,
+        'body' => 'Original comment',
+        'rating' => 3,
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire\Livewire::test('pages::crosswords.solver', ['crossword' => $crossword])
+        ->call('editComment')
+        ->assertSet('editingComment', true)
+        ->call('cancelEditComment')
+        ->assertSet('editingComment', false)
+        ->assertSet('commentBody', '')
+        ->assertSet('commentRating', 0);
+});
+
+test('user can edit and save their comment', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->published()->create([
+        'width' => 2,
+        'height' => 2,
+        'grid' => [[1, 2], [3, 0]],
+        'solution' => [['A', 'B'], ['C', 'D']],
+    ]);
+
+    PuzzleAttempt::factory()->for($user)->for($crossword)->completed()->create([
+        'progress' => [['A', 'B'], ['C', 'D']],
+    ]);
+
+    PuzzleComment::create([
+        'user_id' => $user->id,
+        'crossword_id' => $crossword->id,
+        'body' => 'Original comment',
+        'rating' => 3,
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire\Livewire::test('pages::crosswords.solver', ['crossword' => $crossword])
+        ->call('editComment')
+        ->set('commentBody', 'Edited comment')
+        ->set('commentRating', 5)
+        ->call('submitComment')
+        ->assertSet('editingComment', false);
+
+    $comment = PuzzleComment::where('user_id', $user->id)->where('crossword_id', $crossword->id)->first();
+    expect($comment->body)->toBe('Edited comment')
+        ->and($comment->rating)->toBe(5);
+});
+
 test('comments section is visible when puzzle is solved', function () {
     $user = User::factory()->create();
     $crossword = Crossword::factory()->published()->create([
@@ -175,4 +269,84 @@ test('comments section is visible when puzzle is solved', function () {
     Livewire\Livewire::test('pages::crosswords.solver', ['crossword' => $crossword])
         ->assertSet('isSolved', true)
         ->assertSee('Comments');
+});
+
+test('celebration modal shows rating form when puzzle is solved and no review exists', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->published()->create([
+        'width' => 2,
+        'height' => 2,
+        'grid' => [[1, 2], [3, 0]],
+        'solution' => [['A', 'B'], ['C', 'D']],
+    ]);
+
+    PuzzleAttempt::factory()->for($user)->for($crossword)->completed()->create([
+        'progress' => [['A', 'B'], ['C', 'D']],
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire\Livewire::test('pages::crosswords.solver', ['crossword' => $crossword])
+        ->assertSet('isSolved', true)
+        ->assertSee('Rate This Puzzle')
+        ->assertSee('Post Review');
+});
+
+test('celebration modal shows existing review when user has already commented', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->published()->create([
+        'width' => 2,
+        'height' => 2,
+        'grid' => [[1, 2], [3, 0]],
+        'solution' => [['A', 'B'], ['C', 'D']],
+    ]);
+
+    PuzzleAttempt::factory()->for($user)->for($crossword)->completed()->create([
+        'progress' => [['A', 'B'], ['C', 'D']],
+    ]);
+
+    PuzzleComment::create([
+        'user_id' => $user->id,
+        'crossword_id' => $crossword->id,
+        'body' => 'Loved this one!',
+        'rating' => 5,
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire\Livewire::test('pages::crosswords.solver', ['crossword' => $crossword])
+        ->assertSet('isSolved', true)
+        ->assertSee('Your Review')
+        ->assertSee('Loved this one!')
+        ->assertDontSee('Rate This Puzzle');
+});
+
+test('submitting comment from celebration modal updates both modal and comments section', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->published()->create([
+        'width' => 2,
+        'height' => 2,
+        'grid' => [[1, 2], [3, 0]],
+        'solution' => [['A', 'B'], ['C', 'D']],
+    ]);
+
+    PuzzleAttempt::factory()->for($user)->for($crossword)->completed()->create([
+        'progress' => [['A', 'B'], ['C', 'D']],
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire\Livewire::test('pages::crosswords.solver', ['crossword' => $crossword])
+        ->assertSee('Rate This Puzzle')
+        ->set('commentBody', 'Submitted from modal!')
+        ->set('commentRating', 4)
+        ->call('submitComment')
+        ->assertSee('Your Review')
+        ->assertSee('Submitted from modal!')
+        ->assertDontSee('Rate This Puzzle');
+
+    $comment = PuzzleComment::where('user_id', $user->id)->where('crossword_id', $crossword->id)->first();
+    expect($comment)->not->toBeNull()
+        ->and($comment->body)->toBe('Submitted from modal!')
+        ->and($comment->rating)->toBe(4);
 });
