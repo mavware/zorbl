@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Illuminate\Support\Facades\Log;
+use App\Services\Anthropic\AnthropicClient;
 
 class AiFillPicker
 {

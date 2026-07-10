@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services;
+namespace App\Services\Anthropic;
 
 use Illuminate\Support\Facades\Http;
 
@@ -34,7 +34,7 @@ class AnthropicClient
         }
 
         $payload = [
-            'model' => $options['model'] ?? config('services.anthropic.model', 'claude-sonnet-5'),
+            'model' => $options['model'] ?? config('services.anthropic.model', 'claude-opus-4-8'),
             'max_tokens' => $options['max_tokens'] ?? 4096,
             'system' => $systemPrompt,
             'messages' => $messages,

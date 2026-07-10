@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Word;
 use Illuminate\Support\Facades\Log;
+use App\Services\Anthropic\AnthropicClient;
 
 class AiGridFiller
 {
