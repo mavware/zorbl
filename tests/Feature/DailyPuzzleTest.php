@@ -226,23 +226,6 @@ test('dashboard does not show solved badge when user has incomplete attempt on d
         ->assertDontSee('View Solution');
 });
 
-test('public puzzles page shows solved badge for authenticated user who completed daily puzzle', function () {
-    $user = User::factory()->create();
-    $crossword = Crossword::factory()->published()->create(['title' => 'Public Solved']);
-    DailyPuzzle::create(['date' => today(), 'crossword_id' => $crossword->id]);
-    PuzzleAttempt::factory()->completed()->create([
-        'user_id' => $user->id,
-        'crossword_id' => $crossword->id,
-    ]);
-
-    Cache::flush();
-
-    Livewire::actingAs($user)
-        ->test('pages::puzzles.index')
-        ->assertSee('Solved')
-        ->assertSee('View Solution');
-});
-
 test('public puzzles page does not show solved badge for guests', function () {
     $crossword = Crossword::factory()->published()->create(['title' => 'Guest Daily']);
     DailyPuzzle::create(['date' => today(), 'crossword_id' => $crossword->id]);

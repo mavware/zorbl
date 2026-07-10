@@ -34,7 +34,7 @@ class AnthropicClient
         }
 
         $payload = [
-            'model' => $options['model'] ?? config('services.anthropic.model', 'claude-sonnet-4-6'),
+            'model' => $options['model'] ?? config('services.anthropic.model', 'claude-sonnet-5'),
             'max_tokens' => $options['max_tokens'] ?? 4096,
             'system' => $systemPrompt,
             'messages' => $messages,

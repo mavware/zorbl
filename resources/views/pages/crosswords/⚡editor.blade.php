@@ -59,6 +59,12 @@ class extends Component {
     public ?CrosswordLayout $layout = null;
     public int $minAnswerLength = 3;
 
+    public ?string $cellColor = null;
+    public ?string $blockColor = null;
+    public ?string $circleColor = null;
+    public ?string $letterColor = null;
+    public ?string $lineColor = null;
+
     public bool $isPublished = false;
     public bool $allowEmbed = true;
     public bool $freestyleLocked = false;
@@ -101,6 +107,12 @@ class extends Component {
         $this->metaAnswerReveal = $crossword->meta_answer_reveal ?? true;
         $this->layout = $crossword->layout;
         $this->minAnswerLength = $crossword->metadata['min_answer_length'] ?? 3;
+        $colors = $crossword->metadata['colors'] ?? [];
+        $this->cellColor = $colors['cell'] ?? null;
+        $this->blockColor = $colors['block'] ?? null;
+        $this->circleColor = $colors['circle'] ?? null;
+        $this->letterColor = $colors['letter'] ?? null;
+        $this->lineColor = $colors['line'] ?? null;
         $this->isPublished = $crossword->is_published;
         $this->allowEmbed = (bool) $crossword->allow_embed;
         $this->freestyleLocked = $crossword->freestyle_locked ?? false;
@@ -178,6 +190,11 @@ class extends Component {
             'metaAnswers'      => ['nullable', 'array', 'max:10'],
             'metaAnswers.*'    => ['required', 'string', 'max:255'],
             'minAnswerLength'  => ['required', 'integer', 'min:1', 'max:15'],
+            'cellColor'        => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'blockColor'       => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'circleColor'      => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'letterColor'      => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'lineColor'        => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
         ]);
 
         $crossword = $this->crossword;
@@ -185,6 +202,19 @@ class extends Component {
 
         $metadata = $crossword->metadata ?? [];
         $metadata['min_answer_length'] = $this->minAnswerLength;
+
+        $colors = array_filter([
+            'cell'   => $this->cellColor,
+            'block'  => $this->blockColor,
+            'circle' => $this->circleColor,
+            'letter' => $this->letterColor,
+            'line'   => $this->lineColor,
+        ]);
+        if ($colors !== []) {
+            $metadata['colors'] = $colors;
+        } else {
+            unset($metadata['colors']);
+        }
 
         $filteredMetaAnswers = array_values(array_filter(
             array_map('trim', $this->metaAnswers),
@@ -826,6 +856,13 @@ class extends Component {
             prefilled: @js($prefilled),
             gridLocked: @js($freestyleLocked),
             puzzleType: @js($puzzleType->value),
+            defaultColors: {
+                cell: @js($cellColor),
+                block: @js($blockColor),
+                circle: @js($circleColor),
+                letter: @js($letterColor),
+                line: @js($lineColor),
+            },
         })"
     x-on:freestyle-locked.window="gridLocked = $event.detail.locked; grid = $wire.grid; solution = $wire.solution; cluesAcross = $wire.cluesAcross; cluesDown = $wire.cluesDown;"
     x-on:saved.window="onSaved()"
@@ -1286,6 +1323,48 @@ class extends Component {
                     @endforeach
                 </div>
                 <flux:error name="layout"/>
+            </flux:field>
+
+            <flux:field>
+                <flux:label>{{ __('Default Colors') }}</flux:label>
+                <flux:description>{{ __('Default colors for the whole grid. Colors set on individual cells via right-click take precedence.') }}</flux:description>
+                <div class="mt-2 grid grid-cols-2 gap-2">
+                    @foreach ([
+                        'cellColor' => __('Cells'),
+                        'blockColor' => __('Blocks'),
+                        'circleColor' => __('Circles'),
+                        'letterColor' => __('Letters'),
+                        'lineColor' => __('Lines'),
+                    ] as $colorProp => $colorLabel)
+                        @php $colorValue = $this->{$colorProp}; @endphp
+                        <div class="flex items-center justify-between gap-2 rounded-lg border border-line px-3 py-2">
+                            <span class="text-sm text-zinc-700 dark:text-zinc-300">{{ $colorLabel }}</span>
+                            <div class="flex items-center gap-2">
+                                <span class="font-mono text-xs text-fg-muted">{{ $colorValue ?? __('Default') }}</span>
+                                <input
+                                    type="color"
+                                    wire:model.live="{{ $colorProp }}"
+                                    value="{{ $colorValue ?? '#000000' }}"
+                                    class="size-7 cursor-pointer rounded border border-line bg-transparent p-0.5"
+                                    aria-label="{{ $colorLabel }}"
+                                />
+                                @if ($colorValue !== null)
+                                    <button
+                                        type="button"
+                                        wire:click="$set('{{ $colorProp }}', null)"
+                                        class="flex size-6 items-center justify-center rounded text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-700 dark:hover:text-zinc-200"
+                                        title="{{ __('Reset to default') }}"
+                                    >&times;</button>
+                                @endif
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+                <flux:error name="cellColor"/>
+                <flux:error name="blockColor"/>
+                <flux:error name="circleColor"/>
+                <flux:error name="letterColor"/>
+                <flux:error name="lineColor"/>
             </flux:field>
 
             <flux:field>

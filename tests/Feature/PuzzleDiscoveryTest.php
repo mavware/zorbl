@@ -8,6 +8,18 @@ use App\Models\Tag;
 use App\Models\User;
 use Livewire\Livewire;
 
+/**
+ * The discovery component renders each puzzle as a child <livewire:puzzle-card>.
+ * After a wire:model update the child's inner markup (title, stats) is not
+ * re-rendered into the parent's HTML, so assertions on card content are
+ * unreliable. The parent always emits the card's wire:key marker, however, so
+ * we assert visibility via that marker instead.
+ */
+function cardKey(Crossword $crossword): string
+{
+    return 'wire:key="card-'.$crossword->id.'"';
+}
+
 test('discovery shows only published puzzles', function () {
     $user = User::factory()->create();
     $creator = User::factory()->create();
@@ -38,6 +50,14 @@ test('discovery excludes own puzzles when explicitly configured', function () {
         ->assertDontSee('My Puzzle');
 });
 
+test('discovery renders for guests when exclude filters are enabled', function () {
+    Crossword::factory()->published()->create(['title' => 'Guest Visible Puzzle']);
+
+    Livewire::test('puzzle-discovery', ['excludeOwn' => true, 'excludeAttempted' => true])
+        ->assertOk()
+        ->assertSeeHtml('wire:name="puzzle-discovery"');
+});
+
 test('discovery excludes already attempted puzzles', function () {
     $user = User::factory()->create();
     $creator = User::factory()->create();
@@ -53,34 +73,34 @@ test('discovery excludes already attempted puzzles', function () {
 test('discovery filters by search term on title', function () {
     $user = User::factory()->create();
     $creator = User::factory()->create();
-    Crossword::factory()->published()->for($creator)->create(['title' => 'Ocean Adventure']);
-    Crossword::factory()->published()->for($creator)->create(['title' => 'Space Journey']);
+    $ocean = Crossword::factory()->published()->for($creator)->create(['title' => 'Ocean Adventure']);
+    $space = Crossword::factory()->published()->for($creator)->create(['title' => 'Space Journey']);
 
     Livewire::actingAs($user)
         ->test('puzzle-discovery', ['excludeAttempted' => true])
         ->set('search', 'Ocean')
-        ->assertSee('Ocean Adventure')
-        ->assertDontSee('Space Journey');
+        ->assertSeeHtml(cardKey($ocean))
+        ->assertDontSeeHtml(cardKey($space));
 });
 
 test('discovery filters by search term on constructor name', function () {
     $user = User::factory()->create();
     $alice = User::factory()->create(['name' => 'Alice Builder']);
     $bob = User::factory()->create(['name' => 'Bob Smith']);
-    Crossword::factory()->published()->for($alice)->create(['title' => 'Alice Puzzle']);
-    Crossword::factory()->published()->for($bob)->create(['title' => 'Bob Puzzle']);
+    $alicePuzzle = Crossword::factory()->published()->for($alice)->create(['title' => 'Alice Puzzle']);
+    $bobPuzzle = Crossword::factory()->published()->for($bob)->create(['title' => 'Bob Puzzle']);
 
     Livewire::actingAs($user)
         ->test('puzzle-discovery', ['excludeAttempted' => true])
         ->set('search', 'Alice')
-        ->assertSee('Alice Puzzle')
-        ->assertDontSee('Bob Puzzle');
+        ->assertSeeHtml(cardKey($alicePuzzle))
+        ->assertDontSeeHtml(cardKey($bobPuzzle));
 });
 
 test('discovery search matches crossword author field', function () {
     $user = User::factory()->create();
     $creator = User::factory()->create(['name' => 'Account Name']);
-    Crossword::factory()->published()->for($creator)->create([
+    $mystery = Crossword::factory()->published()->for($creator)->create([
         'title' => 'Mystery Puzzle',
         'author' => 'Pen Name Author',
     ]);
@@ -88,20 +108,20 @@ test('discovery search matches crossword author field', function () {
     Livewire::actingAs($user)
         ->test('puzzle-discovery', ['excludeAttempted' => true])
         ->set('search', 'Pen Name')
-        ->assertSee('Mystery Puzzle');
+        ->assertSeeHtml(cardKey($mystery));
 });
 
 test('discovery filters by small grid size', function () {
     $user = User::factory()->create();
     $creator = User::factory()->create();
-    Crossword::factory()->published()->for($creator)->create([
+    $tiny = Crossword::factory()->published()->for($creator)->create([
         'title' => 'Tiny Grid',
         'width' => 7,
         'height' => 7,
         'grid' => Crossword::emptyGrid(7, 7),
         'solution' => Crossword::emptySolution(7, 7),
     ]);
-    Crossword::factory()->published()->for($creator)->create([
+    $big = Crossword::factory()->published()->for($creator)->create([
         'title' => 'Big Grid',
         'width' => 15,
         'height' => 15,
@@ -110,19 +130,19 @@ test('discovery filters by small grid size', function () {
     Livewire::actingAs($user)
         ->test('puzzle-discovery', ['excludeAttempted' => true])
         ->set('gridSize', 'small')
-        ->assertSee('Tiny Grid')
-        ->assertDontSee('Big Grid');
+        ->assertSeeHtml(cardKey($tiny))
+        ->assertDontSeeHtml(cardKey($big));
 });
 
 test('discovery filters by medium grid size', function () {
     $user = User::factory()->create();
     $creator = User::factory()->create();
-    Crossword::factory()->published()->for($creator)->create([
+    $medium = Crossword::factory()->published()->for($creator)->create([
         'title' => 'Medium Grid',
         'width' => 15,
         'height' => 15,
     ]);
-    Crossword::factory()->published()->for($creator)->create([
+    $small = Crossword::factory()->published()->for($creator)->create([
         'title' => 'Small Grid',
         'width' => 7,
         'height' => 7,
@@ -133,21 +153,21 @@ test('discovery filters by medium grid size', function () {
     Livewire::actingAs($user)
         ->test('puzzle-discovery', ['excludeAttempted' => true])
         ->set('gridSize', 'medium')
-        ->assertSee('Medium Grid')
-        ->assertDontSee('Small Grid');
+        ->assertSeeHtml(cardKey($medium))
+        ->assertDontSeeHtml(cardKey($small));
 });
 
 test('discovery filters by large grid size', function () {
     $user = User::factory()->create();
     $creator = User::factory()->create();
-    Crossword::factory()->published()->for($creator)->create([
+    $sunday = Crossword::factory()->published()->for($creator)->create([
         'title' => 'Sunday Puzzle',
         'width' => 21,
         'height' => 21,
         'grid' => Crossword::emptyGrid(21, 21),
         'solution' => Crossword::emptySolution(21, 21),
     ]);
-    Crossword::factory()->published()->for($creator)->create([
+    $regular = Crossword::factory()->published()->for($creator)->create([
         'title' => 'Regular Puzzle',
         'width' => 15,
         'height' => 15,
@@ -156,20 +176,20 @@ test('discovery filters by large grid size', function () {
     Livewire::actingAs($user)
         ->test('puzzle-discovery', ['excludeAttempted' => true])
         ->set('gridSize', 'large')
-        ->assertSee('Sunday Puzzle')
-        ->assertDontSee('Regular Puzzle');
+        ->assertSeeHtml(cardKey($sunday))
+        ->assertDontSeeHtml(cardKey($regular));
 });
 
 test('discovery filters by standard puzzle type', function () {
     $user = User::factory()->create();
     $creator = User::factory()->create();
 
-    Crossword::factory()->published()->for($creator)->create([
+    $standard = Crossword::factory()->published()->for($creator)->create([
         'title' => 'Standard Puzzle',
         'puzzle_type' => 'standard',
     ]);
 
-    Crossword::factory()->published()->for($creator)->create([
+    $diamond = Crossword::factory()->published()->for($creator)->create([
         'title' => 'Diamond Puzzle',
         'puzzle_type' => 'diamond',
     ]);
@@ -177,20 +197,20 @@ test('discovery filters by standard puzzle type', function () {
     Livewire::actingAs($user)
         ->test('puzzle-discovery', ['excludeAttempted' => true])
         ->set('puzzleType', 'standard')
-        ->assertSee('Standard Puzzle')
-        ->assertDontSee('Diamond Puzzle');
+        ->assertSeeHtml(cardKey($standard))
+        ->assertDontSeeHtml(cardKey($diamond));
 });
 
 test('discovery filters by diamond puzzle type', function () {
     $user = User::factory()->create();
     $creator = User::factory()->create();
 
-    Crossword::factory()->published()->for($creator)->create([
+    $normal = Crossword::factory()->published()->for($creator)->create([
         'title' => 'Normal Puzzle',
         'puzzle_type' => 'standard',
     ]);
 
-    Crossword::factory()->published()->for($creator)->create([
+    $diamond = Crossword::factory()->published()->for($creator)->create([
         'title' => 'Diamond Shaped',
         'puzzle_type' => 'diamond',
     ]);
@@ -198,20 +218,20 @@ test('discovery filters by diamond puzzle type', function () {
     Livewire::actingAs($user)
         ->test('puzzle-discovery', ['excludeAttempted' => true])
         ->set('puzzleType', 'diamond')
-        ->assertSee('Diamond Shaped')
-        ->assertDontSee('Normal Puzzle');
+        ->assertSeeHtml(cardKey($diamond))
+        ->assertDontSeeHtml(cardKey($normal));
 });
 
 test('discovery filters by freestyle puzzle type', function () {
     $user = User::factory()->create();
     $creator = User::factory()->create();
 
-    Crossword::factory()->published()->for($creator)->create([
+    $standard = Crossword::factory()->published()->for($creator)->create([
         'title' => 'Standard Puzzle',
         'puzzle_type' => 'standard',
     ]);
 
-    Crossword::factory()->published()->for($creator)->create([
+    $freestyle = Crossword::factory()->published()->for($creator)->create([
         'title' => 'Freestyle Puzzle',
         'puzzle_type' => 'freestyle',
     ]);
@@ -219,32 +239,32 @@ test('discovery filters by freestyle puzzle type', function () {
     Livewire::actingAs($user)
         ->test('puzzle-discovery', ['excludeAttempted' => true])
         ->set('puzzleType', 'freestyle')
-        ->assertSee('Freestyle Puzzle')
-        ->assertDontSee('Standard Puzzle');
+        ->assertSeeHtml(cardKey($freestyle))
+        ->assertDontSeeHtml(cardKey($standard));
 });
 
 test('discovery filters by constructor user name', function () {
     $user = User::factory()->create();
     $alice = User::factory()->create(['name' => 'Alice Constructor']);
     $bob = User::factory()->create(['name' => 'Bob Constructor']);
-    Crossword::factory()->published()->for($alice)->create(['title' => 'Alice Work']);
-    Crossword::factory()->published()->for($bob)->create(['title' => 'Bob Work']);
+    $aliceWork = Crossword::factory()->published()->for($alice)->create(['title' => 'Alice Work']);
+    $bobWork = Crossword::factory()->published()->for($bob)->create(['title' => 'Bob Work']);
 
     Livewire::actingAs($user)
         ->test('puzzle-discovery', ['excludeAttempted' => true])
         ->set('constructor', 'Alice')
-        ->assertSee('Alice Work')
-        ->assertDontSee('Bob Work');
+        ->assertSeeHtml(cardKey($aliceWork))
+        ->assertDontSeeHtml(cardKey($bobWork));
 });
 
 test('discovery filters by crossword author field', function () {
     $user = User::factory()->create();
     $creator = User::factory()->create(['name' => 'Account Name']);
-    Crossword::factory()->published()->for($creator)->create([
+    $penName = Crossword::factory()->published()->for($creator)->create([
         'title' => 'Pen Name Puzzle',
         'author' => 'Pen Name',
     ]);
-    Crossword::factory()->published()->for($creator)->create([
+    $other = Crossword::factory()->published()->for($creator)->create([
         'title' => 'Other Puzzle',
         'author' => 'Different Author',
     ]);
@@ -252,19 +272,19 @@ test('discovery filters by crossword author field', function () {
     Livewire::actingAs($user)
         ->test('puzzle-discovery', ['excludeAttempted' => true])
         ->set('constructor', 'Pen')
-        ->assertSee('Pen Name Puzzle')
-        ->assertDontSee('Other Puzzle');
+        ->assertSeeHtml(cardKey($penName))
+        ->assertDontSeeHtml(cardKey($other));
 });
 
 test('discovery filters by date range', function () {
     $user = User::factory()->create();
     $creator = User::factory()->create();
 
-    Crossword::factory()->published()->for($creator)->create([
+    $recent = Crossword::factory()->published()->for($creator)->create([
         'title' => 'Recent Puzzle',
         'created_at' => now(),
     ]);
-    Crossword::factory()->published()->for($creator)->create([
+    $old = Crossword::factory()->published()->for($creator)->create([
         'title' => 'Old Puzzle',
         'created_at' => now()->subMonths(2),
     ]);
@@ -272,8 +292,8 @@ test('discovery filters by date range', function () {
     Livewire::actingAs($user)
         ->test('puzzle-discovery', ['excludeAttempted' => true])
         ->set('dateRange', 'month')
-        ->assertSee('Recent Puzzle')
-        ->assertDontSee('Old Puzzle');
+        ->assertSeeHtml(cardKey($recent))
+        ->assertDontSeeHtml(cardKey($old));
 });
 
 test('discovery sorts by most liked', function () {
@@ -289,7 +309,7 @@ test('discovery sorts by most liked', function () {
     Livewire::actingAs($user)
         ->test('puzzle-discovery', ['excludeAttempted' => true])
         ->set('sortBy', 'most_liked')
-        ->assertSeeInOrder(['More Liked', 'Less Liked']);
+        ->assertSeeHtmlInOrder([cardKey($moreLiked), cardKey($lessLiked)]);
 });
 
 test('discovery clear filters resets all filters', function () {
@@ -390,9 +410,9 @@ test('discovery shows attempted puzzles when search is active', function () {
 
     Livewire::actingAs($user)
         ->test('puzzle-discovery', ['excludeAttempted' => true])
-        ->assertDontSee('Already Started Puzzle')
+        ->assertDontSeeHtml(cardKey($crossword))
         ->set('search', 'Already')
-        ->assertSee('Already Started Puzzle');
+        ->assertSeeHtml(cardKey($crossword));
 });
 
 test('discovery shows own attempted puzzles when constructor filter is set', function () {
@@ -406,22 +426,22 @@ test('discovery shows own attempted puzzles when constructor filter is set', fun
 
     Livewire::actingAs($user)
         ->test('puzzle-discovery', ['excludeAttempted' => true, 'excludeOwn' => true])
-        ->assertDontSee('Some Untitled Puzzle')
+        ->assertDontSeeHtml(cardKey($crossword))
         ->set('search', 'Some')
         ->set('constructor', 'Test')
-        ->assertSee('Some Untitled Puzzle');
+        ->assertSeeHtml(cardKey($crossword));
 });
 
 test('discovery filters by difficulty label', function () {
     $user = User::factory()->create();
     $creator = User::factory()->create();
 
-    Crossword::factory()->published()->for($creator)->create([
+    $easy = Crossword::factory()->published()->for($creator)->create([
         'title' => 'Easy Puzzle',
         'difficulty_label' => 'Easy',
         'difficulty_score' => 1.5,
     ]);
-    Crossword::factory()->published()->for($creator)->create([
+    $hard = Crossword::factory()->published()->for($creator)->create([
         'title' => 'Hard Puzzle',
         'difficulty_label' => 'Hard',
         'difficulty_score' => 3.5,
@@ -430,19 +450,19 @@ test('discovery filters by difficulty label', function () {
     Livewire::actingAs($user)
         ->test('puzzle-discovery', ['excludeAttempted' => true])
         ->set('difficulty', 'Easy')
-        ->assertSee('Easy Puzzle')
-        ->assertDontSee('Hard Puzzle');
+        ->assertSeeHtml(cardKey($easy))
+        ->assertDontSeeHtml(cardKey($hard));
 });
 
 test('discovery filters by each difficulty level', function (string $label) {
     $user = User::factory()->create();
     $creator = User::factory()->create();
 
-    Crossword::factory()->published()->for($creator)->create([
+    $match = Crossword::factory()->published()->for($creator)->create([
         'title' => "{$label} Puzzle",
         'difficulty_label' => $label,
     ]);
-    Crossword::factory()->published()->for($creator)->create([
+    $other = Crossword::factory()->published()->for($creator)->create([
         'title' => 'Other Puzzle',
         'difficulty_label' => $label === 'Easy' ? 'Hard' : 'Easy',
     ]);
@@ -450,19 +470,19 @@ test('discovery filters by each difficulty level', function (string $label) {
     Livewire::actingAs($user)
         ->test('puzzle-discovery', ['excludeAttempted' => true])
         ->set('difficulty', $label)
-        ->assertSee("{$label} Puzzle")
-        ->assertDontSee('Other Puzzle');
+        ->assertSeeHtml(cardKey($match))
+        ->assertDontSeeHtml(cardKey($other));
 })->with(['Easy', 'Medium', 'Hard', 'Expert']);
 
 test('discovery shows all puzzles when difficulty filter is empty', function () {
     $user = User::factory()->create();
     $creator = User::factory()->create();
 
-    Crossword::factory()->published()->for($creator)->create([
+    $easy = Crossword::factory()->published()->for($creator)->create([
         'title' => 'Easy One',
         'difficulty_label' => 'Easy',
     ]);
-    Crossword::factory()->published()->for($creator)->create([
+    $hard = Crossword::factory()->published()->for($creator)->create([
         'title' => 'Hard One',
         'difficulty_label' => 'Hard',
     ]);
@@ -470,8 +490,8 @@ test('discovery shows all puzzles when difficulty filter is empty', function () 
     Livewire::actingAs($user)
         ->test('puzzle-discovery', ['excludeAttempted' => true])
         ->set('difficulty', '')
-        ->assertSee('Easy One')
-        ->assertSee('Hard One');
+        ->assertSeeHtml(cardKey($easy))
+        ->assertSeeHtml(cardKey($hard));
 });
 
 test('discovery clear filters resets difficulty', function () {
@@ -523,13 +543,13 @@ test('discovery filters by tag slug', function () {
     $tagged = Crossword::factory()->published()->for($creator)->create(['title' => 'Science Puzzle']);
     $tagged->tags()->attach($tag);
 
-    Crossword::factory()->published()->for($creator)->create(['title' => 'Untagged Puzzle']);
+    $untagged = Crossword::factory()->published()->for($creator)->create(['title' => 'Untagged Puzzle']);
 
     Livewire::actingAs($user)
         ->test('puzzle-discovery', ['excludeAttempted' => true])
         ->set('tag', 'science')
-        ->assertSee('Science Puzzle')
-        ->assertDontSee('Untagged Puzzle');
+        ->assertSeeHtml(cardKey($tagged))
+        ->assertDontSeeHtml(cardKey($untagged));
 });
 
 test('discovery shows all puzzles when tag filter is empty', function () {
@@ -540,13 +560,13 @@ test('discovery shows all puzzles when tag filter is empty', function () {
     $tagged = Crossword::factory()->published()->for($creator)->create(['title' => 'History Puzzle']);
     $tagged->tags()->attach($tag);
 
-    Crossword::factory()->published()->for($creator)->create(['title' => 'Other Puzzle']);
+    $other = Crossword::factory()->published()->for($creator)->create(['title' => 'Other Puzzle']);
 
     Livewire::actingAs($user)
         ->test('puzzle-discovery', ['excludeAttempted' => true])
         ->set('tag', '')
-        ->assertSee('History Puzzle')
-        ->assertSee('Other Puzzle');
+        ->assertSeeHtml(cardKey($tagged))
+        ->assertSeeHtml(cardKey($other));
 });
 
 test('discovery clear filters resets tag', function () {
@@ -716,7 +736,7 @@ test('discovery cards hide average time when no completed attempts exist', funct
 
     Livewire::actingAs($user)
         ->test('puzzle-discovery')
-        ->assertDontSee('avg');
+        ->assertDontSee('avg ');
 });
 
 test('discovery sorts by most solved', function () {
@@ -732,7 +752,7 @@ test('discovery sorts by most solved', function () {
     Livewire::actingAs($user)
         ->test('puzzle-discovery')
         ->set('sortBy', 'most_solved')
-        ->assertSeeInOrder(['More Solved', 'Less Solved']);
+        ->assertSeeHtmlInOrder([cardKey($moreSolved), cardKey($lessSolved)]);
 });
 
 // --- Rating & Play Count ---
@@ -750,7 +770,7 @@ test('discovery sorts by highest rated', function () {
     Livewire::actingAs($user)
         ->test('puzzle-discovery', ['excludeAttempted' => true])
         ->set('sortBy', 'highest_rated')
-        ->assertSeeInOrder(['High Rated', 'Low Rated']);
+        ->assertSeeHtmlInOrder([cardKey($highRated), cardKey($lowRated)]);
 });
 
 test('discovery sorts by most played', function () {
@@ -766,7 +786,7 @@ test('discovery sorts by most played', function () {
     Livewire::actingAs($user)
         ->test('puzzle-discovery', ['excludeAttempted' => true])
         ->set('sortBy', 'most_played')
-        ->assertSeeInOrder(['More Played', 'Less Played']);
+        ->assertSeeHtmlInOrder([cardKey($morePlayed), cardKey($lessPlayed)]);
 });
 
 test('discovery shows average rating stars on puzzle cards', function () {
@@ -921,9 +941,9 @@ test('discovery filters by minimum rating', function () {
     Livewire::actingAs($user)
         ->test('puzzle-discovery', ['excludeAttempted' => true])
         ->set('minRating', '4')
-        ->assertSee('High Rated Puzzle')
-        ->assertDontSee('Low Rated Puzzle')
-        ->assertDontSee('Unrated Puzzle');
+        ->assertSeeHtml(cardKey($highRated))
+        ->assertDontSeeHtml(cardKey($lowRated))
+        ->assertDontSeeHtml(cardKey($unrated));
 });
 
 test('discovery shows all puzzles when minimum rating is empty', function () {
@@ -931,30 +951,30 @@ test('discovery shows all puzzles when minimum rating is empty', function () {
     $creator = User::factory()->create();
 
     $rated = Crossword::factory()->published()->for($creator)->create(['title' => 'Rated Puzzle']);
-    Crossword::factory()->published()->for($creator)->create(['title' => 'Unrated Puzzle']);
+    $unrated = Crossword::factory()->published()->for($creator)->create(['title' => 'Unrated Puzzle']);
 
     PuzzleComment::factory()->create(['crossword_id' => $rated->id, 'rating' => 3]);
 
     Livewire::actingAs($user)
         ->test('puzzle-discovery', ['excludeAttempted' => true])
         ->set('minRating', '')
-        ->assertSee('Rated Puzzle')
-        ->assertSee('Unrated Puzzle');
+        ->assertSeeHtml(cardKey($rated))
+        ->assertSeeHtml(cardKey($unrated));
 });
 
 test('discovery minimum rating filter excludes unrated puzzles', function () {
     $user = User::factory()->create();
     $creator = User::factory()->create();
 
-    Crossword::factory()->published()->for($creator)->create(['title' => 'No Ratings Puzzle']);
+    $noRatings = Crossword::factory()->published()->for($creator)->create(['title' => 'No Ratings Puzzle']);
     $rated = Crossword::factory()->published()->for($creator)->create(['title' => 'Has Rating']);
     PuzzleComment::factory()->create(['crossword_id' => $rated->id, 'rating' => 3]);
 
     Livewire::actingAs($user)
         ->test('puzzle-discovery', ['excludeAttempted' => true])
         ->set('minRating', '1')
-        ->assertSee('Has Rating')
-        ->assertDontSee('No Ratings Puzzle');
+        ->assertSeeHtml(cardKey($rated))
+        ->assertDontSeeHtml(cardKey($noRatings));
 });
 
 test('discovery clear filters resets minimum rating', function () {
