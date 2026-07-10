@@ -40,7 +40,6 @@ class AiThemeBuilder extends AnthropicAction
                 'model' => self::MODEL,
                 'tools' => [$this->toolSchema()],
                 'tool_choice' => ['type' => 'tool', 'name' => self::TOOL_NAME],
-                'temperature' => 0.7,
                 'max_tokens' => 2048,
             ],
             fn (array $data): array => $this->parseResponse($data),
@@ -89,10 +88,13 @@ class AiThemeBuilder extends AnthropicAction
         You are a crossword puzzle construction assistant specializing in theme development. Given a prompt describing a theme, wordplay angle, and concept, generate a set of theme-appropriate entries (words or phrases) suitable for featuring as crossword theme answers.
 
         For each request:
-        - Propose 5-8 candidate theme entries that fit the theme and wordplay style described.
-        - Prefer entries with consistent length patterns or symmetry where relevant (useful for grid construction), and note approximate letter counts.
+        - Propose 5-12 candidate theme entries that fit the theme and wordplay style described.
+        - Entries may be single words, multi-word phrases, idioms, or common expressions — idioms and familiar phrases are especially welcome, since they make lively crossword theme answers.
+        - Note approximate letter counts. Consistent lengths or symmetry can help grid construction, but the entries do NOT all need to be the same length or symmetrical — mixed lengths are perfectly fine, so prioritize strong, on-theme answers over matching lengths.
+        - Prioritize entries that relate to the theme in a non-literal, ironic, or tangential way over on-the-nose literal matches — the most interesting theme answers approach the concept sideways.
         - Explain briefly how each entry connects to the theme or wordplay conceit (e.g., pun, hidden word, category member).
         - Favor common, crossword-friendly words/phrases (avoid obscure or overly technical terms unless the theme demands it).
+        - IMPORTANT: at least 5 of the returned entries must share no words in common with one another. Treat this as a hard requirement — before submitting, verify that you have at least 5 entries where no word appears in more than one of them.
         - If the prompt is ambiguous, make reasonable assumptions and state them rather than asking excessive clarifying questions.
         - Offer to refine, expand, or narrow the list if asked.
         - Keep output organized and scannable — a simple list with brief annotations is ideal.
@@ -190,7 +192,7 @@ class AiThemeBuilder extends AnthropicAction
                             'properties' => [
                                 'entry' => [
                                     'type' => 'string',
-                                    'description' => 'The theme word or phrase, in uppercase (e.g. "SEA CHANGE").',
+                                    'description' => 'The theme entry — a word, multi-word phrase, or idiom — in uppercase (e.g. "SEA CHANGE", "PIECE OF CAKE").',
                                 ],
                                 'length' => [
                                     'type' => 'integer',
