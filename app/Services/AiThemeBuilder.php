@@ -2,8 +2,10 @@
 
 namespace App\Services;
 
+use App\Services\Anthropic\AnthropicAction;
 use App\Services\Anthropic\AnthropicClient;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 /**
  * Crossword Theme Builder.
@@ -11,13 +13,11 @@ use Illuminate\Support\Facades\Log;
  * Generates theme-appropriate words and phrases for crossword puzzle
  * construction based on a given theme, wordplay style, and concept.
  */
-class AiThemeBuilder
+class AiThemeBuilder extends AnthropicAction
 {
     private const string MODEL = 'claude-opus-4-8';
 
     private const string TOOL_NAME = 'submit_theme_entries';
-
-    public function __construct(private readonly AnthropicClient $client) {}
 
     /**
      * Generate candidate theme entries for a crossword concept.
@@ -30,63 +30,57 @@ class AiThemeBuilder
     public function build(string $prompt, string $theme = '', string $wordplayStyle = ''): array
     {
         if (trim($prompt) === '' && trim($theme) === '') {
-            return [
-                'success' => false,
-                'entries' => [],
-                'assumptions' => '',
-                'message' => 'Describe a theme or concept to build theme entries for.',
-            ];
+            return $this->failure('Describe a theme or concept to build theme entries for.');
         }
 
-        $options = [
-            'model' => self::MODEL,
-            'tools' => [$this->toolSchema()],
-            'tool_choice' => ['type' => 'tool', 'name' => self::TOOL_NAME],
-            'temperature' => 0.7,
-            'max_tokens' => 2048,
-        ];
+        return $this->dispatch(
+            $this->buildSystemPrompt(),
+            [['role' => 'user', 'content' => $this->buildUserMessage($prompt, $theme, $wordplayStyle)]],
+            [
+                'model' => self::MODEL,
+                'tools' => [$this->toolSchema()],
+                'tool_choice' => ['type' => 'tool', 'name' => self::TOOL_NAME],
+                'temperature' => 0.7,
+                'max_tokens' => 2048,
+            ],
+            fn (array $data): array => $this->parseResponse($data),
+        );
+    }
 
-        try {
-            $result = $this->client->send(
-                $this->buildSystemPrompt(),
-                [['role' => 'user', 'content' => $this->buildUserMessage($prompt, $theme, $wordplayStyle)]],
-                $options,
-            );
+    /**
+     * @return array{success: false, entries: list<never>, assumptions: string, message: string}
+     */
+    protected function onMissingKey(): array
+    {
+        return $this->failure('Anthropic API key is not configured. Add ANTHROPIC_API_KEY to your .env file.');
+    }
 
-            if (! $result['success']) {
-                if (($result['status'] ?? null) === null) {
-                    return [
-                        'success' => false,
-                        'entries' => [],
-                        'assumptions' => '',
-                        'message' => 'Anthropic API key is not configured. Add ANTHROPIC_API_KEY to your .env file.',
-                    ];
-                }
+    /**
+     * @return array{success: false, entries: list<never>, assumptions: string, message: string}
+     */
+    protected function onError(?int $status, string $body): array
+    {
+        Log::warning('AI theme builder error', ['status' => $status, 'body' => $body]);
 
-                Log::warning('AI theme builder error', [
-                    'status' => $result['status'] ?? null,
-                    'body' => $result['body'] ?? null,
-                ]);
+        return $this->failure('AI service returned an error. Please try again.');
+    }
 
-                return [
-                    'success' => false,
-                    'entries' => [],
-                    'assumptions' => '',
-                    'message' => 'AI service returned an error. Please try again.',
-                ];
-            }
+    /**
+     * @return array{success: false, entries: list<never>, assumptions: string, message: string}
+     */
+    protected function onException(Throwable $e): array
+    {
+        Log::error('AI theme building failed', ['error' => $e->getMessage()]);
 
-            return $this->parseResponse($result['data']);
-        } catch (\Exception $e) {
-            Log::error('AI theme building failed', ['error' => $e->getMessage()]);
+        return $this->failure('Failed to connect to AI service: '.$e->getMessage());
+    }
 
-            return [
-                'success' => false,
-                'entries' => [],
-                'assumptions' => '',
-                'message' => 'Failed to connect to AI service: '.$e->getMessage(),
-            ];
-        }
+    /**
+     * @return array{success: false, entries: list<never>, assumptions: string, message: string}
+     */
+    private function failure(string $message): array
+    {
+        return ['success' => false, 'entries' => [], 'assumptions' => '', 'message' => $message];
     }
 
     private function buildSystemPrompt(): string
@@ -161,12 +155,7 @@ class AiThemeBuilder
         }
 
         if ($entries === []) {
-            return [
-                'success' => false,
-                'entries' => [],
-                'assumptions' => '',
-                'message' => 'AI could not generate theme entries. Try rephrasing the theme.',
-            ];
+            return $this->failure('AI could not generate theme entries. Try rephrasing the theme.');
         }
 
         $assumptions = is_string($input['assumptions'] ?? null) ? trim($input['assumptions']) : '';

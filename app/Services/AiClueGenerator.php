@@ -2,13 +2,13 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Log;
+use App\Services\Anthropic\AnthropicAction;
 use App\Services\Anthropic\AnthropicClient;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
-class AiClueGenerator
+class AiClueGenerator extends AnthropicAction
 {
-    public function __construct(private readonly AnthropicClient $client) {}
-
     /**
      * Generate crossword clues using Anthropic Claude API.
      *
@@ -25,43 +25,55 @@ class AiClueGenerator
             ];
         }
 
-        $systemPrompt = $this->buildSystemPrompt();
-        $userMessage = $this->buildUserMessage($words, $title, $notes);
+        return $this->dispatch(
+            $this->buildSystemPrompt(),
+            [['role' => 'user', 'content' => $this->buildUserMessage($words, $title, $notes)]],
+            [],
+            fn (array $data): array => $this->parseResponse($data, $words),
+        );
+    }
 
-        try {
-            $result = $this->client->sendMessage($systemPrompt, $userMessage);
+    /**
+     * @return array{success: false, clues: array{across: array<int, string>, down: array<int, string>}, message: string}
+     */
+    protected function onMissingKey(): array
+    {
+        return $this->failure('Anthropic API key is not configured. Add ANTHROPIC_API_KEY to your .env file.');
+    }
 
-            if (! $result['success']) {
-                if ($result['status'] === null) {
-                    return [
-                        'success' => false,
-                        'clues' => ['across' => [], 'down' => []],
-                        'message' => 'Anthropic API key is not configured. Add ANTHROPIC_API_KEY to your .env file.',
-                    ];
-                }
+    /**
+     * @return array{success: false, clues: array{across: array<int, string>, down: array<int, string>}, message: string}
+     */
+    protected function onError(?int $status, string $body): array
+    {
+        Log::warning('Anthropic API error during clue generation', [
+            'status' => $status,
+            'body' => $body,
+        ]);
 
-                Log::warning('Anthropic API error during clue generation', [
-                    'status' => $result['status'],
-                    'body' => $result['body'],
-                ]);
+        return $this->failure('AI service returned an error. Please try again.');
+    }
 
-                return [
-                    'success' => false,
-                    'clues' => ['across' => [], 'down' => []],
-                    'message' => 'AI service returned an error. Please try again.',
-                ];
-            }
+    /**
+     * @return array{success: false, clues: array{across: array<int, string>, down: array<int, string>}, message: string}
+     */
+    protected function onException(Throwable $e): array
+    {
+        Log::error('AI clue generation failed', ['error' => $e->getMessage()]);
 
-            return $this->parseResponse($result['data'], $words);
-        } catch (\Exception $e) {
-            Log::error('AI clue generation failed', ['error' => $e->getMessage()]);
+        return $this->failure('Failed to connect to AI service: '.$e->getMessage());
+    }
 
-            return [
-                'success' => false,
-                'clues' => ['across' => [], 'down' => []],
-                'message' => 'Failed to connect to AI service: '.$e->getMessage(),
-            ];
-        }
+    /**
+     * @return array{success: false, clues: array{across: array<int, string>, down: array<int, string>}, message: string}
+     */
+    private function failure(string $message): array
+    {
+        return [
+            'success' => false,
+            'clues' => ['across' => [], 'down' => []],
+            'message' => $message,
+        ];
     }
 
     private function buildSystemPrompt(): string
