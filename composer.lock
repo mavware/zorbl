@@ -10787,7 +10787,7 @@
         },
         {
             "name": "zorbl/crossword-io",
-            "version": "dev-main",
+            "version": "dev-claude/maintenance-2026-07",
             "dist": {
                 "type": "path",
                 "url": "packages/crossword-io",
