@@ -66,6 +66,9 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [x] Show puzzle of the day as the first entry in the Puzzle Search results when the search is at default settings.
 - [x] Put the puzzle ratings and comments in the Puzzle Complete modal
 - [x] Need ability to edit your comments on a puzzle
+- [ ] Add keyboard shortcuts reference page or modal so users can discover available shortcuts
+- [ ] Add keyboard shortcut cheat-sheet overlay (e.g. press `?` to toggle)
+- [ ] Extend profanity list
  
 ## For later
 

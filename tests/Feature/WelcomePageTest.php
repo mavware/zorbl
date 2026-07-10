@@ -17,8 +17,8 @@ test('welcome page renders for guests with hero, register CTA, and SEO meta', fu
 
     $response->assertOk()
         ->assertSee('From blank grid', false)
-        ->assertSee('published puzzle in', false)
-        ->assertSee('Start building', false)
+        ->assertSee('published crossword in', false)
+        ->assertSee('Create your free account', false)
         ->assertSee(route('register'), false)
         ->assertSee('<meta name="description"', false)
         ->assertSee('<meta property="og:title"', false)
@@ -31,11 +31,9 @@ test('welcome page swaps CTAs for authenticated users', function () {
     $response = $this->actingAs($user)->get('/');
 
     $response->assertOk()
-        ->assertSee('Build a puzzle', false)
-        ->assertSee('Solve puzzles', false)
         ->assertSee('Go to dashboard', false)
-        ->assertDontSee('Start building', false)
-        ->assertDontSee('Create your free account', false);
+        ->assertDontSee('Create your free account', false)
+        ->assertDontSee('>Sign up<', false);
 });
 
 test('trust strip is hidden when stats are below the credibility floor', function () {
