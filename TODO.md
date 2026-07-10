@@ -65,7 +65,7 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [x] There seems to be duplicated functionality in the "Share Results", "Share", and possibly a third icon buttons when the puzzle is solved.
 - [ ] Show puzzle of the day as the first entry in the Puzzle Search results when the search is at default settings.
 - [x] Put the puzzle ratings and comments in the Puzzle Complete modal
-- [ ] Need ability to edit your comments on a puzzle
+- [x] Need ability to edit your comments on a puzzle
  
 ## For later
 

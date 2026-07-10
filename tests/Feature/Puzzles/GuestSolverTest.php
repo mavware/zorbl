@@ -59,6 +59,24 @@ test('guest is redirected to register when trying a second puzzle', function () 
         ->assertRedirect(route('register'));
 });
 
+test('guest solve limit is driven by config', function () {
+    config()->set('zorbl.guest_solve_limit', 2);
+
+    $first = Crossword::factory()->published()->withBlocks()->withSolution()->create();
+    $second = Crossword::factory()->published()->withBlocks()->withSolution()->create();
+    $third = Crossword::factory()->published()->create();
+
+    // First two distinct puzzles are allowed under the raised limit.
+    $this->withCookie('zorbl_guest_solved', json_encode([$first->id]))
+        ->get(route('puzzles.solve', $second))
+        ->assertOk();
+
+    // A third distinct puzzle exceeds the limit and triggers the register redirect.
+    $this->withCookie('zorbl_guest_solved', json_encode([$first->id, $second->id]))
+        ->get(route('puzzles.solve', $third))
+        ->assertRedirect(route('register'));
+});
+
 test('guest solver page includes signup banner', function () {
     $crossword = Crossword::factory()->published()->withBlocks()->withSolution()->create();
 

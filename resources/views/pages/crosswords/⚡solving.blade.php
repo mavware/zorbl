@@ -217,8 +217,6 @@ new #[Title('Solving')] class extends Component {
 
     {{-- Browse Published Puzzles --}}
     <div class="space-y-4">
-        <flux:heading size="lg">{{ __('Browse Puzzles') }}</flux:heading>
-
         <livewire:puzzle-discovery :exclude-attempted="true" />
     </div>
 </div>
