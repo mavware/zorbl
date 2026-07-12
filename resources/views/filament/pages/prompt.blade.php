@@ -53,5 +53,31 @@
                 </div>
             @endif
         </x-filament::section>
+
+        @if ($result['success'])
+            <x-filament::section>
+                <x-slot name="heading">Build a puzzle</x-slot>
+                <x-slot name="description">
+                    Choose the words you want to use, then build a crossword. We'll find a 15×15 template
+                    that fits them all and fill in the rest of the grid automatically.
+                </x-slot>
+
+                <form wire:submit="buildPuzzle">
+                    {{ $this->wordsForm }}
+
+                    <div class="mt-4">
+                        <x-filament::button
+                            type="submit"
+                            icon="heroicon-o-squares-2x2"
+                            wire:loading.attr="disabled"
+                            wire:target="buildPuzzle"
+                        >
+                            <span wire:loading.remove wire:target="buildPuzzle">Build puzzle</span>
+                            <span wire:loading wire:target="buildPuzzle">Building...</span>
+                        </x-filament::button>
+                    </div>
+                </form>
+            </x-filament::section>
+        @endif
     @endif
 </x-filament-panels::page>

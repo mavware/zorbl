@@ -88,7 +88,7 @@ class AiThemeBuilder extends AnthropicAction
         You are a crossword puzzle construction assistant specializing in theme development. Given a prompt describing a theme, wordplay angle, and concept, generate a set of theme-appropriate entries (words or phrases) suitable for featuring as crossword theme answers.
 
         For each request:
-        - Propose 5-12 candidate theme entries that fit the theme and wordplay style described.
+        - Propose 10-20 candidate theme entries that fit the theme and wordplay style described.
         - Entries may be single words, multi-word phrases, idioms, or common expressions — idioms and familiar phrases are especially welcome, since they make lively crossword theme answers.
         - Note approximate letter counts. Consistent lengths or symmetry can help grid construction, but the entries do NOT all need to be the same length or symmetrical — mixed lengths are perfectly fine, so prioritize strong, on-theme answers over matching lengths.
         - Prioritize entries that relate to the theme in a non-literal, ironic, or tangential way over on-the-nose literal matches — the most interesting theme answers approach the concept sideways.
