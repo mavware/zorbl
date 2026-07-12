@@ -63,10 +63,14 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [x] It doesn't feel snappy enough when the puzzle is solved.  maybe the green ripple immediately when solved?
 - [x] Let constructor decide if the player can embed the puzzle in their own site. The user can always embed the puzzle in their own site.
 - [x] There seems to be duplicated functionality in the "Share Results", "Share", and possibly a third icon buttons when the puzzle is solved.
-- [ ] Show puzzle of the day as the first entry in the Puzzle Search results when the search is at default settings.
-- [ ] Put the puzzle ratings and comments in the Puzzle Complete modal
-- [ ] Need ability to edit your comments on a puzzle
+- [x] Show puzzle of the day as the first entry in the Puzzle Search results when the search is at default settings.
+- [x] Put the puzzle ratings and comments in the Puzzle Complete modal
+- [x] Need ability to edit your comments on a puzzle
+- [ ] Add keyboard shortcuts reference page or modal so users can discover available shortcuts
+- [ ] Add keyboard shortcut cheat-sheet overlay (e.g. press `?` to toggle)
+- [ ] Extend profanity list
 - [ ] Add authenticated `GET /api/v1/daily-puzzle/status` endpoint returning whether the user has solved today's puzzle and their solve time
+
  
 ## For later
 

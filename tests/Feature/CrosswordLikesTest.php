@@ -5,19 +5,19 @@ use App\Models\CrosswordLike;
 use App\Models\User;
 use Livewire\Livewire;
 
-test('users can like a crossword from the discovery component', function () {
+test('users can like a crossword from a puzzle card', function () {
     $user = User::factory()->create();
     $creator = User::factory()->create();
     $crossword = Crossword::factory()->published()->for($creator)->create();
 
     Livewire::actingAs($user)
-        ->test('puzzle-discovery', ['excludeAttempted' => true])
-        ->call('toggleLike', $crossword->id);
+        ->test('puzzle-card', ['crossword' => $crossword])
+        ->call('toggleLike');
 
     expect(CrosswordLike::where('user_id', $user->id)->where('crossword_id', $crossword->id)->exists())->toBeTrue();
 });
 
-test('users can unlike a crossword from the discovery component', function () {
+test('users can unlike a crossword from a puzzle card', function () {
     $user = User::factory()->create();
     $creator = User::factory()->create();
     $crossword = Crossword::factory()->published()->for($creator)->create();
@@ -25,8 +25,8 @@ test('users can unlike a crossword from the discovery component', function () {
     CrosswordLike::create(['user_id' => $user->id, 'crossword_id' => $crossword->id]);
 
     Livewire::actingAs($user)
-        ->test('puzzle-discovery', ['excludeAttempted' => true])
-        ->call('toggleLike', $crossword->id);
+        ->test('puzzle-card', ['crossword' => $crossword, 'isLiked' => true])
+        ->call('toggleLike');
 
     expect(CrosswordLike::where('user_id', $user->id)->where('crossword_id', $crossword->id)->exists())->toBeFalse();
 });
@@ -85,9 +85,9 @@ test('users cannot like the same crossword twice', function () {
     $crossword = Crossword::factory()->published()->for($creator)->create();
 
     Livewire::actingAs($user)
-        ->test('puzzle-discovery', ['excludeAttempted' => true])
-        ->call('toggleLike', $crossword->id)
-        ->call('toggleLike', $crossword->id);
+        ->test('puzzle-card', ['crossword' => $crossword])
+        ->call('toggleLike')
+        ->call('toggleLike');
 
     expect(CrosswordLike::where('user_id', $user->id)->where('crossword_id', $crossword->id)->count())->toBe(0);
 });

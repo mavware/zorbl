@@ -63,6 +63,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/crosswords/{crossword}/like', [CrosswordLikeController::class, 'store']);
     Route::delete('/crosswords/{crossword}/like', [CrosswordLikeController::class, 'destroy']);
     Route::post('/crosswords/{crossword}/comments', [PuzzleCommentController::class, 'store']);
+    Route::patch('/comments/{comment}', [PuzzleCommentController::class, 'update']);
     Route::delete('/comments/{comment}', [PuzzleCommentController::class, 'destroy']);
 
     // Contests

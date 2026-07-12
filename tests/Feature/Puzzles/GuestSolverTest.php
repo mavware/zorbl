@@ -50,12 +50,30 @@ test('guest can revisit the same puzzle', function () {
     $response->assertOk();
 });
 
-test('guest is redirected to register when trying a second puzzle', function () {
-    $first = Crossword::factory()->published()->create();
-    $second = Crossword::factory()->published()->create();
+test('guest is redirected to register after reaching the free solve limit', function () {
+    $solved = Crossword::factory()->published()->count(config('zorbl.guest_solve_limit'))->create();
+    $next = Crossword::factory()->published()->create();
 
+    $this->withCookie('zorbl_guest_solved', json_encode($solved->pluck('id')->all()))
+        ->get(route('puzzles.solve', $next))
+        ->assertRedirect(route('register'));
+});
+
+test('guest solve limit is driven by config', function () {
+    config()->set('zorbl.guest_solve_limit', 2);
+
+    $first = Crossword::factory()->published()->withBlocks()->withSolution()->create();
+    $second = Crossword::factory()->published()->withBlocks()->withSolution()->create();
+    $third = Crossword::factory()->published()->create();
+
+    // First two distinct puzzles are allowed under the raised limit.
     $this->withCookie('zorbl_guest_solved', json_encode([$first->id]))
         ->get(route('puzzles.solve', $second))
+        ->assertOk();
+
+    // A third distinct puzzle exceeds the limit and triggers the register redirect.
+    $this->withCookie('zorbl_guest_solved', json_encode([$first->id, $second->id]))
+        ->get(route('puzzles.solve', $third))
         ->assertRedirect(route('register'));
 });
 

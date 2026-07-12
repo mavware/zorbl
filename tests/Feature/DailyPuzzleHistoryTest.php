@@ -142,17 +142,6 @@ test('daily puzzle history startSolving redirects guest to public solver', funct
         ->assertRedirect(route('puzzles.solve', $crossword));
 });
 
-test('browse puzzles page links to daily puzzle history', function () {
-    $crossword = Crossword::factory()->published()->create(['title' => 'Link Test']);
-    DailyPuzzle::create(['date' => today(), 'crossword_id' => $crossword->id]);
-
-    Cache::flush();
-
-    $this->get(route('puzzles.index'))
-        ->assertOk()
-        ->assertSee('View past puzzles');
-});
-
 test('dashboard links to daily puzzle history', function () {
     $crossword = Crossword::factory()->published()->create(['title' => 'Dashboard Link']);
     DailyPuzzle::create(['date' => today(), 'crossword_id' => $crossword->id]);

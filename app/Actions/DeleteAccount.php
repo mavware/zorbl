@@ -10,10 +10,10 @@ use Throwable;
 class DeleteAccount
 {
     /**
-     * Hard-delete a user and all the personal data we hold for them. Cascading
+     * Hard-delete a user and all personal data held for them. Cascading
      * foreign keys handle most relations; this action covers the pieces that
-     * don't cascade (Sanctum tokens, notifications) and the side effects that
-     * have to happen outside the database (Stripe subscription cancellation).
+     * don't cascade (Sanctum tokens, notifications) and side effects that
+     * must happen outside the database (Stripe subscription cancellation).
      */
     public function __invoke(User $user): void
     {

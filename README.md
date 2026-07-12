@@ -2,7 +2,7 @@
 
 A crossword puzzle platform for constructors and solvers. Build puzzles with a visual grid editor, solve community puzzles with auto-saved progress, run contests, and share your creations — all from the browser.
 
-Built with Laravel 13, Livewire 4, Alpine.js, and Tailwind CSS 4.
+Built with **Laravel 13**, **Livewire 4**, **Alpine.js**, and **Tailwind CSS 4**.
 
 ---
 
@@ -48,7 +48,7 @@ Built with Laravel 13, Livewire 4, Alpine.js, and Tailwind CSS 4.
 
 | Layer | Technology |
 |-------|-----------|
-| Backend | PHP 8.3+, Laravel 13, Livewire 4 |
+| Backend | PHP 8.5+, Laravel 13, Livewire 4 |
 | Frontend | Alpine.js 3, Tailwind CSS 4, Vite 8 |
 | UI Components | Flux UI 2, Heroicons |
 | Auth | Laravel Fortify (2FA/TOTP), Laravel Sanctum (API tokens) |
@@ -66,7 +66,7 @@ Built with Laravel 13, Livewire 4, Alpine.js, and Tailwind CSS 4.
 
 ### Prerequisites
 
-- PHP 8.3+
+- PHP 8.5+
 - Composer
 - Node.js 20+
 - SQLite (default) or MySQL/PostgreSQL
@@ -153,7 +153,7 @@ routes/
 ### Key Services
 
 | Service | Purpose |
-|---------|---------|
+|---------|----------|
 | `GridFiller` | Backtracking constraint-propagation solver for heuristic autofill |
 | `AiGridFiller` | Claude API integration for thematic grid filling |
 | `AiClueGenerator` | Claude API integration for clue writing |
