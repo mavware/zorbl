@@ -47,6 +47,9 @@ Route::get('/clues', [ClueEntryController::class, 'index']);
 
 // --- Authenticated endpoints ---
 Route::middleware('auth:sanctum')->group(function () {
+    // Daily puzzle
+    Route::get('/daily-puzzle/status', [DailyPuzzleController::class, 'status'])->name('api.v1.daily-puzzle.status');
+
     // Token management
     Route::delete('/tokens', [AuthController::class, 'destroy']);
 

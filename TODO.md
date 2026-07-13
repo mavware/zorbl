@@ -69,7 +69,7 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [ ] Add keyboard shortcuts reference page or modal so users can discover available shortcuts
 - [ ] Add keyboard shortcut cheat-sheet overlay (e.g. press `?` to toggle)
 - [ ] Extend profanity list
-- [ ] Add authenticated `GET /api/v1/daily-puzzle/status` endpoint returning whether the user has solved today's puzzle and their solve time
+- [x] Add authenticated `GET /api/v1/daily-puzzle/status` endpoint returning whether the user has solved today's puzzle and their solve time
 
  
 ## For later
