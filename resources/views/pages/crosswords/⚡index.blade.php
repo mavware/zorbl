@@ -156,8 +156,8 @@ new #[Title('My Puzzles')] class extends Component {
         $type = $this->selectedPuzzleType;
 
         $rules = [
-            'newWidth' => ['required', 'integer', 'min:3', 'max:30'],
-            'newHeight' => ['required', 'integer', 'min:3', 'max:30'],
+            'newWidth' => ['required', 'integer', 'min:3', 'max:40'],
+            'newHeight' => ['required', 'integer', 'min:3', 'max:40'],
         ];
 
         $this->validate($rules);
@@ -537,7 +537,7 @@ new #[Title('My Puzzles')] class extends Component {
                         type="number"
                         wire:model.live.debounce.300ms="newWidth"
                         min="3"
-                        max="30"
+                        max="40"
                         :step="$this->selectedPuzzleType->requiresOdd() ? 2 : 1"
                     />
                     <flux:error name="newWidth" />
@@ -546,7 +546,7 @@ new #[Title('My Puzzles')] class extends Component {
                 @if (! $this->selectedPuzzleType->requiresSquare())
                     <flux:field>
                         <flux:label>{{ __('Height') }}</flux:label>
-                        <flux:input type="number" wire:model.live.debounce.300ms="newHeight" min="3" max="30" />
+                        <flux:input type="number" wire:model.live.debounce.300ms="newHeight" min="3" max="40" />
                         <flux:error name="newHeight" />
                     </flux:field>
                 @endif

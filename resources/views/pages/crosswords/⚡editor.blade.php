@@ -768,8 +768,8 @@ class extends Component {
     public function resizeGrid(): void
     {
         $this->validate([
-            'resizeWidth'  => ['required', 'integer', 'min:3', 'max:30'],
-            'resizeHeight' => ['required', 'integer', 'min:3', 'max:30'],
+            'resizeWidth'  => ['required', 'integer', 'min:3', 'max:40'],
+            'resizeHeight' => ['required', 'integer', 'min:3', 'max:40'],
         ]);
 
         $newGrid = Crossword::emptyGrid($this->resizeWidth, $this->resizeHeight);
@@ -1534,13 +1534,13 @@ class extends Component {
                 <div class="mt-3 grid grid-cols-2 gap-4">
                     <flux:field>
                         <flux:label>{{ __('Width') }}</flux:label>
-                        <flux:input type="number" wire:model="resizeWidth" min="3" max="30"/>
+                        <flux:input type="number" wire:model="resizeWidth" min="3" max="40"/>
                         <flux:error name="resizeWidth"/>
                     </flux:field>
 
                     <flux:field>
                         <flux:label>{{ __('Height') }}</flux:label>
-                        <flux:input type="number" wire:model="resizeHeight" min="3" max="30"/>
+                        <flux:input type="number" wire:model="resizeHeight" min="3" max="40"/>
                         <flux:error name="resizeHeight"/>
                     </flux:field>
                 </div>

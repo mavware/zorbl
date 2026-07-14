@@ -261,6 +261,33 @@ test('users can resize the grid', function () {
         ->and($crossword->grid[0])->toHaveCount(7);
 });
 
+test('grid can be resized up to 40 but not beyond', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create([
+        'width' => 5,
+        'height' => 5,
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->set('resizeWidth', 40)
+        ->set('resizeHeight', 40)
+        ->call('resizeGrid')
+        ->assertHasNoErrors()
+        ->assertDispatched('grid-resized');
+
+    $crossword->refresh();
+    expect($crossword->width)->toBe(40)
+        ->and($crossword->height)->toBe(40);
+
+    Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->set('resizeWidth', 41)
+        ->set('resizeHeight', 41)
+        ->call('resizeGrid')
+        ->assertHasErrors(['resizeWidth', 'resizeHeight']);
+});
+
 test('users can toggle puzzle published state', function () {
     $user = User::factory()->create();
     $crossword = Crossword::factory()->for($user)->create();
