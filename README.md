@@ -1,4 +1,4 @@
-# Zorbl
+# CrosswordBuilder
 
 A crossword puzzle platform for constructors and solvers. Build puzzles with a visual grid editor, solve community puzzles with auto-saved progress, run contests, and share your creations — all from the browser.
 
@@ -74,8 +74,8 @@ Built with **Laravel 13**, **Livewire 4**, **Alpine.js**, and **Tailwind CSS 4**
 ### Quick Setup
 
 ```bash
-git clone <repository-url> zorbl
-cd zorbl
+git clone <repository-url> crosswordbuilder
+cd crosswordbuilder
 composer setup
 ```
 
@@ -116,7 +116,7 @@ composer dev
 
 This starts the Laravel server, queue worker, log viewer (Pail), and Vite dev server concurrently.
 
-Or if using [Laravel Herd](https://herd.laravel.com), the site is automatically available at `https://zorbl.test`.
+Or if using [Laravel Herd](https://herd.laravel.com), the site is automatically available at `https://crosswordbuilder.test`.
 
 ---
 
@@ -195,12 +195,12 @@ The REST API follows the [JSON:API specification](https://jsonapi.org/format/) a
 
 ```bash
 # Get a token
-curl -X POST https://zorbl.test/api/v1/tokens \
+curl -X POST https://crosswordbuilder.test/api/v1/tokens \
   -H "Content-Type: application/json" \
   -d '{"email": "you@example.com", "password": "secret", "device_name": "cli"}'
 
 # Use the token
-curl https://zorbl.test/api/v1/me \
+curl https://crosswordbuilder.test/api/v1/me \
   -H "Authorization: Bearer {token}"
 ```
 
@@ -286,7 +286,7 @@ Any published puzzle can be embedded on external sites:
 
 ```html
 <iframe
-  src="https://zorbl.test/embed/{crossword-id}"
+  src="https://crosswordbuilder.test/embed/{crossword-id}"
   width="800"
   height="600"
   frameborder="0"

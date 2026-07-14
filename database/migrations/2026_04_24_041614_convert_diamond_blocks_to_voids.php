@@ -3,7 +3,7 @@
 use App\Enums\PuzzleType;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
-use Zorbl\CrosswordIO\GridNumberer;
+use CrosswordBuilder\CrosswordIO\GridNumberer;
 
 return new class extends Migration
 {

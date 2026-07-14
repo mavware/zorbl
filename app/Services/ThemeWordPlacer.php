@@ -5,7 +5,7 @@ namespace App\Services;
 use App\Models\Crossword;
 use App\Models\Template;
 use Illuminate\Database\Eloquent\Collection;
-use Zorbl\CrosswordIO\GridNumberer;
+use CrosswordBuilder\CrosswordIO\GridNumberer;
 
 /**
  * Finds a 15x15 grid template from the database whose across/down slots can

@@ -25,9 +25,9 @@ class SubscriptionPaymentFailed extends Notification implements ShouldQueue
     public function toMail(User $notifiable): MailMessage
     {
         $message = (new MailMessage)
-            ->subject(__('Payment failed for your Zorbl subscription'))
+            ->subject(__('Payment failed for your :app subscription', ['app' => config('app.name')]))
             ->greeting(__('Hi :name,', ['name' => $notifiable->name]))
-            ->line(__('We were unable to charge your payment method for your Zorbl Pro subscription. To avoid losing access, please update your payment details.'));
+            ->line(__('We were unable to charge your payment method for your :app Pro subscription. To avoid losing access, please update your payment details.', ['app' => config('app.name')]));
 
         if ($this->hostedInvoiceUrl !== null) {
             $message->action(__('View invoice'), $this->hostedInvoiceUrl);

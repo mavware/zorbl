@@ -3,7 +3,7 @@
  * Stores progress, completion state, elapsed time, and pencil cells.
  */
 export function createLocalStoragePersistence(crosswordId) {
-    const key = `zorbl_embed_${crosswordId}`;
+    const key = `crosswordbuilder_embed_${crosswordId}`;
 
     return {
         /**

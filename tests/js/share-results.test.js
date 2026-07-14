@@ -35,7 +35,7 @@ describe('generateShareText', () => {
             initialSolved: true,
             initialPencilCells: {},
             shareTitle: 'Test Puzzle',
-            shareUrl: 'https://zorbl.test/puzzles/42',
+            shareUrl: 'https://crosswordbuilder.test/puzzles/42',
         });
     });
 
@@ -61,7 +61,7 @@ describe('generateShareText', () => {
 
     it('includes share URL', () => {
         const text = solver.generateShareText();
-        expect(text).toContain('https://zorbl.test/puzzles/42');
+        expect(text).toContain('https://crosswordbuilder.test/puzzles/42');
     });
 
     it('falls back to window location when no shareUrl', () => {

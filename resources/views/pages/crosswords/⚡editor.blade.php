@@ -9,7 +9,7 @@ use App\Notifications\NewPuzzlePublished;
 use App\Services\ClueHarvester;
 use App\Livewire\Concerns\ExportsCrossword;
 use Illuminate\Support\Facades\Notification;
-use Zorbl\CrosswordIO\GridNumberer;
+use CrosswordBuilder\CrosswordIO\GridNumberer;
 use App\Services\WordSuggester;
 use App\Services\DifficultyRater;
 use App\Services\GridFiller;

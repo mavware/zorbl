@@ -1,6 +1,6 @@
 {
-    "name": "Zorbl",
-    "short_name": "Zorbl",
+    "name": "CrosswordBuilder",
+    "short_name": "CrosswordBuilder",
     "description": "Build, publish, and solve crossword puzzles from independent constructors.",
     "start_url": "/?source=pwa",
     "scope": "/",

@@ -4,7 +4,7 @@ use App\Enums\PuzzleType;
 use App\Models\Crossword;
 use App\Services\AnonymousUserManager;
 use App\Services\GridTemplateProvider;
-use Zorbl\CrosswordIO\GridNumberer;
+use CrosswordBuilder\CrosswordIO\GridNumberer;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Component;

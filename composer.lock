@@ -10786,7 +10786,7 @@
             "time": "2026-04-26T05:33:54+00:00"
         },
         {
-            "name": "zorbl/crossword-io",
+            "name": "crosswordbuilder/crossword-io",
             "version": "dev-claude/maintenance-2026-07",
             "dist": {
                 "type": "path",
@@ -10809,12 +10809,12 @@
             "type": "library",
             "autoload": {
                 "psr-4": {
-                    "Zorbl\\CrosswordIO\\": "src/"
+                    "CrosswordBuilder\\CrosswordIO\\": "src/"
                 }
             },
             "autoload-dev": {
                 "psr-4": {
-                    "Zorbl\\CrosswordIO\\Tests\\": "tests/"
+                    "CrosswordBuilder\\CrosswordIO\\Tests\\": "tests/"
                 }
             },
             "license": [
@@ -16202,7 +16202,7 @@
     "aliases": [],
     "minimum-stability": "stable",
     "stability-flags": {
-        "zorbl/crossword-io": 20
+        "crosswordbuilder/crossword-io": 20
     },
     "prefer-stable": true,
     "prefer-lowest": false,

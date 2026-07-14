@@ -796,7 +796,7 @@ export function crosswordSolver({
         generateShareText() {
             const lines = [];
             const title = this.shareTitle || 'Crossword';
-            lines.push(`\u{1F9E9} Zorbl — “${title}”`);
+            lines.push(`\u{1F9E9} CrosswordBuilder — “${title}”`);
             lines.push(`⏱️ ${this.formattedTime()}`);
             lines.push('');
 
@@ -845,7 +845,7 @@ export function crosswordSolver({
         },
 
         _buildShareText(puzzleUrl) {
-            return `🧩 ${this.puzzleTitle || 'a crossword'} — Zorbl\n⏱️ ${this.celebrationTime} | ${this.width}×${this.height}\n${puzzleUrl}`;
+            return `🧩 ${this.puzzleTitle || 'a crossword'} — CrosswordBuilder\n⏱️ ${this.celebrationTime} | ${this.width}×${this.height}\n${puzzleUrl}`;
         },
 
         canNativeShare() {

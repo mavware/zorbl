@@ -124,9 +124,9 @@ new class extends Component {
         abort_unless($crossword->is_published, 404);
         abort_unless($crossword->isVisibleToSafeSearch(null), 404);
 
-        $solved = json_decode(request()->cookie('zorbl_guest_solved', '[]'), true) ?: [];
+        $solved = json_decode(request()->cookie('crosswordbuilder_guest_solved', '[]'), true) ?: [];
 
-        if (count($solved) >= config('zorbl.guest_solve_limit') && ! in_array($crossword->id, $solved)) {
+        if (count($solved) >= config('crosswordbuilder.guest_solve_limit') && ! in_array($crossword->id, $solved)) {
             $this->dispatch('show-signup-prompt');
 
             return;

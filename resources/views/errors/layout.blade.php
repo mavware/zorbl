@@ -3,7 +3,7 @@
      * Self-contained error layout: inline CSS, no Vite, no Livewire, no DB.
      * Renders cleanly even during a failed deploy, broken manifest, or DB outage.
      */
-    $appName = config('app.name', 'Zorbl');
+    $appName = config('app.name');
 @endphp
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">

@@ -24,7 +24,7 @@ class ClueEntrySeeder extends Seeder
     public function run(): void
     {
         $admin = User::role('Admin')->first()
-            ?? User::where('email', 'michael@zorbl.com')->first();
+            ?? User::where('email', 'michael@crosswordbuilder.com')->first();
 
         if (! $admin) {
             throw new RuntimeException('Admin user not found. Run DatabaseSeeder first.');

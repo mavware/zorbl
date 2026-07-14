@@ -1,15 +1,15 @@
 <?php
 
-use Zorbl\CrosswordIO\Exceptions\IpuzImportException;
-use Zorbl\CrosswordIO\Exceptions\JpzImportException;
-use Zorbl\CrosswordIO\Exceptions\PdfImportException;
-use Zorbl\CrosswordIO\Exceptions\PuzImportException;
+use CrosswordBuilder\CrosswordIO\Exceptions\IpuzImportException;
+use CrosswordBuilder\CrosswordIO\Exceptions\JpzImportException;
+use CrosswordBuilder\CrosswordIO\Exceptions\PdfImportException;
+use CrosswordBuilder\CrosswordIO\Exceptions\PuzImportException;
 use App\Enums\PuzzleType;
 use App\Models\Crossword;
 use App\Services\GridTemplateProvider;
 use App\Services\PdfExporter;
-use Zorbl\CrosswordIO\GridNumberer;
-use Zorbl\CrosswordIO\ImportDetector;
+use CrosswordBuilder\CrosswordIO\GridNumberer;
+use CrosswordBuilder\CrosswordIO\ImportDetector;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;

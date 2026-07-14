@@ -1,13 +1,13 @@
 /*
- * Zorbl service worker. Bumping CACHE_VERSION on deploy busts the cache.
+ * Service worker. Bumping CACHE_VERSION on deployment busts the cache.
  * Strategy:
- *  - Pre-cache the offline shell on install.
+ *  - Pre-cache the offline shell on installation.
  *  - Network-first for navigation; fall back to the cached offline page when
  *    the network is unreachable.
  *  - Pass-through for everything else (we let the browser cache handle static
  *    assets via standard Cache-Control headers).
  */
-const CACHE_VERSION = 'zorbl-v1';
+const CACHE_VERSION = 'crosswordbuilder-v1';
 const OFFLINE_URL = '/offline.html';
 const PRECACHE = [OFFLINE_URL, '/site.webmanifest'];
 

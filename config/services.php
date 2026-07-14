@@ -41,8 +41,8 @@ return [
     ],
 
     'stripe' => [
-        'pro_monthly_price' => env('ZORBL_PRO_MONTHLY_PRICE'),
-        'pro_yearly_price' => env('ZORBL_PRO_YEARLY_PRICE'),
+        'pro_monthly_price' => env('CROSSWORDBUILDER_PRO_MONTHLY_PRICE'),
+        'pro_yearly_price' => env('CROSSWORDBUILDER_PRO_YEARLY_PRICE'),
     ],
 
     'google' => [

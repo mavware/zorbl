@@ -23,7 +23,7 @@ Before picking anything, get the lay of the land:
 - Read `CLAUDE.md` in the repo root and follow its rules (Pint formatting, Pest testing, Laravel Boost conventions, Herd URLs).
 - Read `TODO.md` — the `Open` section is your default source of work. Prefer picking from there unless survey reveals a clearly higher-value opportunity.
 - `git log --oneline -20` and inspect recent `claude/*` and `auto/*` branches so you don't repeat or undo past automated runs.
-- Check open and recent PRs with `gh pr list --repo mavware/zorbl --state all --limit 30` (skip if `gh` isn't authenticated yet), and skim merged `claude/*` / `auto/*` diffs from the last week — do **not** re-pick work that has already been merged.
+- Check open and recent PRs with `gh pr list --repo mavware/crosswordbuilder --state all --limit 30` (skip if `gh` isn't authenticated yet), and skim merged `claude/*` / `auto/*` diffs from the last week — do **not** re-pick work that has already been merged.
 - List routes, check for pending migrations, scan recent logs for errors or warnings.
 - Run the targeted test files relevant to the area you plan to change — note anything already failing before you touch code. **Do not run the full test suite upfront**; it takes 8+ minutes and browser tests have pre-existing failures.
 - Skim TODO/FIXME comments and recently modified files.
@@ -56,7 +56,7 @@ Sized to finish in this session. Default to a checklist item from `./TODO.md`. G
 6. Run `vendor/bin/pint --dirty --format agent` on any PHP change before committing.
 7. Commit with a clear message: what changed and why.
 8. Push the branch with `git push -u origin <branch-name>`.
-9. Open a PR with `gh pr create --repo mavware/zorbl --head <branch-name> --base main --title '<title>' --body '<body>'`. The PR body **must** be non-empty and contain the end-of-run summary — never open a PR with an empty body.
+9. Open a PR with `gh pr create --repo mavware/crosswordbuilder --head <branch-name> --base main --title '<title>' --body '<body>'`. The PR body **must** be non-empty and contain the end-of-run summary — never open a PR with an empty body.
 
 ## Constraints
 

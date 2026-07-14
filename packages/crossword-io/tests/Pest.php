@@ -1,6 +1,6 @@
 <?php
 
-use Zorbl\CrosswordIO\Crossword;
+use CrosswordBuilder\CrosswordIO\Crossword;
 
 /*
 |--------------------------------------------------------------------------
