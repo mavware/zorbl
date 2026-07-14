@@ -88,11 +88,28 @@ new #[Title('My Puzzles')] class extends Component {
     #[Computed]
     public function templates(): array
     {
-        if ($this->selectedPuzzleType === PuzzleType::Diamond) {
+        if ($this->selectedPuzzleType !== PuzzleType::Standard) {
             return [];
         }
 
         return app(GridTemplateProvider::class)->getTemplates($this->newWidth ?? 0, $this->newHeight ?? 0);
+    }
+
+    #[Computed]
+    public function freestylePreview(): ?Crossword
+    {
+        if ($this->selectedPuzzleType !== PuzzleType::Freestyle) {
+            return null;
+        }
+
+        return Crossword::query()
+            ->where('is_published', true)
+            ->where('puzzle_type', PuzzleType::Freestyle)
+            ->where('width', $this->newWidth)
+            ->where('height', $this->newHeight)
+            ->safeFor(Auth::user())
+            ->inRandomOrder()
+            ->first();
     }
 
     public function updatedPuzzleType(): void
@@ -107,7 +124,7 @@ new #[Title('My Puzzles')] class extends Component {
         }
 
         $this->selectedTemplate = null;
-        unset($this->templates, $this->selectedPuzzleType);
+        unset($this->templates, $this->freestylePreview, $this->selectedPuzzleType);
     }
 
     public function updatedNewWidth(): void
@@ -119,7 +136,7 @@ new #[Title('My Puzzles')] class extends Component {
         }
 
         $this->selectedTemplate = null;
-        unset($this->templates, $this->selectedPuzzleType);
+        unset($this->templates, $this->freestylePreview, $this->selectedPuzzleType);
     }
 
     public function updatedNewHeight(): void
@@ -131,7 +148,7 @@ new #[Title('My Puzzles')] class extends Component {
         }
 
         $this->selectedTemplate = null;
-        unset($this->templates, $this->selectedPuzzleType);
+        unset($this->templates, $this->freestylePreview, $this->selectedPuzzleType);
     }
 
     public function createPuzzle(): void
@@ -543,8 +560,20 @@ new #[Title('My Puzzles')] class extends Component {
                 </div>
             @endif
 
-            {{-- Grid Template (Standard and Freestyle only) --}}
-            @if ($this->selectedPuzzleType !== PuzzleType::Diamond)
+            {{-- Freestyle Preview (no templates; show a random published freestyle puzzle of this size) --}}
+            @if ($this->selectedPuzzleType === PuzzleType::Freestyle)
+                <div class="flex flex-col items-center gap-2" wire:key="freestyle-preview-{{ $newWidth }}x{{ $newHeight }}">
+                    <flux:label>{{ __('Preview') }}</flux:label>
+                    @if ($this->freestylePreview)
+                        <x-grid-thumbnail :grid="$this->freestylePreview->grid" :styles="$this->freestylePreview->styles" :width="$newWidth" :height="$newHeight" :cell-size="6" :max-width="120" />
+                    @else
+                        <x-grid-thumbnail :grid="Crossword::emptyGrid($newWidth, $newHeight)" :width="$newWidth" :height="$newHeight" :cell-size="6" :max-width="120" />
+                    @endif
+                </div>
+            @endif
+
+            {{-- Grid Template (Standard only) --}}
+            @if ($this->selectedPuzzleType === PuzzleType::Standard)
                 <div class="relative h-48" wire:key="template-section-{{ $puzzleType }}-{{ $newWidth }}x{{ $newHeight }}">
                     <div wire:loading.delay wire:target="newWidth, newHeight, puzzleType" class="bg-surface absolute inset-0 z-10 flex items-center justify-center rounded-lg /60 /60">
                         <flux:icon.loading class="size-5 text-zinc-500" />
