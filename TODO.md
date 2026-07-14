@@ -71,7 +71,7 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [ ] Extend profanity list
 - [ ] Add authenticated `GET /api/v1/daily-puzzle/status` endpoint returning whether the user has solved today's puzzle and their solve time
 - [ ] Limit puzzle size to 40x40
-- [ ] Freestyle puzzles should not have templates.  but they can have a thumbnail of a random freestyle puzzle in the size that is selected.
+- [x] Freestyle puzzles should not have templates.  but they can have a thumbnail of a random freestyle puzzle in the size that is selected.
 
  
 ## For later
