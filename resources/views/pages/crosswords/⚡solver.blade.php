@@ -755,6 +755,20 @@ new #[Title('Solve Crossword')] class extends Component {
                 </flux:menu>
             </flux:dropdown>
 
+            {{-- Keyboard shortcuts help --}}
+            <flux:tooltip content="{{ __('Keyboard shortcuts (?)') }}">
+                <button
+                    type="button"
+                    x-on:click="showShortcuts = true"
+                    class="text-fg-muted rounded-lg p-1.5 transition-colors hover:text-zinc-800 dark:hover:text-zinc-200"
+                    aria-label="{{ __('Keyboard shortcuts') }}"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/>
+                    </svg>
+                </button>
+            </flux:tooltip>
+
             {{-- Embed code: owner always sees it; players only when the
                  constructor has allowed embedding on a published puzzle. --}}
             @if($isOwner || ($isPublished && $allowEmbed))
@@ -1354,6 +1368,79 @@ new #[Title('Solve Crossword')] class extends Component {
                 </div>
             </div>
         </template>
+    </div>
+
+    {{-- Keyboard Shortcuts Modal --}}
+    <div
+        x-show="showShortcuts"
+        x-transition:enter="transition ease-out duration-200"
+        x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100"
+        x-transition:leave="transition ease-in duration-150"
+        x-transition:leave-start="opacity-100"
+        x-transition:leave-end="opacity-0"
+        x-on:keydown.escape.window="showShortcuts = false"
+        class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm"
+        style="display: none;"
+    >
+        <div
+            x-show="showShortcuts"
+            x-transition:enter="transition ease-out duration-200 delay-75"
+            x-transition:enter-start="scale-95 opacity-0"
+            x-transition:enter-end="scale-100 opacity-100"
+            x-transition:leave="transition ease-in duration-150"
+            x-transition:leave-start="scale-100 opacity-100"
+            x-transition:leave-end="scale-95 opacity-0"
+            x-on:click.outside="showShortcuts = false"
+            class="bg-elevated mx-4 w-full max-w-lg overflow-hidden rounded-2xl shadow-2xl"
+        >
+            <div class="flex items-center justify-between border-b border-line px-6 py-4">
+                <h2 class="text-lg font-semibold text-fg">{{ __('Keyboard Shortcuts') }}</h2>
+                <button x-on:click="showShortcuts = false" class="text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 20 20" fill="currentColor"><path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z"/></svg>
+                </button>
+            </div>
+
+            <div class="max-h-[60vh] overflow-y-auto px-6 py-4">
+                {{-- Navigation --}}
+                <h3 class="mb-2 text-xs font-semibold tracking-wider text-zinc-500 uppercase">{{ __('Navigation') }}</h3>
+                <div class="mb-4 space-y-1.5">
+                    <x-solver-shortcut keys="Arrow keys" :description="__('Move between cells')" />
+                    <x-solver-shortcut keys="Tab" :description="__('Jump to next clue')" />
+                    <x-solver-shortcut keys="Shift + Tab" :description="__('Jump to previous clue')" />
+                    <x-solver-shortcut keys="Enter" :description="__('Toggle direction (Across/Down)')" />
+                    <x-solver-shortcut keys="Escape" :description="__('Deselect cell')" />
+                </div>
+
+                {{-- Input --}}
+                <h3 class="mb-2 text-xs font-semibold tracking-wider text-zinc-500 uppercase">{{ __('Input') }}</h3>
+                <div class="mb-4 space-y-1.5">
+                    <x-solver-shortcut keys="A – Z" :description="__('Type a letter')" />
+                    <x-solver-shortcut keys="Backspace" :description="__('Delete letter and move back')" />
+                    <x-solver-shortcut keys="Delete" :description="__('Clear current cell')" />
+                    <x-solver-shortcut keys="P" :description="__('Toggle pencil mode')" />
+                    <x-solver-shortcut keys="Insert" :description="__('Toggle rebus mode (multi-letter)')" />
+                </div>
+
+                {{-- Undo / Redo --}}
+                <h3 class="mb-2 text-xs font-semibold tracking-wider text-zinc-500 uppercase">{{ __('Undo / Redo') }}</h3>
+                <div class="mb-4 space-y-1.5">
+                    <x-solver-shortcut keys="Ctrl/⌘ + Z" :description="__('Undo')" />
+                    <x-solver-shortcut keys="Ctrl/⌘ + Shift + Z" :description="__('Redo')" />
+                    <x-solver-shortcut keys="Ctrl/⌘ + Y" :description="__('Redo (alternate)')" />
+                </div>
+
+                {{-- Misc --}}
+                <h3 class="mb-2 text-xs font-semibold tracking-wider text-zinc-500 uppercase">{{ __('General') }}</h3>
+                <div class="space-y-1.5">
+                    <x-solver-shortcut keys="?" :description="__('Toggle this help overlay')" />
+                </div>
+            </div>
+
+            <div class="border-t border-line px-6 py-3 text-center text-xs text-zinc-500">
+                {{ __('Press ? to toggle this overlay') }}
+            </div>
+        </div>
     </div>
 
     {{-- Celebration Modal --}}
