@@ -47,6 +47,7 @@ class DeleteAccount
             Log::warning('Stripe cancellation failed during account deletion', [
                 'user_id' => $user->getKey(),
                 'exception' => $e->getMessage(),
+                'exception_class' => $e::class,
             ]);
         }
     }
