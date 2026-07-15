@@ -3,7 +3,7 @@
 
     $appName = config('app.name');
     $tagline = 'Build crossword puzzles with a visual editor and publish them for solvers to enjoy. Free forever — no credit card.';
-    $ogImage = asset('logo.png');
+    $ogImage = asset('favicon-32x32.png');
     $canonicalUrl = url('/');
 
     $stats = Cache::remember('marketing.welcome_stats', now()->addMinutes(15), function () {
@@ -27,8 +27,6 @@
         ['value' => $stats['constructors'], 'label' => 'constructors'],
         ['value' => $stats['solves_week'], 'label' => 'solves this week'],
     ])->filter(fn ($s) => $s['value'] >= $statFloor)->values();
-
-    $dailyPuzzle = \App\Models\DailyPuzzle::todayOrAuto()?->load('tags');
 @endphp
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="dark">
@@ -36,8 +34,10 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
+        <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('apple-touch-icon.png') }}">
+        <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('favicon-32x32.png') }}">
+        <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('favicon-16x16.png') }}">
         <link rel="manifest" href="{{ asset('site.webmanifest') }}">
-        <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}">
         <meta name="theme-color" content="#0a0a0a">
         <meta name="apple-mobile-web-app-capable" content="yes">
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -102,7 +102,11 @@
             <div class="absolute inset-0 bg-gradient-to-b from-amber-500/5 via-transparent to-transparent"></div>
             <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-500/10 via-transparent to-transparent"></div>
 
-            <div class="relative mx-auto max-w-6xl px-6 py-20 text-center" x-data="{ tab: 'solve' }">
+            <div
+                class="relative mx-auto max-w-6xl px-6 py-20 text-center"
+                x-data="{ tab: 'solve', showSignup: false }"
+                x-on:show-signup-prompt.window="showSignup = true"
+            >
                 {{-- Solve / Build Toggle --}}
                 <div class="mx-auto mb-10 inline-flex rounded-full border border-zinc-800 bg-zinc-900/60 p-1">
                     <button
@@ -125,22 +129,48 @@
 
                 {{-- Solve panel --}}
                 <div x-show="tab === 'solve'" x-cloak>
-{{--                    <p class="font-bold tracking-tight text-white text-3xl sm:text-5xl">--}}
-{{--                        A visual editor, a clue library, and a community of solvers. <span class="text-amber-500">Free forever.</span>--}}
-{{--                    </p>--}}
-
-                    {{-- Puzzle of the Day --}}
-                    @if($dailyPuzzle)
-                        <div class="mx-auto mt-16 w-full max-w-sm text-left">
-                            <p class="mb-3 text-center text-xs uppercase tracking-wider text-amber-500">{{ __('Puzzle of the Day') }} &middot; {{ today()->format('M j') }}</p>
-                            <x-puzzle-card-old
-                                :crossword="$dailyPuzzle"
-                                :href="auth()->check() ? route('crosswords.solver', $dailyPuzzle) : route('puzzles.solve', $dailyPuzzle)"
-                                class="border-zinc-800 bg-zinc-900/50 shadow-2xl shadow-amber-500/5 hover:border-amber-500/30"
-                            />
-                        </div>
-                    @endif
+                    <p class="font-bold tracking-tight text-white text-3xl sm:text-5xl">
+                        Thousands of puzzles. <span class="text-amber-500">One click away.</span>
+                    </p>
+                    <div class="mx-auto mt-10 w-full max-w-7xl rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 shadow-2xl shadow-amber-500/5 sm:p-8">
+                        <livewire:puzzle-discovery :limit="7" />
+                    </div>
                 </div>
+
+                {{-- Signup Prompt Modal (for guests trying to solve a second puzzle) --}}
+                <template x-teleport="body">
+                    <div
+                        x-show="showSignup"
+                        x-cloak
+                        x-on:keydown.escape.window="showSignup = false"
+                        class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+                        x-on:click.self="showSignup = false"
+                    >
+                        <div class="mx-4 w-full max-w-md rounded-2xl bg-zinc-900 p-8 text-center shadow-xl ring-1 ring-zinc-800" x-on:click.stop>
+                            <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-500/10">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="size-8 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/>
+                                    <path d="m9 15 2 2 4-4"/>
+                                </svg>
+                            </div>
+                            <h3 class="text-xl font-bold text-zinc-100">{{ __('Ready for more puzzles?') }}</h3>
+                            <p class="mt-2 text-sm text-zinc-400">
+                                {{ __('Create a free account to solve unlimited puzzles, save your progress across devices, and track your stats.') }}
+                            </p>
+                            <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
+                                <a href="{{ route('register') }}" class="rounded-xl bg-amber-500 px-6 py-2.5 text-sm font-semibold text-zinc-950 hover:bg-amber-400 transition">
+                                    {{ __('Create Free Account') }}
+                                </a>
+                                <a href="{{ route('login') }}" class="rounded-xl border border-zinc-700 px-6 py-2.5 text-sm font-semibold text-zinc-300 hover:bg-zinc-800 transition">
+                                    {{ __('Log In') }}
+                                </a>
+                            </div>
+                            <button x-on:click="showSignup = false" class="mt-4 text-xs text-zinc-500 hover:text-zinc-300">
+                                {{ __('Maybe later') }}
+                            </button>
+                        </div>
+                    </div>
+                </template>
 
                 {{-- Build panel --}}
                 <div x-show="tab === 'build'" x-cloak style="display: none">

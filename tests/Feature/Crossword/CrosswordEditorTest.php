@@ -261,6 +261,33 @@ test('users can resize the grid', function () {
         ->and($crossword->grid[0])->toHaveCount(7);
 });
 
+test('grid can be resized up to 40 but not beyond', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create([
+        'width' => 5,
+        'height' => 5,
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->set('resizeWidth', 40)
+        ->set('resizeHeight', 40)
+        ->call('resizeGrid')
+        ->assertHasNoErrors()
+        ->assertDispatched('grid-resized');
+
+    $crossword->refresh();
+    expect($crossword->width)->toBe(40)
+        ->and($crossword->height)->toBe(40);
+
+    Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->set('resizeWidth', 41)
+        ->set('resizeHeight', 41)
+        ->call('resizeGrid')
+        ->assertHasErrors(['resizeWidth', 'resizeHeight']);
+});
+
 test('users can toggle puzzle published state', function () {
     $user = User::factory()->create();
     $crossword = Crossword::factory()->for($user)->create();
@@ -589,4 +616,92 @@ test('saveMetadata persists allow_embed toggle', function () {
         ->call('saveMetadata');
 
     expect($crossword->fresh()->allow_embed)->toBeFalse();
+});
+
+test('editor loads default colors from metadata on mount', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create([
+        'metadata' => ['colors' => [
+            'cell' => '#FEF08A',
+            'block' => '#1E293B',
+            'circle' => '#DB2777',
+            'letter' => '#2563EB',
+        ]],
+    ]);
+
+    Livewire::actingAs($user)
+        ->test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->assertSet('cellColor', '#FEF08A')
+        ->assertSet('blockColor', '#1E293B')
+        ->assertSet('circleColor', '#DB2777')
+        ->assertSet('letterColor', '#2563EB');
+});
+
+test('saveMetadata persists the grid line color', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create();
+
+    Livewire::actingAs($user)
+        ->test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->set('lineColor', '#0F766E')
+        ->call('saveMetadata')
+        ->assertHasNoErrors();
+
+    expect($crossword->fresh()->metadata['colors'])->toBe(['line' => '#0F766E']);
+});
+
+test('saveMetadata validates the grid line color is a hex value', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create();
+
+    Livewire::actingAs($user)
+        ->test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->set('lineColor', 'teal')
+        ->call('saveMetadata')
+        ->assertHasErrors(['lineColor']);
+});
+
+test('saveMetadata persists default colors', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create();
+
+    Livewire::actingAs($user)
+        ->test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->set('cellColor', '#FEF08A')
+        ->set('letterColor', '#2563EB')
+        ->call('saveMetadata')
+        ->assertHasNoErrors();
+
+    expect($crossword->fresh()->metadata['colors'])->toBe([
+        'cell' => '#FEF08A',
+        'letter' => '#2563EB',
+    ]);
+});
+
+test('saveMetadata clearing all default colors removes the colors key', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create([
+        'metadata' => ['min_answer_length' => 3, 'colors' => ['cell' => '#FEF08A']],
+    ]);
+
+    Livewire::actingAs($user)
+        ->test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->set('cellColor', null)
+        ->call('saveMetadata')
+        ->assertHasNoErrors();
+
+    $metadata = $crossword->fresh()->metadata;
+    expect($metadata)->not->toHaveKey('colors')
+        ->and($metadata['min_answer_length'])->toBe(3);
+});
+
+test('saveMetadata validates default colors are hex values', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create();
+
+    Livewire::actingAs($user)
+        ->test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->set('cellColor', 'red')
+        ->call('saveMetadata')
+        ->assertHasErrors(['cellColor']);
 });

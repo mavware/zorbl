@@ -7,7 +7,7 @@
         @if (! empty($exception?->getMessage()))
             {{ $exception->getMessage() }}
         @else
-            {{ __("Zorbl is briefly offline for a deploy. Check back in a couple of minutes — we'll be right back.") }}
+            {{ __(":app is briefly offline for a deploy. Check back in a couple of minutes — we'll be right back.", ['app' => config('app.name')]) }}
         @endif
     </p>
     <div class="actions">

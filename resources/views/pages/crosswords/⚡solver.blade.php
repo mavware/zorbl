@@ -56,6 +56,9 @@ new #[Title('Solve Crossword')] class extends Component {
     public ?array $styles = null;
     public ?array $prefilled = null;
 
+    /** @var array{cell?: string, block?: string, circle?: string, letter?: string, line?: string} */
+    public array $defaultColors = [];
+
     #[Computed]
     public function isLiked(): bool
     {
@@ -92,6 +95,8 @@ new #[Title('Solve Crossword')] class extends Component {
     public string $commentBody = '';
 
     public int $commentRating = 0;
+
+    public bool $editingComment = false;
 
     #[Computed]
     public function communityStats(): ?array
@@ -244,7 +249,26 @@ new #[Title('Solve Crossword')] class extends Component {
 
         $this->commentBody = '';
         $this->commentRating = 0;
+        $this->editingComment = false;
         unset($this->comments, $this->averageRating, $this->userComment);
+    }
+
+    public function editComment(): void
+    {
+        $comment = $this->userComment;
+
+        if ($comment) {
+            $this->commentBody = $comment->body;
+            $this->commentRating = $comment->rating ?? 0;
+            $this->editingComment = true;
+        }
+    }
+
+    public function cancelEditComment(): void
+    {
+        $this->commentBody = '';
+        $this->commentRating = 0;
+        $this->editingComment = false;
     }
 
     public function deleteComment(): void
@@ -324,6 +348,7 @@ new #[Title('Solve Crossword')] class extends Component {
         $this->cluesDown = $crossword->clues_down ?? [];
         $this->styles = $crossword->styles;
         $this->prefilled = $crossword->prefilled;
+        $this->defaultColors = $crossword->metadata['colors'] ?? [];
         $this->pencilCells = $attempt->pencil_cells ?? [];
         $this->revealedCells = $attempt->revealed_cells ?? [];
         $this->elapsedSeconds = $attempt->solve_time_seconds ?? 0;
@@ -498,7 +523,7 @@ new #[Title('Solve Crossword')] class extends Component {
     public function generateShareText(): string
     {
         $lines = [];
-        $lines[] = __(':title on Zorbl', ['title' => $this->title]);
+        $lines[] = __(':title on :app', ['title' => $this->title, 'app' => config('app.name')]);
         $lines[] = $this->width.'x'.$this->height.' | '.$this->formatSolveTime($this->elapsedSeconds);
         $lines[] = route('puzzles.solve', $this->crosswordId);
 
@@ -537,6 +562,7 @@ new #[Title('Solve Crossword')] class extends Component {
         progress: @js($progress),
         styles: @js($styles ?? []),
         prefilled: @js($prefilled),
+        defaultColors: @js((object) $defaultColors),
         cluesAcross: @js($cluesAcross),
         cluesDown: @js($cluesDown),
         initialElapsed: @js($elapsedSeconds),
@@ -773,7 +799,7 @@ new #[Title('Solve Crossword')] class extends Component {
                                             rows="3"
                                             class="border-line-strong w-full rounded-lg border bg-zinc-50 px-3 py-2 font-mono text-xs text-zinc-700 dark:bg-zinc-900 dark:text-zinc-400"
                                             x-ref="scriptCode"
-                                        >&lt;div data-zorbl-embed data-crossword-id="{{ $crosswordId }}" data-api-url="{{ url('/api/embed') }}/"&gt;&lt;/div&gt;
+                                        >&lt;div data-crosswordbuilder-embed data-crossword-id="{{ $crosswordId }}" data-api-url="{{ url('/api/embed') }}/"&gt;&lt;/div&gt;
 &lt;link rel="stylesheet" href="{{ Vite::asset('resources/css/embed.css') }}"&gt;
 &lt;script src="{{ Vite::asset('resources/js/embed.js') }}" defer&gt;&lt;/script&gt;</textarea>
                                         <button
@@ -858,7 +884,7 @@ new #[Title('Solve Crossword')] class extends Component {
             >
                 <div
                     class="grid border border-zinc-800 dark:border-zinc-300 [--bar-color:var(--color-zinc-800)] dark:[--bar-color:var(--color-zinc-300)]"
-                    :style="'grid-template-columns: repeat(' + width + ', minmax(0, 1fr));'"
+                    :style="'grid-template-columns: repeat(' + width + ', minmax(0, 1fr));' + (defaultColors.line ? ' --bar-color: ' + defaultColors.line + '; --color-line-strong: ' + defaultColors.line + '; border-color: ' + defaultColors.line + ';' : '')"
                     role="presentation"
                 >
                     <template x-for="(row, rowIdx) in grid" :key="'row-' + rowIdx">
@@ -887,7 +913,9 @@ new #[Title('Solve Crossword')] class extends Component {
                                 {{-- Circle annotation --}}
                                 <template x-if="hasCircle(rowIdx, colIdx)">
                                     <svg class="pointer-events-none absolute inset-0.5 size-[calc(100%-4px)]" viewBox="0 0 100 100">
-                                        <circle cx="50" cy="50" r="46" fill="none" stroke="currentColor" stroke-width="2" class="text-fg-subtle" />
+                                        <circle cx="50" cy="50" r="46" fill="none"
+                                                :stroke="defaultColors.circle || 'currentColor'"
+                                                stroke-width="2" class="text-fg-subtle" />
                                     </svg>
                                 </template>
 
@@ -900,7 +928,7 @@ new #[Title('Solve Crossword')] class extends Component {
                                 <span
                                     class="font-semibold uppercase"
                                     :class="letterClass(rowIdx, colIdx)"
-                                    :style="letterFontStyle(rowIdx, colIdx)"
+                                    :style="letterFontStyle(rowIdx, colIdx) + letterColorStyle(rowIdx, colIdx)"
                                     x-text="isBlock(rowIdx, colIdx) ? '' : (progress[rowIdx]?.[colIdx] || '')"
                                 ></span>
 
@@ -1225,6 +1253,26 @@ new #[Title('Solve Crossword')] class extends Component {
                         <flux:button type="submit" size="sm" variant="primary">{{ __('Post Comment') }}</flux:button>
                     </div>
                 </form>
+            @elseif($editingComment)
+                <form wire:submit="submitComment" class="mb-6 space-y-3 rounded-lg border border-blue-100 bg-blue-50/50 p-3 dark:border-blue-900/30 dark:bg-blue-950/20">
+                    <div class="flex items-center justify-between">
+                        <flux:text size="sm" class="font-medium">{{ __('Edit your review') }}</flux:text>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <flux:text size="sm" class="mr-2 text-zinc-600">{{ __('Rating:') }}</flux:text>
+                        @for($i = 1; $i <= 5; $i++)
+                            <button type="button" wire:click="$set('commentRating', {{ $commentRating === $i ? 0 : $i }})" class="focus:outline-none">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="size-6 transition-colors {{ $i <= $commentRating ? 'text-amber-400' : 'text-zinc-300 hover:text-amber-300 dark:text-zinc-600 dark:hover:text-amber-500' }}" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.006 5.404.434c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.434 2.082-5.005Z" clip-rule="evenodd"/></svg>
+                            </button>
+                        @endfor
+                    </div>
+                    <flux:textarea wire:model="commentBody" :placeholder="__('Share your thoughts about this puzzle...')" rows="2" />
+                    @error('commentBody') <flux:text size="sm" class="text-red-500">{{ $message }}</flux:text> @enderror
+                    <div class="flex justify-end gap-2">
+                        <flux:button type="button" wire:click="cancelEditComment" size="sm" variant="ghost">{{ __('Cancel') }}</flux:button>
+                        <flux:button type="submit" size="sm" variant="primary">{{ __('Save Changes') }}</flux:button>
+                    </div>
+                </form>
             @else
                 <div class="mb-6 rounded-lg border border-blue-100 bg-blue-50/50 p-3 dark:border-blue-900/30 dark:bg-blue-950/20">
                     <div class="mb-1 flex items-center justify-between">
@@ -1238,7 +1286,10 @@ new #[Title('Solve Crossword')] class extends Component {
                                 </div>
                             @endif
                         </div>
-                        <flux:button wire:click="deleteComment" variant="ghost" size="sm" icon="trash" />
+                        <div class="flex items-center gap-1">
+                            <flux:button wire:click="editComment" variant="ghost" size="sm" icon="pencil-square" />
+                            <flux:button wire:click="deleteComment" variant="ghost" size="sm" icon="trash" />
+                        </div>
                     </div>
                     <flux:text size="sm">{{ $this->userComment->body }}</flux:text>
                 </div>
@@ -1337,7 +1388,7 @@ new #[Title('Solve Crossword')] class extends Component {
             </div>
 
             {{-- Content --}}
-            <div class="space-y-4 px-6 pt-5 pb-6">
+            <div class="max-h-[60vh] space-y-4 overflow-y-auto px-6 pt-5 pb-6">
                 {{-- Solve time & rank --}}
                 <div class="flex items-center justify-center gap-2 rounded-xl bg-zinc-50 px-4 py-3 dark:bg-zinc-700/50">
                     <svg xmlns="http://www.w3.org/2000/svg" class="size-5 text-emerald-500" viewBox="0 0 20 20" fill="currentColor">
@@ -1376,6 +1427,37 @@ new #[Title('Solve Crossword')] class extends Component {
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" class="size-4" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
                     </a>
+                </div>
+
+                {{-- Quick Rating & Comment --}}
+                <div class="border-t border-zinc-200 pt-4 dark:border-zinc-700" wire:key="celebration-rating">
+                    @if(!$this->userComment)
+                        <h3 class="mb-2.5 text-center text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">{{ __('Rate This Puzzle') }}</h3>
+                        <form wire:submit="submitComment" class="space-y-2.5">
+                            <div class="flex items-center justify-center gap-1.5">
+                                @for($i = 1; $i <= 5; $i++)
+                                    <button type="button" wire:click="$set('commentRating', {{ $commentRating === $i ? 0 : $i }})" class="focus:outline-none">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="size-7 transition-colors {{ $i <= $commentRating ? 'text-amber-400' : 'text-zinc-300 hover:text-amber-300 dark:text-zinc-600 dark:hover:text-amber-500' }}" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.006 5.404.434c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.434 2.082-5.005Z" clip-rule="evenodd"/></svg>
+                                    </button>
+                                @endfor
+                            </div>
+                            <flux:textarea wire:model="commentBody" :placeholder="__('Share your thoughts...')" rows="2" />
+                            @error('commentBody') <flux:text size="sm" class="text-red-500">{{ $message }}</flux:text> @enderror
+                            <flux:button type="submit" size="sm" variant="primary" class="w-full">{{ __('Post Review') }}</flux:button>
+                        </form>
+                    @else
+                        <h3 class="mb-2 text-center text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">{{ __('Your Review') }}</h3>
+                        <div class="rounded-lg border border-blue-100 bg-blue-50/50 p-2.5 dark:border-blue-900/30 dark:bg-blue-950/20">
+                            @if($this->userComment->rating)
+                                <div class="mb-1 flex items-center justify-center gap-0.5">
+                                    @for($i = 1; $i <= 5; $i++)
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="size-4 {{ $i <= $this->userComment->rating ? 'text-amber-400' : 'text-zinc-300 dark:text-zinc-600' }}" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.006 5.404.434c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.434 2.082-5.005Z" clip-rule="evenodd"/></svg>
+                                    @endfor
+                                </div>
+                            @endif
+                            <flux:text size="sm" class="text-center">{{ $this->userComment->body }}</flux:text>
+                        </div>
+                    @endif
                 </div>
 
                 {{-- Leaderboard --}}

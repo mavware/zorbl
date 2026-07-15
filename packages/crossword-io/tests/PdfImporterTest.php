@@ -1,8 +1,8 @@
 <?php
 
-use Zorbl\CrosswordIO\Exceptions\PdfImportException;
-use Zorbl\CrosswordIO\GridNumberer;
-use Zorbl\CrosswordIO\Importers\PdfImporter;
+use CrosswordBuilder\CrosswordIO\Exceptions\PdfImportException;
+use CrosswordBuilder\CrosswordIO\GridNumberer;
+use CrosswordBuilder\CrosswordIO\Importers\PdfImporter;
 
 beforeEach(function () {
     $this->importer = new PdfImporter(new GridNumberer);

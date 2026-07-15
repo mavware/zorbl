@@ -12,7 +12,7 @@
                 <div
                     class="grid [--bar-color:var(--color-zinc-800)] dark:[--bar-color:var(--color-zinc-300)]"
                     :class="{ 'editor-complete-flash-border': cellsCompleteFlash, 'editor-grid-bounce': cellsCompleteFlash }"
-                    :style="'grid-template-columns: repeat(' + width + ', minmax(0, 1fr));'"
+                    :style="'grid-template-columns: repeat(' + width + ', minmax(0, 1fr));' + (defaultColors.line ? ' --bar-color: ' + defaultColors.line + '; --color-line-strong: ' + defaultColors.line + ';' : '')"
                 >
                     <template x-for="(row, rowIdx) in grid" :key="'row-' + rowIdx">
                         <template x-for="(cell, colIdx) in row" :key="'cell-' + rowIdx + '-' + colIdx">
@@ -41,7 +41,8 @@
                                 <template x-if="hasCircle(rowIdx, colIdx)">
                                     <svg class="pointer-events-none absolute inset-0.5 size-[calc(100%-4px)]"
                                          viewBox="0 0 100 100">
-                                        <circle cx="50" cy="50" r="46" fill="none" stroke="currentColor"
+                                        <circle cx="50" cy="50" r="46" fill="none"
+                                                :stroke="defaultColors.circle || 'currentColor'"
                                                 stroke-width="2" class="text-fg-subtle"/>
                                     </svg>
                                 </template>
@@ -60,7 +61,7 @@
                                 <span
                                     class="font-semibold uppercase"
                                     :class="isPrefilled(rowIdx, colIdx) ? 'text-violet-700 dark:text-violet-300' : 'text-fg'"
-                                    :style="letterFontStyle(rowIdx, colIdx)"
+                                    :style="letterFontStyle(rowIdx, colIdx) + (defaultColors.letter && !isPrefilled(rowIdx, colIdx) ? '; color: ' + defaultColors.letter : '')"
                                     x-text="isBlock(rowIdx, colIdx) ? '' : (solution[rowIdx]?.[colIdx] || '')"
                                 ></span>
                             </div>

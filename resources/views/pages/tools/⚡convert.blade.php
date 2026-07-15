@@ -4,16 +4,16 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithFileUploads;
-use Zorbl\CrosswordIO\Crossword;
-use Zorbl\CrosswordIO\Exceptions\ExportValidationException;
-use Zorbl\CrosswordIO\Exceptions\IpuzImportException;
-use Zorbl\CrosswordIO\Exceptions\JpzImportException;
-use Zorbl\CrosswordIO\Exceptions\PdfImportException;
-use Zorbl\CrosswordIO\Exceptions\PuzImportException;
-use Zorbl\CrosswordIO\Exporters\IpuzExporter;
-use Zorbl\CrosswordIO\Exporters\JpzExporter;
-use Zorbl\CrosswordIO\Exporters\PuzExporter;
-use Zorbl\CrosswordIO\ImportDetector;
+use CrosswordBuilder\CrosswordIO\Crossword;
+use CrosswordBuilder\CrosswordIO\Exceptions\ExportValidationException;
+use CrosswordBuilder\CrosswordIO\Exceptions\IpuzImportException;
+use CrosswordBuilder\CrosswordIO\Exceptions\JpzImportException;
+use CrosswordBuilder\CrosswordIO\Exceptions\PdfImportException;
+use CrosswordBuilder\CrosswordIO\Exceptions\PuzImportException;
+use CrosswordBuilder\CrosswordIO\Exporters\IpuzExporter;
+use CrosswordBuilder\CrosswordIO\Exporters\JpzExporter;
+use CrosswordBuilder\CrosswordIO\Exporters\PuzExporter;
+use CrosswordBuilder\CrosswordIO\ImportDetector;
 
 new
 #[Title('Puzzle Format Converter')]

@@ -1,5 +1,5 @@
 {
-    "name": "zorbl/crossword-io",
+    "name": "crosswordbuilder/crossword-io",
     "description": "Import and export crossword puzzles in iPUZ, PUZ, JPZ, and PDF formats.",
     "type": "library",
     "license": "MIT",
@@ -19,12 +19,12 @@
     },
     "autoload": {
         "psr-4": {
-            "Zorbl\\CrosswordIO\\": "src/"
+            "CrosswordBuilder\\CrosswordIO\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Zorbl\\CrosswordIO\\Tests\\": "tests/"
+            "CrosswordBuilder\\CrosswordIO\\Tests\\": "tests/"
         }
     },
     "config": {

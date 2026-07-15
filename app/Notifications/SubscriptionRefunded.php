@@ -31,7 +31,7 @@ class SubscriptionRefunded extends Notification implements ShouldQueue
         $formatted = $this->formatAmount();
 
         return (new MailMessage)
-            ->subject(__('A refund was issued for your Zorbl subscription'))
+            ->subject(__('A refund was issued for your :app subscription', ['app' => config('app.name')]))
             ->greeting(__('Hi :name,', ['name' => $notifiable->name]))
             ->line($this->fullRefund
                 ? __('We have refunded :amount to your original payment method.', ['amount' => $formatted])

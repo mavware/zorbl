@@ -23,11 +23,11 @@ class ProSubscriptionStarted extends Notification implements ShouldQueue
     public function toMail(User $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject(__('Welcome to Zorbl Pro'))
+            ->subject(__('Welcome to :app Pro', ['app' => config('app.name')]))
             ->greeting(__('Welcome to Pro, :name!', ['name' => $notifiable->name]))
             ->line(__('Your subscription is active. You now have access to AI autofill, AI clue generation, unlimited puzzles, and all export formats.'))
             ->action(__('Start creating'), route('crosswords.index'))
-            ->line(__('Thanks for supporting Zorbl.'));
+            ->line(__('Thanks for supporting :app.', ['app' => config('app.name')]));
     }
 
     /**
@@ -37,7 +37,7 @@ class ProSubscriptionStarted extends Notification implements ShouldQueue
     {
         return [
             'type' => 'subscription.started',
-            'title' => __('Welcome to Zorbl Pro'),
+            'title' => __('Welcome to :app Pro', ['app' => config('app.name')]),
             'body' => __('Your Pro subscription is now active.'),
             'url' => route('billing.index'),
         ];
