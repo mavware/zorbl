@@ -5,7 +5,7 @@ namespace App\Services;
 use App\Models\Word;
 use Random\Engine\Mt19937;
 use Random\Randomizer;
-use Zorbl\CrosswordIO\GridNumberer;
+use CrosswordBuilder\CrosswordIO\GridNumberer;
 
 class GridFiller
 {

@@ -7,7 +7,7 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 use ZipArchive;
-use Zorbl\CrosswordIO\GridNumberer;
+use CrosswordBuilder\CrosswordIO\GridNumberer;
 
 abstract class BaseActivitySeeder extends Seeder
 {

@@ -2,10 +2,11 @@
 
 namespace App\Services;
 
-use App\Enums\TemplateStyle;
 use App\Models\Template;
-use App\Support\GenerationCandidate;
+use App\Enums\TemplateStyle;
 use App\Support\GenerationSpec;
+use App\Support\GenerationCandidate;
+use App\Services\Anthropic\AnthropicClient;
 
 class TemplateGeneratorService
 {

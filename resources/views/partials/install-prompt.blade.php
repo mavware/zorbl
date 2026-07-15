@@ -7,7 +7,7 @@
 
     Hidden when:
       - The app is already running standalone (matchMedia or navigator.standalone)
-      - The user dismissed the banner (localStorage zorbl_install_dismissed_at)
+      - The user dismissed the banner (localStorage crosswordbuilder_install_dismissed_at)
       - No install signal is available (not iOS, no beforeinstallprompt fired)
 --}}
 <div
@@ -18,7 +18,7 @@
         isIos: false,
         showIosTip: false,
         init() {
-            const pwa = window.zorblPwa;
+            const pwa = window.crosswordbuilderPwa;
             if (!pwa) return;
             if (pwa.isStandalone) return;
 
@@ -31,7 +31,7 @@
 
             const dismissed = (() => {
                 try {
-                    const v = localStorage.getItem('zorbl_install_dismissed_at');
+                    const v = localStorage.getItem('crosswordbuilder_install_dismissed_at');
                     if (!v) return false;
                     // Re-show after 60 days.
                     return (Date.now() - parseInt(v, 10)) < 60 * 24 * 60 * 60 * 1000;
@@ -49,11 +49,11 @@
                 this.installable = true;
                 this.ready = true;
             }
-            window.addEventListener('zorbl-install-available', () => {
+            window.addEventListener('crosswordbuilder-install-available', () => {
                 this.installable = true;
                 this.ready = true;
             });
-            window.addEventListener('zorbl-installed', () => {
+            window.addEventListener('crosswordbuilder-installed', () => {
                 this.installed = true;
                 this.ready = false;
             });
@@ -63,14 +63,14 @@
                 this.showIosTip = true;
                 return;
             }
-            const accepted = await window.zorblPwa.promptInstall();
+            const accepted = await window.crosswordbuilderPwa.promptInstall();
             if (accepted) {
                 this.ready = false;
                 this.installed = true;
             }
         },
         dismiss() {
-            try { localStorage.setItem('zorbl_install_dismissed_at', String(Date.now())); } catch {}
+            try { localStorage.setItem('crosswordbuilder_install_dismissed_at', String(Date.now())); } catch {}
             this.ready = false;
         },
     }"
@@ -93,7 +93,7 @@
             </p>
             <p class="mt-1 text-xs text-zinc-400">
                 <span x-show="!isIos">{{ __('Add it to your home screen for one-tap access and a full-screen solving experience.') }}</span>
-                <span x-show="isIos" x-cloak>{{ __('Tap Share, then "Add to Home Screen" to install Zorbl on your iPhone or iPad.') }}</span>
+                <span x-show="isIos" x-cloak>{{ __('Tap Share, then "Add to Home Screen" to install :app on your iPhone or iPad.', ['app' => config('app.name')]) }}</span>
             </p>
             <div class="mt-3 flex items-center gap-2">
                 <button
@@ -118,7 +118,7 @@
                 <ol class="list-decimal space-y-1 pl-4">
                     <li>{{ __('Tap the Share icon in Safari\'s toolbar.') }}</li>
                     <li>{{ __('Scroll and tap "Add to Home Screen".') }}</li>
-                    <li>{{ __('Tap "Add" — Zorbl will appear on your home screen.') }}</li>
+                    <li>{{ __('Tap "Add" — ').config('app.name').__(' will appear on your home screen.') }}</li>
                 </ol>
             </div>
         </div>

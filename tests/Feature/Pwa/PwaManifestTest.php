@@ -64,6 +64,6 @@ test('install prompt partial is included in the welcome page', function () {
     $response = $this->get('/');
 
     $response->assertOk()
-        ->assertSee('zorblPwa', false)
+        ->assertSee('crosswordbuilderPwa', false)
         ->assertSee('install-banner-title', false);
 });

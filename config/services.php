@@ -37,12 +37,12 @@ return [
 
     'anthropic' => [
         'key' => env('ANTHROPIC_API_KEY'),
-        'model' => env('ANTHROPIC_MODEL', 'claude-sonnet-4-6'),
+        'model' => env('ANTHROPIC_MODEL', 'claude-opus-4-8'),
     ],
 
     'stripe' => [
-        'pro_monthly_price' => env('ZORBL_PRO_MONTHLY_PRICE'),
-        'pro_yearly_price' => env('ZORBL_PRO_YEARLY_PRICE'),
+        'pro_monthly_price' => env('CROSSWORDBUILDER_PRO_MONTHLY_PRICE'),
+        'pro_yearly_price' => env('CROSSWORDBUILDER_PRO_YEARLY_PRICE'),
     ],
 
     'google' => [

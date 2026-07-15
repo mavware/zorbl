@@ -1,8 +1,8 @@
-# Zorbl
+# CrosswordBuilder
 
 A crossword puzzle platform for constructors and solvers. Build puzzles with a visual grid editor, solve community puzzles with auto-saved progress, run contests, and share your creations — all from the browser.
 
-Built with Laravel 13, Livewire 4, Alpine.js, and Tailwind CSS 4.
+Built with **Laravel 13**, **Livewire 4**, **Alpine.js**, and **Tailwind CSS 4**.
 
 ---
 
@@ -48,7 +48,7 @@ Built with Laravel 13, Livewire 4, Alpine.js, and Tailwind CSS 4.
 
 | Layer | Technology |
 |-------|-----------|
-| Backend | PHP 8.3+, Laravel 13, Livewire 4 |
+| Backend | PHP 8.5+, Laravel 13, Livewire 4 |
 | Frontend | Alpine.js 3, Tailwind CSS 4, Vite 8 |
 | UI Components | Flux UI 2, Heroicons |
 | Auth | Laravel Fortify (2FA/TOTP), Laravel Sanctum (API tokens) |
@@ -66,7 +66,7 @@ Built with Laravel 13, Livewire 4, Alpine.js, and Tailwind CSS 4.
 
 ### Prerequisites
 
-- PHP 8.3+
+- PHP 8.5+
 - Composer
 - Node.js 20+
 - SQLite (default) or MySQL/PostgreSQL
@@ -74,8 +74,8 @@ Built with Laravel 13, Livewire 4, Alpine.js, and Tailwind CSS 4.
 ### Quick Setup
 
 ```bash
-git clone <repository-url> zorbl
-cd zorbl
+git clone <repository-url> crosswordbuilder
+cd crosswordbuilder
 composer setup
 ```
 
@@ -116,7 +116,7 @@ composer dev
 
 This starts the Laravel server, queue worker, log viewer (Pail), and Vite dev server concurrently.
 
-Or if using [Laravel Herd](https://herd.laravel.com), the site is automatically available at `https://zorbl.test`.
+Or if using [Laravel Herd](https://herd.laravel.com), the site is automatically available at `https://crosswordbuilder.test`.
 
 ---
 
@@ -153,7 +153,7 @@ routes/
 ### Key Services
 
 | Service | Purpose |
-|---------|---------|
+|---------|----------|
 | `GridFiller` | Backtracking constraint-propagation solver for heuristic autofill |
 | `AiGridFiller` | Claude API integration for thematic grid filling |
 | `AiClueGenerator` | Claude API integration for clue writing |
@@ -195,12 +195,12 @@ The REST API follows the [JSON:API specification](https://jsonapi.org/format/) a
 
 ```bash
 # Get a token
-curl -X POST https://zorbl.test/api/v1/tokens \
+curl -X POST https://crosswordbuilder.test/api/v1/tokens \
   -H "Content-Type: application/json" \
   -d '{"email": "you@example.com", "password": "secret", "device_name": "cli"}'
 
 # Use the token
-curl https://zorbl.test/api/v1/me \
+curl https://crosswordbuilder.test/api/v1/me \
   -H "Authorization: Bearer {token}"
 ```
 
@@ -286,7 +286,7 @@ Any published puzzle can be embedded on external sites:
 
 ```html
 <iframe
-  src="https://zorbl.test/embed/{crossword-id}"
+  src="https://crosswordbuilder.test/embed/{crossword-id}"
   width="800"
   height="600"
   frameborder="0"
@@ -318,6 +318,12 @@ Access the Filament admin panel at `/admin` (requires the Admin role). Manage:
 - Exception tracking
 - Queue throughput
 - Server resource usage
+
+---
+
+## Contributing
+
+Pull requests are welcome. Please open an issue first to discuss what you'd like to change.
 
 ---
 

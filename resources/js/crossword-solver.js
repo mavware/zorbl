@@ -19,7 +19,7 @@ import {
 import { cloneForWire, createAutosave } from './grid/persistence.js';
 
 export function crosswordSolver({
-    width, height, grid, solution, progress, styles, prefilled,
+    width, height, grid, solution, progress, styles, prefilled, defaultColors,
     cluesAcross, cluesDown, initialElapsed, initialSolved, initialPencilCells, initialRevealedCells, persistence,
     puzzleTitle,
     shareTitle, shareUrl,
@@ -32,6 +32,7 @@ export function crosswordSolver({
         progress,
         puzzleTitle: puzzleTitle || '',
         styles: (styles && !Array.isArray(styles)) ? styles : {},
+        defaultColors: defaultColors || {},
         prefilled: prefilled || null,
         cluesAcross: cluesAcross || [],
         cluesDown: cluesDown || [],
@@ -189,10 +190,9 @@ export function crosswordSolver({
         cellBarStyles(row, col) {
             const key = cellKey(row, col);
             const entry = this.styles[key];
-            if (!entry) return '';
             const parts = [];
 
-            const bars = entry.bars;
+            const bars = entry?.bars;
             if (bars && bars.length > 0) {
                 const shadows = [];
                 if (bars.includes('top'))    shadows.push('inset 0 2px 0 0 var(--bar-color)');
@@ -202,11 +202,17 @@ export function crosswordSolver({
                 parts.push('box-shadow: ' + shadows.join(', '));
             }
 
-            const color = entry.color;
-            if (color && !this.isBlock(row, col)) {
-                const isSelected = row === this.selectedRow && col === this.selectedCol;
-                const isInWord = this.activeWordCellSet.has(key);
-                if (!isSelected && !isInWord) parts.push('background-color: ' + color);
+            if (this.isBlock(row, col)) {
+                if (this.defaultColors.block) parts.push('background-color: ' + this.defaultColors.block);
+            } else {
+                // Per-cell color (from the editor's right-click menu) wins over
+                // the puzzle-wide default cell color.
+                const color = entry?.color || this.defaultColors.cell;
+                if (color) {
+                    const isSelected = row === this.selectedRow && col === this.selectedCol;
+                    const isInWord = this.activeWordCellSet.has(key);
+                    if (!isSelected && !isInWord) parts.push('background-color: ' + color);
+                }
             }
 
             return parts.join('; ');
@@ -214,7 +220,9 @@ export function crosswordSolver({
 
         cellClasses(row, col) {
             if (this.isVoid(row, col)) return 'invisible';
-            if (this.isBlock(row, col)) return 'bg-zinc-800 dark:bg-zinc-300';
+            // Background-color is set inline in cellBarStyles when a default
+            // block color is configured.
+            if (this.isBlock(row, col)) return this.defaultColors.block ? '' : 'bg-zinc-800 dark:bg-zinc-300';
 
             const isSelected = row === this.selectedRow && col === this.selectedCol;
             const isInWord = this.activeWordCellSet.has(cellKey(row, col));
@@ -222,7 +230,7 @@ export function crosswordSolver({
 
             if (isSelected) return prefilled ? 'bg-blue-200 dark:bg-blue-800 cursor-pointer' : 'bg-blue-300 dark:bg-blue-700 cursor-pointer';
             if (isInWord) return prefilled ? 'bg-blue-50 dark:bg-blue-900/30 cursor-pointer' : 'bg-blue-100 dark:bg-blue-900/50 cursor-pointer';
-            if (this.getCellColor(row, col)) return 'cursor-pointer';
+            if (this.getCellColor(row, col) || this.defaultColors.cell) return 'cursor-pointer';
             if (prefilled) return 'bg-muted cursor-pointer';
             return 'bg-zinc-50 dark:bg-zinc-800 cursor-pointer';
         },
@@ -291,6 +299,16 @@ export function crosswordSolver({
             if (this.checked[key] === 'correct') return 'text-emerald-600 dark:text-emerald-400';
             if (this.pencilCells[key]) return 'text-fg-subtle';
             return 'text-fg';
+        },
+
+        // Inline color override for the default letter color. Status colors
+        // (revealed / checked / pencil) from letterClass must still win, so this
+        // only applies when the letter is in its normal state.
+        letterColorStyle(row, col) {
+            if (!this.defaultColors.letter) return '';
+            const key = cellKey(row, col);
+            if (this.revealed[key] || this.checked[key] || this.pencilCells[key]) return '';
+            return '; color: ' + this.defaultColors.letter;
         },
 
         // --- Selection ---
@@ -785,7 +803,7 @@ export function crosswordSolver({
         generateShareText() {
             const lines = [];
             const title = this.shareTitle || 'Crossword';
-            lines.push(`\u{1F9E9} Zorbl — “${title}”`);
+            lines.push(`\u{1F9E9} CrosswordBuilder — “${title}”`);
             lines.push(`⏱️ ${this.formattedTime()}`);
             lines.push('');
 
@@ -834,7 +852,7 @@ export function crosswordSolver({
         },
 
         _buildShareText(puzzleUrl) {
-            return `🧩 ${this.puzzleTitle || 'a crossword'} — Zorbl\n⏱️ ${this.celebrationTime} | ${this.width}×${this.height}\n${puzzleUrl}`;
+            return `🧩 ${this.puzzleTitle || 'a crossword'} — CrosswordBuilder\n⏱️ ${this.celebrationTime} | ${this.width}×${this.height}\n${puzzleUrl}`;
         },
 
         canNativeShare() {

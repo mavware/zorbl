@@ -1,8 +1,8 @@
 <?php
 
-use Zorbl\CrosswordIO\Exceptions\JpzImportException;
-use Zorbl\CrosswordIO\GridNumberer;
-use Zorbl\CrosswordIO\Importers\JpzImporter;
+use CrosswordBuilder\CrosswordIO\Exceptions\JpzImportException;
+use CrosswordBuilder\CrosswordIO\GridNumberer;
+use CrosswordBuilder\CrosswordIO\Importers\JpzImporter;
 
 beforeEach(function () {
     $this->importer = new JpzImporter(new GridNumberer);

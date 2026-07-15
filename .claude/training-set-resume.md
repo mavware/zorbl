@@ -4,7 +4,7 @@
 
 A curated training set of crossword templates so Claude can learn what makes a template work and generate new ones with point of view. Each entry combines: the grid, computed structural stats, a small set of discrete style tags, and hand-written prose commentary (philosophy / strengths / compromises / best_for / avoid_when).
 
-Repo: `/Users/michael/Herd/zorbl` · Stack: Laravel 13, PHP 8.5, Pest 4, MySQL · Plan file: `~/.claude/plans/if-i-wanted-to-vectorized-locket.md`.
+Repo: `/Users/michael/Herd/crosswordbuilder` · Stack: Laravel 13, PHP 8.5, Pest 4, MySQL · Plan file: `~/.claude/plans/if-i-wanted-to-vectorized-locket.md`.
 
 ## What's already in place
 
@@ -13,7 +13,7 @@ Repo: `/Users/michael/Herd/zorbl` · Stack: Laravel 13, PHP 8.5, Pest 4, MySQL �
 - `template_tag` pivot — `(template_id, tag)` unique. The `tag` column is cast to `App\Enums\TemplateStyle` (a **12-case PHP enum**, not a row in the `tags` table). Model: `App\Models\TemplateTag`. Relationship: `Template::templateTags(): HasMany`.
 - `template_annotations` table — 1:1 with templates. Columns: `philosophy` (text NOT NULL), `strengths` + `compromises` (json arrays of strings, nullable), `best_for` + `avoid_when` (text nullable). Model: `App\Models\TemplateAnnotation`. Relationship: `Template::annotation(): HasOne`.
 
-**Stats (done):** `App\Services\TemplateStatsService` returns an `App\Support\TemplateStats` DTO via `forTemplate(Template)` or `forGrid(...)`. Computes block density, word counts/lengths, symmetry (rotational + mirror), connectivity, fully-checked. Reuses `Zorbl\CrosswordIO\GridNumberer` for bar-aware word slots. Tests in `tests/Unit/Services/TemplateStatsServiceTest.php`. **Stats are computed on-the-fly, not stored** — query in PHP after fetching.
+**Stats (done):** `App\Services\TemplateStatsService` returns an `App\Support\TemplateStats` DTO via `forTemplate(Template)` or `forGrid(...)`. Computes block density, word counts/lengths, symmetry (rotational + mirror), connectivity, fully-checked. Reuses `CrosswordBuilder\CrosswordIO\GridNumberer` for bar-aware word slots. Tests in `tests/Unit/Services/TemplateStatsServiceTest.php`. **Stats are computed on-the-fly, not stored** — query in PHP after fetching.
 
 **Auto-tagger (done):** `Database\Seeders\TemplateTagSeeder`, wired into `DatabaseSeeder`. Idempotent — skips templates that already have any tags so manual edits aren't overwritten. Derives tags from stats per these rules:
 - `MiniStyle` if width ≤ 7

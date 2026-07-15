@@ -3,10 +3,10 @@
 use App\Models\Crossword;
 use App\Models\PuzzleAttempt;
 use App\Models\User;
-use Zorbl\CrosswordIO\Exporters\IpuzExporter;
-use Zorbl\CrosswordIO\Exporters\PuzExporter;
-use Zorbl\CrosswordIO\GridNumberer;
-use Zorbl\CrosswordIO\Importers\IpuzImporter;
+use CrosswordBuilder\CrosswordIO\Exporters\IpuzExporter;
+use CrosswordBuilder\CrosswordIO\Exporters\PuzExporter;
+use CrosswordBuilder\CrosswordIO\GridNumberer;
+use CrosswordBuilder\CrosswordIO\Importers\IpuzImporter;
 
 test('crossword can store multi-letter solution values', function () {
     $crossword = Crossword::factory()->create([
