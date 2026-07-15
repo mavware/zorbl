@@ -1,10 +1,10 @@
 <?php
 
 use App\Models\Crossword;
-use Zorbl\CrosswordIO\Crossword as CrosswordDTO;
-use Zorbl\CrosswordIO\Exporters\IpuzExporter;
-use Zorbl\CrosswordIO\GridNumberer;
-use Zorbl\CrosswordIO\Importers\IpuzImporter;
+use CrosswordBuilder\CrosswordIO\Crossword as CrosswordDTO;
+use CrosswordBuilder\CrosswordIO\Exporters\IpuzExporter;
+use CrosswordBuilder\CrosswordIO\GridNumberer;
+use CrosswordBuilder\CrosswordIO\Importers\IpuzImporter;
 
 it('exports a crossword to valid ipuz format', function () {
     $crossword = Crossword::factory()->make([

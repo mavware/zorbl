@@ -7,6 +7,7 @@ const STANDARD = {
     allowSymmetryToggle: true,
     hasFixedVoids: false,
     hasGridLock: false,
+    uniformBorders: false,
 };
 
 const DIAMOND = {
@@ -15,6 +16,7 @@ const DIAMOND = {
     allowSymmetryToggle: false,
     hasFixedVoids: true,
     hasGridLock: false,
+    uniformBorders: false,
 };
 
 const FREESTYLE = {
@@ -23,6 +25,9 @@ const FREESTYLE = {
     allowSymmetryToggle: false,
     hasFixedVoids: false,
     hasGridLock: true,
+    // Every cell edge — including the outer perimeter — draws at the same thin
+    // weight as the seams between used cells, rather than a thick outline.
+    uniformBorders: true,
 };
 
 const BY_NAME = {

@@ -6,8 +6,10 @@
     $freestyleUnlocked = $this->puzzleType === \App\Enums\PuzzleType::Freestyle && ! $this->freestyleLocked;
 @endphp
 @if ($freestyleUnlocked)
-    <div class="text-fg-muted flex h-full items-center justify-center px-4 text-center text-sm">
-        {{ __('Lock the grid to start writing clues.') }}
+    <div class="text-fg-muted flex h-full flex-col items-center justify-center gap-2 px-4 text-center text-sm">
+        <p>{{ __('Place words anywhere in the grid — no need to fill every cell.') }}</p>
+        <p>{{ __('When you lock the grid, any unused cells disappear and the remaining words become your clues.') }}</p>
+        <p>{{ __('Lock the grid to start writing clues.') }}</p>
     </div>
 @else
 <div class="flex min-h-0 flex-col overflow-hidden">

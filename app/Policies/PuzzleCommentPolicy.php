@@ -12,6 +12,11 @@ class PuzzleCommentPolicy
         return true;
     }
 
+    public function update(User $user, PuzzleComment $puzzleComment): bool
+    {
+        return $user->id === $puzzleComment->user_id;
+    }
+
     public function delete(User $user, PuzzleComment $puzzleComment): bool
     {
         return $user->id === $puzzleComment->user_id;

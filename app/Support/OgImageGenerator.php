@@ -6,7 +6,7 @@ use App\Models\Crossword;
 use GdImage;
 use Illuminate\Support\Str;
 use RuntimeException;
-use Zorbl\CrosswordIO\GridNumberer;
+use CrosswordBuilder\CrosswordIO\GridNumberer;
 
 class OgImageGenerator
 {

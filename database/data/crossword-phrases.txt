@@ -1,0 +1,225 @@
+# Curated crossword-friendly phrases, sayings, idioms, and short-word combos.
+#
+# These are the "lively fill" that make a crossword feel human rather than
+# dictionary-scraped. Entries here are seeded with a liveliness score bonus
+# (see WordListSeeder) so the grid filler prefers them over dull words.
+#
+# Format: one entry per line, written readably. The seeder strips everything
+# except A-Z and uppercases, so "on it" becomes ONIT and "it's a deal" becomes
+# ITSADEAL. Blank lines and lines starting with # are ignored.
+
+# --- Short-word combos (casual two/three-word run-togethers) ---
+on it
+at it
+in on
+up to
+up for
+go for
+as is
+as if
+it's a
+it's me
+it's ok
+it's on
+i'm ok
+i'm in
+i'm on
+i'm up
+i'm so
+i'm set
+let's go
+let's eat
+let's see
+no way
+no dice
+not it
+not me
+not now
+oh no
+oh yes
+oh god
+uh oh
+uh huh
+i say
+i see
+i bet
+i get
+i can't
+i win
+i won
+i did
+i do too
+you bet
+you are
+we did
+we are
+so am i
+so sad
+so far
+so fun
+get set
+get up
+get out
+sit up
+lie down
+set up
+hit it
+do it
+did it
+got it
+got me
+tell me
+and so
+or so
+or not
+on me
+on you
+on air
+on ice
+on end
+on top
+on to it
+to me
+to go
+to die for
+at me
+at bat
+at sea
+at war
+at rest
+at odds
+at ease
+in awe
+in all
+in a way
+in a day
+in a box
+in a jam
+in a row
+in a fog
+in a sec
+in a fix
+in a fit
+a lot of
+a bit of
+kind of
+sort of
+out of
+one at a time
+me too
+you too
+why not
+here goes
+here we go
+
+# --- Conversational / exclamatory fill ---
+that's all
+that's it
+that's life
+that's a wrap
+no problem
+my bad
+good call
+nice one
+well done
+you got it
+i mean it
+you said it
+it's a trap
+it's a go
+it's a deal
+it's no use
+it's time
+whatever
+no biggie
+big deal
+oh well
+oh please
+come on
+hang on
+hold on
+you win
+i give up
+say when
+after you
+same here
+
+# --- Idioms, sayings, and classic long answers ---
+piece of cake
+break a leg
+hit the road
+hit the sack
+hit the books
+hit the hay
+under the weather
+bite the bullet
+once in a while
+spill the beans
+cut to the chase
+call it a day
+call it a night
+back to square one
+think outside the box
+jump on the bandwagon
+out of the blue
+on cloud nine
+over the moon
+once in a blue moon
+peace of mind
+change of heart
+go with the flow
+the big picture
+when pigs fly
+kill two birds
+all ears
+all set
+all in
+all there
+all day
+all told
+all but
+all that
+all yours
+all mine
+nip it in the bud
+par for the course
+a dime a dozen
+speak of the devil
+raining cats and dogs
+cost an arm and a leg
+ballpark figure
+elephant in the room
+burn the midnight oil
+blessing in disguise
+the best of both worlds
+best of both worlds
+every now and then
+easier said than done
+better late than never
+the ball is in your court
+the whole nine yards
+food for thought
+close but no cigar
+the tip of the iceberg
+add insult to injury
+beat around the bush
+throw in the towel
+back to the drawing board
+let sleeping dogs lie
+the last straw
+a blessing in disguise
+none of your business
+long story short
+first things first
+now or never
+give or take
+sink or swim
+here to stay
+part and parcel
+tried and true
+safe and sound
+sooner or later
+give and take
+touch and go
+odds and ends
+up and at them

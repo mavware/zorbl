@@ -65,6 +65,11 @@ class ProfanityFilter
         return $this->words;
     }
 
+    public function count(): int
+    {
+        return count($this->words());
+    }
+
     private function pattern(): ?string
     {
         if ($this->pattern !== null) {

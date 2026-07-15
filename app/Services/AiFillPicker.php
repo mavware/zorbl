@@ -2,13 +2,14 @@
 
 namespace App\Services;
 
+use App\Services\Anthropic\AnthropicAction;
+use App\Services\Anthropic\AnthropicClient;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
-class AiFillPicker
+class AiFillPicker extends AnthropicAction
 {
     private const string TOOL_NAME = 'submit_choice';
-
-    public function __construct(private readonly AnthropicClient $client) {}
 
     /**
      * Pick the best of several candidate crossword fills.
@@ -34,62 +35,58 @@ class AiFillPicker
             return ['success' => true, 'index' => 0, 'message' => 'Only one distinct fill available.'];
         }
 
-        $systemPrompt = $this->buildSystemPrompt();
-        $userMessage = $this->buildUserMessage($candidateFills, $title, $notes, $pinnedWords, $secretTheme);
+        return $this->dispatch(
+            $this->buildSystemPrompt(),
+            [['role' => 'user', 'content' => $this->buildUserMessage($candidateFills, $title, $notes, $pinnedWords, $secretTheme)]],
+            [
+                'tools' => [$this->toolSchema($count)],
+                'tool_choice' => ['type' => 'tool', 'name' => self::TOOL_NAME],
+                'temperature' => 0.2,
+                'max_tokens' => 1024,
+            ],
+            fn (array $data): array => $this->parseChoice($data, $count),
+        );
+    }
 
-        $options = [
-            'tools' => [$this->toolSchema($count)],
-            'tool_choice' => ['type' => 'tool', 'name' => self::TOOL_NAME],
-            'temperature' => 0.2,
-            'max_tokens' => 1024,
-        ];
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array{success: bool, index: int, message: string}
+     */
+    private function parseChoice(array $data, int $count): array
+    {
+        $input = AnthropicClient::extractToolUse($data, self::TOOL_NAME) ?? [];
+        $choice = $input['choice'] ?? null;
 
-        try {
-            $result = $this->client->send(
-                $systemPrompt,
-                [['role' => 'user', 'content' => $userMessage]],
-                $options,
-            );
-
-            if (! $result['success']) {
-                Log::warning('AI fill picker error', [
-                    'status' => $result['status'] ?? null,
-                    'body' => $result['body'] ?? null,
-                ]);
-
-                return [
-                    'success' => false,
-                    'index' => 0,
-                    'message' => 'AI picker unavailable; using first candidate.',
-                ];
-            }
-
-            $input = AnthropicClient::extractToolUse($result['data'], self::TOOL_NAME) ?? [];
-            $choice = $input['choice'] ?? null;
-
-            if (! is_int($choice) || $choice < 1 || $choice > $count) {
-                return [
-                    'success' => false,
-                    'index' => 0,
-                    'message' => 'AI returned an invalid choice; using first candidate.',
-                ];
-            }
-
-            $reasoning = is_string($input['reasoning'] ?? null) ? trim($input['reasoning']) : '';
-            $message = $reasoning !== ''
-                ? "AI chose fill #{$choice} of {$count}: {$reasoning}"
-                : "AI chose fill #{$choice} of {$count}.";
-
-            return ['success' => true, 'index' => $choice - 1, 'message' => $message];
-        } catch (\Exception $e) {
-            Log::error('AI fill picker failed', ['error' => $e->getMessage()]);
-
-            return [
-                'success' => false,
-                'index' => 0,
-                'message' => 'AI picker error: '.$e->getMessage(),
-            ];
+        if (! is_int($choice) || $choice < 1 || $choice > $count) {
+            return ['success' => false, 'index' => 0, 'message' => 'AI returned an invalid choice; using first candidate.'];
         }
+
+        $reasoning = is_string($input['reasoning'] ?? null) ? trim($input['reasoning']) : '';
+        $message = $reasoning !== ''
+            ? "AI chose fill #{$choice} of {$count}: {$reasoning}"
+            : "AI chose fill #{$choice} of {$count}.";
+
+        return ['success' => true, 'index' => $choice - 1, 'message' => $message];
+    }
+
+    /**
+     * @return array{success: false, index: int, message: string}
+     */
+    protected function onError(?int $status, string $body): array
+    {
+        Log::warning('AI fill picker error', ['status' => $status, 'body' => $body]);
+
+        return ['success' => false, 'index' => 0, 'message' => 'AI picker unavailable; using first candidate.'];
+    }
+
+    /**
+     * @return array{success: false, index: int, message: string}
+     */
+    protected function onException(Throwable $e): array
+    {
+        Log::error('AI fill picker failed', ['error' => $e->getMessage()]);
+
+        return ['success' => false, 'index' => 0, 'message' => 'AI picker error: '.$e->getMessage()];
     }
 
     private function buildSystemPrompt(): string

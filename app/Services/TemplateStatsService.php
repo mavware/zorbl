@@ -4,7 +4,7 @@ namespace App\Services;
 
 use App\Models\Template;
 use App\Support\TemplateStats;
-use Zorbl\CrosswordIO\GridNumberer;
+use CrosswordBuilder\CrosswordIO\GridNumberer;
 
 /**
  * Computes structural stats for a crossword template grid.

@@ -3,7 +3,7 @@
 use App\Models\Template;
 use App\Services\TemplateStatsService;
 use App\Support\TemplateStats;
-use Zorbl\CrosswordIO\GridNumberer;
+use CrosswordBuilder\CrosswordIO\GridNumberer;
 
 beforeEach(function () {
     $this->service = new TemplateStatsService(new GridNumberer);

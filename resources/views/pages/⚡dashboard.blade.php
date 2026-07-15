@@ -162,6 +162,32 @@ new #[Title('Dashboard')] class extends Component {
         return Auth::user()->crosswordLikes()->count();
     }
 
+    #[Computed]
+    public function currentStreak(): int
+    {
+        return Auth::user()->current_streak ?? 0;
+    }
+
+    #[Computed]
+    public function longestStreak(): int
+    {
+        return Auth::user()->longest_streak ?? 0;
+    }
+
+    #[Computed]
+    public function streakIsActive(): bool
+    {
+        $lastSolve = Auth::user()->last_solve_date;
+
+        if (! $lastSolve) {
+            return false;
+        }
+
+        $lastSolveDate = \Carbon\Carbon::parse($lastSolve);
+
+        return $lastSolveDate->isToday() || $lastSolveDate->isYesterday();
+    }
+
     /**
      * Brand-new account with no activity yet — render a friendlier first-run
      * hero so they don't bounce off a wall of zero-state cards.
@@ -194,11 +220,43 @@ new #[Title('Dashboard')] class extends Component {
             ->limit(3)
             ->get();
     }
+
+    public function surpriseMe(): void
+    {
+        $query = Crossword::where('is_published', true)
+            ->where('user_id', '!=', Auth::id())
+            ->safeFor(Auth::user());
+
+        $blockedTagIds = Auth::user()->blockedTags()->pluck('tags.id');
+
+        if ($blockedTagIds->isNotEmpty()) {
+            $query->whereDoesntHave('tags', fn ($q) => $q->whereIn('tags.id', $blockedTagIds));
+        }
+
+        $crossword = $query->inRandomOrder()->first();
+
+        if (! $crossword) {
+            return;
+        }
+
+        $this->redirect(route('crosswords.solver', $crossword), navigate: true);
+    }
 }
 ?>
 
 <div class="space-y-6">
-    <flux:heading size="xl">{{ __('Dashboard') }}</flux:heading>
+    <div class="flex items-center justify-between">
+        <flux:heading size="xl">{{ __('Dashboard') }}</flux:heading>
+        <flux:button
+            wire:click="surpriseMe"
+            variant="ghost"
+            size="sm"
+            icon="sparkles"
+            data-test="surprise-me-button"
+        >
+            {{ __('Surprise Me') }}
+        </flux:button>
+    </div>
 
     {{-- First-run welcome — only visible to brand-new accounts with zero activity. --}}
     @if($this->isNewUser)
@@ -592,6 +650,67 @@ new #[Title('Dashboard')] class extends Component {
     <div class="border-line rounded-xl border p-5">
         <livewire:puzzle-discovery :limit="5" :exclude-attempted="true" />
     </div>
+
+    {{-- Solving Streak --}}
+    @if($this->currentStreak > 0 || $this->longestStreak > 0)
+        <div @class([
+            'relative overflow-hidden rounded-xl border p-5',
+            'border-orange-200 bg-gradient-to-r from-orange-50 to-amber-50 dark:border-orange-800/50 dark:from-orange-950/30 dark:to-amber-950/20' => $this->streakIsActive,
+            'border-line' => ! $this->streakIsActive,
+        ]) data-test="dashboard-streak-card">
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div class="flex items-center gap-4">
+                    <div @class([
+                        'flex size-12 shrink-0 items-center justify-center rounded-xl',
+                        'bg-orange-100 dark:bg-orange-900/50' => $this->streakIsActive,
+                        'bg-zinc-100 dark:bg-zinc-800' => ! $this->streakIsActive,
+                    ])>
+                        <flux:icon name="fire" @class([
+                            'size-6',
+                            'text-orange-600 dark:text-orange-400' => $this->streakIsActive,
+                            'text-zinc-500' => ! $this->streakIsActive,
+                        ]) />
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <flux:heading size="lg">{{ __('Solving Streak') }}</flux:heading>
+                            @if($this->streakIsActive)
+                                <flux:badge size="sm" color="orange">{{ __('Active') }}</flux:badge>
+                            @else
+                                <flux:badge size="sm" color="zinc">{{ __('Inactive') }}</flux:badge>
+                            @endif
+                        </div>
+                        <flux:text size="sm" class="mt-0.5 text-zinc-600 dark:text-zinc-400">
+                            @if($this->streakIsActive)
+                                {{ trans_choice(':count day in a row!|:count days in a row!', $this->currentStreak) }}
+                            @else
+                                {{ __('Solve a puzzle today to start a new streak.') }}
+                            @endif
+                        </flux:text>
+                    </div>
+                </div>
+                <div class="flex items-center gap-6">
+                    <div class="text-center">
+                        <div @class([
+                            'text-3xl font-bold tabular-nums',
+                            'text-orange-600 dark:text-orange-400' => $this->streakIsActive,
+                            'text-fg' => ! $this->streakIsActive,
+                        ])>{{ $this->currentStreak }}</div>
+                        <flux:text size="sm" class="text-zinc-500">{{ __('Current') }}</flux:text>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-3xl font-bold tabular-nums text-fg">{{ $this->longestStreak }}</div>
+                        <flux:text size="sm" class="text-zinc-500">{{ __('Best') }}</flux:text>
+                    </div>
+                    @if(! $this->streakIsActive)
+                        <flux:button variant="primary" size="sm" :href="route('puzzles.index')" wire:navigate icon="play">
+                            {{ __('Solve Now') }}
+                        </flux:button>
+                    @endif
+                </div>
+            </div>
+        </div>
+    @endif
 
     {{-- Stats Cards --}}
     <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

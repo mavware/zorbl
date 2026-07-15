@@ -1,11 +1,11 @@
 <?php
 
-namespace Zorbl\CrosswordIO\Exporters;
+namespace CrosswordBuilder\CrosswordIO\Exporters;
 
-use Zorbl\CrosswordIO\Crossword;
-use Zorbl\CrosswordIO\Exceptions\ExportValidationException;
-use Zorbl\CrosswordIO\Exceptions\UnsupportedFeature;
-use Zorbl\CrosswordIO\GridNumberer;
+use CrosswordBuilder\CrosswordIO\Crossword;
+use CrosswordBuilder\CrosswordIO\Exceptions\ExportValidationException;
+use CrosswordBuilder\CrosswordIO\Exceptions\UnsupportedFeature;
+use CrosswordBuilder\CrosswordIO\GridNumberer;
 
 class PuzExporter
 {

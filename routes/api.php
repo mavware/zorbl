@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\V1\ContestController;
 use App\Http\Controllers\Api\V1\ContestEntryController;
 use App\Http\Controllers\Api\V1\CrosswordController;
 use App\Http\Controllers\Api\V1\CrosswordLikeController;
+use App\Http\Controllers\Api\V1\DailyPuzzleController;
 use App\Http\Controllers\Api\V1\FavoriteListController;
 use App\Http\Controllers\Api\V1\MeController;
 use App\Http\Controllers\Api\V1\NotificationController;
@@ -28,6 +29,9 @@ use Illuminate\Support\Facades\Route;
 Route::post('/tokens', [AuthController::class, 'store'])->middleware('throttle:5,1');
 
 // --- Public endpoints (no auth required) ---
+Route::get('/daily-puzzle', [DailyPuzzleController::class, 'show'])->name('api.v1.daily-puzzle.show');
+Route::get('/daily-puzzle/history', [DailyPuzzleController::class, 'history'])->name('api.v1.daily-puzzle.history');
+
 Route::get('/crosswords', [CrosswordController::class, 'index'])->name('api.v1.crosswords.index');
 Route::get('/crosswords/{crossword}', [CrosswordController::class, 'show'])->name('api.v1.crosswords.show');
 Route::get('/crosswords/{crossword}/comments', [PuzzleCommentController::class, 'index']);
@@ -43,6 +47,9 @@ Route::get('/clues', [ClueEntryController::class, 'index']);
 
 // --- Authenticated endpoints ---
 Route::middleware('auth:sanctum')->group(function () {
+    // Daily puzzle
+    Route::get('/daily-puzzle/status', [DailyPuzzleController::class, 'status'])->name('api.v1.daily-puzzle.status');
+
     // Token management
     Route::delete('/tokens', [AuthController::class, 'destroy']);
 
@@ -59,6 +66,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/crosswords/{crossword}/like', [CrosswordLikeController::class, 'store']);
     Route::delete('/crosswords/{crossword}/like', [CrosswordLikeController::class, 'destroy']);
     Route::post('/crosswords/{crossword}/comments', [PuzzleCommentController::class, 'store']);
+    Route::patch('/comments/{comment}', [PuzzleCommentController::class, 'update']);
     Route::delete('/comments/{comment}', [PuzzleCommentController::class, 'destroy']);
 
     // Contests

@@ -58,6 +58,13 @@ Route::middleware('auth')->group(function () {
     Route::post('impersonate/{user}', [ImpersonationController::class, 'start'])->name('impersonate.start');
 });
 
+// Static crosswords/* routes must be registered before the crosswords/{crossword}
+// wildcard below, otherwise the wildcard swallows them (e.g. "analytics" would be
+// treated as a {crossword} and 404 on the model binding).
+Route::middleware(['auth', 'verified', 'not-anonymous'])->group(function () {
+    Route::livewire('crosswords/analytics', 'pages::crosswords.analytics')->name('crosswords.analytics');
+});
+
 // Builder surface — anonymous "guest builder" users are allowed in.
 // CrosswordPolicy::update prevents them from opening anyone else's puzzle.
 Route::middleware(['auth'])->group(function () {
@@ -69,7 +76,6 @@ Route::middleware(['auth', 'verified', 'not-anonymous'])->group(function () {
     Route::livewire('dashboard', 'pages::dashboard')->name('dashboard');
 
     Route::livewire('crosswords', 'pages::crosswords.index')->name('crosswords.index');
-    Route::livewire('crosswords/analytics', 'pages::crosswords.analytics')->name('crosswords.analytics');
     Route::livewire('solving', 'pages::crosswords.solving')->name('crosswords.solving');
     Route::livewire('solving/stats', 'pages::crosswords.stats')->name('crosswords.stats');
 

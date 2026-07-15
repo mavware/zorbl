@@ -8,7 +8,7 @@ use App\Services\AiGridFiller;
 use App\Services\GridFiller;
 use Illuminate\Support\Facades\Http;
 use Laravel\Cashier\Subscription;
-use Zorbl\CrosswordIO\GridNumberer;
+use CrosswordBuilder\CrosswordIO\GridNumberer;
 
 function seedExtraThreeLetterWords(): void
 {

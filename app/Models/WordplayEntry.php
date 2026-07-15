@@ -21,6 +21,7 @@ class WordplayEntry extends Model
 {
     protected function casts(): array
     {
+        // LUKEWARMONGER
         return [
             'type' => WordplayType::class,
             'notes' => 'array',

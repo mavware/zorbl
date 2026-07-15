@@ -31,15 +31,15 @@ class SubscriptionRenewed extends Notification implements ShouldQueue
         $formatted = $this->formatAmount();
 
         $message = (new MailMessage)
-            ->subject(__('Your Zorbl Pro subscription renewed'))
+            ->subject(__('Your :app Pro subscription renewed', ['app' => config('app.name')]))
             ->greeting(__('Hi :name,', ['name' => $notifiable->name]))
-            ->line(__('Your Zorbl Pro subscription renewed for :amount.', ['amount' => $formatted]));
+            ->line(__('Your :app Pro subscription renewed for :amount.', ['app' => config('app.name'), 'amount' => $formatted]));
 
         if ($this->hostedInvoiceUrl !== null) {
             $message->action(__('View invoice'), $this->hostedInvoiceUrl);
         }
 
-        return $message->line(__('Thanks for sticking with Zorbl.'));
+        return $message->line(__('Thanks for sticking with :app.', ['app' => config('app.name')]));
     }
 
     /**
