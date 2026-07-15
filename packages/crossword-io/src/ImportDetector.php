@@ -1,15 +1,15 @@
 <?php
 
-namespace Zorbl\CrosswordIO;
+namespace CrosswordBuilder\CrosswordIO;
 
-use Zorbl\CrosswordIO\Exceptions\IpuzImportException;
-use Zorbl\CrosswordIO\Exceptions\JpzImportException;
-use Zorbl\CrosswordIO\Exceptions\PdfImportException;
-use Zorbl\CrosswordIO\Exceptions\PuzImportException;
-use Zorbl\CrosswordIO\Importers\IpuzImporter;
-use Zorbl\CrosswordIO\Importers\JpzImporter;
-use Zorbl\CrosswordIO\Importers\PdfImporter;
-use Zorbl\CrosswordIO\Importers\PuzImporter;
+use CrosswordBuilder\CrosswordIO\Exceptions\IpuzImportException;
+use CrosswordBuilder\CrosswordIO\Exceptions\JpzImportException;
+use CrosswordBuilder\CrosswordIO\Exceptions\PdfImportException;
+use CrosswordBuilder\CrosswordIO\Exceptions\PuzImportException;
+use CrosswordBuilder\CrosswordIO\Importers\IpuzImporter;
+use CrosswordBuilder\CrosswordIO\Importers\JpzImporter;
+use CrosswordBuilder\CrosswordIO\Importers\PdfImporter;
+use CrosswordBuilder\CrosswordIO\Importers\PuzImporter;
 
 readonly class ImportDetector
 {

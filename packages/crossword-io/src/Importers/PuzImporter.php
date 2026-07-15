@@ -1,9 +1,9 @@
 <?php
 
-namespace Zorbl\CrosswordIO\Importers;
+namespace CrosswordBuilder\CrosswordIO\Importers;
 
-use Zorbl\CrosswordIO\Exceptions\PuzImportException;
-use Zorbl\CrosswordIO\GridNumberer;
+use CrosswordBuilder\CrosswordIO\Exceptions\PuzImportException;
+use CrosswordBuilder\CrosswordIO\GridNumberer;
 
 class PuzImporter
 {

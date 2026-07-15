@@ -1,7 +1,7 @@
 /*
  * Register the service worker and capture the `beforeinstallprompt` event so
  * we can surface a custom install button later. Stores the deferred prompt on
- * window.zorblPwa so the Alpine install banner can call it on click.
+ * window.crosswordbuilderPwa so the Alpine install banner can call it on click.
  */
 
 const isStandalone = () =>
@@ -13,7 +13,7 @@ const isIos = () => {
     return /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
 };
 
-window.zorblPwa = {
+window.crosswordbuilderPwa = {
     deferredPrompt: null,
     isStandalone: isStandalone(),
     isIos: isIos(),
@@ -38,14 +38,14 @@ window.zorblPwa = {
 
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
-    window.zorblPwa.deferredPrompt = e;
-    window.dispatchEvent(new CustomEvent('zorbl-install-available'));
+    window.crosswordbuilderPwa.deferredPrompt = e;
+    window.dispatchEvent(new CustomEvent('crosswordbuilder-install-available'));
 });
 
 window.addEventListener('appinstalled', () => {
-    window.zorblPwa.deferredPrompt = null;
-    window.zorblPwa.isStandalone = true;
-    window.dispatchEvent(new CustomEvent('zorbl-installed'));
+    window.crosswordbuilderPwa.deferredPrompt = null;
+    window.crosswordbuilderPwa.isStandalone = true;
+    window.dispatchEvent(new CustomEvent('crosswordbuilder-installed'));
 });
 
 if ('serviceWorker' in navigator) {

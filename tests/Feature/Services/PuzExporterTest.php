@@ -1,10 +1,10 @@
 <?php
 
 use App\Models\Crossword;
-use Zorbl\CrosswordIO\Exceptions\ExportValidationException;
-use Zorbl\CrosswordIO\Exporters\PuzExporter;
-use Zorbl\CrosswordIO\GridNumberer;
-use Zorbl\CrosswordIO\Importers\PuzImporter;
+use CrosswordBuilder\CrosswordIO\Exceptions\ExportValidationException;
+use CrosswordBuilder\CrosswordIO\Exporters\PuzExporter;
+use CrosswordBuilder\CrosswordIO\GridNumberer;
+use CrosswordBuilder\CrosswordIO\Importers\PuzImporter;
 
 it('exports a crossword to valid puz binary', function () {
     $crossword = Crossword::factory()->make([

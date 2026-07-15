@@ -13,11 +13,11 @@ class HelpArticleSeeder extends Seeder
             // Getting started
             [
                 'category' => 'getting-started',
-                'slug' => 'what-is-zorbl',
-                'title' => 'What is Zorbl?',
+                'slug' => 'what-is-crosswordbuilder',
+                'title' => 'What is '.config('app.name'),
                 'summary' => 'A community-driven crossword platform where you can build, publish, and solve original puzzles.',
                 'body' => <<<'MD'
-                Zorbl is a free platform for people who love crosswords. You can:
+                CrosswordBuilder is a free platform for people who love crosswords. You can:
 
                 - Build puzzles with a visual grid editor that handles symmetry and numbering automatically.
                 - Publish them for solvers around the world.
@@ -50,7 +50,7 @@ class HelpArticleSeeder extends Seeder
                 'category' => 'constructing',
                 'slug' => 'import-existing-puzzles',
                 'title' => 'Can I import puzzles I built elsewhere?',
-                'summary' => 'Yes — Zorbl reads .ipuz, .puz (Across Lite), and .jpz files.',
+                'summary' => 'Yes — '.config('app.name').' reads .ipuz, .puz (Across Lite), and .jpz files.',
                 'body' => <<<'MD'
                 You can import existing puzzles in any of the standard formats:
 
@@ -70,7 +70,7 @@ class HelpArticleSeeder extends Seeder
                 'title' => 'What grid sizes and shapes are supported?',
                 'summary' => 'Anything from a 4×4 mini through a Sunday-sized 21×21, plus diamonds, asymmetric layouts, and void cells.',
                 'body' => <<<'MD'
-                Zorbl supports:
+                CrosswordBuilder supports:
 
                 - **Standard rectangular grids** from 4×4 up through 21×21.
                 - **Diamond grids** and other non-rectangular shapes via void cells.
@@ -85,7 +85,7 @@ class HelpArticleSeeder extends Seeder
                 'category' => 'constructing',
                 'slug' => 'when-to-publish',
                 'title' => 'When should I publish my puzzle?',
-                'summary' => 'After every cell is filled and every clue is written — Zorbl runs a quick completeness check before publish.',
+                'summary' => 'After every cell is filled and every clue is written — CrosswordBuilder runs a quick completeness check before publish.',
                 'body' => <<<'MD'
                 Before publishing, the editor runs a completeness check that surfaces missing clues, unfilled cells, and invalid words. You're free to publish a draft once it passes.
 

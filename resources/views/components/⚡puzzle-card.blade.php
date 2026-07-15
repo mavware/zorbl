@@ -85,6 +85,12 @@ new class extends Component {
 
     public function toggleLike(): void
     {
+        if (! Auth::check()) {
+            $this->redirect(route('login'), navigate: true);
+
+            return;
+        }
+
         $like = CrosswordLike::where('user_id', Auth::id())
             ->where('crossword_id', $this->crosswordId)
             ->first();
@@ -106,9 +112,27 @@ new class extends Component {
     public function startSolving(): void
     {
         $crossword = Crossword::findOrFail($this->crosswordId);
-        $this->authorize('solve', $crossword);
 
-        $this->redirect(route('crosswords.solver', $crossword), navigate: true);
+        if (Auth::check()) {
+            $this->authorize('solve', $crossword);
+
+            $this->redirect(route('crosswords.solver', $crossword), navigate: true);
+
+            return;
+        }
+
+        abort_unless($crossword->is_published, 404);
+        abort_unless($crossword->isVisibleToSafeSearch(null), 404);
+
+        $solved = json_decode(request()->cookie('crosswordbuilder_guest_solved', '[]'), true) ?: [];
+
+        if (count($solved) >= config('crosswordbuilder.guest_solve_limit') && ! in_array($crossword->id, $solved)) {
+            $this->dispatch('show-signup-prompt');
+
+            return;
+        }
+
+        $this->redirect(route('puzzles.solve', $crossword), navigate: true);
     }
 };
 ?>
@@ -200,7 +224,11 @@ new class extends Component {
 
     <div class="mt-3 flex items-center justify-between">
         <flux:button size="sm" variant="primary">
-            {{ __('Start Solving') }}
+            @auth
+                {{ __('Start Solving') }}
+            @else
+                {{ __('Try This Puzzle') }}
+            @endauth
         </flux:button>
         <button
             type="button"

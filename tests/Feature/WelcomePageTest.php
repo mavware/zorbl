@@ -17,8 +17,8 @@ test('welcome page renders for guests with hero, register CTA, and SEO meta', fu
 
     $response->assertOk()
         ->assertSee('From blank grid', false)
-        ->assertSee('published puzzle in', false)
-        ->assertSee('Start building', false)
+        ->assertSee('published crossword in', false)
+        ->assertSee('Create your free account', false)
         ->assertSee(route('register'), false)
         ->assertSee('<meta name="description"', false)
         ->assertSee('<meta property="og:title"', false)
@@ -31,11 +31,9 @@ test('welcome page swaps CTAs for authenticated users', function () {
     $response = $this->actingAs($user)->get('/');
 
     $response->assertOk()
-        ->assertSee('Build a puzzle', false)
-        ->assertSee('Solve puzzles', false)
         ->assertSee('Go to dashboard', false)
-        ->assertDontSee('Start building', false)
-        ->assertDontSee('Create your free account', false);
+        ->assertDontSee('Create your free account', false)
+        ->assertDontSee('>Sign up<', false);
 });
 
 test('trust strip is hidden when stats are below the credibility floor', function () {
@@ -59,7 +57,7 @@ test('trust strip renders stats that clear the credibility floor', function () {
         ->assertSee('50', false);
 });
 
-test('welcome page shows the puzzle of the day card linking to the solver', function () {
+test('welcome page shows the puzzle of the day card', function () {
     $constructor = User::factory()->create(['name' => 'Ada Lovelace']);
     $crossword = Crossword::factory()->published()->for($constructor)->create([
         'title' => 'Daily Delight',
@@ -70,16 +68,17 @@ test('welcome page shows the puzzle of the day card linking to the solver', func
         'crossword_id' => $crossword->id,
     ]);
 
+    // The card is a Livewire component that navigates via wire:click rather than
+    // an href; solver routing is covered by the puzzle-card component tests.
     $response = $this->get('/');
 
     $response->assertOk()
         ->assertSee('Puzzle of the Day', false)
         ->assertSee('Daily Delight', false)
-        ->assertSee('Ada Lovelace', false)
-        ->assertSee(route('puzzles.solve', $crossword), false);
+        ->assertSee('Ada Lovelace', false);
 });
 
-test('welcome page links the daily puzzle to the auth solver for signed-in users', function () {
+test('welcome page shows the daily puzzle card for signed-in users', function () {
     $constructor = User::factory()->create();
     $crossword = Crossword::factory()->published()->for($constructor)->create([
         'title' => 'Daily Delight',
@@ -95,8 +94,7 @@ test('welcome page links the daily puzzle to the auth solver for signed-in users
     $response = $this->actingAs($user)->get('/');
 
     $response->assertOk()
-        ->assertSee('Daily Delight', false)
-        ->assertSee(route('crosswords.solver', $crossword), false);
+        ->assertSee('Daily Delight', false);
 });
 
 test('low solve counts are suppressed even when other stats appear', function () {

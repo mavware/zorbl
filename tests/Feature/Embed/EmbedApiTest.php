@@ -54,7 +54,7 @@ test('embed API solution is obfuscated', function () {
         ->and($data['solution_encoding'])->toBe('xor_b64');
 
     // Verify we can decode it back to the original solution
-    $key = 'zorbl_'.$crossword->id;
+    $key = 'crosswordbuilder_'.$crossword->id;
     $decoded = base64_decode($data['solution']);
     $result = '';
     for ($i = 0; $i < strlen($decoded); $i++) {

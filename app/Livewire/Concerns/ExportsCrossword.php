@@ -8,10 +8,10 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use Symfony\Component\HttpFoundation\StreamedResponse;
-use Zorbl\CrosswordIO\Exceptions\ExportValidationException;
-use Zorbl\CrosswordIO\Exporters\IpuzExporter;
-use Zorbl\CrosswordIO\Exporters\JpzExporter;
-use Zorbl\CrosswordIO\Exporters\PuzExporter;
+use CrosswordBuilder\CrosswordIO\Exceptions\ExportValidationException;
+use CrosswordBuilder\CrosswordIO\Exporters\IpuzExporter;
+use CrosswordBuilder\CrosswordIO\Exporters\JpzExporter;
+use CrosswordBuilder\CrosswordIO\Exporters\PuzExporter;
 
 trait ExportsCrossword
 {

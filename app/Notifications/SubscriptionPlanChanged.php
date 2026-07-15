@@ -25,7 +25,7 @@ class SubscriptionPlanChanged extends Notification implements ShouldQueue
     public function toMail(User $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject(__('Your Zorbl Pro plan has changed'))
+            ->subject(__('Your :app Pro plan has changed', ['app' => config('app.name')]))
             ->greeting(__('Hi :name,', ['name' => $notifiable->name]))
             ->line(__('Your subscription switched from the :from plan to the :to plan.', [
                 'from' => $this->fromPlan,

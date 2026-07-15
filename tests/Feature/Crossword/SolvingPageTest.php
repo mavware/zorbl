@@ -62,8 +62,8 @@ test('user can start solving a published puzzle via discovery component', functi
 
     $this->actingAs($user);
 
-    Livewire::test('puzzle-discovery', ['excludeAttempted' => true])
-        ->call('startSolving', $crossword->id)
+    Livewire::test('puzzle-card', ['crossword' => $crossword])
+        ->call('startSolving')
         ->assertRedirect(route('crosswords.solver', $crossword));
 });
 
@@ -74,8 +74,8 @@ test('user cannot start solving an unpublished puzzle they do not own', function
 
     $this->actingAs($user);
 
-    Livewire::test('puzzle-discovery')
-        ->call('startSolving', $crossword->id)
+    Livewire::test('puzzle-card', ['crossword' => $crossword])
+        ->call('startSolving')
         ->assertForbidden();
 });
 
@@ -108,15 +108,17 @@ test('user cannot remove another users attempt', function () {
 test('discovery component search filters available puzzles', function () {
     $user = User::factory()->create();
     $creator = User::factory()->create();
-    Crossword::factory()->published()->for($creator)->create(['title' => 'Ocean Theme']);
-    Crossword::factory()->published()->for($creator)->create(['title' => 'Space Theme']);
+    $ocean = Crossword::factory()->published()->for($creator)->create(['title' => 'Ocean Theme']);
+    $space = Crossword::factory()->published()->for($creator)->create(['title' => 'Space Theme']);
 
     $this->actingAs($user);
 
+    // Cards render as child Livewire components, so assert on the wire:key
+    // marker (present in the parent HTML) rather than the card's inner title.
     Livewire::test('puzzle-discovery', ['excludeAttempted' => true])
         ->set('search', 'Ocean')
-        ->assertSee('Ocean Theme')
-        ->assertDontSee('Space Theme');
+        ->assertSeeHtml('wire:key="card-'.$ocean->id.'"')
+        ->assertDontSeeHtml('wire:key="card-'.$space->id.'"');
 });
 
 test('filter shows only in-progress attempts', function () {

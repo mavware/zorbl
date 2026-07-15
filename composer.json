@@ -1,6 +1,6 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "zorbl/zorbl",
+    "name": "crosswordbuilder/crosswordbuilder",
     "type": "project",
     "description": "A Laravel-based crossword puzzle platform with advanced features for construction and solving.",
     "keywords": ["laravel", "framework"],
@@ -29,7 +29,7 @@
         "spatie/laravel-query-builder": "^7.1",
         "spatie/pdf-to-text": "^1.55",
         "stripe/stripe-php": "^17.6",
-        "zorbl/crossword-io": "@dev",
+        "crosswordbuilder/crossword-io": "@dev",
         "ext-zip": "*"
     },
     "require-dev": {

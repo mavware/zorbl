@@ -6,7 +6,7 @@ import { createLocalStoragePersistence } from './embed-persistence.js';
  * Decode an XOR+base64 obfuscated solution.
  */
 function decodeSolution(encoded, crosswordId) {
-    const key = 'zorbl_' + crosswordId;
+    const key = 'crosswordbuilder_' + crosswordId;
     const bytes = atob(encoded);
     let result = '';
     for (let i = 0; i < bytes.length; i++) {
@@ -21,7 +21,7 @@ function decodeSolution(encoded, crosswordId) {
  */
 function buildTemplate(data) {
     return `
-    <div x-data="crosswordSolver" class="zorbl-embed relative flex flex-col font-sans text-fg" style="max-width: 100%;">
+    <div x-data="crosswordSolver" class="crosswordbuilder-embed relative flex flex-col font-sans text-fg" style="max-width: 100%;">
         <!-- Toolbar -->
         <div class="mb-3 flex flex-wrap items-center gap-2">
             <div class="flex flex-1 items-center gap-2 min-w-0">
@@ -256,7 +256,7 @@ function escapeHtml(str) {
 Alpine.data('crosswordSolver', crosswordSolver);
 
 document.addEventListener('DOMContentLoaded', async () => {
-    const elements = document.querySelectorAll('[data-zorbl-embed]');
+    const elements = document.querySelectorAll('[data-crosswordbuilder-embed]');
 
     for (const el of elements) {
         const crosswordId = el.dataset.crosswordId;
@@ -340,10 +340,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                     initialPencilCells: initialPencilCells,
                     initialRevealedCells: initialRevealedCells,
                     persistence: '__PERSISTENCE__',
-                }).replace('"__PERSISTENCE__"', `zorblPersistence_${data.id}`)})`);
+                }).replace('"__PERSISTENCE__"', `crosswordbuilderPersistence_${data.id}`)})`);
 
                 // Expose persistence on window so Alpine can reference it
-                window[`zorblPersistence_${data.id}`] = persistence;
+                window[`crosswordbuilderPersistence_${data.id}`] = persistence;
             }
         } catch (err) {
             el.innerHTML = '<p style="color:#999;">Failed to load puzzle.</p>';

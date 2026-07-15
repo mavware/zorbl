@@ -1,6 +1,6 @@
 <?php
 
-namespace Zorbl\CrosswordIO;
+namespace CrosswordBuilder\CrosswordIO;
 
 class Crossword
 {

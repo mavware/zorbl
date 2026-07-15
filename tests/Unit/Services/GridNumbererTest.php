@@ -1,6 +1,6 @@
 <?php
 
-use Zorbl\CrosswordIO\GridNumberer;
+use CrosswordBuilder\CrosswordIO\GridNumberer;
 
 beforeEach(function () {
     $this->numberer = new GridNumberer;

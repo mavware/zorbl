@@ -284,3 +284,37 @@ test('solver shows embed UI to owner regardless of allow_embed', function () {
         ->assertOk()
         ->assertSeeHtml('Embed Puzzle');
 });
+
+test('solver loads puzzle-wide default colors from metadata', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create([
+        'metadata' => ['colors' => [
+            'cell' => '#FEF08A',
+            'block' => '#1E293B',
+            'circle' => '#DB2777',
+            'letter' => '#2563EB',
+            'line' => '#0F766E',
+        ]],
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::crosswords.solver', ['crossword' => $crossword])
+        ->assertSet('defaultColors', [
+            'cell' => '#FEF08A',
+            'block' => '#1E293B',
+            'circle' => '#DB2777',
+            'letter' => '#2563EB',
+            'line' => '#0F766E',
+        ]);
+});
+
+test('solver default colors are empty when none are set', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create(['metadata' => null]);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::crosswords.solver', ['crossword' => $crossword])
+        ->assertSet('defaultColors', []);
+});

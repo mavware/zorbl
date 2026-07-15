@@ -25,7 +25,7 @@ test('generateShareText returns formatted share text with title, size, time, and
     $shareText = invade($component->instance())->generateShareText();
 
     expect($shareText)->toContain('Sunday Funday')
-        ->toContain('on Zorbl')
+        ->toContain('on '.config('app.name'))
         ->toContain('15x15')
         ->toContain('3:45')
         ->toContain(route('puzzles.solve', $crossword->id));

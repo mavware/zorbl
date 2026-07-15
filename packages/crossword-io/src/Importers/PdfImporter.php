@@ -1,10 +1,10 @@
 <?php
 
-namespace Zorbl\CrosswordIO\Importers;
+namespace CrosswordBuilder\CrosswordIO\Importers;
 
 use Spatie\PdfToText\Pdf;
-use Zorbl\CrosswordIO\Exceptions\PdfImportException;
-use Zorbl\CrosswordIO\GridNumberer;
+use CrosswordBuilder\CrosswordIO\Exceptions\PdfImportException;
+use CrosswordBuilder\CrosswordIO\GridNumberer;
 
 class PdfImporter
 {

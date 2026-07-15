@@ -3,6 +3,7 @@
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
@@ -82,6 +83,135 @@ new #[Title('Leaderboard')] class extends Component {
         });
     }
 
+    /**
+     * @return array{rank: int, value: int}|null
+     */
+    #[Computed]
+    public function yourSolverRank(): ?array
+    {
+        $userId = Auth::id();
+
+        $userCount = (int) DB::table('puzzle_attempts')
+            ->where('user_id', $userId)
+            ->where('is_completed', true)
+            ->count();
+
+        if ($userCount === 0) {
+            return null;
+        }
+
+        $rank = (int) DB::table(
+            DB::raw('(SELECT user_id, count(*) as completed_count FROM puzzle_attempts WHERE is_completed = 1 GROUP BY user_id) as rankings')
+        )
+            ->join('users', 'users.id', '=', 'rankings.user_id')
+            ->where('users.is_anonymous', false)
+            ->where('rankings.completed_count', '>', $userCount)
+            ->count() + 1;
+
+        return ['rank' => $rank, 'value' => $userCount];
+    }
+
+    /**
+     * @return array{rank: int, value: int, solved_count: int}|null
+     */
+    #[Computed]
+    public function yourSpeedRank(): ?array
+    {
+        $userId = Auth::id();
+
+        $userStats = DB::table('puzzle_attempts')
+            ->where('user_id', $userId)
+            ->where('is_completed', true)
+            ->whereNotNull('solve_time_seconds')
+            ->selectRaw('count(*) as solved_count, round(avg(solve_time_seconds)) as avg_time')
+            ->first();
+
+        if (! $userStats || $userStats->solved_count < 5) {
+            return null;
+        }
+
+        $avgTime = (int) $userStats->avg_time;
+
+        $rank = (int) DB::table(
+            DB::raw('(SELECT user_id, round(avg(solve_time_seconds)) as avg_time, count(*) as solved_count FROM puzzle_attempts WHERE is_completed = 1 AND solve_time_seconds IS NOT NULL GROUP BY user_id HAVING count(*) >= 5) as rankings')
+        )
+            ->join('users', 'users.id', '=', 'rankings.user_id')
+            ->where('users.is_anonymous', false)
+            ->where('rankings.avg_time', '<', $avgTime)
+            ->count() + 1;
+
+        return ['rank' => $rank, 'value' => $avgTime, 'solved_count' => (int) $userStats->solved_count];
+    }
+
+    /**
+     * @return array{rank: int, value: int, published_count: int}|null
+     */
+    #[Computed]
+    public function yourConstructorRank(): ?array
+    {
+        $userId = Auth::id();
+
+        $publishedCount = (int) DB::table('crosswords')
+            ->where('user_id', $userId)
+            ->where('is_published', true)
+            ->count();
+
+        if ($publishedCount === 0) {
+            return null;
+        }
+
+        $totalSolves = (int) DB::table('crosswords')
+            ->join('puzzle_attempts', function ($join) {
+                $join->on('crosswords.id', '=', 'puzzle_attempts.crossword_id')
+                    ->where('puzzle_attempts.is_completed', true);
+            })
+            ->where('crosswords.user_id', $userId)
+            ->where('crosswords.is_published', true)
+            ->count();
+
+        $allConstructors = DB::table('crosswords')
+            ->select('crosswords.user_id')
+            ->where('crosswords.is_published', true)
+            ->leftJoin('puzzle_attempts', function ($join) {
+                $join->on('crosswords.id', '=', 'puzzle_attempts.crossword_id')
+                    ->where('puzzle_attempts.is_completed', true);
+            })
+            ->join('users', 'users.id', '=', 'crosswords.user_id')
+            ->where('users.is_anonymous', false)
+            ->groupBy('crosswords.user_id')
+            ->havingRaw('count(puzzle_attempts.id) > ?', [$totalSolves])
+            ->get();
+
+        $rank = $allConstructors->count() + 1;
+
+        return ['rank' => $rank, 'value' => $totalSolves, 'published_count' => $publishedCount];
+    }
+
+    /**
+     * @return array{rank: int, longest: int, current: int}|null
+     */
+    #[Computed]
+    public function yourStreakRank(): ?array
+    {
+        $user = Auth::user();
+
+        if ($user->longest_streak <= 0) {
+            return null;
+        }
+
+        $rank = (int) User::where('is_anonymous', false)
+            ->where(function ($q) use ($user) {
+                $q->where('longest_streak', '>', $user->longest_streak)
+                    ->orWhere(function ($q2) use ($user) {
+                        $q2->where('longest_streak', $user->longest_streak)
+                            ->where('current_streak', '>', $user->current_streak);
+                    });
+            })
+            ->count() + 1;
+
+        return ['rank' => $rank, 'longest' => $user->longest_streak, 'current' => $user->current_streak];
+    }
+
     public function formatTime(?int $seconds): string
     {
         if ($seconds === null) {
@@ -152,6 +282,29 @@ new #[Title('Leaderboard')] class extends Component {
                 </flux:table>
             @endif
         </div>
+
+        @if($yourSolverRank = $this->yourSolverRank)
+            @unless($this->topSolvers->contains('id', Auth::id()))
+                <div class="border-line rounded-xl border border-blue-200 bg-blue-50/50 p-4 dark:border-blue-800/50 dark:bg-blue-950/20" data-test="your-solver-rank">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="flex size-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/40">
+                                <span class="text-sm font-bold text-blue-700 dark:text-blue-300">#{{ $yourSolverRank['rank'] }}</span>
+                            </div>
+                            <div>
+                                <flux:heading size="sm">{{ __('Your Rank') }}</flux:heading>
+                                <flux:text size="sm" class="text-zinc-600 dark:text-zinc-400">
+                                    {{ trans_choice(':count puzzle solved|:count puzzles solved', $yourSolverRank['value']) }}
+                                </flux:text>
+                            </div>
+                        </div>
+                        <flux:button variant="ghost" size="sm" :href="route('crosswords.solving')" wire:navigate icon="arrow-right">
+                            {{ __('Solve more') }}
+                        </flux:button>
+                    </div>
+                </div>
+            @endunless
+        @endif
     @endif
 
     {{-- Speed Demons --}}
@@ -194,6 +347,26 @@ new #[Title('Leaderboard')] class extends Component {
                 </flux:table>
             @endif
         </div>
+
+        @if($yourSpeedRank = $this->yourSpeedRank)
+            @unless($this->speedDemons->contains('id', Auth::id()))
+                <div class="border-line rounded-xl border border-blue-200 bg-blue-50/50 p-4 dark:border-blue-800/50 dark:bg-blue-950/20" data-test="your-speed-rank">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="flex size-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/40">
+                                <span class="text-sm font-bold text-blue-700 dark:text-blue-300">#{{ $yourSpeedRank['rank'] }}</span>
+                            </div>
+                            <div>
+                                <flux:heading size="sm">{{ __('Your Rank') }}</flux:heading>
+                                <flux:text size="sm" class="text-zinc-600 dark:text-zinc-400">
+                                    {{ __('Avg :time across :count solves', ['time' => $this->formatTime($yourSpeedRank['value']), 'count' => $yourSpeedRank['solved_count']]) }}
+                                </flux:text>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @endunless
+        @endif
     @endif
 
     {{-- Top Constructors --}}
@@ -236,6 +409,31 @@ new #[Title('Leaderboard')] class extends Component {
                 </flux:table>
             @endif
         </div>
+
+        @if($yourConstructorRank = $this->yourConstructorRank)
+            @unless($this->topConstructors->contains('id', Auth::id()))
+                <div class="border-line rounded-xl border border-blue-200 bg-blue-50/50 p-4 dark:border-blue-800/50 dark:bg-blue-950/20" data-test="your-constructor-rank">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="flex size-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/40">
+                                <span class="text-sm font-bold text-blue-700 dark:text-blue-300">#{{ $yourConstructorRank['rank'] }}</span>
+                            </div>
+                            <div>
+                                <flux:heading size="sm">{{ __('Your Rank') }}</flux:heading>
+                                <flux:text size="sm" class="text-zinc-600 dark:text-zinc-400">
+                                    {{ trans_choice(':count published puzzle|:count published puzzles', $yourConstructorRank['published_count']) }}
+                                    &middot;
+                                    {{ trans_choice(':count total solve|:count total solves', $yourConstructorRank['value']) }}
+                                </flux:text>
+                            </div>
+                        </div>
+                        <flux:button variant="ghost" size="sm" :href="route('crosswords.index')" wire:navigate icon="arrow-right">
+                            {{ __('Build more') }}
+                        </flux:button>
+                    </div>
+                </div>
+            @endunless
+        @endif
     @endif
 
     {{-- Streak Leaders --}}
@@ -282,5 +480,32 @@ new #[Title('Leaderboard')] class extends Component {
                 </flux:table>
             @endif
         </div>
+
+        @if($yourStreakRank = $this->yourStreakRank)
+            @unless($this->streakLeaders->contains('id', Auth::id()))
+                <div class="border-line rounded-xl border border-blue-200 bg-blue-50/50 p-4 dark:border-blue-800/50 dark:bg-blue-950/20" data-test="your-streak-rank">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="flex size-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/40">
+                                <span class="text-sm font-bold text-blue-700 dark:text-blue-300">#{{ $yourStreakRank['rank'] }}</span>
+                            </div>
+                            <div>
+                                <flux:heading size="sm">{{ __('Your Rank') }}</flux:heading>
+                                <flux:text size="sm" class="text-zinc-600 dark:text-zinc-400">
+                                    {{ __('Best: :best days', ['best' => $yourStreakRank['longest']]) }}
+                                    @if($yourStreakRank['current'] > 0)
+                                        &middot;
+                                        {{ __('Current: :current days', ['current' => $yourStreakRank['current']]) }}
+                                    @endif
+                                </flux:text>
+                            </div>
+                        </div>
+                        <flux:button variant="ghost" size="sm" :href="route('crosswords.solving')" wire:navigate icon="arrow-right">
+                            {{ __('Solve today') }}
+                        </flux:button>
+                    </div>
+                </div>
+            @endunless
+        @endif
     @endif
 </div>

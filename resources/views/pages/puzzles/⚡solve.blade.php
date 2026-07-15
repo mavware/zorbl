@@ -37,10 +37,10 @@ class extends Component {
             return;
         }
 
-        // Check guest solve cookie — allow only one puzzle
-        $solved = json_decode(request()->cookie('zorbl_guest_solved', '[]'), true) ?: [];
+        // Check guest solve cookie against the configured limit
+        $solved = json_decode(request()->cookie('crosswordbuilder_guest_solved', '[]'), true) ?: [];
 
-        if (count($solved) > 0 && ! in_array($crossword->id, $solved)) {
+        if (count($solved) >= config('crosswordbuilder.guest_solve_limit') && ! in_array($crossword->id, $solved)) {
             session()->flash('message', __('Create a free account to solve unlimited puzzles.'));
             $this->redirect(route('register'));
 
@@ -49,7 +49,7 @@ class extends Component {
 
         // Record this puzzle in the guest cookie (90 days)
         $solved = array_values(array_unique(array_merge($solved, [$crossword->id])));
-        cookie()->queue('zorbl_guest_solved', json_encode($solved), 60 * 24 * 90);
+        cookie()->queue('crosswordbuilder_guest_solved', json_encode($solved), 60 * 24 * 90);
 
         $this->crosswordId = $crossword->id;
         $this->title = $crossword->displayTitle();
@@ -117,8 +117,8 @@ class extends Component {
 
     {{-- Inline scripts for guest persistence and solution decoding --}}
     <script>
-        window.zorblGuestPersistence = (function() {
-            const key = 'zorbl_guest_{{ $crosswordId }}';
+        window.crosswordbuilderGuestPersistence = (function() {
+            const key = 'crosswordbuilder_guest_{{ $crosswordId }}';
             return {
                 save(progress, isCompleted, elapsed, pencilCells, revealedCells) {
                     try {
@@ -137,8 +137,8 @@ class extends Component {
             };
         })();
 
-        window.zorblDecodeSolution = function(encoded, crosswordId) {
-            const key = 'zorbl_' + crosswordId;
+        window.crosswordbuilderDecodeSolution = function(encoded, crosswordId) {
+            const key = 'crosswordbuilder_' + crosswordId;
             const decoded = atob(encoded);
             let result = '';
             for (let i = 0; i < decoded.length; i++) {
@@ -157,8 +157,8 @@ class extends Component {
 
     <div
         x-data="(() => {
-            const saved = window.zorblGuestPersistence.load();
-            const solution = window.zorblDecodeSolution(@js($obfuscatedSolution), {{ $crosswordId }});
+            const saved = window.crosswordbuilderGuestPersistence.load();
+            const solution = window.crosswordbuilderDecodeSolution(@js($obfuscatedSolution), {{ $crosswordId }});
             const progress = saved?.progress ?? @js($prefilled ?? Crossword::emptySolution($width, $height));
             return crosswordSolver({
                 width: @js($width),
@@ -174,7 +174,7 @@ class extends Component {
                 initialSolved: saved?.isCompleted ?? false,
                 initialPencilCells: saved?.pencilCells ?? [],
                 initialRevealedCells: saved?.revealedCells ?? {},
-                persistence: window.zorblGuestPersistence,
+                persistence: window.crosswordbuilderGuestPersistence,
                 puzzleTitle: @js($title),
                 shareTitle: @js($title),
                 shareUrl: @js(route('puzzles.solve', $crosswordId)),
@@ -523,7 +523,7 @@ class extends Component {
             solveTime: '',
             copyLabel: '{{ __('Copy Result') }}',
             _shareText() {
-                return '🧩 {{ str_replace("'", "\\'", $title) }} — Zorbl\n⏱️ ' + this.solveTime + ' | {{ $width }}×{{ $height }}\n{{ route('puzzles.solve', $crosswordId) }}';
+                return '🧩 {{ str_replace("'", "\\'", $title) }} — CrosswordBuilder\n⏱️ ' + this.solveTime + ' | {{ $width }}×{{ $height }}\n{{ route('puzzles.solve', $crosswordId) }}';
             },
             async shareResult() {
                 try { await navigator.share({ text: this._shareText() }); } catch {}

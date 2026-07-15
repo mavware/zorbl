@@ -1,10 +1,10 @@
 <?php
 
 use App\Models\Crossword;
-use Zorbl\CrosswordIO\Exceptions\ExportValidationException;
-use Zorbl\CrosswordIO\Exporters\JpzExporter;
-use Zorbl\CrosswordIO\GridNumberer;
-use Zorbl\CrosswordIO\Importers\JpzImporter;
+use CrosswordBuilder\CrosswordIO\Exceptions\ExportValidationException;
+use CrosswordBuilder\CrosswordIO\Exporters\JpzExporter;
+use CrosswordBuilder\CrosswordIO\GridNumberer;
+use CrosswordBuilder\CrosswordIO\Importers\JpzImporter;
 
 it('exports a crossword to valid jpz XML', function () {
     $crossword = Crossword::factory()->make([
