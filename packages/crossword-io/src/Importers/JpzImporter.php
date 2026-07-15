@@ -1,10 +1,10 @@
 <?php
 
-namespace Zorbl\CrosswordIO\Importers;
+namespace CrosswordBuilder\CrosswordIO\Importers;
 
 use SimpleXMLElement;
-use Zorbl\CrosswordIO\Exceptions\JpzImportException;
-use Zorbl\CrosswordIO\GridNumberer;
+use CrosswordBuilder\CrosswordIO\Exceptions\JpzImportException;
+use CrosswordBuilder\CrosswordIO\GridNumberer;
 
 class JpzImporter
 {

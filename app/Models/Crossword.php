@@ -17,8 +17,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Zorbl\CrosswordIO\Crossword as CrosswordDTO;
-use Zorbl\CrosswordIO\GridNumberer;
+use CrosswordBuilder\CrosswordIO\Crossword as CrosswordDTO;
+use CrosswordBuilder\CrosswordIO\GridNumberer;
 
 /**
  * @property int $id
@@ -500,7 +500,7 @@ class Crossword extends Model
     public function obfuscateSolution(): string
     {
         $json = json_encode($this->solution);
-        $key = 'zorbl_'.$this->id;
+        $key = 'crosswordbuilder_'.$this->id;
         $keyLength = strlen($key);
         $result = '';
 

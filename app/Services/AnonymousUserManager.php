@@ -9,7 +9,7 @@ use Illuminate\Support\Str;
 
 class AnonymousUserManager
 {
-    public const COOKIE_NAME = 'zorbl_anon';
+    public const COOKIE_NAME = 'crosswordbuilder_anon';
 
     private const COOKIE_TTL_MINUTES = 60 * 24 * 365;
 

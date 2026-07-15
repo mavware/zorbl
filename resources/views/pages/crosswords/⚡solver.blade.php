@@ -523,7 +523,7 @@ new #[Title('Solve Crossword')] class extends Component {
     public function generateShareText(): string
     {
         $lines = [];
-        $lines[] = __(':title on Zorbl', ['title' => $this->title]);
+        $lines[] = __(':title on :app', ['title' => $this->title, 'app' => config('app.name')]);
         $lines[] = $this->width.'x'.$this->height.' | '.$this->formatSolveTime($this->elapsedSeconds);
         $lines[] = route('puzzles.solve', $this->crosswordId);
 
@@ -799,7 +799,7 @@ new #[Title('Solve Crossword')] class extends Component {
                                             rows="3"
                                             class="border-line-strong w-full rounded-lg border bg-zinc-50 px-3 py-2 font-mono text-xs text-zinc-700 dark:bg-zinc-900 dark:text-zinc-400"
                                             x-ref="scriptCode"
-                                        >&lt;div data-zorbl-embed data-crossword-id="{{ $crosswordId }}" data-api-url="{{ url('/api/embed') }}/"&gt;&lt;/div&gt;
+                                        >&lt;div data-crosswordbuilder-embed data-crossword-id="{{ $crosswordId }}" data-api-url="{{ url('/api/embed') }}/"&gt;&lt;/div&gt;
 &lt;link rel="stylesheet" href="{{ Vite::asset('resources/css/embed.css') }}"&gt;
 &lt;script src="{{ Vite::asset('resources/js/embed.js') }}" defer&gt;&lt;/script&gt;</textarea>
                                         <button

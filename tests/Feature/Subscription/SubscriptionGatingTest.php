@@ -5,7 +5,7 @@ use App\Models\User;
 use App\Models\Word;
 use Livewire\Livewire;
 use Spatie\Permission\Models\Role;
-use Zorbl\CrosswordIO\GridNumberer;
+use CrosswordBuilder\CrosswordIO\GridNumberer;
 
 // makeProUser() is defined globally in tests/Pest.php
 

@@ -1,6 +1,6 @@
 <?php
 
-namespace Zorbl\CrosswordIO\Exceptions;
+namespace CrosswordBuilder\CrosswordIO\Exceptions;
 
 use Exception;
 

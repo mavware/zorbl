@@ -1,8 +1,8 @@
 <?php
 
-namespace Zorbl\CrosswordIO\Exporters;
+namespace CrosswordBuilder\CrosswordIO\Exporters;
 
-use Zorbl\CrosswordIO\Crossword;
+use CrosswordBuilder\CrosswordIO\Crossword;
 
 class IpuzExporter
 {

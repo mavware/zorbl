@@ -1,12 +1,12 @@
 <?php
 
-use Zorbl\CrosswordIO\Exporters\IpuzExporter;
-use Zorbl\CrosswordIO\Exporters\JpzExporter;
-use Zorbl\CrosswordIO\Exporters\PuzExporter;
-use Zorbl\CrosswordIO\GridNumberer;
-use Zorbl\CrosswordIO\Importers\IpuzImporter;
-use Zorbl\CrosswordIO\Importers\JpzImporter;
-use Zorbl\CrosswordIO\Importers\PuzImporter;
+use CrosswordBuilder\CrosswordIO\Exporters\IpuzExporter;
+use CrosswordBuilder\CrosswordIO\Exporters\JpzExporter;
+use CrosswordBuilder\CrosswordIO\Exporters\PuzExporter;
+use CrosswordBuilder\CrosswordIO\GridNumberer;
+use CrosswordBuilder\CrosswordIO\Importers\IpuzImporter;
+use CrosswordBuilder\CrosswordIO\Importers\JpzImporter;
+use CrosswordBuilder\CrosswordIO\Importers\PuzImporter;
 
 describe('IpuzExporter', function () {
     it('exports a crossword to valid ipuz format', function () {

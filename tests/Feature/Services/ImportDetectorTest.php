@@ -1,11 +1,11 @@
 <?php
 
-use Zorbl\CrosswordIO\GridNumberer;
-use Zorbl\CrosswordIO\ImportDetector;
-use Zorbl\CrosswordIO\Importers\IpuzImporter;
-use Zorbl\CrosswordIO\Importers\JpzImporter;
-use Zorbl\CrosswordIO\Importers\PdfImporter;
-use Zorbl\CrosswordIO\Importers\PuzImporter;
+use CrosswordBuilder\CrosswordIO\GridNumberer;
+use CrosswordBuilder\CrosswordIO\ImportDetector;
+use CrosswordBuilder\CrosswordIO\Importers\IpuzImporter;
+use CrosswordBuilder\CrosswordIO\Importers\JpzImporter;
+use CrosswordBuilder\CrosswordIO\Importers\PdfImporter;
+use CrosswordBuilder\CrosswordIO\Importers\PuzImporter;
 
 test('detects ipuz from extension', function () {
     $ipuzContent = json_encode([

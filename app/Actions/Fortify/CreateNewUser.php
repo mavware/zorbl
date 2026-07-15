@@ -18,7 +18,7 @@ class CreateNewUser implements CreatesNewUsers
      * Validate and create a newly registered user.
      *
      * If the request comes from an anonymous "guest builder" session
-     * (zorbl_anon cookie), the anonymous user row is upgraded in place so
+     * (crosswordbuilder_anon cookie), the anonymous user row is upgraded in place so
      * that puzzles already created during the guest session stay attached.
      *
      * @param  array<string, string>  $input

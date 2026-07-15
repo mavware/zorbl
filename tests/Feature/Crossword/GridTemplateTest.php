@@ -34,6 +34,55 @@ test('template picker does not appear for non-standard sizes', function () {
         ->assertSee('Templates are available for square grids');
 });
 
+test('freestyle puzzles do not show the template picker', function () {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    Livewire\Livewire::test('pages::crosswords.index')
+        ->set('showNewModal', true)
+        ->set('puzzleType', 'freestyle')
+        ->set('newWidth', 15)
+        ->set('newHeight', 15)
+        ->assertDontSee('Grid Template')
+        ->assertSee('Preview')
+        ->assertSet('templates', []);
+});
+
+test('freestyle preview shows a random published freestyle puzzle of the selected size', function () {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    $match = Crossword::factory()->freestyle()->published()->create([
+        'width' => 12,
+        'height' => 9,
+    ]);
+
+    // Different size and unpublished freestyle should be ignored.
+    Crossword::factory()->freestyle()->published()->create(['width' => 15, 'height' => 15]);
+    Crossword::factory()->freestyle()->create(['width' => 12, 'height' => 9]);
+
+    $component = Livewire\Livewire::test('pages::crosswords.index')
+        ->set('showNewModal', true)
+        ->set('puzzleType', 'freestyle')
+        ->set('newWidth', 12)
+        ->set('newHeight', 9);
+
+    expect($component->get('freestylePreview')?->id)->toBe($match->id);
+});
+
+test('freestyle preview is null when no matching published puzzle exists', function () {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    $component = Livewire\Livewire::test('pages::crosswords.index')
+        ->set('showNewModal', true)
+        ->set('puzzleType', 'freestyle')
+        ->set('newWidth', 13)
+        ->set('newHeight', 7);
+
+    expect($component->get('freestylePreview'))->toBeNull();
+});
+
 test('creating puzzle with selected template uses that grid', function () {
     $user = User::factory()->create();
     $this->actingAs($user);

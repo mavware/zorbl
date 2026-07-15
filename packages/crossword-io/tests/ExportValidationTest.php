@@ -1,11 +1,11 @@
 <?php
 
-use Zorbl\CrosswordIO\Exceptions\ExportValidationException;
-use Zorbl\CrosswordIO\Exceptions\UnsupportedFeature;
-use Zorbl\CrosswordIO\Exporters\IpuzExporter;
-use Zorbl\CrosswordIO\Exporters\JpzExporter;
-use Zorbl\CrosswordIO\Exporters\PuzExporter;
-use Zorbl\CrosswordIO\GridNumberer;
+use CrosswordBuilder\CrosswordIO\Exceptions\ExportValidationException;
+use CrosswordBuilder\CrosswordIO\Exceptions\UnsupportedFeature;
+use CrosswordBuilder\CrosswordIO\Exporters\IpuzExporter;
+use CrosswordBuilder\CrosswordIO\Exporters\JpzExporter;
+use CrosswordBuilder\CrosswordIO\Exporters\PuzExporter;
+use CrosswordBuilder\CrosswordIO\GridNumberer;
 
 describe('PuzExporter validation', function () {
     it('does not throw for a standard crossword', function () {

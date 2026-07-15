@@ -2,7 +2,7 @@
 
 use Database\Seeders\Activity\BaseActivitySeeder;
 use Database\Seeders\Activity\UsersSeeder;
-use Zorbl\CrosswordIO\GridNumberer;
+use CrosswordBuilder\CrosswordIO\GridNumberer;
 
 it('parses both across and down clues from xd files with separate sections', function () {
     // 3x3 grid: numbering is 1(across+down), 2(down), 3(across)

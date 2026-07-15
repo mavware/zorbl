@@ -70,6 +70,8 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [ ] Add keyboard shortcut cheat-sheet overlay (e.g. press `?` to toggle)
 - [ ] Extend profanity list
 - [x] Add authenticated `GET /api/v1/daily-puzzle/status` endpoint returning whether the user has solved today's puzzle and their solve time
+- [x] Limit puzzle size to 40x40
+- [x] Freestyle puzzles should not have templates.  but they can have a thumbnail of a random freestyle puzzle in the size that is selected.
 
  
 ## For later

@@ -3,14 +3,14 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ $crossword->title ?? 'Crossword' }} - Zorbl</title>
+    <title>{{ $crossword->title ?? 'Crossword' }} - {{ config('app.name') }}</title>
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700" rel="stylesheet" />
     @vite(['resources/css/embed.css', 'resources/js/embed.js'])
 </head>
 <body class="m-0 bg-white p-2">
     <div
-        data-zorbl-embed
+        data-crosswordbuilder-embed
         data-crossword-id="{{ $crossword->id }}"
         data-api-url="{{ url('/api/embed') }}/"
     >
@@ -18,7 +18,7 @@
     </div>
     <div class="mt-2 text-center text-xs text-zinc-500">
         <a href="{{ url('/') }}" target="_blank" rel="noopener" class="hover:text-blue-500 transition-colors">
-            Powered by Zorbl
+            Powered by {{ config('app.name') }}
         </a>
     </div>
 </body>

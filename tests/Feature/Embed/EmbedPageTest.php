@@ -7,8 +7,8 @@ test('embed page loads for published crossword', function () {
 
     $this->get(route('embed.solver', $crossword))
         ->assertOk()
-        ->assertSee('data-zorbl-embed')
-        ->assertSee('Powered by Zorbl');
+        ->assertSee('data-crosswordbuilder-embed')
+        ->assertSee('Powered by '.config('app.name'));
 });
 
 test('embed page returns 404 for unpublished crossword', function () {

@@ -5,7 +5,7 @@ namespace App\Services;
 use App\Models\Crossword;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Collection;
-use Zorbl\CrosswordIO\GridNumberer;
+use CrosswordBuilder\CrosswordIO\GridNumberer;
 
 class PdfExporter
 {

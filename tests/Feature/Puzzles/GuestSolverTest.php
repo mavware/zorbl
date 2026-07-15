@@ -11,8 +11,8 @@ test('guest can access solver for published crossword', function () {
     $this->get(route('puzzles.solve', $crossword))
         ->assertOk()
         ->assertSee('Guest Solve Test')
-        ->assertSee('zorblGuestPersistence')
-        ->assertSee('zorblDecodeSolution');
+        ->assertSee('crosswordbuilderGuestPersistence')
+        ->assertSee('crosswordbuilderDecodeSolution');
 });
 
 test('guest gets 404 for unpublished crossword', function () {
@@ -37,42 +37,42 @@ test('guest solve cookie is set on first visit', function () {
     $response = $this->get(route('puzzles.solve', $crossword));
 
     $response->assertOk()
-        ->assertCookie('zorbl_guest_solved');
+        ->assertCookie('crosswordbuilder_guest_solved');
 });
 
 test('guest can revisit the same puzzle', function () {
     $crossword = Crossword::factory()->published()->withBlocks()->withSolution()->create();
 
     // First visit sets the cookie
-    $response = $this->withCookie('zorbl_guest_solved', json_encode([$crossword->id]))
+    $response = $this->withCookie('crosswordbuilder_guest_solved', json_encode([$crossword->id]))
         ->get(route('puzzles.solve', $crossword));
 
     $response->assertOk();
 });
 
 test('guest is redirected to register after reaching the free solve limit', function () {
-    $solved = Crossword::factory()->published()->count(config('zorbl.guest_solve_limit'))->create();
+    $solved = Crossword::factory()->published()->count(config('crosswordbuilder.guest_solve_limit'))->create();
     $next = Crossword::factory()->published()->create();
 
-    $this->withCookie('zorbl_guest_solved', json_encode($solved->pluck('id')->all()))
+    $this->withCookie('crosswordbuilder_guest_solved', json_encode($solved->pluck('id')->all()))
         ->get(route('puzzles.solve', $next))
         ->assertRedirect(route('register'));
 });
 
 test('guest solve limit is driven by config', function () {
-    config()->set('zorbl.guest_solve_limit', 2);
+    config()->set('crosswordbuilder.guest_solve_limit', 2);
 
     $first = Crossword::factory()->published()->withBlocks()->withSolution()->create();
     $second = Crossword::factory()->published()->withBlocks()->withSolution()->create();
     $third = Crossword::factory()->published()->create();
 
     // First two distinct puzzles are allowed under the raised limit.
-    $this->withCookie('zorbl_guest_solved', json_encode([$first->id]))
+    $this->withCookie('crosswordbuilder_guest_solved', json_encode([$first->id]))
         ->get(route('puzzles.solve', $second))
         ->assertOk();
 
     // A third distinct puzzle exceeds the limit and triggers the register redirect.
-    $this->withCookie('zorbl_guest_solved', json_encode([$first->id, $second->id]))
+    $this->withCookie('crosswordbuilder_guest_solved', json_encode([$first->id, $second->id]))
         ->get(route('puzzles.solve', $third))
         ->assertRedirect(route('register'));
 });

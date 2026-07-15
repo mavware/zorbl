@@ -339,10 +339,19 @@ export function crosswordGrid({
             const bottomMissing = row === this.height - 1 || this.isVoid(row + 1, col);
             const leftMissing   = col === 0              || this.isVoid(row, col - 1);
             const rightMissing  = col === this.width - 1  || this.isVoid(row, col + 1);
-            if (topMissing)    shadows.push('inset 0 2px 0 0 var(--bar-color)');
-            if (bottomMissing) shadows.push('inset 0 -2px 0 0 var(--bar-color)');
-            if (leftMissing)   shadows.push('inset 2px 0 0 0 var(--bar-color)');
-            if (rightMissing)  shadows.push('inset -2px 0 0 0 var(--bar-color)');
+            // Freestyle draws the outer perimeter at the same thin weight as the
+            // internal seams; other types get a thicker outline for contrast.
+            if (this.puzzleType.uniformBorders) {
+                if (topMissing)    shadows.push('inset 0 1px 0 0 var(--color-line-strong)');
+                if (bottomMissing) shadows.push('inset 0 -1px 0 0 var(--color-line-strong)');
+                if (leftMissing)   shadows.push('inset 1px 0 0 0 var(--color-line-strong)');
+                if (rightMissing)  shadows.push('inset -1px 0 0 0 var(--color-line-strong)');
+            } else {
+                if (topMissing)    shadows.push('inset 0 2px 0 0 var(--bar-color)');
+                if (bottomMissing) shadows.push('inset 0 -2px 0 0 var(--bar-color)');
+                if (leftMissing)   shadows.push('inset 2px 0 0 0 var(--bar-color)');
+                if (rightMissing)  shadows.push('inset -2px 0 0 0 var(--bar-color)');
+            }
             if (!topMissing)    shadows.push('inset 0 1px 0 0 var(--color-line-strong)');
             if (!bottomMissing) shadows.push('inset 0 -1px 0 0 var(--color-line-strong)');
             if (!leftMissing)   shadows.push('inset 1px 0 0 0 var(--color-line-strong)');

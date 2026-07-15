@@ -8,8 +8,8 @@ use Spatie\Permission\Models\Role;
 test('help center index renders for guests with seeded categories', function () {
     HelpArticle::factory()->create([
         'category' => 'getting-started',
-        'title' => 'What is Zorbl?',
-        'slug' => 'what-is-zorbl',
+        'title' => 'What is '.config('app.name').'?',
+        'slug' => 'what-is-crosswordbuilder',
     ]);
     HelpArticle::factory()->create([
         'category' => 'solving',
@@ -20,7 +20,7 @@ test('help center index renders for guests with seeded categories', function () 
     $this->get(route('help.index'))
         ->assertOk()
         ->assertSee('Help Center')
-        ->assertSee('What is Zorbl?')
+        ->assertSee('What is '.config('app.name').'?')
         ->assertSee('How do contests work?')
         ->assertSee(HelpArticle::CATEGORIES['getting-started'])
         ->assertSee(HelpArticle::CATEGORIES['solving']);

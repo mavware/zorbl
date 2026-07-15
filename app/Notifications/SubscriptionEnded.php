@@ -23,12 +23,12 @@ class SubscriptionEnded extends Notification implements ShouldQueue
     public function toMail(User $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject(__('Your Zorbl Pro subscription has ended'))
+            ->subject(__('Your :app Pro subscription has ended', ['app' => config('app.name')]))
             ->greeting(__('Hi :name,', ['name' => $notifiable->name]))
-            ->line(__('Your Zorbl Pro subscription has ended and your account has been moved back to the Free plan.'))
+            ->line(__('Your :app Pro subscription has ended and your account has been moved back to the Free plan.', ['app' => config('app.name')]))
             ->line(__("You'll keep access to puzzles you've already created, but Pro features like AI autofill and unlimited exports are no longer available."))
             ->action(__('Resubscribe'), route('billing.index'))
-            ->line(__('Thanks for being a Zorbl Pro subscriber.'));
+            ->line(__('Thanks for being a :app Pro subscriber.', ['app' => config('app.name')]));
     }
 
     /**
