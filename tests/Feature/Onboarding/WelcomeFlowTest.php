@@ -31,10 +31,10 @@ test('the Registered event triggers the WelcomeEmail listener once', function ()
     Notification::assertSentToTimes($user, WelcomeEmail::class, 1);
 });
 
-test('dashboard shows the welcome hero for a brand-new account', function () {
+test('build page shows the welcome hero for a brand-new account', function () {
     $user = User::factory()->create();
 
-    $this->actingAs($user)->get(route('dashboard'))
+    $this->actingAs($user)->get(route('crosswords.index'))
         ->assertOk()
         ->assertSee('dashboard-welcome-hero', false)
         ->assertSee('Welcome to')
@@ -42,11 +42,11 @@ test('dashboard shows the welcome hero for a brand-new account', function () {
         ->assertSee('Build a puzzle');
 });
 
-test('dashboard hides the welcome hero once the user has activity', function () {
+test('build page hides the welcome hero once the user has activity', function () {
     $user = User::factory()->create();
     Crossword::factory()->for($user)->create();
 
-    $this->actingAs($user)->get(route('dashboard'))
+    $this->actingAs($user)->get(route('crosswords.index'))
         ->assertOk()
         ->assertDontSee('dashboard-welcome-hero', false);
 });

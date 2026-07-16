@@ -24,7 +24,7 @@ test('admins can view the pulse dashboard page with every pulse widget', functio
     $response = $this->actingAs($admin)
         ->get('/admin/pulse')
         ->assertOk()
-        ->assertSee('pulse-widgets');
+        ->assertSee('@scope (.fi-page-content)', escape: false);
 
     foreach ([
         PeriodSelectorWidget::class,

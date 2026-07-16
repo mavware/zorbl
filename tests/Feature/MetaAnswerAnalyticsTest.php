@@ -31,7 +31,7 @@ test('analytics shows meta answer responses for puzzles with submissions', funct
 
     $this->actingAs($user);
 
-    Livewire::test('pages::crosswords.analytics')
+    Livewire::test('constructor-analytics')
         ->assertSee('Meta Answer Responses')
         ->assertSee('What is the hidden theme?')
         ->assertSee('Movies')
@@ -45,7 +45,7 @@ test('analytics does not show meta answer section when no puzzles have meta answ
 
     $this->actingAs($user);
 
-    Livewire::test('pages::crosswords.analytics')
+    Livewire::test('constructor-analytics')
         ->assertDontSee('Meta Answer Responses');
 });
 
@@ -58,7 +58,7 @@ test('analytics does not show meta answer section when no submissions exist', fu
 
     $this->actingAs($user);
 
-    Livewire::test('pages::crosswords.analytics')
+    Livewire::test('constructor-analytics')
         ->assertDontSee('Meta Answer Responses');
 });
 
@@ -83,7 +83,7 @@ test('meta answer responses marks correct answers', function () {
 
     $this->actingAs($user);
 
-    $component = Livewire::test('pages::crosswords.analytics');
+    $component = Livewire::test('constructor-analytics');
     $responses = $component->instance()->metaAnswerResponses;
 
     expect($responses)->toHaveCount(1);
@@ -117,7 +117,7 @@ test('meta answer responses are ordered by count descending', function () {
 
     $this->actingAs($user);
 
-    $component = Livewire::test('pages::crosswords.analytics');
+    $component = Livewire::test('constructor-analytics');
     $responses = $component->instance()->metaAnswerResponses;
 
     $puzzleResponses = $responses[0]['responses'];
@@ -136,6 +136,6 @@ test('meta answer responses excludes unpublished puzzles', function () {
 
     $this->actingAs($user);
 
-    Livewire::test('pages::crosswords.analytics')
+    Livewire::test('constructor-analytics')
         ->assertDontSee('Meta Answer Responses');
 });

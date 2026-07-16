@@ -130,8 +130,8 @@ test('dashboard in-progress attempts include progress data for progress bars', f
         'progress' => [['A', 'B', ''], ['D', '', ''], ['', '', '']],
     ]);
 
-    $component = Livewire::actingAs($user)->test('pages::dashboard');
-    $attempts = $component->get('inProgressAttempts');
+    $component = Livewire::actingAs($user)->test('pages::crosswords.solving');
+    $attempts = $component->get('attempts');
 
     expect($attempts)->toHaveCount(1);
     $progress = $attempts->first()->solveProgress();

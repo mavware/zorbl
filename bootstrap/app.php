@@ -24,6 +24,9 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->validateCsrfTokens(except: ['stripe/*']);
         $middleware->append(SecurityHeaders::class);
+        // Without this, authenticated users hitting guest-only routes would be
+        // sent to the route named "dashboard", which is now just a redirect.
+        $middleware->redirectUsersTo(fn () => route('crosswords.index'));
         $middleware->alias([
             'not-anonymous' => EnsureNotAnonymous::class,
             'guest' => RedirectIfAuthenticated::class,

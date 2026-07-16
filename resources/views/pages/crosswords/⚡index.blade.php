@@ -80,6 +80,30 @@ new #[Title('Build')] class extends Component {
     }
 
     #[Computed]
+    public function publishedCount(): int
+    {
+        return Auth::user()->crosswords()->where('is_published', true)->count();
+    }
+
+    #[Computed]
+    public function draftCount(): int
+    {
+        return Auth::user()->crosswords()->where('is_published', false)->count();
+    }
+
+    /**
+     * Brand-new account with no activity yet — render a friendlier first-run
+     * hero so they don't bounce off a wall of zero-state cards.
+     */
+    #[Computed]
+    public function isNewUser(): bool
+    {
+        return $this->publishedCount === 0
+            && $this->draftCount === 0
+            && ! Auth::user()->puzzleAttempts()->exists();
+    }
+
+    #[Computed]
     public function selectedPuzzleType(): PuzzleType
     {
         return PuzzleType::tryFrom($this->puzzleType) ?? PuzzleType::Standard;
@@ -364,9 +388,6 @@ new #[Title('Build')] class extends Component {
             <flux:heading size="xl">{{ __('Build') }}</flux:heading>
 
             <div class="flex gap-2">
-                <flux:button variant="ghost" size="sm" icon="chart-bar" :href="route('crosswords.analytics')" wire:navigate>
-                    {{ __('Analytics') }}
-                </flux:button>
                 <flux:button variant="primary" icon="plus" wire:click="$set('showNewModal', true)">
                     {{ __('New Puzzle') }}
                 </flux:button>
@@ -375,6 +396,43 @@ new #[Title('Build')] class extends Component {
                 </flux:button>
             </div>
         </div>
+
+        {{-- First-run welcome — only visible to brand-new accounts with zero activity. --}}
+        @if($this->isNewUser)
+            <div class="relative overflow-hidden rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 p-6 dark:border-amber-800/50 dark:from-amber-950/30 dark:to-orange-950/20" data-test="dashboard-welcome-hero">
+                <div class="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+                    <div class="max-w-xl">
+                        <flux:heading size="lg" class="!text-amber-700 dark:!text-amber-300">
+                            {{ __('Welcome to :app, :name!', ['app' => config('app.name'), 'name' => auth()->user()->name]) }}
+                        </flux:heading>
+                        <flux:text class="mt-2">
+                            {{ __('You\'re all set up. Two good ways to get started:') }}
+                        </flux:text>
+                        <ul class="mt-3 space-y-2 text-sm text-zinc-700 dark:text-zinc-300">
+                            <li class="flex items-start gap-2">
+                                <flux:icon name="play" class="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                                <span>{{ __('Try a solve — pick any puzzle from the community to see how the editor and solver feel.') }}</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <flux:icon name="pencil-square" class="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                                <span>{{ __('Build your first puzzle — the editor handles symmetry, numbering, and exports for you.') }}</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="flex flex-shrink-0 flex-col gap-2 sm:items-end">
+                        <flux:button variant="primary" icon="plus" wire:click="$set('showNewModal', true)">
+                            {{ __('Build a puzzle') }}
+                        </flux:button>
+                        <flux:button variant="ghost" icon="play" :href="route('crosswords.solving')" wire:navigate>
+                            {{ __('Browse puzzles to solve') }}
+                        </flux:button>
+                        <a href="{{ route('help.index') }}" wire:navigate class="mt-1 text-xs text-zinc-600 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200">
+                            {{ __('Read the Help Center →') }}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        @endif
 
         {{-- Search & Filters --}}
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -493,6 +551,38 @@ new #[Title('Build')] class extends Component {
                 @endforeach
             </div>
         @endif
+
+        {{-- Stats Cards --}}
+        <div class="grid gap-4 sm:grid-cols-2">
+            {{-- Published Puzzles --}}
+            <div class="border-line rounded-xl border p-5">
+                <div class="flex items-center gap-3">
+                    <div class="flex size-10 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/30">
+                        <flux:icon name="puzzle-piece" class="size-5 text-amber-600 dark:text-amber-400" />
+                    </div>
+                    <div>
+                        <flux:text size="sm" class="text-zinc-600">{{ __('Published') }}</flux:text>
+                        <div class="text-2xl font-bold text-fg">{{ $this->publishedCount }}</div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Draft Puzzles --}}
+            <div class="border-line rounded-xl border p-5">
+                <div class="flex items-center gap-3">
+                    <div class="flex size-10 items-center justify-center rounded-lg bg-page">
+                        <flux:icon name="pencil" class="size-5 text-zinc-700 dark:text-zinc-400" />
+                    </div>
+                    <div>
+                        <flux:text size="sm" class="text-zinc-600">{{ __('Drafts') }}</flux:text>
+                        <div class="text-2xl font-bold text-fg">{{ $this->draftCount }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Constructor Analytics --}}
+        <livewire:constructor-analytics />
 
         {{-- New Puzzle Modal --}}
     <flux:modal wire:model="showNewModal" class="w-full max-w-lg">

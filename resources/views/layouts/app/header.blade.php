@@ -8,11 +8,11 @@
         <flux:header container class="border-line border-b bg-zinc-100 dark:bg-zinc-900">
             <flux:sidebar.toggle class="lg:hidden mr-2" icon="bars-2" inset="left" />
 
-            <x-app-logo href="{{ route('dashboard') }}" wire:navigate />
+            <x-app-logo href="{{ route('crosswords.index') }}" wire:navigate />
 
             <flux:navbar class="-mb-px max-lg:hidden">
-                <flux:navbar.item icon="layout-grid" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
-                    {{ __('Dashboard') }}
+                <flux:navbar.item icon="layout-grid" :href="route('crosswords.index')" :current="request()->routeIs('crosswords.index')" wire:navigate>
+                    {{ __('Build') }}
                 </flux:navbar.item>
             </flux:navbar>
 
@@ -39,14 +39,14 @@
         <!-- Mobile Menu -->
         <flux:sidebar collapsible="mobile" sticky class="bg-surface border-line lg:hidden border-e">
             <flux:sidebar.header>
-                <x-app-logo :sidebar="true" href="{{ route('dashboard') }}" wire:navigate />
+                <x-app-logo :sidebar="true" href="{{ route('crosswords.index') }}" wire:navigate />
                 <flux:sidebar.collapse class="in-data-flux-sidebar-on-desktop:not-in-data-flux-sidebar-collapsed-desktop:-mr-2" />
             </flux:sidebar.header>
 
             <flux:sidebar.nav>
                 <flux:sidebar.group :heading="__('Platform')">
-                    <flux:sidebar.item icon="layout-grid" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
-                        {{ __('Dashboard')  }}
+                    <flux:sidebar.item icon="layout-grid" :href="route('crosswords.index')" :current="request()->routeIs('crosswords.index')" wire:navigate>
+                        {{ __('Build') }}
                     </flux:sidebar.item>
                 </flux:sidebar.group>
             </flux:sidebar.nav>

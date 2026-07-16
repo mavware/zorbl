@@ -142,13 +142,13 @@ test('daily puzzle history startSolving redirects guest to public solver', funct
         ->assertRedirect(route('puzzles.solve', $crossword));
 });
 
-test('dashboard links to daily puzzle history', function () {
+test('solving page links to daily puzzle history', function () {
     $crossword = Crossword::factory()->published()->create(['title' => 'Dashboard Link']);
     DailyPuzzle::create(['date' => today(), 'crossword_id' => $crossword->id]);
 
     Cache::flush();
 
     Livewire::actingAs(User::factory()->create())
-        ->test('pages::dashboard')
+        ->test('pages::crosswords.solving')
         ->assertSee('View past puzzles');
 });

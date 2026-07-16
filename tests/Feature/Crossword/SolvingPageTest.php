@@ -132,10 +132,15 @@ test('filter shows only in-progress attempts', function () {
 
     $this->actingAs($user);
 
-    Livewire::test('pages::crosswords.solving')
+    // Assert on the attempts collection: the filtered-out puzzle can still
+    // legitimately appear elsewhere on the page (e.g. the Newest section).
+    $titles = Livewire::test('pages::crosswords.solving')
         ->set('filter', 'in_progress')
-        ->assertSee('Unfinished Work')
-        ->assertDontSee('Done Deal');
+        ->get('attempts')
+        ->pluck('crossword.title');
+
+    expect($titles->all())->toContain('Unfinished Work')
+        ->not->toContain('Done Deal');
 });
 
 test('filter shows only completed attempts', function () {
@@ -149,10 +154,13 @@ test('filter shows only completed attempts', function () {
 
     $this->actingAs($user);
 
-    Livewire::test('pages::crosswords.solving')
+    $titles = Livewire::test('pages::crosswords.solving')
         ->set('filter', 'completed')
-        ->assertSee('Done Deal')
-        ->assertDontSee('Unfinished Work');
+        ->get('attempts')
+        ->pluck('crossword.title');
+
+    expect($titles->all())->toContain('Done Deal')
+        ->not->toContain('Unfinished Work');
 });
 
 test('all filter shows both in-progress and completed attempts', function () {
@@ -183,10 +191,13 @@ test('search filters attempts by puzzle title', function () {
 
     $this->actingAs($user);
 
-    Livewire::test('pages::crosswords.solving')
+    $titles = Livewire::test('pages::crosswords.solving')
         ->set('search', 'Ocean')
-        ->assertSee('Ocean Voyage')
-        ->assertDontSee('Space Adventure');
+        ->get('attempts')
+        ->pluck('crossword.title');
+
+    expect($titles->all())->toContain('Ocean Voyage')
+        ->not->toContain('Space Adventure');
 });
 
 test('attempt counts reflect active filters', function () {

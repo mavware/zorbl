@@ -197,6 +197,6 @@ test('sort change resets pagination', function () {
 
 test('sidebar shows constructors link', function () {
     $this->actingAs(User::factory()->create())
-        ->get(route('dashboard'))
+        ->get(route('crosswords.index'))
         ->assertSee('Constructors');
 });

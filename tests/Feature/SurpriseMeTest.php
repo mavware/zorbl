@@ -114,67 +114,67 @@ test('surprise me picks unblocked puzzle when blocked tags exist', function () {
 // Dashboard (authenticated)
 // ──────────────────────────────────────────────────
 
-test('dashboard shows surprise me button', function () {
+test('solve page shows surprise me button', function () {
     $user = User::factory()->create();
 
     $this->actingAs($user)
-        ->get(route('dashboard'))
+        ->get(route('crosswords.solving'))
         ->assertOk()
         ->assertSee('Surprise Me');
 });
 
-test('dashboard surprise me redirects to solver', function () {
+test('solving page surprise me redirects to solver', function () {
     $user = User::factory()->create();
     $crossword = Crossword::factory()->published()->create();
 
     Livewire::actingAs($user)
-        ->test('pages::dashboard')
+        ->test('pages::crosswords.solving')
         ->call('surpriseMe')
         ->assertRedirect(route('crosswords.solver', $crossword));
 });
 
-test('dashboard surprise me excludes own puzzles', function () {
+test('solving page surprise me excludes own puzzles', function () {
     $user = User::factory()->create();
     Crossword::factory()->published()->for($user)->create();
 
     Livewire::actingAs($user)
-        ->test('pages::dashboard')
+        ->test('pages::crosswords.solving')
         ->call('surpriseMe')
         ->assertNoRedirect();
 });
 
-test('dashboard surprise me picks other users puzzle over own', function () {
+test('solving page surprise me picks other users puzzle over own', function () {
     $user = User::factory()->create();
     Crossword::factory()->published()->for($user)->create();
 
     $other = Crossword::factory()->published()->create();
 
     Livewire::actingAs($user)
-        ->test('pages::dashboard')
+        ->test('pages::crosswords.solving')
         ->call('surpriseMe')
         ->assertRedirect(route('crosswords.solver', $other));
 });
 
-test('dashboard surprise me does nothing when no puzzles exist', function () {
+test('solving page surprise me does nothing when no puzzles exist', function () {
     $user = User::factory()->create();
 
     Livewire::actingAs($user)
-        ->test('pages::dashboard')
+        ->test('pages::crosswords.solving')
         ->call('surpriseMe')
         ->assertNoRedirect();
 });
 
-test('dashboard surprise me respects safe search', function () {
+test('solving page surprise me respects safe search', function () {
     $user = User::factory()->create(['safe_search_enabled' => true]);
     Crossword::factory()->published()->create(['title' => 'Borfle puzzle']);
 
     Livewire::actingAs($user)
-        ->test('pages::dashboard')
+        ->test('pages::crosswords.solving')
         ->call('surpriseMe')
         ->assertNoRedirect();
 });
 
-test('dashboard surprise me respects blocked tags', function () {
+test('solving page surprise me respects blocked tags', function () {
     $user = User::factory()->create();
     $tag = Tag::factory()->create();
     $user->blockedTags()->attach($tag);
@@ -183,7 +183,7 @@ test('dashboard surprise me respects blocked tags', function () {
     $crossword->tags()->attach($tag);
 
     Livewire::actingAs($user)
-        ->test('pages::dashboard')
+        ->test('pages::crosswords.solving')
         ->call('surpriseMe')
         ->assertNoRedirect();
 });

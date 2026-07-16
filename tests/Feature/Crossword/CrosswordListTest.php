@@ -147,3 +147,22 @@ test('duplicate respects puzzle limit for free users', function () {
 
     expect($user->crosswords()->count())->toBe(25);
 });
+
+test('build page shows published puzzle count', function () {
+    $user = User::factory()->create();
+    Crossword::factory()->count(2)->published()->create(['user_id' => $user->id]);
+    Crossword::factory()->create(['user_id' => $user->id, 'is_published' => false]);
+
+    $component = Livewire\Livewire::actingAs($user)->test('pages::crosswords.index');
+
+    expect($component->get('publishedCount'))->toBe(2);
+});
+
+test('build page shows draft puzzle count', function () {
+    $user = User::factory()->create();
+    Crossword::factory()->count(3)->create(['user_id' => $user->id, 'is_published' => false]);
+
+    $component = Livewire\Livewire::actingAs($user)->test('pages::crosswords.index');
+
+    expect($component->get('draftCount'))->toBe(3);
+});

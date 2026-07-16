@@ -31,7 +31,7 @@
                 </div>
                 <div class="flex items-center gap-4">
                     @auth
-                        <a href="{{ route('dashboard') }}" wire:navigate class="text-fg-muted text-sm hover:text-zinc-900 dark:hover:text-zinc-100 transition">{{ __('Dashboard') }}</a>
+                        <a href="{{ route('crosswords.index') }}" wire:navigate class="text-fg-muted text-sm hover:text-zinc-900 dark:hover:text-zinc-100 transition">{{ __('Build') }}</a>
                         <a href="{{ route('crosswords.solving') }}" wire:navigate class="text-fg-muted text-sm hover:text-zinc-900 dark:hover:text-zinc-100 transition">{{ __('My Solving') }}</a>
                     @else
                         <a href="{{ route('login') }}" class="text-fg-muted text-sm hover:text-zinc-900 dark:hover:text-zinc-100 transition">{{ __('Log in') }}</a>

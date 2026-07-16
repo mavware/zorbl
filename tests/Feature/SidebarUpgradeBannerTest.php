@@ -8,7 +8,7 @@ test('free users see the upgrade banner above the support menu', function () {
     $user = User::factory()->create();
 
     $this->actingAs($user)
-        ->get(route('dashboard'))
+        ->get(route('crosswords.index'))
         ->assertOk()
         ->assertSee('Upgrade to Pro', false)
         ->assertSee(route('billing.index'), false);
@@ -25,7 +25,7 @@ test('pro subscribers do not see the upgrade banner', function () {
     ]);
 
     $this->actingAs($user)
-        ->get(route('dashboard'))
+        ->get(route('crosswords.index'))
         ->assertOk()
         ->assertDontSee('Upgrade to Pro', false);
 });
@@ -36,7 +36,7 @@ test('admins do not see the upgrade banner', function () {
     $admin->assignRole('Admin');
 
     $this->actingAs($admin)
-        ->get(route('dashboard'))
+        ->get(route('crosswords.index'))
         ->assertOk()
         ->assertDontSee('Upgrade to Pro', false);
 });

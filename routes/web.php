@@ -62,7 +62,9 @@ Route::middleware('auth')->group(function () {
 // wildcard below, otherwise the wildcard swallows them (e.g. "analytics" would be
 // treated as a {crossword} and 404 on the model binding).
 Route::middleware(['auth', 'verified', 'not-anonymous'])->group(function () {
-    Route::livewire('crosswords/analytics', 'pages::crosswords.analytics')->name('crosswords.analytics');
+    // Analytics now live on the Build page; the name survives for old links
+    // (e.g. the constructor weekly digest email).
+    Route::redirect('crosswords/analytics', '/crosswords')->name('crosswords.analytics');
 });
 
 // Builder surface — anonymous "guest builder" users are allowed in.
@@ -73,7 +75,9 @@ Route::middleware(['auth'])->group(function () {
 });
 
 Route::middleware(['auth', 'verified', 'not-anonymous'])->group(function () {
-    Route::livewire('dashboard', 'pages::dashboard')->name('dashboard');
+    // The dashboard's sections now live on the Build and Solve pages; keep the
+    // route name alive for old links and post-login redirects.
+    Route::redirect('dashboard', '/crosswords')->name('dashboard');
 
     Route::livewire('crosswords', 'pages::crosswords.index')->name('crosswords.index');
     Route::livewire('solving', 'pages::crosswords.solving')->name('crosswords.solving');

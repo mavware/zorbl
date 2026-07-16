@@ -30,7 +30,7 @@ test('new users can register without confirming their password', function () {
     ]);
 
     $response->assertSessionHasNoErrors()
-        ->assertRedirect(route('dashboard', absolute: false));
+        ->assertRedirect(route('crosswords.index', absolute: false));
 
     $this->assertAuthenticated();
 });
