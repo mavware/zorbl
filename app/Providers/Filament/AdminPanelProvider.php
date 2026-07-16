@@ -2,15 +2,16 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Pages\PulseDashboard;
 use Filament\Actions\Action;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
-use Filament\Navigation\NavigationItem;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\View\PanelsRenderHook;
 use Filament\Widgets\AccountWidget;
 use Filament\Widgets\FilamentInfoWidget;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
@@ -34,12 +35,11 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
-            ->navigationItems([
-                NavigationItem::make('Pulse')
-                    ->icon('heroicon-o-chart-bar')
-                    ->url('/pulse')
-                    ->sort(1),
-            ])
+            ->renderHook(
+                PanelsRenderHook::HEAD_END,
+                fn (): string => PulseDashboard::renderAssets(),
+                scopes: PulseDashboard::class,
+            )
             ->usermenuitems([
                 Action::make('Dashboard')
                     ->icon('heroicon-o-home')

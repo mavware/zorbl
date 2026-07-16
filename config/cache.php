@@ -1,5 +1,7 @@
 <?php
 
+use Carbon\CarbonImmutable;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
 return [
@@ -123,8 +125,16 @@ return [
     | storage. By default, no PHP classes will be unserialized from your
     | cache to prevent gadget chain attacks if your APP_KEY is leaked.
     |
+    | Laravel Pulse caches its dashboard query results as collections of
+    | plain row objects and timestamps, so exactly those classes are
+    | allowed. Everything else remains blocked.
+    |
     */
 
-    'serializable_classes' => false,
+    'serializable_classes' => [
+        CarbonImmutable::class,
+        Collection::class,
+        stdClass::class,
+    ],
 
 ];
