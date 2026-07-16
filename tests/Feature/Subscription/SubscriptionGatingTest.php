@@ -3,9 +3,9 @@
 use App\Models\Crossword;
 use App\Models\User;
 use App\Models\Word;
+use CrosswordBuilder\CrosswordIO\GridNumberer;
 use Livewire\Livewire;
 use Spatie\Permission\Models\Role;
-use CrosswordBuilder\CrosswordIO\GridNumberer;
 
 // makeProUser() is defined globally in tests/Pest.php
 
@@ -32,11 +32,11 @@ beforeEach(function () {
 });
 
 describe('puzzle creation limits', function () {
-    it('allows free users to create up to 5 puzzles', function () {
+    it('allows free users to create up to 25 puzzles', function () {
         $user = User::factory()->create();
 
-        // Create 4 existing puzzles
-        Crossword::factory()->for($user)->count(4)->create();
+        // Create 24 existing puzzles
+        Crossword::factory()->for($user)->count(24)->create();
 
         Livewire::actingAs($user)
             ->test('pages::crosswords.index')
@@ -47,10 +47,10 @@ describe('puzzle creation limits', function () {
             ->assertRedirect();
     });
 
-    it('blocks free users from creating a 6th puzzle', function () {
+    it('blocks free users from creating a 26th puzzle', function () {
         $user = User::factory()->create();
 
-        Crossword::factory()->for($user)->count(5)->create();
+        Crossword::factory()->for($user)->count(25)->create();
 
         Livewire::actingAs($user)
             ->test('pages::crosswords.index')
@@ -60,10 +60,10 @@ describe('puzzle creation limits', function () {
             ->assertHasErrors('newWidth');
     });
 
-    it('allows grandfathered free users to create up to 10 puzzles', function () {
+    it('allows grandfathered free users to create up to 25 puzzles', function () {
         $user = User::factory()->create(['grandfathered_at' => now()]);
 
-        Crossword::factory()->for($user)->count(9)->create();
+        Crossword::factory()->for($user)->count(24)->create();
 
         Livewire::actingAs($user)
             ->test('pages::crosswords.index')

@@ -17,10 +17,10 @@
                         {{ __('Dashboard') }}
                     </flux:sidebar.item>
                     <flux:sidebar.item icon="puzzle-piece" :href="route('crosswords.index')" :current="request()->routeIs('crosswords.index') || request()->routeIs('crosswords.editor')" wire:navigate>
-                        {{ __('My Puzzles') }}
+                        {{ __('Build') }}
                     </flux:sidebar.item>
                     <flux:sidebar.item icon="play" :href="route('crosswords.solving')" :current="request()->routeIs('crosswords.solving') || request()->routeIs('crosswords.solver')" wire:navigate>
-                        {{ __('Solving') }}
+                        {{ __('Solve') }}
                     </flux:sidebar.item>
                     <flux:sidebar.item icon="heart" :href="route('favorites.index')" :current="request()->routeIs('favorites.index')" wire:navigate>
                         {{ __('Favorites') }}

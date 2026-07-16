@@ -49,13 +49,21 @@ class SecurityHeaders
         // Livewire + Alpine evaluate expression strings at runtime, so we need
         // 'unsafe-eval' and 'unsafe-inline' for scripts. Stripe.js, our font
         // host, and Stripe iframes are explicitly listed below.
+        //
+        // When the Vite dev server is running (local `npm run dev`), its origin
+        // must be whitelisted so the injected HMR client, styles, and scripts
+        // load. In production this returns '' and the CSP stays locked down.
+        $vite = $this->viteDevServerOrigin();
+        $viteScript = $vite === '' ? '' : ' '.$vite;
+        $viteConnect = $vite === '' ? '' : ' '.$vite.' '.$this->viteWebSocketSource();
+
         $directives = [
             "default-src 'self'",
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com",
-            "style-src 'self' 'unsafe-inline' https://fonts.bunny.net",
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com".$viteScript,
+            "style-src 'self' 'unsafe-inline' https://fonts.bunny.net".$viteScript,
             "font-src 'self' data: https://fonts.bunny.net",
             "img-src 'self' data: blob: https:",
-            "connect-src 'self' https://api.stripe.com https://*.ingest.sentry.io https://*.ingest.us.sentry.io",
+            "connect-src 'self' https://api.stripe.com https://*.ingest.sentry.io https://*.ingest.us.sentry.io".$viteConnect,
             "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",
             'frame-ancestors '.($isEmbed ? '*' : "'self'"),
             "form-action 'self'",
@@ -65,6 +73,50 @@ class SecurityHeaders
         ];
 
         return implode('; ', $directives);
+    }
+
+    /**
+     * The Vite dev server origin (e.g. `https://crosswordbuilder.test:5173`)
+     * when it is running locally, or an empty string otherwise. Detected via
+     * the `public/hot` file Vite writes while `npm run dev` is active.
+     */
+    private function viteDevServerOrigin(): string
+    {
+        if (app()->environment('production')) {
+            return '';
+        }
+
+        $hotFile = public_path('hot');
+
+        if (! is_file($hotFile)) {
+            return '';
+        }
+
+        $url = trim((string) file_get_contents($hotFile));
+        $parts = parse_url($url);
+
+        if (! isset($parts['scheme'], $parts['host'])) {
+            return '';
+        }
+
+        return $parts['scheme'].'://'.$parts['host'].(isset($parts['port']) ? ':'.$parts['port'] : '');
+    }
+
+    /**
+     * The WebSocket source for Vite HMR (`ws(s)://host:port`), or '' when the
+     * dev server is not running.
+     */
+    private function viteWebSocketSource(): string
+    {
+        $origin = $this->viteDevServerOrigin();
+
+        if ($origin === '') {
+            return '';
+        }
+
+        return str_starts_with($origin, 'https://')
+            ? 'wss://'.substr($origin, strlen('https://'))
+            : 'ws://'.substr($origin, strlen('http://'));
     }
 
     private function permissionsPolicy(): string

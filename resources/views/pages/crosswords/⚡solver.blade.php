@@ -1468,7 +1468,7 @@ new #[Title('Solve Crossword')] class extends Component {
         x-transition:leave-start="opacity-100"
         x-transition:leave-end="opacity-0"
         x-on:keydown.escape.window="showCelebration = false"
-        class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm"
+        class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
         style="display: none;"
     >
         <div
@@ -1480,8 +1480,18 @@ new #[Title('Solve Crossword')] class extends Component {
             x-transition:leave-start="scale-100 opacity-100"
             x-transition:leave-end="scale-90 opacity-0"
             x-on:click.outside="showCelebration = false"
-            class="bg-elevated relative mx-4 w-full max-w-sm overflow-hidden rounded-2xl shadow-2xl"
+            class="bg-elevated relative w-full max-w-sm overflow-hidden rounded-2xl shadow-2xl"
         >
+            {{-- Close button --}}
+            <button
+                type="button"
+                x-on:click="showCelebration = false"
+                aria-label="{{ __('Close') }}"
+                class="absolute right-3 top-3 z-10 inline-flex size-8 items-center justify-center rounded-full text-white/80 transition hover:bg-white/20 hover:text-white focus:outline-none focus:ring-2 focus:ring-white/50 cursor-pointer"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
+            </button>
+
             {{-- Decorative header --}}
             <div class="bg-gradient-to-br from-emerald-400 to-teal-500 px-6 pt-8 pb-6 text-center dark:from-emerald-600 dark:to-teal-700">
                 <div class="mb-3 text-6xl">🎉</div>
@@ -1504,48 +1514,24 @@ new #[Title('Solve Crossword')] class extends Component {
                     @endif
                 </div>
 
-                {{-- Share result --}}
-                <div class="flex items-center justify-center gap-2">
-                    <button
-                        x-on:click="shareResult('{{ route('puzzles.solve', $crosswordId) }}')"
-                        x-show="canNativeShare()"
-                        class="inline-flex items-center gap-1.5 rounded-lg bg-zinc-100 px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-200 dark:bg-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-600"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" class="size-4" viewBox="0 0 20 20" fill="currentColor"><path d="M13 4.5a2.5 2.5 0 11.702 1.737L6.97 9.604a2.518 2.518 0 010 .799l6.733 3.366a2.5 2.5 0 11-.671 1.341l-6.733-3.366a2.5 2.5 0 110-3.482l6.733-3.366A2.52 2.52 0 0113 4.5z"/></svg>
-                        {{ __('Share') }}
-                    </button>
-                    <button
-                        x-on:click="copyShareText('{{ route('puzzles.solve', $crosswordId) }}', $el)"
-                        class="inline-flex items-center gap-1.5 rounded-lg bg-zinc-100 px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-200 dark:bg-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-600"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" class="size-4" viewBox="0 0 20 20" fill="currentColor"><path d="M7 3.5A1.5 1.5 0 018.5 2h3.879a1.5 1.5 0 011.06.44l3.122 3.12A1.5 1.5 0 0117 6.622V12.5a1.5 1.5 0 01-1.5 1.5h-1v-3.379a3 3 0 00-.879-2.121L10.5 5.379A3 3 0 008.379 4.5H7v-1z"/><path d="M4.5 6A1.5 1.5 0 003 7.5v9A1.5 1.5 0 004.5 18h7a1.5 1.5 0 001.5-1.5v-5.879a1.5 1.5 0 00-.44-1.06L9.44 6.439A1.5 1.5 0 008.378 6H4.5z"/></svg>
-                        <span x-ref="copyLabel">{{ __('Copy Result') }}</span>
-                    </button>
-                    <a
-                        x-bind:href="twitterShareUrl('{{ route('puzzles.solve', $crosswordId) }}')"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        class="inline-flex items-center gap-1.5 rounded-lg bg-zinc-100 px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-200 dark:bg-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-600"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" class="size-4" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-                    </a>
-                </div>
-
                 {{-- Quick Rating & Comment --}}
                 <div class="border-t border-zinc-200 pt-4 dark:border-zinc-700" wire:key="celebration-rating">
                     @if(!$this->userComment)
                         <h3 class="mb-2.5 text-center text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">{{ __('Rate This Puzzle') }}</h3>
                         <form wire:submit="submitComment" class="space-y-2.5">
-                            <div class="flex items-center justify-center gap-1.5">
+                            <div class="flex items-center justify-center gap-1.5" x-data="{ hover: 0 }" @mouseleave="hover = 0">
                                 @for($i = 1; $i <= 5; $i++)
-                                    <button type="button" wire:click="$set('commentRating', {{ $commentRating === $i ? 0 : $i }})" class="focus:outline-none">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="size-7 transition-colors {{ $i <= $commentRating ? 'text-amber-400' : 'text-zinc-300 hover:text-amber-300 dark:text-zinc-600 dark:hover:text-amber-500' }}" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.006 5.404.434c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.434 2.082-5.005Z" clip-rule="evenodd"/></svg>
+                                    <button type="button" wire:click="$set('commentRating', {{ $commentRating === $i ? 0 : $i }})" @mouseenter="hover = {{ $i }}" class="focus:outline-none cursor-pointer">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="size-7 transition-colors" :class="hover > 0 ? ({{ $i }} <= hover ? 'text-amber-300 dark:text-amber-500' : 'text-zinc-300 dark:text-zinc-600') : ({{ $i }} <= $wire.commentRating ? 'text-amber-400' : 'text-zinc-300 dark:text-zinc-600')" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.006 5.404.434c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.434 2.082-5.005Z" clip-rule="evenodd"/></svg>
                                     </button>
                                 @endfor
                             </div>
                             <flux:textarea wire:model="commentBody" :placeholder="__('Share your thoughts...')" rows="2" />
                             @error('commentBody') <flux:text size="sm" class="text-red-500">{{ $message }}</flux:text> @enderror
-                            <flux:button type="submit" size="sm" variant="primary" class="w-full">{{ __('Post Review') }}</flux:button>
+                            <div class="flex items-center justify-center gap-2">
+                                                            <flux:button type="submit" color="green" size="sm" variant="primary" class="py-2 cursor-pointer mb-2"><div class="flex"><flux:icon.rocket-launch class="size-4 mr-2" /> {{ __('Post Review') }}</div></flux:button>
+
+                            </div>
                         </form>
                     @else
                         <h3 class="mb-2 text-center text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">{{ __('Your Review') }}</h3>
@@ -1587,7 +1573,7 @@ new #[Title('Solve Crossword')] class extends Component {
                 <div class="flex flex-col gap-2">
                     <button
                         x-on:click="shareResults()"
-                        class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-blue-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:bg-blue-600 dark:hover:bg-blue-500 dark:focus:ring-offset-zinc-800"
+                        class="cursor-pointer mb-3 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-zinc-200 px-4 py-2.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:ring-offset-2 dark:border-zinc-600 dark:text-zinc-300 dark:hover:bg-zinc-700 dark:focus:ring-offset-zinc-800"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z" /></svg>
                         <span x-text="shareCopied ? '{{ __('Copied!') }}' : '{{ __('Share Results') }}'"></span>
@@ -1595,16 +1581,11 @@ new #[Title('Solve Crossword')] class extends Component {
                     <a
                         href="{{ route('crosswords.solving') }}"
                         wire:navigate
-                        class="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-zinc-200 px-4 py-2.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:ring-offset-2 dark:border-zinc-600 dark:text-zinc-300 dark:hover:bg-zinc-700 dark:focus:ring-offset-zinc-800"
+                        class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-amber-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 dark:bg-amber-500 dark:hover:bg-amber-400 dark:focus:ring-offset-zinc-800"
                     >
+                        <flux:icon.arrow-right class="size-4" />
                         {{ __('Browse More Puzzles') }}
                     </a>
-                    <button
-                        x-on:click="showCelebration = false"
-                        class="inline-flex w-full items-center justify-center rounded-lg px-4 py-2.5 text-sm font-medium text-zinc-500 transition hover:text-zinc-700 focus:outline-none dark:text-zinc-400 dark:hover:text-zinc-200"
-                    >
-                        {{ __('Keep Looking') }}
-                    </button>
                 </div>
             </div>
         </div>

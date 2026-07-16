@@ -20,7 +20,7 @@ class PlanLimits
             return PHP_INT_MAX;
         }
 
-        return $this->isGrandfathered ? 10 : 5;
+        return 25;
     }
 
     public function monthlyAiFills(): int

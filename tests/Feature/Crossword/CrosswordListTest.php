@@ -135,7 +135,7 @@ test('users cannot duplicate other users unpublished puzzles', function () {
 
 test('duplicate respects puzzle limit for free users', function () {
     $user = User::factory()->create();
-    Crossword::factory()->for($user)->count(5)->create();
+    Crossword::factory()->for($user)->count(25)->create();
 
     $crossword = $user->crosswords()->first();
 
@@ -145,5 +145,5 @@ test('duplicate respects puzzle limit for free users', function () {
         ->call('duplicatePuzzle', $crossword->id)
         ->assertNoRedirect();
 
-    expect($user->crosswords()->count())->toBe(5);
+    expect($user->crosswords()->count())->toBe(25);
 });

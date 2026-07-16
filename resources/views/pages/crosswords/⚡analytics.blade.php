@@ -280,7 +280,7 @@ new #[Title('Constructor Analytics')] class extends Component {
     <div class="flex items-center justify-between">
         <flux:heading size="xl">{{ __('Constructor Analytics') }}</flux:heading>
         <flux:button variant="ghost" size="sm" :href="route('crosswords.index')" wire:navigate icon="arrow-left">
-            {{ __('My Puzzles') }}
+            {{ __('Build') }}
         </flux:button>
     </div>
 

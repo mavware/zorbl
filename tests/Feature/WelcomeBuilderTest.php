@@ -91,10 +91,29 @@ test('anonymous user is capped at one puzzle', function () {
     $anon = $manager->create();
     Crossword::factory()->for($anon)->create();
 
-    Livewire::actingAs($anon)
+    $component = Livewire::actingAs($anon)
         ->test('welcome-builder')
         ->call('createPuzzle')
         ->assertHasErrors('newWidth');
+
+    expect($component->errors()->first('newWidth'))
+        ->toContain('Create a free account');
+});
+
+test('builder shows the sign-up prompt and reports the limit for a capped guest', function () {
+    $manager = app(AnonymousUserManager::class);
+    $anon = $manager->create();
+    Crossword::factory()->for($anon)->create();
+
+    Livewire::actingAs($anon)
+        ->test('welcome-builder')
+        ->assertSee('Create a free account to build more puzzles.')
+        ->assertSee('disabled');
+});
+
+test('builder is not at the limit for a fresh visitor', function () {
+    Livewire::test('welcome-builder')
+        ->assertDontSee('Create a free account to build more puzzles.');
 });
 
 test('create is blocked when free user is at puzzle limit', function () {

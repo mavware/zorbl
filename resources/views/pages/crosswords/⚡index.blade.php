@@ -19,7 +19,7 @@ use Livewire\Component;
 use Livewire\WithFileUploads;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
-new #[Title('My Puzzles')] class extends Component {
+new #[Title('Build')] class extends Component {
     use WithFileUploads;
 
     public bool $showNewModal = false;
@@ -361,7 +361,7 @@ new #[Title('My Puzzles')] class extends Component {
 
 <div class="space-y-6">
         <div class="flex items-center justify-between">
-            <flux:heading size="xl">{{ __('My Puzzles') }}</flux:heading>
+            <flux:heading size="xl">{{ __('Build') }}</flux:heading>
 
             <div class="flex gap-2">
                 <flux:button variant="ghost" size="sm" icon="chart-bar" :href="route('crosswords.analytics')" wire:navigate>

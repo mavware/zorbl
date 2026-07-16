@@ -64,3 +64,43 @@ test('CSP allows fonts.bunny.net for fonts and styles', function () {
         ->toContain('https://fonts.bunny.net')
         ->toContain("font-src 'self' data: https://fonts.bunny.net");
 });
+
+test('CSP whitelists the Vite dev server origin while it is running', function () {
+    $hotFile = public_path('hot');
+    $original = is_file($hotFile) ? file_get_contents($hotFile) : null;
+
+    try {
+        file_put_contents($hotFile, 'https://crosswordbuilder.test:5173');
+
+        $csp = $this->get('/')->headers->get('Content-Security-Policy');
+
+        // Dev server assets (scripts + styles) and its HMR WebSocket are allowed.
+        expect($csp)
+            ->toContain("script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://crosswordbuilder.test:5173")
+            ->toContain("style-src 'self' 'unsafe-inline' https://fonts.bunny.net https://crosswordbuilder.test:5173")
+            ->toContain('wss://crosswordbuilder.test:5173');
+    } finally {
+        if ($original === null) {
+            @unlink($hotFile);
+        } else {
+            file_put_contents($hotFile, $original);
+        }
+    }
+});
+
+test('CSP omits the Vite dev server origin when it is not running', function () {
+    $hotFile = public_path('hot');
+    $original = is_file($hotFile) ? file_get_contents($hotFile) : null;
+
+    try {
+        @unlink($hotFile);
+
+        $csp = $this->get('/')->headers->get('Content-Security-Policy');
+
+        expect($csp)->not->toContain(':5173');
+    } finally {
+        if ($original !== null) {
+            file_put_contents($hotFile, $original);
+        }
+    }
+});

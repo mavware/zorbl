@@ -3,16 +3,16 @@
 use App\Support\PlanLimits;
 
 describe('Free tier', function () {
-    it('limits puzzles to 5', function () {
+    it('limits puzzles to 25', function () {
         $limits = new PlanLimits(isPro: false);
 
-        expect($limits->maxPuzzles())->toBe(5);
+        expect($limits->maxPuzzles())->toBe(25);
     });
 
-    it('gives grandfathered users 10 puzzles', function () {
+    it('gives grandfathered users the same 25 puzzles as free', function () {
         $limits = new PlanLimits(isPro: false, isGrandfathered: true);
 
-        expect($limits->maxPuzzles())->toBe(10);
+        expect($limits->maxPuzzles())->toBe(25);
     });
 
     it('blocks AI features', function () {

@@ -51,6 +51,44 @@ new class extends Component {
             ->first();
     }
 
+    /**
+     * Whether the current user has already reached their puzzle cap. Anonymous
+     * visitors who haven't created their guest account yet are never at the
+     * limit — they can still build their first puzzle.
+     */
+    #[Computed]
+    public function atPuzzleLimit(): bool
+    {
+        $user = Auth::user();
+
+        if ($user === null) {
+            return false;
+        }
+
+        return $user->crosswords()->count() >= $user->planLimits()->maxPuzzles();
+    }
+
+    /**
+     * The reason the user can't build another puzzle, or null when they can.
+     */
+    #[Computed]
+    public function limitMessage(): ?string
+    {
+        if (! $this->atPuzzleLimit) {
+            return null;
+        }
+
+        $limits = Auth::user()->planLimits();
+
+        if ($limits->isAnonymous()) {
+            return __('Create a free account to build more puzzles.');
+        }
+
+        return $limits->isPro()
+            ? __('You have reached your puzzle limit.')
+            : __('Free accounts can create up to :count puzzles. Upgrade to Pro for unlimited.', ['count' => $limits->maxPuzzles()]);
+    }
+
     public function updatedPuzzleType(): void
     {
         $type = $this->selectedPuzzleType;
@@ -116,16 +154,17 @@ new class extends Component {
             return null;
         }
 
-        $user = Auth::user();
-        $limits = $user->planLimits();
+        // The limit computeds may have been cached during render before the
+        // guest account existed; recompute against the now-authenticated user.
+        unset($this->atPuzzleLimit, $this->limitMessage);
 
-        if ($user->crosswords()->count() >= $limits->maxPuzzles()) {
-            $this->addError('newWidth', $user->isPro()
-                ? __('You have reached your puzzle limit.')
-                : __('Free accounts can create up to :count puzzles. Upgrade to Pro for unlimited.', ['count' => $limits->maxPuzzles()]));
+        if ($this->atPuzzleLimit) {
+            $this->addError('newWidth', $this->limitMessage);
 
             return null;
         }
+
+        $user = Auth::user();
 
         if ($this->selectedTemplate !== null && isset($this->templates[$this->selectedTemplate])) {
             $grid = $this->templates[$this->selectedTemplate]['grid'];
@@ -280,11 +319,19 @@ new class extends Component {
         </div>
     @endif
 
-    <div class="flex justify-center pt-2">
+    <div class="flex flex-col items-center gap-2 pt-2">
+        @if ($this->atPuzzleLimit)
+            <div class="flex">
+                <flux:icon.exclamation-triangle class=" size-4 mr-2 text-red-400" />
+                <flux:text size="sm" class="text-center text-red-400"> {{ $this->limitMessage }}</flux:text>
+            </div>
+
+        @endif
         <button
             type="button"
             wire:click="createPuzzle"
-            class="rounded-xl bg-amber-500 px-8 py-3.5 text-base font-semibold text-zinc-950 shadow-lg shadow-amber-500/20 hover:bg-amber-400 transition"
+            @disabled($this->atPuzzleLimit)
+            class="rounded-xl bg-amber-500 px-8 py-3.5 text-base font-semibold text-zinc-950 shadow-lg shadow-amber-500/20 transition hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none disabled:hover:bg-amber-500"
         >
             {{ __('Start building') }}
         </button>
