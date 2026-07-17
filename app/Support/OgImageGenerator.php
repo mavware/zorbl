@@ -3,13 +3,16 @@
 namespace App\Support;
 
 use App\Models\Crossword;
+use App\Support\Concerns\DrawsOnImage;
+use CrosswordBuilder\CrosswordIO\GridNumberer;
 use GdImage;
 use Illuminate\Support\Str;
 use RuntimeException;
-use CrosswordBuilder\CrosswordIO\GridNumberer;
 
 class OgImageGenerator
 {
+    use DrawsOnImage;
+
     private const CANVAS_W = 1200;
 
     private const CANVAS_H = 630;
@@ -207,116 +210,5 @@ class OgImageGenerator
     {
         $color = $this->color($canvas, self::COLOR_GRID_LINE);
         imagerectangle($canvas, $x, $y, $x + $size, $y + $size, $color);
-    }
-
-    /**
-     * @param  array<int, int>  $rgb
-     */
-    private function fill(GdImage $canvas, int $x1, int $y1, int $x2, int $y2, array $rgb): void
-    {
-        imagefilledrectangle($canvas, $x1, $y1, $x2, $y2, $this->color($canvas, $rgb));
-    }
-
-    /**
-     * @param  array<int, int>  $rgb
-     */
-    private function color(GdImage $canvas, array $rgb): int
-    {
-        $color = imagecolorallocate($canvas, $rgb[0], $rgb[1], $rgb[2]);
-
-        return $color === false ? 0 : $color;
-    }
-
-    /**
-     * @param  array<int, int>  $rgb
-     */
-    private function ttfText(GdImage $canvas, string $text, int $x, int $y, float $size, string $font, array $rgb, int $letterSpacing = 0): void
-    {
-        if ($letterSpacing === 0) {
-            imagettftext($canvas, $size, 0, $x, $y, $this->color($canvas, $rgb), $font, $text);
-
-            return;
-        }
-
-        $cursor = $x;
-        foreach (mb_str_split($text) as $char) {
-            imagettftext($canvas, $size, 0, $cursor, $y, $this->color($canvas, $rgb), $font, $char);
-            $bbox = imagettfbbox($size, 0, $font, $char);
-            $cursor += ($bbox[2] - $bbox[0]) + $letterSpacing;
-        }
-    }
-
-    /**
-     * Word-wrap TTF text within $maxWidth, drawing up to $maxLines lines.
-     *
-     * @param  array<int, int>  $rgb
-     */
-    private function wrapTtfText(GdImage $canvas, string $text, int $x, int $y, float $size, string $font, array $rgb, int $maxWidth, int $lineHeight, int $maxLines): void
-    {
-        $words = preg_split('/\s+/', $text) ?: [];
-        $lines = [];
-        $line = '';
-        $overflowed = false;
-
-        foreach ($words as $i => $word) {
-            $candidate = $line === '' ? $word : $line.' '.$word;
-            $bbox = imagettfbbox($size, 0, $font, $candidate);
-            $w = $bbox[2] - $bbox[0];
-
-            if ($w <= $maxWidth) {
-                $line = $candidate;
-
-                continue;
-            }
-
-            if ($line !== '') {
-                $lines[] = $line;
-            }
-
-            if (count($lines) >= $maxLines) {
-                $line = '';
-                $overflowed = $i < count($words);
-                break;
-            }
-
-            $line = $word;
-        }
-
-        if ($line !== '' && count($lines) < $maxLines) {
-            $lines[] = $line;
-        }
-
-        if ($overflowed && $lines !== []) {
-            $last = $lines[count($lines) - 1];
-            while ($last !== '') {
-                $bbox = imagettfbbox($size, 0, $font, $last.'…');
-                if (($bbox[2] - $bbox[0]) <= $maxWidth) {
-                    $lines[count($lines) - 1] = $last.'…';
-                    break;
-                }
-                $last = rtrim(mb_substr($last, 0, -1));
-            }
-        }
-
-        $cursorY = $y;
-        foreach ($lines as $current) {
-            $this->ttfText($canvas, $current, $x, $cursorY, $size, $font, $rgb);
-            $cursorY += $lineHeight;
-        }
-    }
-
-    private function truncate(string $text, int $limit): string
-    {
-        return mb_strlen($text) > $limit ? mb_substr($text, 0, $limit - 1).'…' : $text;
-    }
-
-    private function fontPath(string $file): string
-    {
-        $path = base_path('vendor/dompdf/dompdf/lib/fonts/'.$file);
-        if (! is_file($path)) {
-            throw new RuntimeException("OG image font missing: {$path}");
-        }
-
-        return $path;
     }
 }

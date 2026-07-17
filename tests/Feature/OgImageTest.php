@@ -3,6 +3,7 @@
 use App\Models\Crossword;
 use App\Models\User;
 use App\Support\OgImageGenerator;
+use App\Support\SiteOgImageGenerator;
 use Illuminate\Support\Facades\Storage;
 
 test('generator produces a 1200x630 PNG for a published puzzle', function () {
@@ -18,6 +19,45 @@ test('generator produces a 1200x630 PNG for a published puzzle', function () {
     expect($image)->not->toBeFalse();
     expect(imagesx($image))->toBe(1200);
     expect(imagesy($image))->toBe(630);
+});
+
+test('site default og generator produces a 1200x630 PNG', function () {
+    $bytes = app(SiteOgImageGenerator::class)->render();
+
+    expect($bytes)->toBeString()->not->toBe('');
+
+    $image = imagecreatefromstring($bytes);
+    expect($image)->not->toBeFalse();
+    expect(imagesx($image))->toBe(1200);
+    expect(imagesy($image))->toBe(630);
+});
+
+test('og:default command writes a PNG into public', function () {
+    $relative = 'og-default-test-'.uniqid().'.png';
+    $path = public_path($relative);
+
+    try {
+        $this->artisan('og:default', ['--path' => $relative])
+            ->assertSuccessful();
+
+        expect(file_exists($path))->toBeTrue();
+
+        $image = imagecreatefromstring((string) file_get_contents($path));
+        expect(imagesx($image))->toBe(1200)
+            ->and(imagesy($image))->toBe(630);
+    } finally {
+        @unlink($path);
+    }
+});
+
+test('the committed default og image exists and is 1200x630', function () {
+    $path = public_path('og-default.png');
+
+    expect(file_exists($path))->toBeTrue();
+
+    $image = imagecreatefromstring((string) file_get_contents($path));
+    expect(imagesx($image))->toBe(1200)
+        ->and(imagesy($image))->toBe(630);
 });
 
 test('og image route returns a PNG for a published puzzle', function () {

@@ -8,7 +8,7 @@
 @php
     $canonicalUrl = $canonical ?? url()->current();
     $ogTitle = ($title ? $title.' — ' : '').config('app.name');
-    $ogImage = $image ?? asset('android-chrome-512x512.png');
+    $ogImage = $image ?? asset('og-default.png');
 @endphp
 
 @push('head_meta')
@@ -24,7 +24,9 @@
         <meta property="og:description" content="{{ $description }}">
     @endif
     <meta property="og:image" content="{{ $ogImage }}">
-    <meta name="twitter:card" content="summary">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="{{ $ogTitle }}">
     @if ($description !== '')
         <meta name="twitter:description" content="{{ $description }}">

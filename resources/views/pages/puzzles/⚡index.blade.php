@@ -73,6 +73,12 @@ class extends Component
     x-data="{ showSignup: false }"
     x-on:show-signup-prompt.window="showSignup = true"
 >
+    <x-seo-meta
+        title="Browse Puzzles"
+        :canonical="route('puzzles.index')"
+        :description="__('Browse and solve free crossword puzzles published by independent constructors.')"
+    />
+
     @push('head_meta')
         @php
             $browseJsonLd = [
@@ -93,8 +99,6 @@ class extends Component
                 ],
             ];
         @endphp
-        <link rel="canonical" href="{{ route('puzzles.index') }}">
-        <meta name="description" content="{{ __('Browse and solve free crossword puzzles published by independent constructors.') }}">
         <script type="application/ld+json">{!! json_encode($browseJsonLd, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
     @endpush
 

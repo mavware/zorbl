@@ -70,6 +70,12 @@ class extends Component {
 ?>
 
 <div class="space-y-6">
+    <x-seo-meta
+        title="Puzzle of the Day"
+        :canonical="route('puzzles.daily-history')"
+        :description="__('A new featured crossword every day. Solve today\'s puzzle or catch up on ones you missed.')"
+    />
+
     @push('head_meta')
         @php
             $dailyJsonLd = [
@@ -93,8 +99,6 @@ class extends Component {
                 ],
             ];
         @endphp
-        <link rel="canonical" href="{{ route('puzzles.daily-history') }}">
-        <meta name="description" content="{{ __('A new featured crossword every day. Solve today\'s puzzle or catch up on ones you missed.') }}">
         <script type="application/ld+json">{!! json_encode($dailyJsonLd, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
     @endpush
 

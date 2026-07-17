@@ -3,7 +3,7 @@
 
     $appName = config('app.name');
     $tagline = 'Build crossword puzzles with a visual editor and publish them for solvers to enjoy. Free forever — no credit card.';
-    $ogImage = asset('favicon-32x32.png');
+    $ogImage = asset('og-default.png');
     $canonicalUrl = url('/');
 
     $stats = Cache::remember('marketing.welcome_stats', now()->addMinutes(15), function () {
