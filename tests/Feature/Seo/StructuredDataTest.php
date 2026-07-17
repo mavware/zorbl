@@ -49,6 +49,26 @@ test('legal pages carry a canonical and meta description', function () {
         ->toContain('<title>Privacy Policy — '.config('app.name').'</title>');
 });
 
+test('homepage title stays within the search-result length sweet spot', function () {
+    $html = $this->get('/')->getContent();
+
+    expect(preg_match('#<title>(.+?)</title>#s', $html, $m))->toBe(1);
+
+    // Google/X/LinkedIn truncate past ~60 characters.
+    expect(mb_strlen(html_entity_decode($m[1])))->toBeLessThanOrEqual(60);
+});
+
+test('homepage og:title and twitter:title match the page title', function () {
+    $html = $this->get('/')->getContent();
+
+    preg_match('#<title>(.+?)</title>#s', $html, $title);
+    $expected = html_entity_decode($title[1]);
+
+    expect($html)
+        ->toContain('<meta property="og:title" content="'.$expected.'">')
+        ->toContain('<meta name="twitter:title" content="'.$expected.'">');
+});
+
 test('welcome page includes WebSite schema with a SearchAction', function () {
     $response = $this->get('/');
 

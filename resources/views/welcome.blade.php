@@ -2,6 +2,8 @@
     use Illuminate\Support\Facades\Cache;
 
     $appName = config('app.name');
+    // Keep under ~60 chars so Google/X/LinkedIn don't truncate it.
+    $pageTitle = $appName.' — Build a crossword in 10 minutes';
     $tagline = 'Build crossword puzzles with a visual editor and publish them for solvers to enjoy. Free forever — no credit card.';
     $ogImage = asset('og-default.png');
     $canonicalUrl = url('/');
@@ -43,21 +45,21 @@
         <meta name="apple-mobile-web-app-capable" content="yes">
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
         <meta name="apple-mobile-web-app-title" content="{{ $appName }}">
-        <title>{{ $appName }} — From blank grid to published crossword in 10 minutes</title>
+        <title>{{ $pageTitle }}</title>
         <meta name="description" content="{{ $tagline }}">
         <link rel="canonical" href="{{ $canonicalUrl }}">
 
         {{-- Open Graph --}}
         <meta property="og:type" content="website">
         <meta property="og:site_name" content="{{ $appName }}">
-        <meta property="og:title" content="{{ $appName }} — From blank grid to published crossword in 10 minutes">
+        <meta property="og:title" content="{{ $pageTitle }}">
         <meta property="og:description" content="{{ $tagline }}">
         <meta property="og:url" content="{{ $canonicalUrl }}">
         <meta property="og:image" content="{{ $ogImage }}">
 
         {{-- Twitter card --}}
         <meta name="twitter:card" content="summary_large_image">
-        <meta name="twitter:title" content="{{ $appName }} — From blank grid to published crossword in 10 minutes">
+        <meta name="twitter:title" content="{{ $pageTitle }}">
         <meta name="twitter:description" content="{{ $tagline }}">
         <meta name="twitter:image" content="{{ $ogImage }}">
 

@@ -16,8 +16,7 @@ test('welcome page renders for guests with hero, register CTA, and SEO meta', fu
     $response = $this->get('/');
 
     $response->assertOk()
-        ->assertSee('From blank grid', false)
-        ->assertSee('published crossword in', false)
+        ->assertSee('Build a crossword in 10 minutes', false)
         ->assertSee('Create your free account', false)
         ->assertSee(route('register'), false)
         ->assertSee('<meta name="description"', false)
