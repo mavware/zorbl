@@ -1,13 +1,14 @@
 <?php
 
 use App\Models\Word;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\View\View;
 use Livewire\Attributes\Computed;
-use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
 
-new #[Title('Word Catalog')] class extends Component {
+new class extends Component {
     use WithPagination;
 
     #[Url]
@@ -25,10 +26,14 @@ new #[Title('Word Catalog')] class extends Component {
     #[Computed]
     public function words()
     {
-        $query = Word::withCount('clueEntries as clue_count');
+        // Count only approved clues so the catalog's "Clues" column matches the
+        // approved-only list shown on each word's detail page.
+        $query = Word::withCount([
+            'clueEntries as clue_count' => fn ($q) => $q->approved(),
+        ]);
 
-        if ($this->search !== '') {
-            $query->where('word', 'like', mb_strtoupper($this->search).'%');
+        if ($this->searchPattern() !== '') {
+            $query->where('word', 'like', $this->searchPattern());
         }
 
         if ($this->length !== '') {
@@ -47,6 +52,30 @@ new #[Title('Word Catalog')] class extends Component {
         }
 
         return $query->paginate(50);
+    }
+
+    /**
+     * Build a SQL LIKE pattern from the search box, supporting crossword
+     * wildcards: `?` matches any single letter, `*` matches any run of
+     * letters. Plain terms keep prefix-match behavior. Input is limited to
+     * letters and wildcards, so no SQL wildcard escaping is needed.
+     */
+    private function searchPattern(): string
+    {
+        $term = preg_replace('/[^A-Z?*]/', '', mb_strtoupper($this->search));
+
+        if ($term === '') {
+            return '';
+        }
+
+        $pattern = str_replace(['?', '*'], ['_', '%'], $term);
+
+        // No wildcards → match as a prefix, as before.
+        if (! str_contains($term, '?') && ! str_contains($term, '*')) {
+            return $pattern.'%';
+        }
+
+        return $pattern;
     }
 
     public function sortBy(string $field): void
@@ -70,6 +99,16 @@ new #[Title('Word Catalog')] class extends Component {
     {
         $this->resetPage();
     }
+
+    /**
+     * Guests get the public chrome; logged-in users keep the app sidebar layout.
+     */
+    public function render(): View
+    {
+        return $this->view()
+            ->layout(Auth::check() ? 'layouts.app' : 'layouts.public')
+            ->title(__('Word Catalog'));
+    }
 }
 ?>
 
@@ -79,7 +118,7 @@ new #[Title('Word Catalog')] class extends Component {
     {{-- Search and Filters --}}
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center">
         <div class="flex-1">
-            <flux:input icon="magnifying-glass" wire:model.live.debounce.300ms="search" placeholder="{{ __('Search words (prefix match)...') }}" />
+            <flux:input icon="magnifying-glass" wire:model.live.debounce.300ms="search" placeholder="{{ __('Search words — ? = any letter (C???T), * = any run (e.g. C?T, S*E)') }}" />
         </div>
         <div class="w-28">
             <flux:input wire:model.live.debounce.300ms="length" type="number" min="2" max="30" placeholder="{{ __('Length') }}" />

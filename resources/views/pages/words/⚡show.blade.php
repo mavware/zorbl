@@ -2,14 +2,15 @@
 
 use App\Models\ClueEntry;
 use App\Models\Word;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\View\View;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
-use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
 
-new #[Title('Word Details')] class extends Component {
+new class extends Component {
     use WithPagination;
 
     #[Locked]
@@ -32,13 +33,22 @@ new #[Title('Word Details')] class extends Component {
     #[Computed]
     public function word(): Word
     {
-        return Word::withCount('clueEntries as clue_count')->findOrFail($this->wordId);
+        return Word::findOrFail($this->wordId);
     }
 
     #[Computed]
     public function clues()
     {
+        // Hide unvetted clues from everyone except their author, matching the
+        // clue library. Keeps unapproved submissions off this public page.
+        $authId = Auth::id();
         $query = ClueEntry::where('answer', $this->wordText)
+            ->where(function ($q) use ($authId) {
+                $q->approved();
+                if ($authId !== null) {
+                    $q->orWhere('user_id', $authId);
+                }
+            })
             ->with(['user:id,name', 'crossword:id,title']);
 
         $allowed = ['clue'];
@@ -63,6 +73,16 @@ new #[Title('Word Details')] class extends Component {
 
         $this->resetPage();
     }
+
+    /**
+     * Guests get the public chrome; logged-in users keep the app sidebar layout.
+     */
+    public function render(): View
+    {
+        return $this->view()
+            ->layout(Auth::check() ? 'layouts.app' : 'layouts.public')
+            ->title(__('Word Details'));
+    }
 }
 ?>
 
@@ -80,7 +100,7 @@ new #[Title('Word Details')] class extends Component {
         <div class="flex gap-2">
             <flux:badge size="lg">{{ $this->word->length }} {{ __('letters') }}</flux:badge>
             <flux:badge size="lg" variant="outline">{{ __('Score') }}: {{ number_format($this->word->score, 1) }}</flux:badge>
-            <flux:badge size="lg" variant="outline" color="lime">{{ number_format($this->word->clue_count) }} {{ trans_choice('clue|clues', $this->word->clue_count) }}</flux:badge>
+            <flux:badge size="lg" variant="outline" color="lime">{{ number_format($this->clues->total()) }} {{ trans_choice('clue|clues', $this->clues->total()) }}</flux:badge>
         </div>
     </div>
 

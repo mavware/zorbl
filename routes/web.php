@@ -18,7 +18,7 @@ Route::get('robots.txt', function () {
     // it just wastes crawl budget) and settings/auth endpoints.
     $disallow = [
         '/crosswords', '/solving', '/dashboard', '/settings', '/support',
-        '/favorites', '/clues', '/words', '/leaderboard',
+        '/favorites', '/leaderboard',
         '/roadmap', '/contests', '/impersonate',
     ];
 
@@ -73,6 +73,12 @@ Route::livewire('puzzles/{crossword}', 'pages::puzzles.solve')->name('puzzles.so
 Route::livewire('constructors', 'pages::constructors.index')->name('constructors.index');
 Route::livewire('constructors/{constructor}', 'pages::constructors.show')->name('constructors.show');
 
+// Public reference libraries (no auth required). Guests get the public chrome;
+// write actions (adding/reporting clues) are gated behind auth in the pages.
+Route::livewire('clues', 'pages::clues.index')->name('clues.index');
+Route::livewire('words', 'pages::words.index')->name('words.index');
+Route::livewire('words/{word:word}', 'pages::words.show')->name('words.show');
+
 Route::middleware('auth')->group(function () {
     Route::post('impersonate/stop', [ImpersonationController::class, 'stop'])->name('impersonate.stop');
     Route::post('impersonate/{user}', [ImpersonationController::class, 'start'])->name('impersonate.start');
@@ -102,11 +108,6 @@ Route::middleware(['auth', 'verified', 'not-anonymous'])->group(function () {
     Route::livewire('crosswords', 'pages::crosswords.index')->name('crosswords.index');
     Route::livewire('solving', 'pages::crosswords.solving')->name('crosswords.solving');
     Route::livewire('solving/stats', 'pages::crosswords.stats')->name('crosswords.stats');
-
-    Route::livewire('clues', 'pages::clues.index')->name('clues.index');
-
-    Route::livewire('words', 'pages::words.index')->name('words.index');
-    Route::livewire('words/{word:word}', 'pages::words.show')->name('words.show');
 
     Route::livewire('favorites', 'pages::favorites.index')->name('favorites.index');
 

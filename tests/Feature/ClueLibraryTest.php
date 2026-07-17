@@ -15,9 +15,40 @@ test('authenticated users can view the clue library', function () {
         ->assertSuccessful();
 });
 
-test('guests cannot view the clue library', function () {
+test('guests can view the clue library', function () {
+    ClueEntry::create([
+        'answer' => 'OCEAN',
+        'clue' => 'Large body of water',
+        'user_id' => User::factory()->create()->id,
+        'status' => ClueEntry::STATUS_APPROVED,
+    ]);
+
     $this->get(route('clues.index'))
-        ->assertRedirect();
+        ->assertSuccessful()
+        ->assertSee('OCEAN');
+});
+
+test('guests cannot add a clue', function () {
+    Livewire::test('pages::clues.index')
+        ->set('newAnswer', 'OCEAN')
+        ->set('newClue', 'Large body of water')
+        ->call('addClue')
+        ->assertForbidden();
+
+    expect(ClueEntry::count())->toBe(0);
+});
+
+test('guests cannot report a clue', function () {
+    $entry = ClueEntry::create([
+        'answer' => 'OCEAN',
+        'clue' => 'Large body of water',
+        'user_id' => User::factory()->create()->id,
+        'status' => ClueEntry::STATUS_APPROVED,
+    ]);
+
+    Livewire::test('pages::clues.index')
+        ->call('openReportModal', $entry->id)
+        ->assertForbidden();
 });
 
 test('default clue library listing serves its total from cache', function () {

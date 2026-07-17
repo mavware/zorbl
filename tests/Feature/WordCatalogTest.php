@@ -13,9 +13,12 @@ test('authenticated users can view the word catalog', function () {
         ->assertSuccessful();
 });
 
-test('guests cannot view the word catalog', function () {
+test('guests can view the word catalog', function () {
+    Word::factory()->word('OCEAN')->create();
+
     $this->get(route('words.index'))
-        ->assertRedirect();
+        ->assertSuccessful()
+        ->assertSee('OCEAN');
 });
 
 test('words are displayed in the listing', function () {
@@ -41,6 +44,44 @@ test('prefix search filters words', function () {
         ->assertSee('OCEAN')
         ->assertDontSee('OPERA')
         ->assertDontSee('RIVER');
+});
+
+test('question mark wildcard matches a single letter', function () {
+    $user = User::factory()->create();
+    Word::factory()->word('CAT')->create();
+    Word::factory()->word('COT')->create();
+    Word::factory()->word('CART')->create();
+
+    Livewire::actingAs($user)
+        ->test('pages::words.index')
+        ->set('search', 'C?T')
+        ->assertSee('CAT')
+        ->assertSee('COT')
+        ->assertDontSee('CART');
+});
+
+test('asterisk wildcard matches any run of letters', function () {
+    $user = User::factory()->create();
+    Word::factory()->word('SALE')->create();
+    Word::factory()->word('SIMPLE')->create();
+    Word::factory()->word('RIVER')->create();
+
+    Livewire::actingAs($user)
+        ->test('pages::words.index')
+        ->set('search', 'S*E')
+        ->assertSee('SALE')
+        ->assertSee('SIMPLE')
+        ->assertDontSee('RIVER');
+});
+
+test('search is case insensitive', function () {
+    $user = User::factory()->create();
+    Word::factory()->word('OCEAN')->create();
+
+    Livewire::actingAs($user)
+        ->test('pages::words.index')
+        ->set('search', 'oc')
+        ->assertSee('OCEAN');
 });
 
 test('length filter shows only matching words', function () {
@@ -93,16 +134,17 @@ test('sort by length orders correctly', function () {
         ->assertSeeInOrder(['ZEN', 'AARDVARK']);
 });
 
-test('word clue count is displayed', function () {
+test('the catalog clue count includes only approved clues', function () {
     $user = User::factory()->create();
-    Word::factory()->word('OCEAN')->create();
+    $word = Word::factory()->word('OCEAN')->create();
 
-    ClueEntry::create(['answer' => 'OCEAN', 'clue' => 'Large body of water', 'user_id' => $user->id]);
-    ClueEntry::create(['answer' => 'OCEAN', 'clue' => 'Pacific, for one', 'user_id' => $user->id]);
+    ClueEntry::create(['answer' => 'OCEAN', 'clue' => 'Large body of water', 'user_id' => $user->id, 'status' => ClueEntry::STATUS_APPROVED]);
+    ClueEntry::create(['answer' => 'OCEAN', 'clue' => 'Pacific, for one', 'user_id' => $user->id, 'status' => ClueEntry::STATUS_APPROVED]);
+    ClueEntry::create(['answer' => 'OCEAN', 'clue' => 'Awaiting review', 'user_id' => $user->id, 'status' => ClueEntry::STATUS_PENDING]);
 
-    Livewire::actingAs($user)
-        ->test('pages::words.index')
-        ->assertSee('OCEAN');
+    $component = Livewire::actingAs($user)->test('pages::words.index');
+
+    expect($component->instance()->words->firstWhere('id', $word->id)->clue_count)->toBe(2);
 });
 
 test('authenticated users can view a word detail page', function () {
@@ -114,11 +156,25 @@ test('authenticated users can view a word detail page', function () {
         ->assertSuccessful();
 });
 
-test('guests cannot view a word detail page', function () {
+test('guests can view a word detail page', function () {
     $word = Word::factory()->word('OCEAN')->create();
 
     $this->get(route('words.show', $word))
-        ->assertRedirect();
+        ->assertSuccessful()
+        ->assertSee('OCEAN');
+});
+
+test('the word detail page hides unapproved clues from guests', function () {
+    $user = User::factory()->create();
+    $word = Word::factory()->word('OCEAN')->create();
+
+    ClueEntry::create(['answer' => 'OCEAN', 'clue' => 'Approved clue', 'user_id' => $user->id, 'status' => ClueEntry::STATUS_APPROVED]);
+    ClueEntry::create(['answer' => 'OCEAN', 'clue' => 'Pending clue', 'user_id' => $user->id, 'status' => ClueEntry::STATUS_PENDING]);
+
+    Livewire::test('pages::words.show', ['word' => $word])
+        ->assertSee('Approved clue')
+        ->assertDontSee('Pending clue')
+        ->assertSee('1 clue');
 });
 
 test('word metadata is displayed on the show page', function () {

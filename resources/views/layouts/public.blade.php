@@ -28,6 +28,12 @@
                     <a href="{{ route('puzzles.index') }}" wire:navigate class="text-fg-muted text-sm hover:text-zinc-900 dark:hover:text-zinc-100 transition">
                         {{ __('Browse Puzzles') }}
                     </a>
+                    <a href="{{ route('words.index') }}" wire:navigate class="text-fg-muted hidden text-sm transition hover:text-zinc-900 sm:inline dark:hover:text-zinc-100">
+                        {{ __('Word Catalog') }}
+                    </a>
+                    <a href="{{ route('clues.index') }}" wire:navigate class="text-fg-muted hidden text-sm transition hover:text-zinc-900 sm:inline dark:hover:text-zinc-100">
+                        {{ __('Clue Library') }}
+                    </a>
                 </div>
                 <div class="flex items-center gap-4">
                     @auth

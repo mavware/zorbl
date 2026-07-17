@@ -7,13 +7,13 @@ use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\View\View;
 use Livewire\Attributes\Computed;
-use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
 
-new #[Title('Clue Library')] class extends Component {
+new class extends Component {
     use WithPagination;
 
     // Counting 3.7M+ rows on every initial page load is the dominant cost
@@ -165,6 +165,8 @@ new #[Title('Clue Library')] class extends Component {
 
     public function addClue(): void
     {
+        abort_unless(Auth::check(), 403);
+
         $this->addError = '';
 
         $this->validate([
@@ -252,6 +254,8 @@ new #[Title('Clue Library')] class extends Component {
 
     public function openReportModal(int $id): void
     {
+        abort_unless(Auth::check(), 403);
+
         $this->reportingClueId = $id;
         $this->reportReason = '';
         $this->reportNotes = '';
@@ -261,6 +265,8 @@ new #[Title('Clue Library')] class extends Component {
 
     public function submitReport(): void
     {
+        abort_unless(Auth::check(), 403);
+
         $this->reportError = '';
 
         $this->validate([
@@ -291,6 +297,16 @@ new #[Title('Clue Library')] class extends Component {
         $this->reportingClueId = null;
         unset($this->clues);
     }
+
+    /**
+     * Guests get the public chrome; logged-in users keep the app sidebar layout.
+     */
+    public function render(): View
+    {
+        return $this->view()
+            ->layout(Auth::check() ? 'layouts.app' : 'layouts.public')
+            ->title(__('Clue Library'));
+    }
 }
 ?>
 
@@ -298,9 +314,11 @@ new #[Title('Clue Library')] class extends Component {
     <div class="flex items-center justify-between">
         <flux:heading size="xl">{{ __('Clue Library') }}</flux:heading>
 
-        <flux:button variant="primary" icon="plus" wire:click="$set('showAddModal', true)">
-            {{ __('Add Clue') }}
-        </flux:button>
+        @auth
+            <flux:button variant="primary" icon="plus" wire:click="$set('showAddModal', true)">
+                {{ __('Add Clue') }}
+            </flux:button>
+        @endauth
     </div>
 
     {{-- Search and Filters --}}
@@ -311,7 +329,9 @@ new #[Title('Clue Library')] class extends Component {
         <div class="flex gap-2">
             <flux:select wire:model.live="filter" class="w-40">
                 <flux:select.option value="all">{{ __('All Clues') }}</flux:select.option>
-                <flux:select.option value="mine">{{ __('My Clues') }}</flux:select.option>
+                @auth
+                    <flux:select.option value="mine">{{ __('My Clues') }}</flux:select.option>
+                @endauth
                 <flux:select.option value="standalone">{{ __('Standalone') }}</flux:select.option>
                 <flux:select.option value="flagged">{{ __('Flagged') }}</flux:select.option>
                 <flux:select.option value="duplicates">{{ __('Duplicates') }}</flux:select.option>
@@ -386,24 +406,26 @@ new #[Title('Clue Library')] class extends Component {
                                         </flux:badge>
                                     @endif
 
-                                    <flux:dropdown position="bottom" align="end">
-                                        <flux:button variant="ghost" size="sm" icon="ellipsis-vertical" />
-                                        <flux:menu>
-                                            @can('update', $entry)
-                                                <flux:menu.item icon="pencil" wire:click="startEditing({{ $entry->id }})">
-                                                    {{ __('Edit') }}
+                                    @auth
+                                        <flux:dropdown position="bottom" align="end">
+                                            <flux:button variant="ghost" size="sm" icon="ellipsis-vertical" />
+                                            <flux:menu>
+                                                @can('update', $entry)
+                                                    <flux:menu.item icon="pencil" wire:click="startEditing({{ $entry->id }})">
+                                                        {{ __('Edit') }}
+                                                    </flux:menu.item>
+                                                @endcan
+                                                <flux:menu.item icon="flag" wire:click="openReportModal({{ $entry->id }})">
+                                                    {{ __('Report') }}
                                                 </flux:menu.item>
-                                            @endcan
-                                            <flux:menu.item icon="flag" wire:click="openReportModal({{ $entry->id }})">
-                                                {{ __('Report') }}
-                                            </flux:menu.item>
-                                            @can('delete', $entry)
-                                                <flux:menu.item icon="trash" variant="danger" wire:click="deleteClue({{ $entry->id }})" wire:confirm="{{ __('Are you sure you want to delete this clue?') }}">
-                                                    {{ __('Delete') }}
-                                                </flux:menu.item>
-                                            @endcan
-                                        </flux:menu>
-                                    </flux:dropdown>
+                                                @can('delete', $entry)
+                                                    <flux:menu.item icon="trash" variant="danger" wire:click="deleteClue({{ $entry->id }})" wire:confirm="{{ __('Are you sure you want to delete this clue?') }}">
+                                                        {{ __('Delete') }}
+                                                    </flux:menu.item>
+                                                @endcan
+                                            </flux:menu>
+                                        </flux:dropdown>
+                                    @endauth
                                 </div>
                             </flux:table.cell>
                         @endif
