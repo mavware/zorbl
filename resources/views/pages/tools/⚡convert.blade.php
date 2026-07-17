@@ -16,7 +16,7 @@ use CrosswordBuilder\CrosswordIO\Exporters\PuzExporter;
 use CrosswordBuilder\CrosswordIO\ImportDetector;
 
 new
-#[Title('Puzzle Format Converter')]
+#[Title('Free Crossword File Converter')]
 #[Layout('layouts.public')]
 class extends Component {
     use WithFileUploads;
@@ -215,18 +215,94 @@ class extends Component {
 ?>
 
 <div>
+    @php
+        $converterDescription = __('Free online crossword file converter. Convert between .puz (Across Lite), .jpz (Crossword Compiler) and .ipuz files instantly in your browser — no account and no software to install.');
+
+        // Single source of truth for the FAQ: rendered as visible <details>
+        // below and mirrored into FAQPage structured data. Google requires the
+        // schema Q&A to match the on-page content, so they share this array.
+        $faqs = [
+            [
+                'q' => __('Is the crossword converter free?'),
+                'a' => __('Yes. Converting puzzles is completely free, with no account, sign-up, or software download required.'),
+            ],
+            [
+                'q' => __('Which crossword formats can I convert?'),
+                'a' => __('You can convert between .puz (Across Lite), .jpz (Crossword Compiler) and .ipuz (the modern open standard). You can also import a crossword from a .pdf and export it to any of those formats.'),
+            ],
+            [
+                'q' => __('Do I need to install anything?'),
+                'a' => __('No. The converter runs on the web — upload your file, pick a target format, and download the converted puzzle. It works on any device with a browser.'),
+            ],
+            [
+                'q' => __('Is my puzzle file kept private?'),
+                'a' => __('Your file is processed only to perform the conversion and is never attached to an account, published, or shared. Uploads are temporary and cleared automatically.'),
+            ],
+            [
+                'q' => __('What is the .ipuz format?'),
+                'a' => __('.ipuz is a modern, JSON-based open standard for crossword puzzles. It is lossless and supports advanced features like shaded cells, bars, and rebus entries, which makes it a great archival format.'),
+            ],
+            [
+                'q' => __('What is the difference between .puz and .jpz?'),
+                'a' => __('.puz (Across Lite) is the classic binary format used by most major publications and solving apps, so it has the widest compatibility. .jpz (Crossword Compiler) is an XML-based format that supports richer grid features.'),
+            ],
+            [
+                'q' => __('Will I lose anything when I convert?'),
+                'a' => __('Conversions between full-featured formats are lossless. If your puzzle uses a feature the target format cannot represent, the converter warns you first and lets you decide whether to continue.'),
+            ],
+        ];
+    @endphp
+
+    <x-seo-meta
+        title="Free Crossword File Converter"
+        :canonical="route('tools.convert')"
+        :description="$converterDescription"
+    />
+
     @push('head_meta')
-        <link rel="canonical" href="{{ route('tools.convert') }}">
-        <meta name="description" content="{{ __('Free crossword puzzle format converter. Convert between .puz, .jpz, and .ipuz formats instantly — no account required.') }}">
-        <meta property="og:type" content="website">
-        <meta property="og:title" content="{{ __('Puzzle Format Converter — :app', ['app' => config('app.name')]) }}">
-        <meta property="og:url" content="{{ route('tools.convert') }}">
+        @php
+            $toolJsonLd = [
+                '@context' => 'https://schema.org',
+                '@type' => 'SoftwareApplication',
+                'name' => __('Crossword File Converter'),
+                'url' => route('tools.convert'),
+                'applicationCategory' => 'UtilitiesApplication',
+                'operatingSystem' => 'Web browser',
+                'description' => $converterDescription,
+                'isAccessibleForFree' => true,
+                'offers' => ['@type' => 'Offer', 'price' => '0', 'priceCurrency' => 'USD'],
+                'featureList' => ['.puz (Across Lite)', '.jpz (Crossword Compiler)', '.ipuz', '.pdf import'],
+                'publisher' => ['@type' => 'Organization', 'name' => config('app.name'), 'url' => url('/')],
+            ];
+
+            $faqJsonLd = [
+                '@context' => 'https://schema.org',
+                '@type' => 'FAQPage',
+                'mainEntity' => collect($faqs)->map(fn ($faq) => [
+                    '@type' => 'Question',
+                    'name' => $faq['q'],
+                    'acceptedAnswer' => ['@type' => 'Answer', 'text' => $faq['a']],
+                ])->all(),
+            ];
+
+            $breadcrumbJsonLd = [
+                '@context' => 'https://schema.org',
+                '@type' => 'BreadcrumbList',
+                'itemListElement' => [
+                    ['@type' => 'ListItem', 'position' => 1, 'name' => config('app.name'), 'item' => url('/')],
+                    ['@type' => 'ListItem', 'position' => 2, 'name' => __('Crossword File Converter'), 'item' => route('tools.convert')],
+                ],
+            ];
+        @endphp
+        <script type="application/ld+json">{!! json_encode($toolJsonLd, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
+        <script type="application/ld+json">{!! json_encode($faqJsonLd, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
+        <script type="application/ld+json">{!! json_encode($breadcrumbJsonLd, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
     @endpush
 
     <div class="mx-auto max-w-2xl py-8">
         <header class="text-center">
-            <h1 class="text-3xl font-bold tracking-tight sm:text-4xl">{{ __('Puzzle Format Converter') }}</h1>
-            <p class="mt-3 text-zinc-500">{{ __('Convert crossword puzzles between popular file formats. Free, instant, no account required.') }}</p>
+            <h1 class="text-3xl font-bold tracking-tight sm:text-4xl">{{ __('Crossword File Converter') }}</h1>
+            <p class="mt-3 text-zinc-500">{{ __('Convert crossword puzzles between .puz, .jpz, and .ipuz — free, instant, and right in your browser. No account or software required.') }}</p>
         </header>
 
         <div class="mt-10 rounded-xl border border-zinc-800 bg-zinc-900/40 p-6 sm:p-8">
@@ -295,7 +371,8 @@ class extends Component {
         </div>
 
         {{-- Supported formats info --}}
-        <div class="mt-8 grid gap-4 sm:grid-cols-3">
+        <h2 class="mt-10 text-xl font-bold tracking-tight">{{ __('Supported crossword formats') }}</h2>
+        <div class="mt-4 grid gap-4 sm:grid-cols-3">
             <div class="rounded-xl border border-zinc-800 bg-zinc-900/40 p-5">
                 <p class="font-semibold text-zinc-100">.puz</p>
                 <p class="mt-1 text-sm text-zinc-500">{{ __('Across Lite format. The most widely supported crossword format, used by major publications.') }}</p>
@@ -308,6 +385,52 @@ class extends Component {
                 <p class="font-semibold text-zinc-100">.ipuz</p>
                 <p class="mt-1 text-sm text-zinc-500">{{ __('Modern open standard. JSON-based, lossless, supports all puzzle features.') }}</p>
             </div>
+        </div>
+
+        {{-- How to convert --}}
+        <h2 class="mt-10 text-xl font-bold tracking-tight">{{ __('How to convert a crossword file') }}</h2>
+        <ol class="mt-4 space-y-3">
+            <li class="flex gap-3">
+                <span class="flex size-6 shrink-0 items-center justify-center rounded-full bg-amber-500/15 text-sm font-bold text-amber-500">1</span>
+                <span class="text-sm text-zinc-400">{{ __('Upload your crossword file (.puz, .jpz, .ipuz, or .pdf).') }}</span>
+            </li>
+            <li class="flex gap-3">
+                <span class="flex size-6 shrink-0 items-center justify-center rounded-full bg-amber-500/15 text-sm font-bold text-amber-500">2</span>
+                <span class="text-sm text-zinc-400">{{ __('Choose the format you want to convert to.') }}</span>
+            </li>
+            <li class="flex gap-3">
+                <span class="flex size-6 shrink-0 items-center justify-center rounded-full bg-amber-500/15 text-sm font-bold text-amber-500">3</span>
+                <span class="text-sm text-zinc-400">{{ __('Click Convert & Download — your converted puzzle saves straight to your device.') }}</span>
+            </li>
+        </ol>
+
+        {{-- Supported conversions (targets specific "X to Y" searches) --}}
+        <h2 class="mt-10 text-xl font-bold tracking-tight">{{ __('Popular conversions') }}</h2>
+        <p class="mt-2 text-sm text-zinc-500">{{ __('The converter works in every direction between the major crossword formats:') }}</p>
+        <ul class="mt-4 grid grid-cols-2 gap-2 text-sm text-zinc-400 sm:grid-cols-3">
+            <li class="rounded-lg border border-zinc-800 bg-zinc-900/40 px-3 py-2">{{ __('.puz to .ipuz') }}</li>
+            <li class="rounded-lg border border-zinc-800 bg-zinc-900/40 px-3 py-2">{{ __('.ipuz to .puz') }}</li>
+            <li class="rounded-lg border border-zinc-800 bg-zinc-900/40 px-3 py-2">{{ __('.puz to .jpz') }}</li>
+            <li class="rounded-lg border border-zinc-800 bg-zinc-900/40 px-3 py-2">{{ __('.jpz to .puz') }}</li>
+            <li class="rounded-lg border border-zinc-800 bg-zinc-900/40 px-3 py-2">{{ __('.jpz to .ipuz') }}</li>
+            <li class="rounded-lg border border-zinc-800 bg-zinc-900/40 px-3 py-2">{{ __('.ipuz to .jpz') }}</li>
+            <li class="rounded-lg border border-zinc-800 bg-zinc-900/40 px-3 py-2">{{ __('.pdf to .ipuz') }}</li>
+            <li class="rounded-lg border border-zinc-800 bg-zinc-900/40 px-3 py-2">{{ __('.pdf to .puz') }}</li>
+            <li class="rounded-lg border border-zinc-800 bg-zinc-900/40 px-3 py-2">{{ __('.pdf to .jpz') }}</li>
+        </ul>
+
+        {{-- FAQ — mirrors the FAQPage structured data above --}}
+        <h2 class="mt-10 text-xl font-bold tracking-tight">{{ __('Frequently asked questions') }}</h2>
+        <div class="mt-4 divide-y divide-zinc-800 rounded-xl border border-zinc-800 bg-zinc-900/40">
+            @foreach ($faqs as $faq)
+                <details class="group p-5">
+                    <summary class="flex cursor-pointer list-none items-center justify-between text-sm font-semibold text-zinc-100 marker:hidden">
+                        {{ $faq['q'] }}
+                        <svg class="size-4 shrink-0 text-zinc-500 transition group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
+                    </summary>
+                    <p class="mt-2 text-sm text-zinc-500">{{ $faq['a'] }}</p>
+                </details>
+            @endforeach
         </div>
 
         {{-- CTA for logged-in features --}}

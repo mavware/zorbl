@@ -61,6 +61,8 @@ class HelpArticleSeeder extends Seeder
                 Drop the file onto the upload area in the editor. The grid, clues, and metadata come across automatically.
 
                 You can also **export** any puzzle you build to all three formats, plus a printable PDF.
+
+                Not building a puzzle — just need to switch a file between formats? Use the free [crossword file converter](/tools/convert), no account required.
                 MD,
                 'sort_order' => 10,
             ],

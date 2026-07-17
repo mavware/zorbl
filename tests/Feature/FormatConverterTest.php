@@ -35,7 +35,48 @@ test('converter page is publicly accessible', function () {
 test('converter page loads without authentication', function () {
     Livewire::test('pages::tools.convert')
         ->assertOk()
-        ->assertSee('Puzzle Format Converter');
+        ->assertSee('Crossword File Converter');
+});
+
+test('converter page carries SEO content and structured data', function () {
+    $html = $this->get(route('tools.convert'))->getContent();
+
+    expect($html)
+        // Canonical + meta description via <x-seo-meta>.
+        ->toContain('<link rel="canonical" href="'.route('tools.convert').'"')
+        ->toContain('<meta name="description"')
+        // Structured data: tool + FAQ + breadcrumb.
+        ->toContain('"@type":"SoftwareApplication"')
+        ->toContain('"@type":"FAQPage"')
+        ->toContain('"@type":"BreadcrumbList"')
+        // Crawlable content sections that target real search queries.
+        ->toContain('How to convert a crossword file')
+        ->toContain('.puz to .ipuz')
+        ->toContain('Frequently asked questions');
+
+    // Every ld+json block must be valid JSON.
+    preg_match_all('#<script type="application/ld\+json">(.+?)</script>#s', $html, $m);
+    expect($m[1])->not->toBeEmpty();
+    foreach ($m[1] as $block) {
+        json_decode($block);
+        expect(json_last_error())->toBe(JSON_ERROR_NONE);
+    }
+});
+
+test('converter FAQ content matches the FAQ structured data', function () {
+    $html = $this->get(route('tools.convert'))->getContent();
+
+    preg_match_all('#<script type="application/ld\+json">(.+?)</script>#s', $html, $m);
+    $faqBlock = collect($m[1])
+        ->map(fn ($b) => json_decode($b, true))
+        ->firstWhere('@type', 'FAQPage');
+
+    expect($faqBlock)->not->toBeNull();
+
+    // Each schema question must also appear as visible on-page text.
+    foreach ($faqBlock['mainEntity'] as $question) {
+        expect($html)->toContain($question['name']);
+    }
 });
 
 test('uploading a valid ipuz file shows puzzle info', function () {
