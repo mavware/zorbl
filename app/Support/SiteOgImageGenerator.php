@@ -53,18 +53,18 @@ class SiteOgImageGenerator
     private const COLOR_MUTED = [0x73, 0x73, 0x73];
 
     /**
-     * A fixed 5x5 decorative grid. `#` = block and a letter = a filled answer
-     * cell. Reads BUILD across the top row and SOLVE across the bottom row —
-     * a compact nod to the product's two halves. The remaining cells are
-     * decorative fill (the image is never solved), so they need not spell words.
+     * A fixed 5x5 mini crossword. `#` = block and a letter = a filled answer
+     * cell. It fully interlocks: BUILD / SOLVE run across the top and bottom
+     * rows, and BONUS / IDEAL / DELVE run down the three open columns — a
+     * compact nod to the product's two halves.
      *
      * @var list<string>
      */
     private const GRID = [
         'BUILD',
-        'O#A#O',
-        'L#M#V',
-        'V#E#E',
+        'O#D#E',
+        'N#E#L',
+        'U#A#V',
         'SOLVE',
     ];
 
