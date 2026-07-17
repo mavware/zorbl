@@ -25,6 +25,10 @@ class extends Component {
     public ?array $prefilled = null;
     public string $obfuscatedSolution = '';
 
+    public int $solveCount = 0;
+    public ?float $avgRating = null;
+    public int $ratingCount = 0;
+
     public function mount(Crossword $crossword): void
     {
         abort_unless($crossword->is_published, 404);
@@ -62,6 +66,18 @@ class extends Component {
         $this->styles = $crossword->styles;
         $this->prefilled = $crossword->prefilled;
         $this->obfuscatedSolution = $crossword->obfuscateSolution();
+
+        $this->solveCount = (int) $crossword->cached_completed_count;
+
+        $ratings = $crossword->comments()
+            ->whereNotNull('rating')
+            ->selectRaw('avg(rating) as avg_rating, count(*) as rating_count')
+            ->first();
+
+        if ($ratings && $ratings->rating_count > 0) {
+            $this->avgRating = round((float) $ratings->avg_rating, 1);
+            $this->ratingCount = (int) $ratings->rating_count;
+        }
     }
 }
 ?>
@@ -96,7 +112,29 @@ class extends Component {
                     '@type' => 'Person',
                     'name' => $authorName,
                 ] : null,
+                'aggregateRating' => $ratingCount > 0 ? [
+                    '@type' => 'AggregateRating',
+                    'ratingValue' => $avgRating,
+                    'ratingCount' => $ratingCount,
+                    'bestRating' => 5,
+                    'worstRating' => 1,
+                ] : null,
+                'interactionStatistic' => $solveCount > 0 ? [
+                    '@type' => 'InteractionCounter',
+                    'interactionType' => ['@type' => 'PlayAction'],
+                    'userInteractionCount' => $solveCount,
+                ] : null,
             ]);
+
+            $breadcrumbJsonLd = [
+                '@context' => 'https://schema.org',
+                '@type' => 'BreadcrumbList',
+                'itemListElement' => [
+                    ['@type' => 'ListItem', 'position' => 1, 'name' => config('app.name'), 'item' => url('/')],
+                    ['@type' => 'ListItem', 'position' => 2, 'name' => __('Browse Puzzles'), 'item' => route('puzzles.index')],
+                    ['@type' => 'ListItem', 'position' => 3, 'name' => $title !== '' ? $title : __('Untitled puzzle'), 'item' => $ogUrl],
+                ],
+            ];
         @endphp
         <link rel="canonical" href="{{ $ogUrl }}">
         <meta name="description" content="{{ $ogDescription }}">
@@ -113,6 +151,7 @@ class extends Component {
         <meta name="twitter:description" content="{{ $ogDescription }}">
         <meta name="twitter:image" content="{{ $ogImage }}">
         <script type="application/ld+json">{!! json_encode($jsonLd, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
+        <script type="application/ld+json">{!! json_encode($breadcrumbJsonLd, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
     @endpush
 
     {{-- Inline scripts for guest persistence and solution decoding --}}

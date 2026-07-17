@@ -2,6 +2,8 @@
 
 use App\Models\Crossword;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
+use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -11,6 +13,31 @@ new
 #[Layout('layouts.public')]
 class extends Component
 {
+    /**
+     * Newest publicly visible puzzles for the ItemList structured data.
+     * Cached as a plain array — the cache store only unserializes
+     * allowlisted classes (see config/cache.php).
+     *
+     * @return list<array{name: string, url: string}>
+     */
+    #[Computed]
+    public function structuredDataPuzzles(): array
+    {
+        return Cache::remember('seo:puzzles_item_list', 900, function (): array {
+            return Crossword::query()
+                ->where('is_published', true)
+                ->safeFor(null)
+                ->latest()
+                ->limit(18)
+                ->get(['id', 'title'])
+                ->map(fn (Crossword $crossword): array => [
+                    'name' => $crossword->displayTitle(),
+                    'url' => route('puzzles.solve', $crossword),
+                ])
+                ->all();
+        });
+    }
+
     public function surpriseMe(): void
     {
         $query = Crossword::where('is_published', true)
@@ -46,6 +73,31 @@ class extends Component
     x-data="{ showSignup: false }"
     x-on:show-signup-prompt.window="showSignup = true"
 >
+    @push('head_meta')
+        @php
+            $browseJsonLd = [
+                '@context' => 'https://schema.org',
+                '@type' => 'CollectionPage',
+                'name' => __('Browse Puzzles'),
+                'url' => route('puzzles.index'),
+                'description' => __('Browse and solve free crossword puzzles published by independent constructors.'),
+                'isPartOf' => ['@id' => url('/').'#website'],
+                'mainEntity' => [
+                    '@type' => 'ItemList',
+                    'itemListElement' => collect($this->structuredDataPuzzles)->map(fn ($puzzle, $i) => [
+                        '@type' => 'ListItem',
+                        'position' => $i + 1,
+                        'name' => $puzzle['name'],
+                        'url' => $puzzle['url'],
+                    ])->values()->all(),
+                ],
+            ];
+        @endphp
+        <link rel="canonical" href="{{ route('puzzles.index') }}">
+        <meta name="description" content="{{ __('Browse and solve free crossword puzzles published by independent constructors.') }}">
+        <script type="application/ld+json">{!! json_encode($browseJsonLd, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
+    @endpush
+
     <div class="flex items-center justify-between">
         <flux:heading size="xl">{{ __('Browse Puzzles') }}</flux:heading>
         <flux:button

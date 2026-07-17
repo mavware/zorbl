@@ -70,6 +70,34 @@ class extends Component {
 ?>
 
 <div class="space-y-6">
+    @push('head_meta')
+        @php
+            $dailyJsonLd = [
+                '@context' => 'https://schema.org',
+                '@type' => 'CollectionPage',
+                'name' => __('Puzzle of the Day'),
+                'url' => route('puzzles.daily-history'),
+                'description' => __('A new featured crossword every day. Solve today\'s puzzle or catch up on ones you missed.'),
+                'isPartOf' => ['@id' => url('/').'#website'],
+                'mainEntity' => [
+                    '@type' => 'ItemList',
+                    'itemListElement' => collect($this->dailyPuzzles->items())
+                        ->filter(fn ($daily) => $daily->crossword !== null)
+                        ->values()
+                        ->map(fn ($daily, $i) => [
+                            '@type' => 'ListItem',
+                            'position' => $i + 1,
+                            'name' => __('Daily Puzzle — :date', ['date' => $daily->date->format('F j, Y')]),
+                            'url' => route('puzzles.solve', $daily->crossword),
+                        ])->all(),
+                ],
+            ];
+        @endphp
+        <link rel="canonical" href="{{ route('puzzles.daily-history') }}">
+        <meta name="description" content="{{ __('A new featured crossword every day. Solve today\'s puzzle or catch up on ones you missed.') }}">
+        <script type="application/ld+json">{!! json_encode($dailyJsonLd, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
+    @endpush
+
     <div class="flex items-center justify-between">
         <div>
             <flux:heading size="xl">{{ __('Daily Puzzle History') }}</flux:heading>

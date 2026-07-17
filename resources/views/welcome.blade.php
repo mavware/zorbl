@@ -61,20 +61,54 @@
         <meta name="twitter:description" content="{{ $tagline }}">
         <meta name="twitter:image" content="{{ $ogImage }}">
 
-        {{-- WebSite schema with SearchAction so Google may surface a sitelinks search box --}}
+        {{-- Structured data: Organization (branding), WebSite with SearchAction
+             (sitelinks search box), and SiteNavigationElement for the key site
+             sections we'd like Google to surface as sitelinks. --}}
         <script type="application/ld+json">{!! json_encode([
             '@context' => 'https://schema.org',
-            '@type' => 'WebSite',
-            'name' => $appName,
-            'url' => url('/'),
-            'description' => $tagline,
-            'potentialAction' => [
-                '@type' => 'SearchAction',
-                'target' => [
-                    '@type' => 'EntryPoint',
-                    'urlTemplate' => route('puzzles.index').'?search={search_term_string}',
+            '@graph' => [
+                [
+                    '@type' => 'Organization',
+                    '@id' => url('/').'#organization',
+                    'name' => $appName,
+                    'url' => url('/'),
+                    'logo' => [
+                        '@type' => 'ImageObject',
+                        'url' => asset('android-chrome-512x512.png'),
+                        'width' => 512,
+                        'height' => 512,
+                    ],
                 ],
-                'query-input' => 'required name=search_term_string',
+                [
+                    '@type' => 'WebSite',
+                    '@id' => url('/').'#website',
+                    'name' => $appName,
+                    'url' => url('/'),
+                    'description' => $tagline,
+                    'publisher' => ['@id' => url('/').'#organization'],
+                    'potentialAction' => [
+                        '@type' => 'SearchAction',
+                        'target' => [
+                            '@type' => 'EntryPoint',
+                            'urlTemplate' => route('puzzles.index').'?search={search_term_string}',
+                        ],
+                        'query-input' => 'required name=search_term_string',
+                    ],
+                ],
+                [
+                    '@type' => 'ItemList',
+                    '@id' => url('/').'#sitenav',
+                    'itemListElement' => collect([
+                        ['name' => 'Build a Crossword', 'description' => 'Create your own crossword with a free visual editor.', 'url' => route('register')],
+                        ['name' => 'Puzzle of the Day', 'description' => 'Solve today\'s featured crossword and browse past dailies.', 'url' => route('puzzles.daily-history')],
+                        ['name' => 'Newest Puzzles', 'description' => 'The latest crosswords published by the community.', 'url' => route('puzzles.index')],
+                        ['name' => 'Trending Puzzles', 'description' => 'The most-played crosswords right now.', 'url' => route('puzzles.index', ['sortBy' => 'most_played'])],
+                    ])->map(fn ($item, $i) => [
+                        '@type' => 'SiteNavigationElement',
+                        'position' => $i + 1,
+                        ...$item,
+                    ])->values()->all(),
+                ],
             ],
         ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
 
@@ -381,6 +415,10 @@
             <div class="mx-auto flex max-w-6xl flex-col items-center gap-3 px-6 text-center text-sm text-zinc-700 sm:flex-row sm:justify-between">
                 <p>&copy; {{ date('Y') }} {{ $appName }}. All rights reserved.</p>
                 <div class="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
+                    <a href="{{ route('register') }}" class="text-zinc-500 hover:text-zinc-300">Build a Crossword</a>
+                    <a href="{{ route('puzzles.daily-history') }}" class="text-zinc-500 hover:text-zinc-300">Puzzle of the Day</a>
+                    <a href="{{ route('puzzles.index') }}" class="text-zinc-500 hover:text-zinc-300">Newest Puzzles</a>
+                    <a href="{{ route('puzzles.index', ['sortBy' => 'most_played']) }}" class="text-zinc-500 hover:text-zinc-300">Trending Puzzles</a>
                     <a href="{{ route('help.index') }}" class="text-zinc-500 hover:text-zinc-300">Help</a>
                     <a href="{{ route('roadmap.index') }}" class="text-zinc-500 hover:text-zinc-300">Roadmap</a>
                     <a href="{{ route('legal.terms') }}" class="text-zinc-500 hover:text-zinc-300">Terms</a>
