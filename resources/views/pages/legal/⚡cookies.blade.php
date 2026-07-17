@@ -19,6 +19,8 @@ class extends Component {
     $sessionCookie = config('session.cookie');
 @endphp
 
+<x-seo-meta title="Cookie Policy" :description="__('How :app uses cookies and similar technologies.', ['app' => $appName])" />
+
 <div>
     <article class="mx-auto max-w-3xl py-8">
         <header class="mb-10 border-b border-zinc-800 pb-8">

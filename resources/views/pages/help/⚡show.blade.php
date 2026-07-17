@@ -48,6 +48,12 @@ class extends Component {
             ->limit(5)
             ->get();
     }
+
+    public function render(): \Illuminate\View\View
+    {
+        // Unique <title> per article for search results. Layout appends app name.
+        return $this->view()->title($this->articleTitle);
+    }
 }
 ?>
 

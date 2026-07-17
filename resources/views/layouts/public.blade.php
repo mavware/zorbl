@@ -11,7 +11,7 @@
         <meta name="apple-mobile-web-app-capable" content="yes">
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
         <meta name="apple-mobile-web-app-title" content="{{ config('app.name') }}">
-        <title>{{ $title ?? config('app.name') }}</title>
+        <title>{{ isset($title) ? $title.' — '.config('app.name') : config('app.name') }}</title>
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700" rel="stylesheet" />
         @stack('head_meta')
@@ -21,7 +21,7 @@
     <body class="bg-page min-h-screen antialiased">
         @include('partials.impersonation-banner')
         {{-- Navigation --}}
-        <nav class="bg-elevated border-line sticky top-0 z-50 border-b /80 backdrop-blur-lg /80">
+        <nav class="bg-elevated border-line sticky top-0 z-50 border-b backdrop-blur-lg">
             <div class="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
                 <div class="flex items-center gap-6">
                     <a href="{{ url('/') }}" class="text-xl font-bold tracking-tight text-amber-500">{{ config('app.name') }}</a>

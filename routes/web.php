@@ -13,9 +13,23 @@ Route::view('/', 'welcome')->name('home');
 Route::get('sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 
 Route::get('robots.txt', function () {
-    $body = "User-agent: *\nDisallow:\n\nSitemap: ".route('sitemap')."\n";
+    // Keep public marketing/puzzle/help pages crawlable; disallow the
+    // authenticated app surface (guests are 302'd to login there, so crawling
+    // it just wastes crawl budget) and settings/auth endpoints.
+    $disallow = [
+        '/crosswords', '/solving', '/dashboard', '/settings', '/support',
+        '/favorites', '/clues', '/words', '/constructors', '/leaderboard',
+        '/roadmap', '/contests', '/impersonate',
+    ];
 
-    return response($body, 200, ['Content-Type' => 'text/plain']);
+    $lines = ['User-agent: *'];
+    foreach ($disallow as $path) {
+        $lines[] = 'Disallow: '.$path;
+    }
+    $lines[] = '';
+    $lines[] = 'Sitemap: '.route('sitemap');
+
+    return response(implode("\n", $lines)."\n", 200, ['Content-Type' => 'text/plain']);
 })->name('robots');
 
 // Embed routes (public, no auth)

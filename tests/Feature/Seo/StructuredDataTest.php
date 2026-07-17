@@ -23,6 +23,32 @@ function jsonLdBlocks(string $html): array
     }, $matches[1]);
 }
 
+test('public puzzle pages get a unique, branded title', function () {
+    $a = Crossword::factory()->published()->create(['title' => 'Morning Coffee']);
+    $b = Crossword::factory()->published()->create(['title' => 'Evening Tea']);
+
+    $titleA = $this->get(route('puzzles.solve', $a))->getContent();
+    $titleB = $this->get(route('puzzles.solve', $b))->getContent();
+
+    expect($titleA)->toContain('<title>Morning Coffee Crossword — '.config('app.name').'</title>')
+        ->and($titleB)->toContain('<title>Evening Tea Crossword — '.config('app.name').'</title>');
+});
+
+test('public layout appends the app name to page titles', function () {
+    $body = $this->get(route('puzzles.index'))->getContent();
+
+    expect($body)->toContain('<title>Browse Puzzles — '.config('app.name').'</title>');
+});
+
+test('legal pages carry a canonical and meta description', function () {
+    $body = $this->get(route('legal.privacy'))->getContent();
+
+    expect($body)
+        ->toContain('<link rel="canonical" href="'.route('legal.privacy').'"')
+        ->toContain('<meta name="description"')
+        ->toContain('<title>Privacy Policy — '.config('app.name').'</title>');
+});
+
 test('welcome page includes WebSite schema with a SearchAction', function () {
     $response = $this->get('/');
 

@@ -79,6 +79,15 @@ class extends Component {
             $this->ratingCount = (int) $ratings->rating_count;
         }
     }
+
+    public function render(): \Illuminate\View\View
+    {
+        // Give each puzzle a unique <title> for search results rather than a
+        // shared static one. The layout appends the app name.
+        $name = $this->title !== '' ? $this->title : __('Untitled puzzle');
+
+        return $this->view()->title(__(':name Crossword', ['name' => $name]));
+    }
 }
 ?>
 

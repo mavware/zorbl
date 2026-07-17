@@ -20,6 +20,8 @@ class extends Component {
     $minimumAge = config('legal.minimum_age');
 @endphp
 
+<x-seo-meta title="Privacy Policy" :description="__('How :app collects, uses, and protects your data.', ['app' => $appName])" />
+
 <div>
     <article class="mx-auto max-w-3xl py-8">
         <header class="mb-10 border-b border-zinc-800 pb-8">

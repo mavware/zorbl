@@ -22,6 +22,8 @@ class extends Component {
     $minimumAge = config('legal.minimum_age');
 @endphp
 
+<x-seo-meta title="Terms of Service" :description="__('The terms of service for :app.', ['app' => $appName])" />
+
 <div>
     <article class="mx-auto max-w-3xl py-8">
         <header class="mb-10 border-b border-zinc-800 pb-8">

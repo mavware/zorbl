@@ -23,6 +23,8 @@ test('sitemap lists core public pages', function () {
         ->toContain(route('home'))
         ->toContain(route('puzzles.index'))
         ->toContain(route('puzzles.daily-history'))
+        ->toContain(route('tools.convert'))
+        ->toContain(route('help.index'))
         ->toContain(route('legal.terms'))
         ->toContain(route('legal.privacy'))
         ->toContain(route('legal.cookies'))
@@ -101,4 +103,17 @@ test('robots.txt references the sitemap', function () {
         ->assertHeader('content-type', 'text/plain; charset=UTF-8');
 
     expect($response->getContent())->toContain('Sitemap: '.route('sitemap'));
+});
+
+test('robots.txt disallows the private app surface but not public pages', function () {
+    $body = $this->get('/robots.txt')->getContent();
+
+    expect($body)
+        ->toContain('Disallow: /crosswords')
+        ->toContain('Disallow: /solving')
+        ->toContain('Disallow: /settings')
+        // Public paths must remain crawlable (never disallowed).
+        ->not->toContain('Disallow: /puzzles')
+        ->not->toContain('Disallow: /help')
+        ->not->toContain('Disallow: /tools');
 });

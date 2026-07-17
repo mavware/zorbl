@@ -19,6 +19,8 @@ class extends Component {
     $effectiveDate = config('legal.effective_date');
 @endphp
 
+<x-seo-meta title="Copyright (DMCA) Policy" :description="__('How to report copyright infringement on :app.', ['app' => $appName])" />
+
 <div>
     <article class="mx-auto max-w-3xl py-8">
         <header class="mb-10 border-b border-zinc-800 pb-8">
