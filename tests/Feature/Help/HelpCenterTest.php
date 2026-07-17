@@ -132,3 +132,16 @@ test('non-admins cannot access the help articles admin resource', function () {
         ->get('/admin/help-articles')
         ->assertForbidden();
 });
+
+test('help articles render internal links to the converter as anchors', function () {
+    $article = HelpArticle::factory()->create([
+        'slug' => 'import-existing-puzzles',
+        'title' => 'Can I import puzzles I built elsewhere?',
+        'body' => "Import in any format.\n\nOr use the free [crossword file converter](/tools/convert).",
+    ]);
+
+    $this->get(route('help.show', $article))
+        ->assertOk()
+        ->assertSee('href="'.route('tools.convert', absolute: false).'"', false)
+        ->assertSee('crossword file converter');
+});
