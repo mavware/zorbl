@@ -6,9 +6,13 @@ use App\Models\PuzzleAttempt;
 use App\Models\User;
 use Livewire\Livewire;
 
-test('guests are redirected to the login page', function () {
+test('the constructors directory is public for guests', function () {
+    $constructor = User::factory()->create(['name' => 'Public Constructor']);
+    Crossword::factory()->published()->for($constructor)->create();
+
     $this->get(route('constructors.index'))
-        ->assertRedirect(route('login'));
+        ->assertOk()
+        ->assertSee('Public Constructor');
 });
 
 test('authenticated users can visit the constructors directory', function () {

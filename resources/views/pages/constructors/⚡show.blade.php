@@ -5,6 +5,7 @@ use App\Models\Follow;
 use App\Models\User;
 use App\Notifications\NewFollower;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\View\View;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Title;
@@ -31,6 +32,9 @@ new #[Title('Constructor Profile')] class extends Component {
 
     public function mount(User $constructor): void
     {
+        // Guest-builder (anonymous) accounts are never valid public profiles.
+        abort_if($constructor->is_anonymous, 404);
+
         $this->constructorId = $constructor->id;
         $this->constructorName = $constructor->name;
     }
@@ -46,6 +50,7 @@ new #[Title('Constructor Profile')] class extends Component {
     {
         $query = Crossword::where('user_id', $this->constructorId)
             ->where('is_published', true)
+            ->safeFor(Auth::user())
             ->withCount('likes');
 
         if ($this->search !== '') {
@@ -142,10 +147,77 @@ new #[Title('Constructor Profile')] class extends Component {
 
         unset($this->isFollowing, $this->followersCount);
     }
+
+    /**
+     * Public SEO surface: guests get the marketing chrome and the constructor's
+     * name as the page title; logged-in users keep the app sidebar layout.
+     */
+    public function render(): View
+    {
+        return $this->view()
+            ->layout(Auth::check() ? 'layouts.app' : 'layouts.public')
+            ->title($this->constructorName);
+    }
 }
 ?>
 
 <div class="space-y-6">
+    @php
+        $puzzleCount = $this->publishedPuzzles->total();
+        $profileDescription = $puzzleCount > 0
+            ? __(':name has published :count on :app. Solve their crosswords free.', [
+                'name' => $constructorName,
+                'count' => trans_choice(':count crossword|:count crosswords', $puzzleCount),
+                'app' => config('app.name'),
+            ])
+            : __(':name on :app.', ['name' => $constructorName, 'app' => config('app.name')]);
+    @endphp
+
+    <x-seo-meta
+        :title="$constructorName"
+        :canonical="route('constructors.show', $this->constructor)"
+        :description="$profileDescription"
+        :noindex="$puzzleCount === 0"
+    />
+
+    @push('head_meta')
+        @php
+            $profileJsonLd = [
+                '@context' => 'https://schema.org',
+                '@type' => 'ProfilePage',
+                'url' => route('constructors.show', $this->constructor),
+                'isPartOf' => ['@id' => url('/').'#website'],
+                'mainEntity' => array_filter([
+                    '@type' => 'Person',
+                    'name' => $constructorName,
+                    'description' => $this->constructor->bio ?: null,
+                    'url' => route('constructors.show', $this->constructor),
+                ]),
+                'about' => [
+                    '@type' => 'ItemList',
+                    'itemListElement' => collect($this->publishedPuzzles->items())->map(fn ($puzzle, $i) => [
+                        '@type' => 'ListItem',
+                        'position' => $i + 1,
+                        'name' => $puzzle->displayTitle(),
+                        'url' => route('puzzles.solve', $puzzle),
+                    ])->values()->all(),
+                ],
+            ];
+
+            $breadcrumbJsonLd = [
+                '@context' => 'https://schema.org',
+                '@type' => 'BreadcrumbList',
+                'itemListElement' => [
+                    ['@type' => 'ListItem', 'position' => 1, 'name' => config('app.name'), 'item' => url('/')],
+                    ['@type' => 'ListItem', 'position' => 2, 'name' => __('Constructors'), 'item' => route('constructors.index')],
+                    ['@type' => 'ListItem', 'position' => 3, 'name' => $constructorName, 'item' => route('constructors.show', $this->constructor)],
+                ],
+            ];
+        @endphp
+        <script type="application/ld+json">{!! json_encode($profileJsonLd, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
+        <script type="application/ld+json">{!! json_encode($breadcrumbJsonLd, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
+    @endpush
+
     {{-- Profile Header --}}
     <div class="flex items-start justify-between">
         <div class="flex items-center gap-4">
@@ -240,7 +312,7 @@ new #[Title('Constructor Profile')] class extends Component {
             <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 @foreach($this->publishedPuzzles as $puzzle)
                     <a
-                        href="{{ route('crosswords.solver', $puzzle) }}"
+                        href="{{ Auth::check() ? route('crosswords.solver', $puzzle) : route('puzzles.solve', $puzzle) }}"
                         wire:navigate
                         class="border-line group rounded-xl border p-4 transition-colors hover:border-zinc-400 dark:hover:border-zinc-600"
                     >

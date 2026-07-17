@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Crossword;
 use App\Models\HelpArticle;
+use App\Models\User;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Cache;
 
@@ -38,6 +39,7 @@ class SitemapController extends Controller
         $urls[] = $this->urlEntry(route('home'), now(), 'daily', '1.0');
         $urls[] = $this->urlEntry(route('puzzles.index'), now(), 'hourly', '0.9');
         $urls[] = $this->urlEntry(route('puzzles.daily-history'), now(), 'daily', '0.8');
+        $urls[] = $this->urlEntry(route('constructors.index'), now(), 'daily', '0.7');
         $urls[] = $this->urlEntry(route('tools.convert'), null, 'monthly', '0.5');
         $urls[] = $this->urlEntry(route('help.index'), now(), 'weekly', '0.6');
         $urls[] = $this->urlEntry(route('legal.terms'), null, 'yearly', '0.2');
@@ -66,6 +68,24 @@ class SitemapController extends Controller
                         $crossword->updated_at,
                         'weekly',
                         '0.7',
+                    );
+                }
+            });
+
+        // Public constructor profiles: real accounts with at least one publicly
+        // visible published puzzle.
+        User::query()
+            ->where('is_anonymous', false)
+            ->whereHas('crosswords', fn ($q) => $q->where('is_published', true)->where('contains_profanity', false))
+            ->select(['id', 'updated_at'])
+            ->orderByDesc('updated_at')
+            ->chunk(1000, function ($chunk) use (&$urls): void {
+                foreach ($chunk as $constructor) {
+                    $urls[] = $this->urlEntry(
+                        route('constructors.show', $constructor->id),
+                        $constructor->updated_at,
+                        'weekly',
+                        '0.6',
                     );
                 }
             });

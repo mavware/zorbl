@@ -69,6 +69,38 @@ test('homepage og:title and twitter:title match the page title', function () {
         ->toContain('<meta name="twitter:title" content="'.$expected.'">');
 });
 
+test('constructor profile emits ProfilePage, Person and BreadcrumbList', function () {
+    $constructor = User::factory()->create(['name' => 'Grid Master']);
+    Crossword::factory()->published()->for($constructor)->create(['title' => 'Master Puzzle']);
+
+    $blocks = collect(jsonLdBlocks($this->get(route('constructors.show', $constructor))->getContent()));
+
+    $profile = $blocks->firstWhere('@type', 'ProfilePage');
+    expect($profile)->not->toBeNull()
+        ->and($profile['mainEntity']['@type'])->toBe('Person')
+        ->and($profile['mainEntity']['name'])->toBe('Grid Master');
+
+    $puzzleNames = collect($profile['about']['itemListElement'])->pluck('name');
+    expect($puzzleNames)->toContain('Master Puzzle');
+
+    $breadcrumb = $blocks->firstWhere('@type', 'BreadcrumbList');
+    expect(collect($breadcrumb['itemListElement'])->pluck('name'))
+        ->toContain('Constructors')
+        ->toContain('Grid Master');
+});
+
+test('constructors directory emits a CollectionPage ItemList', function () {
+    $constructor = User::factory()->create(['name' => 'Directory Person']);
+    Crossword::factory()->published()->for($constructor)->create();
+
+    $collection = collect(jsonLdBlocks($this->get(route('constructors.index'))->getContent()))
+        ->firstWhere('@type', 'CollectionPage');
+
+    expect($collection)->not->toBeNull();
+    expect(collect($collection['mainEntity']['itemListElement'])->pluck('name'))
+        ->toContain('Directory Person');
+});
+
 test('welcome page includes WebSite schema with a SearchAction', function () {
     $response = $this->get('/');
 

@@ -3,6 +3,7 @@
     'description' => '',
     'canonical' => null,
     'image' => null,
+    'noindex' => false,
 ])
 
 @php
@@ -12,6 +13,9 @@
 @endphp
 
 @push('head_meta')
+    @if ($noindex)
+        <meta name="robots" content="noindex, follow">
+    @endif
     <link rel="canonical" href="{{ $canonicalUrl }}">
     @if ($description !== '')
         <meta name="description" content="{{ $description }}">

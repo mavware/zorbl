@@ -18,7 +18,7 @@ Route::get('robots.txt', function () {
     // it just wastes crawl budget) and settings/auth endpoints.
     $disallow = [
         '/crosswords', '/solving', '/dashboard', '/settings', '/support',
-        '/favorites', '/clues', '/words', '/constructors', '/leaderboard',
+        '/favorites', '/clues', '/words', '/leaderboard',
         '/roadmap', '/contests', '/impersonate',
     ];
 
@@ -67,6 +67,12 @@ Route::livewire('puzzles/daily', 'pages::puzzles.daily-history')->name('puzzles.
 Route::get('puzzles/{crossword}/og.png', [OgImageController::class, 'crossword'])->name('puzzles.og');
 Route::livewire('puzzles/{crossword}', 'pages::puzzles.solve')->name('puzzles.solve');
 
+// Public constructor directory + profiles (no auth required). These are a key
+// SEO surface: each profile is a unique, content-rich page of a constructor's
+// published puzzles. Logged-in users get the app layout; guests the public one.
+Route::livewire('constructors', 'pages::constructors.index')->name('constructors.index');
+Route::livewire('constructors/{constructor}', 'pages::constructors.show')->name('constructors.show');
+
 Route::middleware('auth')->group(function () {
     Route::post('impersonate/stop', [ImpersonationController::class, 'stop'])->name('impersonate.stop');
     Route::post('impersonate/{user}', [ImpersonationController::class, 'start'])->name('impersonate.start');
@@ -103,9 +109,6 @@ Route::middleware(['auth', 'verified', 'not-anonymous'])->group(function () {
     Route::livewire('words/{word:word}', 'pages::words.show')->name('words.show');
 
     Route::livewire('favorites', 'pages::favorites.index')->name('favorites.index');
-
-    Route::livewire('constructors', 'pages::constructors.index')->name('constructors.index');
-    Route::livewire('constructors/{constructor}', 'pages::constructors.show')->name('constructors.show');
 
     Route::livewire('leaderboard', 'pages::leaderboard')->name('leaderboard');
 

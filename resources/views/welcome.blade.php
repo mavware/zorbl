@@ -4,7 +4,7 @@
     $appName = config('app.name');
     // Keep under ~60 chars so Google/X/LinkedIn don't truncate it.
     $pageTitle = $appName.' — Build a crossword in 10 minutes';
-    $tagline = 'Build crossword puzzles with a visual editor and publish them for solvers to enjoy. Free forever — no credit card.';
+    $tagline = 'Build crossword puzzles with a visual editor and publish them for solvers to enjoy. Free forever!';
     $ogImage = asset('og-default.png');
     $canonicalUrl = url('/');
 

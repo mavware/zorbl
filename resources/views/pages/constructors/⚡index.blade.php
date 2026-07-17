@@ -1,7 +1,10 @@
 <?php
 
+use App\Models\Crossword;
 use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\View\View;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
@@ -20,11 +23,13 @@ new #[Title('Constructors')] class extends Component {
     #[Computed]
     public function constructors()
     {
+        $visible = fn ($q) => $q->where('is_published', true)->safeFor(Auth::user());
+
         $query = User::where('is_anonymous', false)
-            ->whereHas('crosswords', fn ($q) => $q->where('is_published', true))
+            ->whereHas('crosswords', $visible)
             ->with('subscriptions')
             ->withCount([
-                'crosswords as published_puzzles_count' => fn ($q) => $q->where('is_published', true),
+                'crosswords as published_puzzles_count' => $visible,
             ])
             ->addSelect([
                 'total_likes' => DB::table('crossword_likes')
@@ -65,10 +70,49 @@ new #[Title('Constructors')] class extends Component {
     {
         $this->resetPage();
     }
+
+    /**
+     * Guests get the marketing/public chrome (this is a public SEO surface);
+     * logged-in users keep the app sidebar layout.
+     */
+    public function render(): View
+    {
+        return $this->view()
+            ->layout(Auth::check() ? 'layouts.app' : 'layouts.public')
+            ->title(__('Constructors'));
+    }
 }
 ?>
 
 <div class="space-y-6">
+    <x-seo-meta
+        title="Constructors"
+        :canonical="route('constructors.index')"
+        :description="__('Browse the crossword constructors publishing free puzzles on :app.', ['app' => config('app.name')])"
+    />
+
+    @push('head_meta')
+        @php
+            $constructorsJsonLd = [
+                '@context' => 'https://schema.org',
+                '@type' => 'CollectionPage',
+                'name' => __('Constructors'),
+                'url' => route('constructors.index'),
+                'isPartOf' => ['@id' => url('/').'#website'],
+                'mainEntity' => [
+                    '@type' => 'ItemList',
+                    'itemListElement' => collect($this->constructors->items())->map(fn ($c, $i) => [
+                        '@type' => 'ListItem',
+                        'position' => $i + 1,
+                        'name' => $c->name,
+                        'url' => route('constructors.show', $c),
+                    ])->values()->all(),
+                ],
+            ];
+        @endphp
+        <script type="application/ld+json">{!! json_encode($constructorsJsonLd, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
+    @endpush
+
     <flux:heading size="xl">{{ __('Constructors') }}</flux:heading>
 
     {{-- Search & Sort --}}

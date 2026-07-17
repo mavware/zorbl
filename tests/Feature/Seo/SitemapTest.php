@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Crossword;
+use App\Models\User;
 use Illuminate\Support\Facades\Cache;
 
 beforeEach(function (): void {
@@ -29,6 +30,23 @@ test('sitemap lists core public pages', function () {
         ->toContain(route('legal.privacy'))
         ->toContain(route('legal.cookies'))
         ->toContain(route('legal.dmca'));
+});
+
+test('sitemap lists the constructors directory and public profiles', function () {
+    $constructor = User::factory()->create();
+    Crossword::factory()->published()->for($constructor)->create();
+
+    // A user with only a draft is not a public constructor.
+    $draftOnly = User::factory()->create();
+    Crossword::factory()->for($draftOnly)->create(['is_published' => false]);
+
+    $xml = $this->get('/sitemap.xml')->getContent();
+
+    expect($xml)
+        ->toContain(route('constructors.index'))
+        ->toContain(route('constructors.show', $constructor->id))
+        // Constructors with no published puzzles are excluded.
+        ->not->toContain(route('constructors.show', $draftOnly->id));
 });
 
 test('sitemap lists published puzzles and excludes drafts', function () {
@@ -115,5 +133,6 @@ test('robots.txt disallows the private app surface but not public pages', functi
         // Public paths must remain crawlable (never disallowed).
         ->not->toContain('Disallow: /puzzles')
         ->not->toContain('Disallow: /help')
-        ->not->toContain('Disallow: /tools');
+        ->not->toContain('Disallow: /tools')
+        ->not->toContain('Disallow: /constructors');
 });

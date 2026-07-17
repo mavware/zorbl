@@ -150,11 +150,66 @@ test('unfollowing does not send a notification', function () {
     Notification::assertNotSentTo($constructor, NewFollower::class);
 });
 
-test('unauthenticated user cannot access constructor profile', function () {
+test('guests can view a constructor profile and its published puzzles', function () {
+    $constructor = User::factory()->create(['name' => 'Public Jane']);
+    Crossword::factory()->published()->for($constructor)->create(['title' => 'Guest Visible Puzzle']);
+
+    $this->get(route('constructors.show', $constructor))
+        ->assertOk()
+        ->assertSee('Public Jane')
+        ->assertSee('Guest Visible Puzzle')
+        // Follow/report actions are auth-only and must not render for guests.
+        ->assertDontSee('wire:click="toggleFollow"', false);
+});
+
+test('anonymous guest-builder accounts have no public profile', function () {
+    $anon = User::factory()->create(['is_anonymous' => true]);
+
+    $this->get(route('constructors.show', $anon))->assertNotFound();
+});
+
+test('guest puzzle links point to the public solve route', function () {
+    $constructor = User::factory()->create();
+    $puzzle = Crossword::factory()->published()->for($constructor)->create();
+
+    $this->get(route('constructors.show', $constructor))
+        ->assertOk()
+        ->assertSee(route('puzzles.solve', $puzzle), false)
+        ->assertDontSee(route('crosswords.solver', $puzzle), false);
+});
+
+test('guests see the public layout, logged-in users the app sidebar', function () {
+    $constructor = User::factory()->create();
+    Crossword::factory()->published()->for($constructor)->create();
+
+    // Guest → public marketing chrome (Sign up CTA), no app sidebar.
+    $this->get(route('constructors.show', $constructor))
+        ->assertOk()
+        ->assertSee('Sign up')
+        ->assertDontSee('data-flux-sidebar', false);
+
+    // Authenticated → app sidebar layout.
+    $this->actingAs(User::factory()->create())
+        ->get(route('constructors.show', $constructor))
+        ->assertOk()
+        ->assertSee('data-flux-sidebar', false);
+});
+
+test('a profile with no published puzzles is noindexed', function () {
     $constructor = User::factory()->create();
 
     $this->get(route('constructors.show', $constructor))
-        ->assertRedirect();
+        ->assertOk()
+        ->assertSee('name="robots" content="noindex', false);
+});
+
+test('a profile with published puzzles is indexable', function () {
+    $constructor = User::factory()->create();
+    Crossword::factory()->published()->for($constructor)->create();
+
+    $this->get(route('constructors.show', $constructor))
+        ->assertOk()
+        ->assertDontSee('noindex', false);
 });
 
 test('constructor profile shows attempt count per puzzle', function () {
