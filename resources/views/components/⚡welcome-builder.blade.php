@@ -288,7 +288,7 @@ new class extends Component {
                 <flux:icon.loading class="size-5 text-zinc-400" />
             </div>
             @if(count($this->templates) > 0)
-                <flux:label class="mb-2 text-zinc-200">{{ __('Grid Template') }} <span class="text-zinc-500 text-xs font-normal">{{ __('(optional)') }}</span></flux:label>
+                <flux:label class="mb-2 text-zinc-200">{{ __('Grid Template') }} <span class="text-zinc-500 text-xs font-normal"> {{ __('(optional)') }}</span></flux:label>
                 <div class="flex min-h-[6.5rem] gap-3 overflow-x-auto pb-2">
                     {{-- Blank grid option --}}
                     <button

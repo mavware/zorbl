@@ -281,7 +281,7 @@ new #[Title('Solving')] class extends Component {
     {{-- My Attempts --}}
     <div class="space-y-4">
         <div class="flex items-center justify-between">
-            <flux:heading size="xl">{{ __('Solving') }}</flux:heading>
+            <x-dashboard-switch active="solve" />
             <div class="flex items-center gap-2">
                 <flux:button
                     wire:click="surpriseMe"

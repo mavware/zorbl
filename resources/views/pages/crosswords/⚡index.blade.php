@@ -385,7 +385,7 @@ new #[Title('Build')] class extends Component {
 
 <div class="space-y-6">
         <div class="flex items-center justify-between">
-            <flux:heading size="xl">{{ __('Build') }}</flux:heading>
+            <x-dashboard-switch active="build" />
 
             <div class="flex gap-2">
                 <flux:button variant="primary" icon="plus" wire:click="$set('showNewModal', true)">
@@ -669,7 +669,7 @@ new #[Title('Build')] class extends Component {
                         <flux:icon.loading class="size-5 text-zinc-500" />
                     </div>
                     @if(count($this->templates) > 0)
-                        <flux:label class="mb-2">{{ __('Grid Template') }} <span class="text-zinc-500 text-xs font-normal">{{ __('(optional)') }}</span></flux:label>
+                        <flux:label class="mb-2">{{ __('Grid Template') }} <span class="text-zinc-500 text-xs font-normal"> {{ __('(optional)') }}</span></flux:label>
                         <div class="flex min-h-[6.5rem] gap-3 overflow-x-auto pb-2">
                             {{-- Blank grid option --}}
                             <button
@@ -717,7 +717,7 @@ new #[Title('Build')] class extends Component {
             </flux:text>
 
             <flux:field>
-                <flux:label>{{ __('Collection Title') }} <span class="text-xs font-normal text-zinc-500">{{ __('(optional)') }}</span></flux:label>
+                <flux:label>{{ __('Collection Title') }} <span class="text-xs font-normal text-zinc-500"> {{ __('(optional)') }}</span></flux:label>
                 <flux:input wire:model="batchPdfTitle" placeholder="{{ __('e.g. Weekly Puzzle Pack') }}" />
                 <flux:description>{{ __('Adds a cover page with this title.') }}</flux:description>
             </flux:field>

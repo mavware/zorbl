@@ -13,19 +13,14 @@
 
     <flux:sidebar.nav>
         <flux:sidebar.group class="grid mb-2">
-            <flux:sidebar.item icon="puzzle-piece" :href="route('crosswords.index')"
-                               :current="request()->routeIs('crosswords.index') || request()->routeIs('crosswords.editor')"
+            <flux:sidebar.item icon="home" :href="route('crosswords.index')"
+                               :current="request()->routeIs('crosswords.index') || request()->routeIs('crosswords.editor') || request()->routeIs('crosswords.solving') || request()->routeIs('crosswords.solver')"
                                class="font-bold" wire:navigate>
-                {{ __('Build') }}
-            </flux:sidebar.item>
-            <flux:sidebar.item icon="play" :href="route('crosswords.solving')"
-                               :current="request()->routeIs('crosswords.solving') || request()->routeIs('crosswords.solver')"
-                               class="font-bold" wire:navigate>
-                {{ __('Solve') }}
+                {{ __('Dashboard') }}
             </flux:sidebar.item>
         </flux:sidebar.group>
 
-        <flux:sidebar.group :heading="'Tools'" class="grid border-t-2 mb-2 pt-2">
+        <flux:sidebar.group class="grid border-t border-t-zinc-700 mb-2 pt-2">
             <flux:sidebar.item icon="book-open" :href="route('clues.index')"
                                :current="request()->routeIs('clues.index')" wire:navigate>
                 {{ __('Clue Library') }}
@@ -36,23 +31,23 @@
             </flux:sidebar.item>
         </flux:sidebar.group>
 
-        <flux:sidebar.group class="grid border-t-2 mb-2 pt-2">
+        <flux:sidebar.group class="grid border-t border-t-zinc-700 mb-2 pt-2">
             <flux:sidebar.item icon="heart" :href="route('favorites.index')"
                                :current="request()->routeIs('favorites.index')" wire:navigate>
                 {{ __('Favorites') }}
             </flux:sidebar.item>
-            <flux:sidebar.item icon="trophy" :href="route('leaderboard')" :current="request()->routeIs('leaderboard')"
-                               wire:navigate>
-                {{ __('Leaderboard') }}
-            </flux:sidebar.item>
+{{--            <flux:sidebar.item icon="trophy" :href="route('leaderboard')" :current="request()->routeIs('leaderboard')"--}}
+{{--                               wire:navigate>--}}
+{{--                {{ __('Leaderboard') }}--}}
+{{--            </flux:sidebar.item>--}}
             <flux:sidebar.item icon="users" :href="route('constructors.index')"
                                :current="request()->routeIs('constructors.*')" wire:navigate>
                 {{ __('Constructors') }}
             </flux:sidebar.item>
-            <flux:sidebar.item icon="trophy" :href="route('contests.index')" :current="request()->routeIs('contests.*')"
-                               wire:navigate>
-                {{ __('Contests') }}
-            </flux:sidebar.item>
+{{--            <flux:sidebar.item icon="trophy" :href="route('contests.index')" :current="request()->routeIs('contests.*')"--}}
+{{--                               wire:navigate>--}}
+{{--                {{ __('Contests') }}--}}
+{{--            </flux:sidebar.item>--}}
         </flux:sidebar.group>
 
 
@@ -77,12 +72,6 @@
     @endunless
 
     <flux:sidebar.nav>
-        @if (auth()->user()->hasRole('Admin'))
-            <flux:sidebar.item icon="map" :href="route('roadmap.index')" :current="request()->routeIs('roadmap.index')"
-                               wire:navigate>
-                {{ __('Roadmap') }}
-            </flux:sidebar.item>
-        @endif
         <flux:sidebar.item icon="question-mark-circle" :href="route('help.index')"
                            :current="request()->routeIs('help.*')" wire:navigate>
             {{ __('Help Center') }}

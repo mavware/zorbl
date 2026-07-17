@@ -17,7 +17,8 @@ new #[Title('Leaderboard')] class extends Component {
     public function topSolvers()
     {
         return Cache::remember('leaderboard:top_solvers', 300, function () {
-            return User::select('users.id', 'users.name')
+            return DB::table('users')
+                ->select('users.id', 'users.name')
                 ->where('users.is_anonymous', false)
                 ->join('puzzle_attempts', 'users.id', '=', 'puzzle_attempts.user_id')
                 ->where('puzzle_attempts.is_completed', true)
@@ -33,7 +34,8 @@ new #[Title('Leaderboard')] class extends Component {
     public function speedDemons()
     {
         return Cache::remember('leaderboard:speed_demons', 300, function () {
-            return User::select('users.id', 'users.name')
+            return DB::table('users')
+                ->select('users.id', 'users.name')
                 ->where('users.is_anonymous', false)
                 ->join('puzzle_attempts', 'users.id', '=', 'puzzle_attempts.user_id')
                 ->where('puzzle_attempts.is_completed', true)
@@ -52,7 +54,8 @@ new #[Title('Leaderboard')] class extends Component {
     public function topConstructors()
     {
         return Cache::remember('leaderboard:top_constructors', 300, function () {
-            return User::select('users.id', 'users.name')
+            return DB::table('users')
+                ->select('users.id', 'users.name')
                 ->where('users.is_anonymous', false)
                 ->join('crosswords', 'users.id', '=', 'crosswords.user_id')
                 ->where('crosswords.is_published', true)
@@ -73,7 +76,8 @@ new #[Title('Leaderboard')] class extends Component {
     public function streakLeaders()
     {
         return Cache::remember('leaderboard:streak_leaders', 300, function () {
-            return User::select('id', 'name', 'current_streak', 'longest_streak')
+            return DB::table('users')
+                ->select('id', 'name', 'current_streak', 'longest_streak')
                 ->where('is_anonymous', false)
                 ->where('longest_streak', '>', 0)
                 ->orderByDesc('longest_streak')
@@ -269,7 +273,7 @@ new #[Title('Leaderboard')] class extends Component {
                                     <x-leaderboard-rank :rank="$index + 1" />
                                 </flux:table.cell>
                                 <flux:table.cell variant="strong">
-                                    <a href="{{ route('constructors.show', $solver) }}" wire:navigate class="hover:text-blue-600 dark:hover:text-blue-400">
+                                    <a href="{{ route('constructors.show', $solver->id) }}" wire:navigate class="hover:text-blue-600 dark:hover:text-blue-400">
                                         {{ $solver->name }}
                                     </a>
                                 </flux:table.cell>
@@ -331,7 +335,7 @@ new #[Title('Leaderboard')] class extends Component {
                                     <x-leaderboard-rank :rank="$index + 1" />
                                 </flux:table.cell>
                                 <flux:table.cell variant="strong">
-                                    <a href="{{ route('constructors.show', $solver) }}" wire:navigate class="hover:text-blue-600 dark:hover:text-blue-400">
+                                    <a href="{{ route('constructors.show', $solver->id) }}" wire:navigate class="hover:text-blue-600 dark:hover:text-blue-400">
                                         {{ $solver->name }}
                                     </a>
                                 </flux:table.cell>
@@ -393,7 +397,7 @@ new #[Title('Leaderboard')] class extends Component {
                                     <x-leaderboard-rank :rank="$index + 1" />
                                 </flux:table.cell>
                                 <flux:table.cell variant="strong">
-                                    <a href="{{ route('constructors.show', $constructor) }}" wire:navigate class="hover:text-blue-600 dark:hover:text-blue-400">
+                                    <a href="{{ route('constructors.show', $constructor->id) }}" wire:navigate class="hover:text-blue-600 dark:hover:text-blue-400">
                                         {{ $constructor->name }}
                                     </a>
                                 </flux:table.cell>
@@ -460,7 +464,7 @@ new #[Title('Leaderboard')] class extends Component {
                                     <x-leaderboard-rank :rank="$index + 1" />
                                 </flux:table.cell>
                                 <flux:table.cell variant="strong">
-                                    <a href="{{ route('constructors.show', $user) }}" wire:navigate class="hover:text-blue-600 dark:hover:text-blue-400">
+                                    <a href="{{ route('constructors.show', $user->id) }}" wire:navigate class="hover:text-blue-600 dark:hover:text-blue-400">
                                         {{ $user->name }}
                                     </a>
                                 </flux:table.cell>

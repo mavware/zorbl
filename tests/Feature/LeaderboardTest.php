@@ -201,3 +201,29 @@ test('format time displays correctly', function () {
         ->and($instance->formatTime(3661))->toBe('1:01:01')
         ->and($instance->formatTime(null))->toBe('—');
 });
+
+test('leaderboard tabs survive a round-trip through the database cache store', function () {
+    // The database store serializes cached values and only unserializes
+    // classes allowlisted in cache.serializable_classes, so caching Eloquent
+    // models here would blow up on the second (cache-hit) render.
+    config(['cache.default' => 'database']);
+
+    $solver = User::factory()->create([
+        'name' => 'Cached Solver',
+        'longest_streak' => 3,
+        'current_streak' => 2,
+    ]);
+    PuzzleAttempt::factory()->count(5)->completed()->create(['user_id' => $solver->id]);
+    Crossword::factory()->published()->create(['user_id' => $solver->id]);
+
+    $viewer = User::factory()->create();
+
+    foreach (['solvers', 'speed', 'constructors', 'streaks'] as $tab) {
+        // First render warms the cache; the second must unserialize the stored payload.
+        Livewire::actingAs($viewer)->test('pages::leaderboard', ['tab' => $tab]);
+
+        Livewire::actingAs($viewer)
+            ->test('pages::leaderboard', ['tab' => $tab])
+            ->assertSee('Cached Solver');
+    }
+});

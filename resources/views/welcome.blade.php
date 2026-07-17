@@ -87,7 +87,7 @@
             <div class="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
                 <a href="/" class="text-xl font-bold tracking-tight text-amber-500">{{ $appName }}</a>
                 <div class="flex items-center gap-4">
-                    <a href="{{ route('puzzles.index') }}" class="text-sm text-zinc-500 hover:text-zinc-100 transition">Browse Puzzles</a>
+{{--                    <a href="{{ route('puzzles.index') }}" class="text-sm text-zinc-500 hover:text-zinc-100 transition">Browse Puzzles</a>--}}
                     @auth
                         <a href="{{ route('crosswords.index') }}" class="text-sm text-zinc-500 hover:text-zinc-100 transition">Dashboard</a>
                     @else
@@ -105,27 +105,34 @@
 
             <div
                 class="relative mx-auto max-w-6xl px-6 py-20 text-center"
-                x-data="{ tab: 'solve', showSignup: false }"
+                x-data="{ tab: 'build', showSignup: false }"
                 x-on:show-signup-prompt.window="showSignup = true"
             >
                 {{-- Solve / Build Toggle --}}
-                <div class="mx-auto mb-10 inline-flex rounded-full border border-zinc-800 bg-zinc-900/60 p-1">
-                    <button
-                        type="button"
-                        @click="tab = 'solve'"
-                        :class="tab === 'solve' ? 'bg-amber-500 text-zinc-950 shadow-lg shadow-amber-500/20' : 'text-zinc-400 hover:text-zinc-100'"
-                        class="rounded-full px-8 py-2.5 text-base font-semibold transition"
-                    >
-                        Solve
-                    </button>
+                <div class="relative mx-auto mb-10 inline-grid grid-cols-2 rounded-full border border-zinc-800 bg-zinc-900/60 p-1">
+                    {{-- Sliding highlight pill --}}
+                    <div
+                        class="absolute inset-y-1 left-1 w-[calc(50%-0.25rem)] rounded-full bg-amber-500 shadow-lg shadow-amber-500/20 transition-transform duration-300 ease-out"
+                        :class="tab === 'solve' && 'translate-x-full'"
+                        aria-hidden="true"
+                    ></div>
                     <button
                         type="button"
                         @click="tab = 'build'"
-                        :class="tab === 'build' ? 'bg-amber-500 text-zinc-950 shadow-lg shadow-amber-500/20' : 'text-zinc-400 hover:text-zinc-100'"
-                        class="rounded-full px-8 py-2.5 text-base font-semibold transition"
+                        :class="tab === 'build' ? 'text-zinc-950' : 'text-zinc-400 hover:text-zinc-100 cursor-pointer'"
+                        class="flex relative rounded-full px-8 py-2.5 text-base font-semibold transition"
                     >
-                        Build
+                        <flux:icon.wrench-screwdriver class="mr-2" /> Build
                     </button>
+                    <button
+                        type="button"
+                        @click="tab = 'solve'"
+                        :class="tab === 'solve' ? 'text-zinc-950' : 'text-zinc-400 hover:text-zinc-100 cursor-pointer'"
+                        class="flex relative rounded-full px-8 py-2.5 text-base font-semibold transition"
+                    >
+                        <flux:icon.play class="mr-2" /> Solve
+                    </button>
+
                 </div>
 
                 {{-- Solve panel --}}

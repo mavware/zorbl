@@ -10,8 +10,11 @@
         "ext-dom": "*",
         "ext-libxml": "*",
         "ext-simplexml": "*",
+        "ext-zip": "*",
         "ext-zlib": "*",
         "barryvdh/laravel-dompdf": "^3.1",
+        "codeat3/blade-google-material-design-icons": "^1.21",
+        "crosswordbuilder/crossword-io": "@dev",
         "dedoc/scramble": "^0.13.17",
         "fakerphp/faker": "^1.24",
         "filament/filament": "^5.0",
@@ -28,9 +31,7 @@
         "spatie/laravel-permission": "^7.2",
         "spatie/laravel-query-builder": "^7.1",
         "spatie/pdf-to-text": "^1.55",
-        "stripe/stripe-php": "^17.6",
-        "crosswordbuilder/crossword-io": "@dev",
-        "ext-zip": "*"
+        "stripe/stripe-php": "^17.6"
     },
     "require-dev": {
         "barryvdh/laravel-ide-helper": "^3.7",
