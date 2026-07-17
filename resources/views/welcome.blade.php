@@ -171,8 +171,11 @@
 
                 </div>
 
-                {{-- Solve panel --}}
-                <div x-show="tab === 'solve'" x-cloak>
+                {{-- Solve panel — the default tab. No x-cloak: it must render
+                     server-side so the LCP headline paints immediately and the
+                     hero doesn't reflow (CLS) when Alpine boots. The build panel
+                     below stays hidden via an inline display:none until Alpine. --}}
+                <div x-show="tab === 'solve'">
                     <p class="font-bold tracking-tight text-white text-3xl sm:text-5xl">
                         Thousands of puzzles. <span class="text-amber-500">One click away.</span>
                     </p>

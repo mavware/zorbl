@@ -3,6 +3,7 @@
 use App\Models\Crossword;
 use App\Models\PuzzleAttempt;
 use App\Models\User;
+use Illuminate\Support\Js;
 use Livewire\Livewire;
 
 test('solver celebration modal contains share buttons', function () {
@@ -15,11 +16,14 @@ test('solver celebration modal contains share buttons', function () {
 
     PuzzleAttempt::factory()->for($user)->for($crossword)->completed()->create();
 
+    // The share behaviour lives in the crossword-solver Alpine bundle; the
+    // rendered markup wires the button to shareResults() and passes it the
+    // share URL/title via the component's x-data.
     Livewire::actingAs($user)
         ->test('pages::crosswords.solver', ['crossword' => $crossword])
-        ->assertSeeHtml('copyShareText')
-        ->assertSeeHtml('shareResult')
-        ->assertSeeHtml('twitterShareUrl');
+        ->assertSeeHtml('shareResults()')
+        ->assertSeeHtml('Share Results')
+        ->assertSeeHtml('shareUrl');
 });
 
 test('solver passes puzzle title to Alpine component', function () {
@@ -47,9 +51,15 @@ test('solver celebration modal links to public puzzle URL', function () {
 
     $puzzleUrl = route('puzzles.solve', $crossword);
 
-    Livewire::actingAs($user)
-        ->test('pages::crosswords.solver', ['crossword' => $crossword])
-        ->assertSeeHtml($puzzleUrl);
+    $component = Livewire::actingAs($user)
+        ->test('pages::crosswords.solver', ['crossword' => $crossword]);
+
+    // The URL is embedded in the Alpine component as a JSON string (slashes
+    // escaped by @js), and returned unescaped by the share-text builder.
+    $component->assertSeeHtml(Js::from($puzzleUrl)->toHtml());
+
+    $component->call('generateShareText')
+        ->assertReturned(fn (string $text) => str_contains($text, $puzzleUrl));
 });
 
 test('guest solver page contains share buttons', function () {
