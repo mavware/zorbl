@@ -81,12 +81,48 @@ new class extends Component {
     {
         return $this->view()
             ->layout(Auth::check() ? 'layouts.app' : 'layouts.public')
-            ->title(__('Word Details'));
+            ->title(__(':word — Crossword Clues & Answers', ['word' => $this->wordText]));
     }
 }
 ?>
 
+@php
+    $clueTotal = $this->clues->total();
+    $metaTitle = $this->word->word.' — Crossword Clues & Answers';
+    $metaDescription = $clueTotal > 0
+        ? __(':word is a :length-letter crossword answer with :count published clue(s). See how constructors have clued it.', ['word' => $this->word->word, 'length' => $this->word->length, 'count' => $clueTotal])
+        : __(':word is a :length-letter crossword answer.', ['word' => $this->word->word, 'length' => $this->word->length]);
+@endphp
 <div class="space-y-6">
+    {{-- Rich, indexable pages for words that actually have clues; thin
+         (clue-less) pages are kept out of the index to avoid low-value URLs. --}}
+    <x-seo-meta
+        :title="$metaTitle"
+        :canonical="route('words.show', $this->word)"
+        :noindex="$clueTotal === 0"
+        :description="$metaDescription"
+    />
+
+    @if($clueTotal > 0)
+        @push('head_meta')
+            @php
+                $wordJsonLd = [
+                    '@context' => 'https://schema.org',
+                    '@type' => 'DefinedTerm',
+                    'name' => $this->word->word,
+                    'url' => route('words.show', $this->word),
+                    'inDefinedTermSet' => [
+                        '@type' => 'DefinedTermSet',
+                        'name' => __('Crossword Answers'),
+                        'url' => route('words.index'),
+                    ],
+                    'description' => __(':count crossword clue(s) for the answer :word.', ['count' => $clueTotal, 'word' => $this->word->word]),
+                ];
+            @endphp
+            <script type="application/ld+json">{!! json_encode($wordJsonLd, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
+        @endpush
+    @endif
+
     {{-- Back Link --}}
     <div>
         <flux:button variant="ghost" icon="arrow-left" :href="route('words.index')" wire:navigate>

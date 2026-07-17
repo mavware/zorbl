@@ -1,9 +1,11 @@
 <?php
 
+use App\Models\ClueEntry;
 use App\Models\Crossword;
 use App\Models\DailyPuzzle;
 use App\Models\PuzzleComment;
 use App\Models\User;
+use App\Models\Word;
 use Illuminate\Support\Facades\Cache;
 
 /**
@@ -131,6 +133,62 @@ test('welcome page graph includes Organization and site navigation for key secti
         ->toContain('Puzzle of the Day')
         ->toContain('Newest Puzzles')
         ->toContain('Trending Puzzles');
+});
+
+test('word catalog carries a canonical, description and CollectionPage ItemList', function () {
+    Word::factory()->word('OCEAN')->create();
+
+    $html = $this->get(route('words.index'))->getContent();
+
+    expect($html)
+        ->toContain('<link rel="canonical" href="'.route('words.index').'"')
+        ->toContain('<meta name="description"')
+        ->toContain('<title>Word Catalog — '.config('app.name').'</title>');
+
+    $collection = collect(jsonLdBlocks($html))->firstWhere('@type', 'CollectionPage');
+    expect($collection)->not->toBeNull()
+        ->and($collection['name'])->toBe('Word Catalog');
+    expect(collect($collection['mainEntity']['itemListElement'])->pluck('name'))->toContain('OCEAN');
+});
+
+test('clue library carries a canonical, description and CollectionPage schema', function () {
+    $html = $this->get(route('clues.index'))->getContent();
+
+    expect($html)
+        ->toContain('<link rel="canonical" href="'.route('clues.index').'"')
+        ->toContain('<meta name="description"')
+        ->toContain('<title>Clue Library — '.config('app.name').'</title>');
+
+    $collection = collect(jsonLdBlocks($html))->firstWhere('@type', 'CollectionPage');
+    expect($collection)->not->toBeNull()
+        ->and($collection['name'])->toBe('Clue Library');
+});
+
+test('a word page with clues is indexable and emits DefinedTerm schema', function () {
+    $user = User::factory()->create();
+    $word = Word::factory()->word('OCEAN')->create();
+    ClueEntry::create(['answer' => 'OCEAN', 'clue' => 'Large body of water', 'user_id' => $user->id, 'status' => ClueEntry::STATUS_APPROVED]);
+
+    $html = $this->get(route('words.show', $word))->getContent();
+
+    expect($html)
+        ->toContain('<title>OCEAN — Crossword Clues &amp; Answers — '.config('app.name').'</title>')
+        ->toContain('<link rel="canonical" href="'.route('words.show', $word).'"')
+        ->not->toContain('name="robots" content="noindex');
+
+    $term = collect(jsonLdBlocks($html))->firstWhere('@type', 'DefinedTerm');
+    expect($term)->not->toBeNull()
+        ->and($term['name'])->toBe('OCEAN');
+});
+
+test('a word page with no clues is set to noindex to avoid thin content', function () {
+    $word = Word::factory()->word('QOPHS')->create();
+
+    $html = $this->get(route('words.show', $word))->getContent();
+
+    expect($html)
+        ->toContain('name="robots" content="noindex')
+        ->and(collect(jsonLdBlocks($html))->firstWhere('@type', 'DefinedTerm'))->toBeNull();
 });
 
 test('browse puzzles page includes a CollectionPage ItemList of newest puzzles', function () {

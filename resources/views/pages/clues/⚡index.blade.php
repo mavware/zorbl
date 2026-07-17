@@ -311,6 +311,26 @@ new class extends Component {
 ?>
 
 <div class="space-y-6">
+    <x-seo-meta
+        title="Clue Library"
+        :canonical="route('clues.index')"
+        :description="__('Search a community library of crossword clues and their answers. See how constructors have clued any word, or contribute your own.')"
+    />
+
+    @push('head_meta')
+        @php
+            $cluesJsonLd = [
+                '@context' => 'https://schema.org',
+                '@type' => 'CollectionPage',
+                'name' => __('Clue Library'),
+                'url' => route('clues.index'),
+                'isPartOf' => ['@id' => url('/').'#website'],
+                'description' => __('A searchable, community-built library of crossword clues and answers.'),
+            ];
+        @endphp
+        <script type="application/ld+json">{!! json_encode($cluesJsonLd, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
+    @endpush
+
     <div class="flex items-center justify-between">
         <flux:heading size="xl">{{ __('Clue Library') }}</flux:heading>
 
@@ -382,7 +402,7 @@ new class extends Component {
                             </flux:table.cell>
                         @else
                             <flux:table.cell variant="strong">
-                                <span class="font-mono font-semibold tracking-wide">{{ $entry->answer }}</span>
+                                <a href="{{ route('words.show', $entry->answer) }}" wire:navigate class="font-mono font-semibold tracking-wide hover:text-amber-500 hover:underline">{{ $entry->answer }}</a>
                                 <span class="ml-1 text-xs text-zinc-500">({{ mb_strlen($entry->answer) }})</span>
                             </flux:table.cell>
                             <flux:table.cell>{{ $entry->clue }}</flux:table.cell>

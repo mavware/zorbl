@@ -24,6 +24,8 @@ test('sitemap lists core public pages', function () {
         ->toContain(route('home'))
         ->toContain(route('puzzles.index'))
         ->toContain(route('puzzles.daily-history'))
+        ->toContain(route('words.index'))
+        ->toContain(route('clues.index'))
         ->toContain(route('tools.convert'))
         ->toContain(route('help.index'))
         ->toContain(route('legal.terms'))

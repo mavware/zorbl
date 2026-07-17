@@ -24,6 +24,17 @@ test('welcome page renders for guests with hero, register CTA, and SEO meta', fu
         ->assertSee('<meta name="twitter:card"', false);
 });
 
+test('welcome page promotes the word catalog and clue library', function () {
+    $response = $this->get('/');
+
+    $response->assertOk()
+        ->assertSee('Free reference tools', false)
+        ->assertSee('Word Catalog', false)
+        ->assertSee('Clue Library', false)
+        ->assertSee(route('words.index'), false)
+        ->assertSee(route('clues.index'), false);
+});
+
 test('welcome page swaps CTAs for authenticated users', function () {
     $user = User::factory()->create();
 

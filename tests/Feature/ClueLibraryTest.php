@@ -28,6 +28,19 @@ test('guests can view the clue library', function () {
         ->assertSee('OCEAN');
 });
 
+test('the clue library links each answer to its word catalog page', function () {
+    ClueEntry::create([
+        'answer' => 'OCEAN',
+        'clue' => 'Large body of water',
+        'user_id' => User::factory()->create()->id,
+        'status' => ClueEntry::STATUS_APPROVED,
+    ]);
+
+    $this->get(route('clues.index'))
+        ->assertSuccessful()
+        ->assertSee(route('words.show', 'OCEAN'), false);
+});
+
 test('guests cannot add a clue', function () {
     Livewire::test('pages::clues.index')
         ->set('newAnswer', 'OCEAN')

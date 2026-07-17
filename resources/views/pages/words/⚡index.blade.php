@@ -2,6 +2,7 @@
 
 use App\Models\Word;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\View\View;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Url;
@@ -22,6 +23,17 @@ new class extends Component {
 
     #[Url]
     public string $sortDirection = 'asc';
+
+    /**
+     * Total catalog size for the intro copy. Cached for a day since counting
+     * the full (large) words table on every render would be wasteful and the
+     * number barely moves.
+     */
+    #[Computed]
+    public function totalWords(): int
+    {
+        return Cache::remember('words:total-count', now()->addDay(), fn (): int => Word::count());
+    }
 
     #[Computed]
     public function words()
@@ -113,7 +125,39 @@ new class extends Component {
 ?>
 
 <div class="space-y-6">
+    <x-seo-meta
+        title="Word Catalog"
+        :canonical="route('words.index')"
+        :description="__('Search a catalog of crossword answers by length and pattern. Use ? for any single letter and * for any run — perfect for filling that last stubborn slot.')"
+    />
+
+    @push('head_meta')
+        @php
+            $wordsJsonLd = [
+                '@context' => 'https://schema.org',
+                '@type' => 'CollectionPage',
+                'name' => __('Word Catalog'),
+                'url' => route('words.index'),
+                'isPartOf' => ['@id' => url('/').'#website'],
+                'description' => __('A searchable catalog of crossword answers with clue counts and fill scores.'),
+                'mainEntity' => [
+                    '@type' => 'ItemList',
+                    'itemListElement' => collect($this->words->items())->map(fn ($w, $i) => [
+                        '@type' => 'ListItem',
+                        'position' => $i + 1,
+                        'name' => $w->word,
+                        'url' => route('words.show', $w),
+                    ])->values()->all(),
+                ],
+            ];
+        @endphp
+        <script type="application/ld+json">{!! json_encode($wordsJsonLd, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
+    @endpush
+
     <flux:heading size="xl">{{ __('Word Catalog') }}</flux:heading>
+    <flux:text class="-mt-4 max-w-2xl">
+        {{ __('Browse :count crossword answers. Search by pattern — use ? for any single letter and * for any run of letters.', ['count' => number_format($this->totalWords)]) }}
+    </flux:text>
 
     {{-- Search and Filters --}}
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center">

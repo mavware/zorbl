@@ -105,6 +105,8 @@
                         ['name' => 'Puzzle of the Day', 'description' => 'Solve today\'s featured crossword and browse past dailies.', 'url' => route('puzzles.daily-history')],
                         ['name' => 'Newest Puzzles', 'description' => 'The latest crosswords published by the community.', 'url' => route('puzzles.index')],
                         ['name' => 'Trending Puzzles', 'description' => 'The most-played crosswords right now.', 'url' => route('puzzles.index', ['sortBy' => 'most_played'])],
+                        ['name' => 'Word Catalog', 'description' => 'Search crossword answers by length and letter pattern.', 'url' => route('words.index')],
+                        ['name' => 'Clue Library', 'description' => 'Browse how constructors have clued any answer.', 'url' => route('clues.index')],
                     ])->map(fn ($item, $i) => [
                         '@type' => 'SiteNavigationElement',
                         'position' => $i + 1,
@@ -318,6 +320,40 @@
             </div>
         </section>
 
+        {{-- Free reference tools --}}
+        <section class="border-t border-zinc-800 bg-zinc-950/60 py-24">
+            <div class="mx-auto max-w-6xl px-6">
+                <h2 class="text-center text-3xl font-bold tracking-tight sm:text-4xl">Free reference tools — no account needed</h2>
+                <p class="mx-auto mt-4 max-w-2xl text-center text-zinc-500">Two open libraries for constructors and solvers alike. Search them anytime, sign-in optional.</p>
+
+                <div class="mt-16 grid gap-6 sm:grid-cols-2">
+                    {{-- Word Catalog --}}
+                    <a href="{{ route('words.index') }}" class="group flex flex-col rounded-2xl border border-zinc-800 bg-zinc-900/50 p-8 transition hover:border-amber-500/40 hover:bg-zinc-900">
+                        <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/10 text-amber-500">
+                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" /></svg>
+                        </div>
+                        <h3 class="mt-5 text-xl font-bold text-zinc-100">Word Catalog</h3>
+                        <p class="mt-2 text-sm text-zinc-500">Stuck on a fill? Search hundreds of thousands of crossword answers by length and pattern — <code class="rounded bg-zinc-800 px-1 text-xs text-amber-400">C?T</code> or <code class="rounded bg-zinc-800 px-1 text-xs text-amber-400">S*E</code> — with clue counts and fill scores for each entry.</p>
+                        <span class="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-amber-500">Search the catalog
+                            <svg class="h-4 w-4 transition group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" /></svg>
+                        </span>
+                    </a>
+
+                    {{-- Clue Library --}}
+                    <a href="{{ route('clues.index') }}" class="group flex flex-col rounded-2xl border border-zinc-800 bg-zinc-900/50 p-8 transition hover:border-amber-500/40 hover:bg-zinc-900">
+                        <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/10 text-amber-500">
+                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" /></svg>
+                        </div>
+                        <h3 class="mt-5 text-xl font-bold text-zinc-100">Clue Library</h3>
+                        <p class="mt-2 text-sm text-zinc-500">See how constructors have clued any answer. Search a community library of crossword clues for inspiration, or add your own to help the next puzzle-maker.</p>
+                        <span class="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-amber-500">Browse the library
+                            <svg class="h-4 w-4 transition group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" /></svg>
+                        </span>
+                    </a>
+                </div>
+            </div>
+        </section>
+
         {{-- How it works --}}
         <section class="border-t border-zinc-800 py-24">
             <div class="mx-auto max-w-4xl px-6">
@@ -424,6 +460,8 @@
                     <a href="{{ route('puzzles.daily-history') }}" class="text-zinc-500 hover:text-zinc-300">Puzzle of the Day</a>
                     <a href="{{ route('puzzles.index') }}" class="text-zinc-500 hover:text-zinc-300">Newest Puzzles</a>
                     <a href="{{ route('puzzles.index', ['sortBy' => 'most_played']) }}" class="text-zinc-500 hover:text-zinc-300">Trending Puzzles</a>
+                    <a href="{{ route('words.index') }}" class="text-zinc-500 hover:text-zinc-300">Word Catalog</a>
+                    <a href="{{ route('clues.index') }}" class="text-zinc-500 hover:text-zinc-300">Clue Library</a>
                     <a href="{{ route('help.index') }}" class="text-zinc-500 hover:text-zinc-300">Help</a>
                     <a href="{{ route('roadmap.index') }}" class="text-zinc-500 hover:text-zinc-300">Roadmap</a>
                     <a href="{{ route('legal.terms') }}" class="text-zinc-500 hover:text-zinc-300">Terms</a>

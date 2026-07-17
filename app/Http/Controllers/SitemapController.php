@@ -40,6 +40,8 @@ class SitemapController extends Controller
         $urls[] = $this->urlEntry(route('puzzles.index'), now(), 'hourly', '0.9');
         $urls[] = $this->urlEntry(route('puzzles.daily-history'), now(), 'daily', '0.8');
         $urls[] = $this->urlEntry(route('constructors.index'), now(), 'daily', '0.7');
+        $urls[] = $this->urlEntry(route('words.index'), now(), 'weekly', '0.7');
+        $urls[] = $this->urlEntry(route('clues.index'), now(), 'daily', '0.7');
         $urls[] = $this->urlEntry(route('tools.convert'), null, 'monthly', '0.8');
         $urls[] = $this->urlEntry(route('help.index'), now(), 'weekly', '0.6');
         $urls[] = $this->urlEntry(route('legal.terms'), null, 'yearly', '0.2');
