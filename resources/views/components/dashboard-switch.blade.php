@@ -51,7 +51,7 @@
         @else
             <a
                 href="{{ $tab['href'] }}"
-                wire:navigate
+                wire:navigate.hover
                 x-on:click="sessionStorage.setItem('dashboard-switch-from', @js($active))"
                 class="relative flex items-center justify-center gap-2 rounded-full px-6 py-1.5 text-base font-semibold text-zinc-500 transition hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
                 data-test="dashboard-switch-{{ $key }}"

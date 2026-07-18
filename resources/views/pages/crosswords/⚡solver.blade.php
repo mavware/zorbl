@@ -714,7 +714,7 @@ new #[Title('Solve Crossword')] class extends Component {
                 <div class="flex rounded-lg border border-line">
                     <a
                         href="{{ route('crosswords.editor', $crosswordId) }}"
-                        wire:navigate
+                        wire:navigate.hover
                         class="rounded-l-lg px-3 py-1 text-sm font-medium text-zinc-700 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
                     >{{ __('Edit') }}</a>
                     <span class="rounded-r-lg bg-zinc-800 px-3 py-1 text-sm font-medium text-white dark:bg-zinc-200 dark:text-zinc-900">{{ __('Solve') }}</span>

@@ -334,11 +334,11 @@ new #[Title('Solving')] class extends Component {
                     </div>
                     <div class="flex flex-col items-end gap-2">
                         @if($dailySolved)
-                            <flux:button variant="filled" size="sm" :href="route('crosswords.solver', $dailyPuzzle)" wire:navigate icon="eye">
+                            <flux:button variant="filled" size="sm" :href="route('crosswords.solver', $dailyPuzzle)" wire:navigate.hover icon="eye">
                                 {{ __('View Solution') }}
                             </flux:button>
                         @else
-                            <flux:button variant="primary" size="sm" :href="route('crosswords.solver', $dailyPuzzle)" wire:navigate icon="play">
+                            <flux:button variant="primary" size="sm" :href="route('crosswords.solver', $dailyPuzzle)" wire:navigate.hover icon="play">
                                 {{ __('Solve Today\'s Puzzle') }}
                             </flux:button>
                         @endif
@@ -392,7 +392,7 @@ new #[Title('Solving')] class extends Component {
                     @endif
                 </flux:text>
                 @if($search === '' && $filter === '')
-                    <flux:button variant="primary" icon="puzzle-piece" :href="route('puzzles.index')" wire:navigate>
+                    <flux:button variant="primary" icon="puzzle-piece" :href="route('puzzles.index')" wire:navigate.hover>
                         {{ __('Browse puzzles') }}
                     </flux:button>
                 @endif
@@ -726,7 +726,7 @@ new #[Title('Solving')] class extends Component {
                         <flux:text size="sm" class="text-zinc-500">{{ __('Best') }}</flux:text>
                     </div>
                     @if(! $this->streakIsActive)
-                        <flux:button variant="primary" size="sm" :href="route('puzzles.index')" wire:navigate icon="play">
+                        <flux:button variant="primary" size="sm" :href="route('puzzles.index')" wire:navigate.hover icon="play">
                             {{ __('Solve Now') }}
                         </flux:button>
                     @endif

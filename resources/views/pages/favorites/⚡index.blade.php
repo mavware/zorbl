@@ -260,7 +260,7 @@ new #[Title('Favorites')] class extends Component {
                     {{ __('Add puzzles to this list from your liked puzzles.') }}
                 @endif
             </flux:text>
-            <flux:button variant="primary" icon="puzzle-piece" :href="route('puzzles.index')" wire:navigate>
+            <flux:button variant="primary" icon="puzzle-piece" :href="route('puzzles.index')" wire:navigate.hover>
                 {{ __('Browse puzzles') }}
             </flux:button>
         </div>
