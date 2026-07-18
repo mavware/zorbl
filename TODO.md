@@ -73,6 +73,7 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [x] Limit puzzle size to 40x40
 - [x] Freestyle puzzles should not have templates.  but they can have a thumbnail of a random freestyle puzzle in the size that is selected.
 - [ ] Add a weekly digest email for solvers (puzzles solved, streak status, leaderboard position changes)
+- [ ] use AI or a script to find new words or phrases and add them to the "words" table
 
  
 ## For later
