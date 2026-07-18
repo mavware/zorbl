@@ -74,6 +74,8 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [x] Freestyle puzzles should not have templates.  but they can have a thumbnail of a random freestyle puzzle in the size that is selected.
 - [ ] Add a weekly digest email for solvers (puzzles solved, streak status, leaderboard position changes)
 - [ ] use AI or a script to find new words or phrases and add them to the "words" table
+- [ ] Find out if I can use Claude dashboard tools to more effectively complete my AI features
+- [ ] have Claude create a Google Ads campaign for me to promote my site
 
  
 ## For later
