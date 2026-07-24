@@ -86,7 +86,9 @@
 
     </flux:sidebar.nav>
 
-    <x-desktop-user-menu class="hidden lg:block" :name="auth()->user()->name"/>
+    @unless (auth()->user()->isAnonymous())
+        <x-desktop-user-menu class="hidden lg:block" :name="auth()->user()->name"/>
+    @endunless
 
     <div class="mx-3 mb-3 mt-2 hidden flex-wrap gap-x-3 gap-y-1 text-xs text-zinc-500 lg:flex dark:text-zinc-600">
         <a href="{{ route('legal.terms') }}" wire:navigate
@@ -106,6 +108,7 @@
 
     <flux:spacer/>
 
+    @unless (auth()->user()->isAnonymous())
     <flux:dropdown position="top" align="end">
         <flux:profile
             :initials="auth()->user()->initials()"
@@ -158,6 +161,7 @@
             </form>
         </flux:menu>
     </flux:dropdown>
+    @endunless
 </flux:header>
 
 {{ $slot }}

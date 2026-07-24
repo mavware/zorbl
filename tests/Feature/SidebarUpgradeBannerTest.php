@@ -68,3 +68,23 @@ test('registered users see the favorites link', function () {
         ->assertOk()
         ->assertSee('Favorites', false);
 });
+
+test('guests do not see the user menu', function () {
+    $anon = app(AnonymousUserManager::class)->create();
+
+    $this->actingAs($anon)
+        ->get(route('crosswords.index'))
+        ->assertOk()
+        ->assertDontSee('data-test="sidebar-menu-button"', false)
+        ->assertDontSee('Log out', false);
+});
+
+test('registered users see the user menu', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->get(route('crosswords.index'))
+        ->assertOk()
+        ->assertSee('data-test="sidebar-menu-button"', false)
+        ->assertSee('Log out', false);
+});
