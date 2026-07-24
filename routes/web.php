@@ -93,19 +93,21 @@ Route::middleware(['auth', 'verified', 'not-anonymous'])->group(function () {
     Route::redirect('crosswords/analytics', '/crosswords')->name('crosswords.analytics');
 });
 
-// Builder surface — anonymous "guest builder" users are allowed in.
+// Builder surface + Build home — anonymous "guest builder" users are allowed in
+// (they land here as their dashboard/home and see the guest sign-up banner).
 // CrosswordPolicy::update prevents them from opening anyone else's puzzle.
 Route::middleware(['auth'])->group(function () {
+    // The dashboard's sections now live on the Build and Solve pages; keep the
+    // route name alive for old links and post-login redirects. Guests use the
+    // Build page (crosswords.index) as their home.
+    Route::redirect('dashboard', '/crosswords')->name('dashboard');
+
+    Route::livewire('crosswords', 'pages::crosswords.index')->name('crosswords.index');
     Route::livewire('crosswords/{crossword}', 'pages::crosswords.editor')->name('crosswords.editor');
     Route::livewire('crosswords/{crossword}/solve', 'pages::crosswords.solver')->name('crosswords.solver');
 });
 
 Route::middleware(['auth', 'verified', 'not-anonymous'])->group(function () {
-    // The dashboard's sections now live on the Build and Solve pages; keep the
-    // route name alive for old links and post-login redirects.
-    Route::redirect('dashboard', '/crosswords')->name('dashboard');
-
-    Route::livewire('crosswords', 'pages::crosswords.index')->name('crosswords.index');
     Route::livewire('solving', 'pages::crosswords.solving')->name('crosswords.solving');
     Route::livewire('solving/stats', 'pages::crosswords.stats')->name('crosswords.stats');
 

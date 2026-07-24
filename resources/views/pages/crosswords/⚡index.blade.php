@@ -384,6 +384,8 @@ new #[Title('Build')] class extends Component {
 ?>
 
 <div class="space-y-6">
+        @include('partials.guest-banner')
+
         <div class="flex items-center justify-between">
             <x-dashboard-switch active="build" />
 

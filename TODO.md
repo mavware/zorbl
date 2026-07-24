@@ -20,7 +20,6 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [ ] use AI or a script to find new words or phrases and add them to the "words" table
 - [ ] Find out if I can use Claude dashboard tools to more effectively complete my AI features
 - [ ] have Claude create a Google Ads campaign for me to promote my site
-- [ ] when signed in as an anonymous user, the user should be able to navigate to the dashboard (or homescreen) and see the "You're building as a guest. Sign up" alert at the top
 
 
  
@@ -94,3 +93,5 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [x] Ability to sign in with google
 - [x] Double check the printable/downloadable PDFs for the puzzle editor/solver
 - [x] Ensure that freestyle puzzles can be exported as PDFs with the removed squares
+- [x] when signed in as an anonymous user, the user should be able to navigate to the dashboard (or homescreen) and see the "You're building as a guest. Sign up" alert at the top
+

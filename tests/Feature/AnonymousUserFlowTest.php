@@ -36,20 +36,21 @@ test('anonymous user can open their own editor', function () {
         ->assertOk();
 });
 
-test('anonymous user cannot reach the dashboard', function () {
+test('anonymous user is sent to the build home from the dashboard', function () {
     $anon = app(AnonymousUserManager::class)->create();
 
     $this->actingAs($anon)
         ->get(route('dashboard'))
-        ->assertRedirect();
+        ->assertRedirect(route('crosswords.index', absolute: false));
 });
 
-test('anonymous user cannot reach the puzzles index dashboard', function () {
+test('anonymous user can reach the build home and sees the guest banner', function () {
     $anon = app(AnonymousUserManager::class)->create();
 
     $this->actingAs($anon)
         ->get(route('crosswords.index'))
-        ->assertRedirect();
+        ->assertOk()
+        ->assertSee('building as a guest');
 });
 
 test('publishing is blocked for anonymous users via observer', function () {
@@ -154,7 +155,7 @@ test('constructors query excludes anonymous users', function () {
     $anon = app(AnonymousUserManager::class)->create();
     $crossword = Crossword::factory()->for($anon)->create();
     // Bypass the observer to simulate a row that slipped through and got published.
-    \DB::table('crosswords')->where('id', $crossword->id)->update(['is_published' => true]);
+    DB::table('crosswords')->where('id', $crossword->id)->update(['is_published' => true]);
 
     $real = User::factory()->create();
     Crossword::factory()->for($real)->published()->create();
