@@ -36,6 +36,16 @@ test('anonymous user can open their own editor', function () {
         ->assertOk();
 });
 
+test('the guest banner shows on every panel page via the app layout', function () {
+    $anon = app(AnonymousUserManager::class)->create();
+    $crossword = Crossword::factory()->for($anon)->create();
+
+    $this->actingAs($anon)
+        ->get(route('crosswords.editor', $crossword))
+        ->assertOk()
+        ->assertSee('building as a guest');
+});
+
 test('anonymous user is sent to the build home from the dashboard', function () {
     $anon = app(AnonymousUserManager::class)->create();
 

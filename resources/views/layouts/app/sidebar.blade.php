@@ -32,10 +32,12 @@
         </flux:sidebar.group>
 
         <flux:sidebar.group class="grid border-t border-t-zinc-700 mb-2 pt-2">
-            <flux:sidebar.item icon="heart" :href="route('favorites.index')"
-                               :current="request()->routeIs('favorites.index')" wire:navigate>
-                {{ __('Favorites') }}
-            </flux:sidebar.item>
+            @unless (auth()->user()->isAnonymous())
+                <flux:sidebar.item icon="heart" :href="route('favorites.index')"
+                                   :current="request()->routeIs('favorites.index')" wire:navigate>
+                    {{ __('Favorites') }}
+                </flux:sidebar.item>
+            @endunless
 {{--            <flux:sidebar.item icon="trophy" :href="route('leaderboard')" :current="request()->routeIs('leaderboard')"--}}
 {{--                               wire:navigate>--}}
 {{--                {{ __('Leaderboard') }}--}}
@@ -55,7 +57,7 @@
 
     <flux:spacer/>
 
-    @unless (auth()->user()->isPro())
+    @unless (auth()->user()->isPro() || auth()->user()->isAnonymous())
         <a
             href="{{ route('billing.index') }}"
             wire:navigate

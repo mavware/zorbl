@@ -872,8 +872,6 @@ class extends Component {
     x-on:highlight-incomplete.window="highlightIncomplete($event.detail.checks)"
     class="flex h-full flex-col"
 >
-    @include('partials.guest-banner')
-
     {{-- Toolbar --}}
     <div class="mb-4 flex flex-wrap items-center gap-2">
         {{-- Title --}}

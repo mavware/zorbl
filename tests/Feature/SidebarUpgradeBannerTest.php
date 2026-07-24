@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use App\Services\AnonymousUserManager;
 use Laravel\Cashier\Subscription;
 use Spatie\Permission\Models\Role;
 
@@ -39,4 +40,31 @@ test('admins do not see the upgrade banner', function () {
         ->get(route('crosswords.index'))
         ->assertOk()
         ->assertDontSee('Upgrade to Pro', false);
+});
+
+test('guests do not see the upgrade banner', function () {
+    $anon = app(AnonymousUserManager::class)->create();
+
+    $this->actingAs($anon)
+        ->get(route('crosswords.index'))
+        ->assertOk()
+        ->assertDontSee('Unlock AI grid fills and clue suggestions.', false);
+});
+
+test('guests do not see the favorites link', function () {
+    $anon = app(AnonymousUserManager::class)->create();
+
+    $this->actingAs($anon)
+        ->get(route('crosswords.index'))
+        ->assertOk()
+        ->assertDontSee('Favorites', false);
+});
+
+test('registered users see the favorites link', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->get(route('crosswords.index'))
+        ->assertOk()
+        ->assertSee('Favorites', false);
 });
