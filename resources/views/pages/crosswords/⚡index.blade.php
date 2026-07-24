@@ -30,6 +30,7 @@ new #[Title('Build')] class extends Component {
     public ?int $selectedTemplate = null;
     public $importFile;
     public string $importError = '';
+    public string $newPuzzleLimitMessage = '';
 
     /** @var list<int> */
     public array $selectedPuzzles = [];
@@ -136,6 +137,11 @@ new #[Title('Build')] class extends Component {
             ->first();
     }
 
+    public function updatedShowNewModal(): void
+    {
+        $this->newPuzzleLimitMessage = '';
+    }
+
     public function updatedPuzzleType(): void
     {
         $type = $this->selectedPuzzleType;
@@ -177,6 +183,8 @@ new #[Title('Build')] class extends Component {
 
     public function createPuzzle(): void
     {
+        $this->newPuzzleLimitMessage = '';
+
         $type = $this->selectedPuzzleType;
 
         $rules = [
@@ -202,9 +210,9 @@ new #[Title('Build')] class extends Component {
         $limits = $user->planLimits();
 
         if ($user->crosswords()->count() >= $limits->maxPuzzles()) {
-            $this->addError('newWidth', $user->isPro()
+            $this->newPuzzleLimitMessage = $user->isPro()
                 ? __('You have reached your puzzle limit.')
-                : __('Free accounts can create up to :count puzzles. Upgrade to Pro for unlimited.', ['count' => $limits->maxPuzzles()]));
+                : __('Free accounts can create up to :count puzzles. Upgrade to Pro for unlimited.', ['count' => $limits->maxPuzzles()]);
 
             return;
         }
@@ -697,6 +705,12 @@ new #[Title('Build')] class extends Component {
                             <flux:text size="sm" class="text-zinc-500">{{ __('Templates are available for square grids (3×3 to 27×27).') }}</flux:text>
                         </div>
                     @endif
+                </div>
+            @endif
+
+            @if ($newPuzzleLimitMessage !== '')
+                <div class="w-full rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-2.5 text-sm text-amber-900 dark:text-amber-200">
+                    {{ $newPuzzleLimitMessage }}
                 </div>
             @endif
 

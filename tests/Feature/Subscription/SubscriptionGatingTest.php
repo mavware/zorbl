@@ -57,7 +57,24 @@ describe('puzzle creation limits', function () {
             ->set('newWidth', 5)
             ->set('newHeight', 5)
             ->call('createPuzzle')
-            ->assertHasErrors('newWidth');
+            ->assertHasNoErrors()
+            ->assertNoRedirect()
+            ->assertSet('newPuzzleLimitMessage', 'Free accounts can create up to 25 puzzles. Upgrade to Pro for unlimited.');
+    });
+
+    it('clears the puzzle limit message when the new puzzle modal is toggled', function () {
+        $user = User::factory()->create();
+
+        Crossword::factory()->for($user)->count(25)->create();
+
+        Livewire::actingAs($user)
+            ->test('pages::crosswords.index')
+            ->set('newWidth', 5)
+            ->set('newHeight', 5)
+            ->call('createPuzzle')
+            ->assertSet('newPuzzleLimitMessage', 'Free accounts can create up to 25 puzzles. Upgrade to Pro for unlimited.')
+            ->set('showNewModal', true)
+            ->assertSet('newPuzzleLimitMessage', '');
     });
 
     it('allows grandfathered free users to create up to 25 puzzles', function () {
