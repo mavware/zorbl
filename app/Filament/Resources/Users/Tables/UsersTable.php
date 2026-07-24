@@ -121,8 +121,7 @@ class UsersTable
                     ->modalHeading(fn (User $record): string => "Impersonate {$record->name}?")
                     ->modalDescription('You will be logged in as this user. Use the banner at the top of the page to leave impersonation.')
                     ->action(function (User $record) {
-                        session()->put(ImpersonationController::SESSION_KEY, Auth::id());
-                        Auth::loginUsingId($record->id);
+                        app(ImpersonationController::class)->beginImpersonating(Auth::user(), $record);
 
                         return redirect('/');
                     }),
