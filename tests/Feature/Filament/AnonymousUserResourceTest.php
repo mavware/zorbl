@@ -6,6 +6,7 @@ use App\Http\Controllers\ImpersonationController;
 use App\Models\Crossword;
 use App\Models\User;
 use Filament\Actions\Testing\TestAction;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Livewire\Livewire;
 use Spatie\Permission\Models\Role;
@@ -66,6 +67,33 @@ test('the has crosswords filter only shows guests with crosswords', function () 
         ->filterTable('has_crosswords')
         ->assertCanSeeTableRecords([$withCrossword])
         ->assertCanNotSeeTableRecords([$withoutCrossword]);
+});
+
+test('the list shows the id, token, and stored session user agent', function () {
+    $guest = anonymousUser(['anonymous_token' => 'tok_abcdef123456']);
+
+    DB::table('sessions')->insert([
+        'id' => 'sess-'.$guest->id,
+        'user_id' => $guest->id,
+        'ip_address' => '203.0.113.7',
+        'user_agent' => 'Mozilla/5.0 TestAgent',
+        'payload' => 'x',
+        'last_activity' => now()->timestamp,
+    ]);
+
+    Livewire::test(ListAnonymousUsers::class)
+        ->assertCanSeeTableRecords([$guest])
+        ->assertSee((string) $guest->id)
+        ->assertSee('203.0.113.7')
+        ->assertSee('Mozilla/5.0 TestAgent');
+});
+
+test('a guest with no stored session shows placeholders', function () {
+    $guest = anonymousUser();
+
+    Livewire::test(ListAnonymousUsers::class)
+        ->assertCanSeeTableRecords([$guest])
+        ->assertSee('Never');
 });
 
 test('an admin can impersonate an anonymous user', function () {
