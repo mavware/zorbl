@@ -168,3 +168,83 @@ test('sitemap excludes profanity-flagged puzzles', function () {
         ->toContain(route('puzzles.solve', $clean->id))
         ->not->toContain(route('puzzles.solve', $dirty->id));
 });
+
+// --- Extended profanity list tests (load real config file, not the test sentinels) ---
+
+test('extended profanity list has comprehensive coverage', function () {
+    $realWords = require base_path('config/profanity.php');
+    Config::set('profanity.words', $realWords['words']);
+    $filter = new ProfanityFilter;
+
+    expect($filter->count())->toBeGreaterThan(100);
+});
+
+test('extended list catches profanity variations', function () {
+    $realWords = require base_path('config/profanity.php');
+    Config::set('profanity.words', $realWords['words']);
+    $filter = new ProfanityFilter;
+
+    $variations = ['fucking', 'shitty', 'bitches', 'motherfucking', 'cunts'];
+    foreach ($variations as $word) {
+        expect($filter->contains("this is $word content"))
+            ->toBeTrue("Expected '$word' to be caught");
+    }
+});
+
+test('extended list catches racial slurs', function () {
+    $realWords = require base_path('config/profanity.php');
+    Config::set('profanity.words', $realWords['words']);
+    $filter = new ProfanityFilter;
+
+    expect($filter->contains('a nigger walked'))->toBeTrue()
+        ->and($filter->contains('stupid chink'))->toBeTrue()
+        ->and($filter->contains('dirty kike'))->toBeTrue()
+        ->and($filter->contains('calling people faggot'))->toBeTrue();
+});
+
+test('extended list catches common evasion patterns', function () {
+    $realWords = require base_path('config/profanity.php');
+    Config::set('profanity.words', $realWords['words']);
+    $filter = new ProfanityFilter;
+
+    expect($filter->contains('what the phuck'))->toBeTrue()
+        ->and($filter->contains('total sh1t'))->toBeTrue()
+        ->and($filter->contains('you b1tch'))->toBeTrue()
+        ->and($filter->contains('oh fuk'))->toBeTrue();
+});
+
+test('extended list still avoids Scunthorpe problem', function () {
+    $realWords = require base_path('config/profanity.php');
+    Config::set('profanity.words', $realWords['words']);
+    $filter = new ProfanityFilter;
+
+    expect($filter->contains('Scunthorpe'))->toBeFalse()
+        ->and($filter->contains('cockpit'))->toBeFalse()
+        ->and($filter->contains('assume'))->toBeFalse()
+        ->and($filter->contains('classic'))->toBeFalse()
+        ->and($filter->contains('therapist'))->toBeFalse()
+        ->and($filter->contains('cumulative'))->toBeFalse();
+});
+
+test('extended list does not flag normal crossword content', function () {
+    $realWords = require base_path('config/profanity.php');
+    Config::set('profanity.words', $realWords['words']);
+    $filter = new ProfanityFilter;
+
+    $clues = [
+        'Capital of France',
+        'A type of bird',
+        'Shakespeare play',
+        'Japanese currency',
+        'To move quickly',
+        'Donkey',
+        'British slang for friend',
+        'Cracker Jack prize',
+        'Cocktail ingredient',
+    ];
+
+    foreach ($clues as $clue) {
+        expect($filter->contains($clue))
+            ->toBeFalse("Expected '$clue' to pass filter");
+    }
+});
