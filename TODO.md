@@ -13,8 +13,8 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [ ] Ability to convert selected contiguous cells to a custom image (or a single cell if only one is selected)
 - [ ] Ability to add a custom image or text page to the PDF file.
 - [ ] Ability to work with multiple constructors at once (form teams)
-- [ ] Add keyboard shortcuts reference page or modal so users can discover available shortcuts
-- [ ] Add keyboard shortcut cheat-sheet overlay (e.g. press `?` to toggle)
+- [x] Add keyboard shortcuts reference page or modal so users can discover available shortcuts
+- [x] Add keyboard shortcut cheat-sheet overlay (e.g. press `?` to toggle)
 - [ ] Extend profanity list
 - [ ] Add a weekly digest email for solvers (puzzles solved, streak status, leaderboard position changes)
 - [ ] use AI or a script to find new words or phrases and add them to the "words" table
