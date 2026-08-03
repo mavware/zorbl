@@ -863,6 +863,151 @@ test('rating trend is sorted chronologically', function () {
         ->and($trend[2]['avg_rating'])->toBe(5.0);
 });
 
+test('solve activity trend groups attempts and completions by month', function () {
+    $constructor = makeAnalyticsProUser();
+    $solver1 = User::factory()->create();
+    $solver2 = User::factory()->create();
+    $solver3 = User::factory()->create();
+
+    $puzzle1 = Crossword::factory()->published()->for($constructor)->create([
+        'width' => 2,
+        'height' => 2,
+        'grid' => [[1, 2], [3, 0]],
+    ]);
+    $puzzle2 = Crossword::factory()->published()->for($constructor)->create([
+        'width' => 2,
+        'height' => 2,
+        'grid' => [[1, 2], [3, 0]],
+    ]);
+
+    $a1 = PuzzleAttempt::factory()->completed()->for($solver1)->for($puzzle1)->create();
+    PuzzleAttempt::where('id', $a1->id)->update(['created_at' => now()->subMonths(2)->startOfMonth()->addDay()]);
+
+    $a2 = PuzzleAttempt::factory()->for($solver2)->for($puzzle1)->create();
+    PuzzleAttempt::where('id', $a2->id)->update(['created_at' => now()->subMonths(2)->startOfMonth()->addDays(5)]);
+
+    $a3 = PuzzleAttempt::factory()->completed()->for($solver3)->for($puzzle2)->create();
+    PuzzleAttempt::where('id', $a3->id)->update(['created_at' => now()->subMonth()->startOfMonth()->addDay()]);
+
+    $component = Livewire::actingAs($constructor)->test('constructor-analytics');
+    $trend = $component->get('solveActivityTrend');
+
+    expect($trend)->toHaveCount(2)
+        ->and($trend[0]['attempts'])->toBe(2)
+        ->and($trend[0]['completions'])->toBe(1)
+        ->and($trend[1]['attempts'])->toBe(1)
+        ->and($trend[1]['completions'])->toBe(1);
+});
+
+test('solve activity trend excludes attempts older than 12 months', function () {
+    $constructor = makeAnalyticsProUser();
+    $solver = User::factory()->create();
+
+    $puzzle = Crossword::factory()->published()->for($constructor)->create([
+        'width' => 2,
+        'height' => 2,
+        'grid' => [[1, 2], [3, 0]],
+    ]);
+
+    $attempt = PuzzleAttempt::factory()->completed()->for($solver)->for($puzzle)->create();
+    PuzzleAttempt::where('id', $attempt->id)->update(['created_at' => now()->subMonths(13)]);
+
+    $component = Livewire::actingAs($constructor)->test('constructor-analytics');
+
+    expect($component->get('solveActivityTrend'))->toHaveCount(0);
+});
+
+test('solve activity trend excludes draft puzzle attempts', function () {
+    $constructor = makeAnalyticsProUser();
+    $solver = User::factory()->create();
+
+    $draft = Crossword::factory()->for($constructor)->create([
+        'width' => 2,
+        'height' => 2,
+        'grid' => [[1, 2], [3, 0]],
+        'is_published' => false,
+    ]);
+
+    PuzzleAttempt::factory()->completed()->for($solver)->for($draft)->create();
+
+    $component = Livewire::actingAs($constructor)->test('constructor-analytics');
+
+    expect($component->get('solveActivityTrend'))->toHaveCount(0);
+});
+
+test('solve activity trend is sorted chronologically', function () {
+    $constructor = makeAnalyticsProUser();
+
+    $puzzle = Crossword::factory()->published()->for($constructor)->create([
+        'width' => 2,
+        'height' => 2,
+        'grid' => [[1, 2], [3, 0]],
+    ]);
+
+    $solver1 = User::factory()->create();
+    $solver2 = User::factory()->create();
+    $solver3 = User::factory()->create();
+
+    $a1 = PuzzleAttempt::factory()->for($solver1)->for($puzzle)->create();
+    PuzzleAttempt::where('id', $a1->id)->update(['created_at' => now()->subMonths(3)->startOfMonth()->addDay()]);
+
+    $a2 = PuzzleAttempt::factory()->completed()->for($solver2)->for($puzzle)->create();
+    PuzzleAttempt::where('id', $a2->id)->update(['created_at' => now()->subMonths(2)->startOfMonth()->addDay()]);
+
+    $a3 = PuzzleAttempt::factory()->completed()->for($solver3)->for($puzzle)->create();
+    PuzzleAttempt::where('id', $a3->id)->update(['created_at' => now()->subMonth()->startOfMonth()->addDay()]);
+
+    $component = Livewire::actingAs($constructor)->test('constructor-analytics');
+    $trend = $component->get('solveActivityTrend');
+
+    expect($trend)->toHaveCount(3)
+        ->and($trend[0]['completions'])->toBe(0)
+        ->and($trend[1]['completions'])->toBe(1)
+        ->and($trend[2]['completions'])->toBe(1);
+});
+
+test('solve activity trend chart renders when 2+ months of data exist', function () {
+    $constructor = makeAnalyticsProUser();
+    $solver1 = User::factory()->create();
+    $solver2 = User::factory()->create();
+
+    $puzzle = Crossword::factory()->published()->for($constructor)->create([
+        'width' => 2,
+        'height' => 2,
+        'grid' => [[1, 2], [3, 0]],
+    ]);
+
+    $a1 = PuzzleAttempt::factory()->for($solver1)->for($puzzle)->create();
+    PuzzleAttempt::where('id', $a1->id)->update(['created_at' => now()->subMonths(2)->startOfMonth()->addDay()]);
+
+    $a2 = PuzzleAttempt::factory()->for($solver2)->for($puzzle)->create();
+    PuzzleAttempt::where('id', $a2->id)->update(['created_at' => now()->subMonth()->startOfMonth()->addDay()]);
+
+    $this->actingAs($constructor)
+        ->get(route('crosswords.index'))
+        ->assertOk()
+        ->assertSee('Solve Activity')
+        ->assertSee('Attempts and completions per month');
+});
+
+test('solve activity trend chart is hidden with fewer than 2 data points', function () {
+    $constructor = makeAnalyticsProUser();
+    $solver = User::factory()->create();
+
+    $puzzle = Crossword::factory()->published()->for($constructor)->create([
+        'width' => 2,
+        'height' => 2,
+        'grid' => [[1, 2], [3, 0]],
+    ]);
+
+    PuzzleAttempt::factory()->for($solver)->for($puzzle)->create();
+
+    $this->actingAs($constructor)
+        ->get(route('crosswords.index'))
+        ->assertOk()
+        ->assertDontSee('Solve Activity');
+});
+
 test('the analytics route redirects to the build page', function () {
     $this->actingAs(User::factory()->create())
         ->get(route('crosswords.analytics'))

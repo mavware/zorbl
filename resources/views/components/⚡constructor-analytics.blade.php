@@ -113,6 +113,34 @@ new class extends Component {
     }
 
     /**
+     * @return list<array{month: string, attempts: int, completions: int}>
+     */
+    #[Computed]
+    public function solveActivityTrend(): array
+    {
+        $publishedIds = Auth::user()
+            ->crosswords()
+            ->where('is_published', true)
+            ->select('id');
+
+        $cutoff = CarbonImmutable::now()->subMonths(11)->startOfMonth();
+
+        return PuzzleAttempt::whereIn('crossword_id', $publishedIds)
+            ->where('created_at', '>=', $cutoff)
+            ->orderBy('created_at')
+            ->get(['is_completed', 'created_at'])
+            ->groupBy(fn (PuzzleAttempt $a) => $a->created_at->format('Y-m'))
+            ->map(fn ($group, $month) => [
+                'month' => $month,
+                'attempts' => $group->count(),
+                'completions' => $group->where('is_completed', true)->count(),
+            ])
+            ->sortKeys()
+            ->values()
+            ->all();
+    }
+
+    /**
      * @return list<array{month: string, avg_rating: float, count: int}>
      */
     #[Computed]
@@ -442,6 +470,119 @@ new class extends Component {
             </flux:table>
         @endif
     </div>
+
+    {{-- Solve Activity Trend Chart --}}
+    @if(count($this->solveActivityTrend) >= 2)
+        <div class="border-line rounded-xl border p-5">
+            <flux:heading size="lg" class="mb-1">{{ __('Solve Activity') }}</flux:heading>
+            <flux:text size="sm" class="mb-4 text-zinc-500">{{ __('Attempts and completions per month over the last 12 months.') }}</flux:text>
+
+            <div
+                x-data="{
+                    points: @js($this->solveActivityTrend),
+                    width: 600,
+                    height: 200,
+                    padX: 48,
+                    padY: 24,
+                    get chartWidth() { return this.width - this.padX * 2 },
+                    get chartHeight() { return this.height - this.padY * 2 },
+                    get maxVal() { return Math.max(1, ...this.points.map(p => p.attempts)) },
+                    x(i) { return this.padX + (i / (this.points.length - 1)) * this.chartWidth },
+                    y(val) { return this.padY + this.chartHeight - (val / this.maxVal) * this.chartHeight },
+                    linePath(key) {
+                        return this.points.map((p, i) => `${i === 0 ? 'M' : 'L'}${this.x(i).toFixed(1)},${this.y(p[key]).toFixed(1)}`).join(' ')
+                    },
+                    areaPath(key) {
+                        const bottom = this.padY + this.chartHeight;
+                        return this.linePath(key) + ` L${this.x(this.points.length - 1).toFixed(1)},${bottom} L${this.x(0).toFixed(1)},${bottom} Z`
+                    },
+                    get gridLines() {
+                        const lines = [];
+                        const step = Math.max(1, Math.ceil(this.maxVal / 4));
+                        for (let v = 0; v <= this.maxVal; v += step) {
+                            lines.push({ y: this.y(v), label: v });
+                        }
+                        return lines;
+                    },
+                    formatMonth(m) {
+                        const [y, mo] = m.split('-');
+                        const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                        return months[parseInt(mo) - 1];
+                    },
+                    tooltip: null,
+                    showTooltip(i) {
+                        const p = this.points[i];
+                        this.tooltip = { x: this.x(i), y: this.y(p.attempts), attempts: p.attempts, completions: p.completions, month: this.formatMonth(p.month) };
+                    },
+                    hideTooltip() { this.tooltip = null },
+                }"
+                class="w-full overflow-x-auto"
+            >
+                <svg :viewBox="`0 0 ${width} ${height}`" class="h-52 w-full min-w-[400px]" preserveAspectRatio="xMidYMid meet">
+                    {{-- Grid lines --}}
+                    <template x-for="line in gridLines" :key="line.label">
+                        <g>
+                            <line :x1="padX" :y1="line.y" :x2="width - padX" :y2="line.y" class="stroke-zinc-200 dark:stroke-zinc-700" stroke-dasharray="4 4" />
+                            <text :x="padX - 8" :y="line.y + 4" text-anchor="end" class="fill-zinc-400 text-[11px]" x-text="line.label"></text>
+                        </g>
+                    </template>
+
+                    {{-- Attempts area fill --}}
+                    <path :d="areaPath('attempts')" class="fill-blue-100/60 dark:fill-blue-900/20" />
+
+                    {{-- Completions area fill --}}
+                    <path :d="areaPath('completions')" class="fill-emerald-100/60 dark:fill-emerald-900/20" />
+
+                    {{-- Attempts line --}}
+                    <path :d="linePath('attempts')" fill="none" class="stroke-blue-500" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+
+                    {{-- Completions line --}}
+                    <path :d="linePath('completions')" fill="none" class="stroke-emerald-500" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+
+                    {{-- Data points (attempts) --}}
+                    <template x-for="(p, i) in points" :key="'a-' + p.month">
+                        <circle :cx="x(i)" :cy="y(p.attempts)" r="4" class="fill-blue-500 stroke-white dark:stroke-zinc-900" stroke-width="2" @mouseenter="showTooltip(i)" @mouseleave="hideTooltip()" style="cursor: pointer" />
+                    </template>
+
+                    {{-- Data points (completions) --}}
+                    <template x-for="(p, i) in points" :key="'c-' + p.month">
+                        <circle :cx="x(i)" :cy="y(p.completions)" r="4" class="fill-emerald-500 stroke-white dark:stroke-zinc-900" stroke-width="2" @mouseenter="showTooltip(i)" @mouseleave="hideTooltip()" style="cursor: pointer" />
+                    </template>
+
+                    {{-- X-axis labels --}}
+                    <template x-for="(p, i) in points" :key="'label-' + p.month">
+                        <text :x="x(i)" :y="height - 4" text-anchor="middle" class="fill-zinc-400 text-[10px]" x-text="formatMonth(p.month)"></text>
+                    </template>
+
+                    {{-- Tooltip --}}
+                    <g x-show="tooltip" x-cloak>
+                        <rect :x="(tooltip?.x ?? 0) - 44" :y="(tooltip?.y ?? 0) - 52" width="88" height="44" rx="6" class="fill-zinc-800 dark:fill-zinc-200" opacity="0.95" />
+                        <text :x="tooltip?.x ?? 0" :y="(tooltip?.y ?? 0) - 36" text-anchor="middle" class="fill-blue-300 dark:fill-blue-600 text-[11px] font-semibold">
+                            <tspan x-text="tooltip ? `${tooltip.attempts} attempts` : ''"></tspan>
+                        </text>
+                        <text :x="tooltip?.x ?? 0" :y="(tooltip?.y ?? 0) - 22" text-anchor="middle" class="fill-emerald-300 dark:fill-emerald-600 text-[11px] font-semibold">
+                            <tspan x-text="tooltip ? `${tooltip.completions} completed` : ''"></tspan>
+                        </text>
+                        <text :x="tooltip?.x ?? 0" :y="(tooltip?.y ?? 0) - 10" text-anchor="middle" class="fill-zinc-400 text-[10px]">
+                            <tspan x-text="tooltip?.month ?? ''"></tspan>
+                        </text>
+                    </g>
+                </svg>
+
+                {{-- Legend --}}
+                <div class="mt-2 flex items-center justify-center gap-4">
+                    <div class="flex items-center gap-1.5">
+                        <span class="inline-block size-2.5 rounded-full bg-blue-500"></span>
+                        <flux:text size="sm" class="text-zinc-500">{{ __('Attempts') }}</flux:text>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <span class="inline-block size-2.5 rounded-full bg-emerald-500"></span>
+                        <flux:text size="sm" class="text-zinc-500">{{ __('Completions') }}</flux:text>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
 
     {{-- Rating Trend Chart --}}
     @if(count($this->ratingTrend) >= 2)
