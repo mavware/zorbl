@@ -69,6 +69,7 @@ export function crosswordGrid({
         customNumberCells: [],
         incompleteHighlights: [],
         rebusMode: false,
+        showShortcuts: false,
         multiSelectedCells: {},
         contextMenu: { show: false, row: -1, col: -1, x: 0, y: 0 },
         fillInProgress: false,
@@ -544,10 +545,16 @@ export function crosswordGrid({
             const key = e.key;
 
             if (key === 'Escape') {
+                if (this.showShortcuts) { this.showShortcuts = false; return; }
                 if (this.contextMenu.show) { this.closeContextMenu(); return; }
                 if (Object.keys(this.multiSelectedCells).length > 0) { this.clearMultiSelection(); return; }
                 this.selectedRow = -1;
                 this.selectedCol = -1;
+                return;
+            }
+            if (key === '?' && !e.ctrlKey && !e.metaKey) {
+                e.preventDefault();
+                this.showShortcuts = !this.showShortcuts;
                 return;
             }
 
