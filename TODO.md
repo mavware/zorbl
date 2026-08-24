@@ -20,6 +20,8 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [ ] use AI or a script to find new words or phrases and add them to the "words" table
 - [ ] Find out if I can use Claude dashboard tools to more effectively complete my AI features
 - [ ] have Claude create a Google Ads campaign for me to promote my site
+- [ ] Add a bulk word import action to the admin word list (paste or upload a newline-separated list, with a preview of how many are new)
+- [ ] Add a "words with no approved clues" filter to the admin word list so gaps in the clue library are easy to spot
 
 
  

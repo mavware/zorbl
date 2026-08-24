@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\ClueEntry;
+use App\Models\Word;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
@@ -104,8 +105,7 @@ class GenerateWordList extends Command
             $upper = strtoupper($word);
             $length = strlen($upper);
 
-            // Crossword words are 3-21 letters
-            if ($length < 3 || $length > 21) {
+            if ($length < Word::MIN_LENGTH || $length > Word::MAX_LENGTH) {
                 continue;
             }
 
@@ -152,7 +152,7 @@ class GenerateWordList extends Command
                     $upper = mb_strtoupper($row->answer);
                     $length = mb_strlen($upper);
 
-                    if ($length < 3 || $length > 21) {
+                    if ($length < Word::MIN_LENGTH || $length > Word::MAX_LENGTH) {
                         continue;
                     }
 
