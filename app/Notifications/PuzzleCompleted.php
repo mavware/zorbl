@@ -5,13 +5,14 @@ namespace App\Notifications;
 use App\Enums\NotificationType;
 use App\Models\Crossword;
 use App\Models\User;
+use App\Support\Concerns\FormatsTime;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
 
 class PuzzleCompleted extends Notification implements ShouldQueue
 {
-    use Queueable;
+    use FormatsTime, Queueable;
 
     public function __construct(
         public Crossword $crossword,
@@ -57,15 +58,6 @@ class PuzzleCompleted extends Notification implements ShouldQueue
             return null;
         }
 
-        $seconds = $this->solveTimeSeconds;
-        $hours = intdiv($seconds, 3600);
-        $minutes = intdiv($seconds % 3600, 60);
-        $secs = $seconds % 60;
-
-        if ($hours > 0) {
-            return __('Solved in :time', ['time' => sprintf('%d:%02d:%02d', $hours, $minutes, $secs)]);
-        }
-
-        return __('Solved in :time', ['time' => sprintf('%d:%02d', $minutes, $secs)]);
+        return __('Solved in :time', ['time' => $this->formatTime($this->solveTimeSeconds)]);
     }
 }

@@ -403,9 +403,8 @@ test('format time renders minutes and seconds', function () {
     $component = Livewire::actingAs($constructor)->test('constructor-analytics');
 
     expect($component->call('formatTime', 90)->get(''))
-        // Use invocation via object to test the method directly
-        ->and(invade($component->instance())->formatTime(0))->toBe('—')
-        ->and(invade($component->instance())->formatTime(null))->toBe('—')
+        ->and(invade($component->instance())->formatTime(0))->toBe('0:00')
+        ->and(invade($component->instance())->formatTime(null))->toBe("\u{2014}")
         ->and(invade($component->instance())->formatTime(90))->toBe('1:30')
         ->and(invade($component->instance())->formatTime(3661))->toBe('1:01:01')
         ->and(invade($component->instance())->formatTime(59))->toBe('0:59');

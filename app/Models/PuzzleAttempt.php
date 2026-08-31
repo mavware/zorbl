@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Observers\PuzzleAttemptObserver;
+use App\Support\Concerns\FormatsTime;
 use Carbon\CarbonImmutable;
 use Database\Factories\PuzzleAttemptFactory;
 use Eloquent;
@@ -36,7 +37,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class PuzzleAttempt extends Model
 {
     /** @use HasFactory<PuzzleAttemptFactory> */
-    use HasFactory;
+    use FormatsTime, HasFactory;
 
     /** @var list<string> */
     protected $fillable = [
@@ -68,25 +69,13 @@ class PuzzleAttempt extends Model
         ];
     }
 
-    /**
-     * Format solve time as a human-readable string (e.g. "5:32" or "1:02:15").
-     */
     public function formattedSolveTime(): ?string
     {
         if ($this->solve_time_seconds === null) {
             return null;
         }
 
-        $seconds = $this->solve_time_seconds;
-        $hours = intdiv($seconds, 3600);
-        $minutes = intdiv($seconds % 3600, 60);
-        $secs = $seconds % 60;
-
-        if ($hours > 0) {
-            return sprintf('%d:%02d:%02d', $hours, $minutes, $secs);
-        }
-
-        return sprintf('%d:%02d', $minutes, $secs);
+        return $this->formatTime($this->solve_time_seconds);
     }
 
     /**

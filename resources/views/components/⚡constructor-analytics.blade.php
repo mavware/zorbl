@@ -3,6 +3,7 @@
 use App\Models\Crossword;
 use App\Models\PuzzleAttempt;
 use App\Models\PuzzleComment;
+use App\Support\Concerns\FormatsTime;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -11,6 +12,7 @@ use Livewire\Attributes\Url;
 use Livewire\Component;
 
 new class extends Component {
+    use FormatsTime;
     #[Url]
     public string $sortField = '';
 
@@ -245,23 +247,6 @@ new class extends Component {
         }
 
         return $results;
-    }
-
-    public function formatTime(?int $seconds): string
-    {
-        if ($seconds === null || $seconds === 0) {
-            return '—';
-        }
-
-        $hours = intdiv($seconds, 3600);
-        $minutes = intdiv($seconds % 3600, 60);
-        $secs = $seconds % 60;
-
-        if ($hours > 0) {
-            return sprintf('%d:%02d:%02d', $hours, $minutes, $secs);
-        }
-
-        return sprintf('%d:%02d', $minutes, $secs);
     }
 
     public function completionRate(int $attempts, int $completions): string
