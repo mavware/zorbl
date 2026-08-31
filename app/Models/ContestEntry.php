@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Concerns\FormatsTime;
 use Carbon\CarbonImmutable;
 use Database\Factories\ContestEntryFactory;
 use Eloquent;
@@ -40,7 +41,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class ContestEntry extends Model
 {
     /** @use HasFactory<ContestEntryFactory> */
-    use HasFactory;
+    use FormatsTime, HasFactory;
 
     /**
      * @return array<string, string>
@@ -74,24 +75,12 @@ class ContestEntry extends Model
         return $this->belongsTo(User::class);
     }
 
-    /**
-     * Format total solve time as a human-readable string.
-     */
     public function formattedSolveTime(): ?string
     {
         if ($this->total_solve_time_seconds === null) {
             return null;
         }
 
-        $seconds = $this->total_solve_time_seconds;
-        $hours = intdiv($seconds, 3600);
-        $minutes = intdiv($seconds % 3600, 60);
-        $secs = $seconds % 60;
-
-        if ($hours > 0) {
-            return sprintf('%d:%02d:%02d', $hours, $minutes, $secs);
-        }
-
-        return sprintf('%d:%02d', $minutes, $secs);
+        return $this->formatTime($this->total_solve_time_seconds);
     }
 }

@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use App\Support\Concerns\FormatsTime;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -10,6 +11,7 @@ use Livewire\Attributes\Url;
 use Livewire\Component;
 
 new #[Title('Leaderboard')] class extends Component {
+    use FormatsTime;
     #[Url]
     public string $tab = 'solvers';
 
@@ -214,23 +216,6 @@ new #[Title('Leaderboard')] class extends Component {
             ->count() + 1;
 
         return ['rank' => $rank, 'longest' => $user->longest_streak, 'current' => $user->current_streak];
-    }
-
-    public function formatTime(?int $seconds): string
-    {
-        if ($seconds === null) {
-            return '—';
-        }
-
-        $hours = intdiv($seconds, 3600);
-        $minutes = intdiv($seconds % 3600, 60);
-        $secs = $seconds % 60;
-
-        if ($hours > 0) {
-            return sprintf('%d:%02d:%02d', $hours, $minutes, $secs);
-        }
-
-        return sprintf('%d:%02d', $minutes, $secs);
     }
 
 }

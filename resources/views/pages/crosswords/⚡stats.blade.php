@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\PuzzleAttempt;
+use App\Support\Concerns\FormatsTime;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Computed;
@@ -10,7 +11,7 @@ use Livewire\Component;
 use Livewire\WithPagination;
 
 new #[Title('Solve Statistics')] class extends Component {
-    use WithPagination;
+    use FormatsTime, WithPagination;
 
     #[Url]
     public string $sortField = 'completed_at';
@@ -178,23 +179,6 @@ new #[Title('Solve Statistics')] class extends Component {
             'total' => (int) ($result->total_with_community ?? 0),
             'faster' => (int) ($result->faster_count ?? 0),
         ];
-    }
-
-    public function formatTime(?int $seconds): string
-    {
-        if ($seconds === null) {
-            return '—';
-        }
-
-        $hours = intdiv($seconds, 3600);
-        $minutes = intdiv($seconds % 3600, 60);
-        $secs = $seconds % 60;
-
-        if ($hours > 0) {
-            return sprintf('%d:%02d:%02d', $hours, $minutes, $secs);
-        }
-
-        return sprintf('%d:%02d', $minutes, $secs);
     }
 
     private function sizeCategory($crossword): string

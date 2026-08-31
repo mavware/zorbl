@@ -10,6 +10,7 @@ use App\Notifications\PuzzleMilestone;
 use App\Services\AchievementService;
 use App\Services\ContestService;
 use App\Livewire\Concerns\ExportsCrossword;
+use App\Support\Concerns\FormatsTime;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
@@ -18,7 +19,7 @@ use Livewire\Component;
 use Livewire\WithFileUploads;
 
 new #[Title('Solve Crossword')] class extends Component {
-    use ExportsCrossword;
+    use ExportsCrossword, FormatsTime;
     use WithFileUploads;
 
     #[Locked]
@@ -135,24 +136,11 @@ new #[Title('Solve Crossword')] class extends Component {
             'your_time' => $attempt->solve_time_seconds,
             'your_time_formatted' => $attempt->formattedSolveTime() ?? '—',
             'avg_time' => $avg,
-            'avg_time_formatted' => $this->formatSeconds($avg),
+            'avg_time_formatted' => $this->formatTime($avg),
             'diff' => $attempt->solve_time_seconds - $avg,
             'percentile' => $percentile,
             'total_solvers' => $totalSolvers,
         ];
-    }
-
-    private function formatSeconds(int $seconds): string
-    {
-        $hours = intdiv($seconds, 3600);
-        $minutes = intdiv($seconds % 3600, 60);
-        $secs = $seconds % 60;
-
-        if ($hours > 0) {
-            return sprintf('%d:%02d:%02d', $hours, $minutes, $secs);
-        }
-
-        return sprintf('%d:%02d', $minutes, $secs);
     }
 
     #[Computed]
@@ -539,23 +527,10 @@ new #[Title('Solve Crossword')] class extends Component {
     {
         $lines = [];
         $lines[] = __(':title on :app', ['title' => $this->title, 'app' => config('app.name')]);
-        $lines[] = $this->width.'x'.$this->height.' | '.$this->formatSolveTime($this->elapsedSeconds);
+        $lines[] = $this->width.'x'.$this->height.' | '.$this->formatTime($this->elapsedSeconds);
         $lines[] = route('puzzles.solve', $this->crosswordId);
 
         return implode("\n", $lines);
-    }
-
-    private function formatSolveTime(int $seconds): string
-    {
-        $hours = intdiv($seconds, 3600);
-        $minutes = intdiv($seconds % 3600, 60);
-        $secs = $seconds % 60;
-
-        if ($hours > 0) {
-            return sprintf('%d:%02d:%02d', $hours, $minutes, $secs);
-        }
-
-        return sprintf('%d:%02d', $minutes, $secs);
     }
 
     protected function getExportableCrossword(): Crossword
