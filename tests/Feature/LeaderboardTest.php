@@ -2,6 +2,7 @@
 
 use App\Models\Crossword;
 use App\Models\PuzzleAttempt;
+use App\Models\PuzzleComment;
 use App\Models\User;
 use Livewire\Livewire;
 
@@ -157,6 +158,71 @@ test('streak leaders excludes users with no streak', function () {
         ->and($names)->not->toContain('No Streak');
 });
 
+test('top rated ranks constructors by average puzzle rating', function () {
+    $highRated = User::factory()->create(['name' => 'High Rated']);
+    $lowRated = User::factory()->create(['name' => 'Low Rated']);
+
+    $highPuzzle = Crossword::factory()->published()->create(['user_id' => $highRated->id]);
+    $lowPuzzle = Crossword::factory()->published()->create(['user_id' => $lowRated->id]);
+
+    PuzzleComment::factory()->count(3)->create(['crossword_id' => $highPuzzle->id, 'rating' => 5]);
+    PuzzleComment::factory()->count(3)->create(['crossword_id' => $lowPuzzle->id, 'rating' => 2]);
+
+    $component = Livewire::actingAs(User::factory()->create())
+        ->test('pages::leaderboard', ['tab' => 'rated']);
+
+    $rated = $component->get('topRated');
+
+    expect($rated->first()->name)->toBe('High Rated')
+        ->and((float) $rated->first()->avg_rating)->toBe(5.0)
+        ->and($rated->last()->name)->toBe('Low Rated');
+});
+
+test('top rated requires minimum 3 reviews', function () {
+    $eligible = User::factory()->create(['name' => 'Eligible']);
+    $tooFew = User::factory()->create(['name' => 'Too Few Reviews']);
+
+    $eligiblePuzzle = Crossword::factory()->published()->create(['user_id' => $eligible->id]);
+    $tooFewPuzzle = Crossword::factory()->published()->create(['user_id' => $tooFew->id]);
+
+    PuzzleComment::factory()->count(3)->create(['crossword_id' => $eligiblePuzzle->id, 'rating' => 4]);
+    PuzzleComment::factory()->count(2)->create(['crossword_id' => $tooFewPuzzle->id, 'rating' => 5]);
+
+    $component = Livewire::actingAs(User::factory()->create())
+        ->test('pages::leaderboard', ['tab' => 'rated']);
+
+    $names = $component->get('topRated')->pluck('name')->all();
+
+    expect($names)->toContain('Eligible')
+        ->and($names)->not->toContain('Too Few Reviews');
+});
+
+test('top rated excludes unpublished puzzles', function () {
+    $constructor = User::factory()->create(['name' => 'Draft Only']);
+    $puzzle = Crossword::factory()->create(['user_id' => $constructor->id, 'is_published' => false]);
+    PuzzleComment::factory()->count(5)->create(['crossword_id' => $puzzle->id, 'rating' => 5]);
+
+    $component = Livewire::actingAs(User::factory()->create())
+        ->test('pages::leaderboard', ['tab' => 'rated']);
+
+    $names = $component->get('topRated')->pluck('name')->all();
+
+    expect($names)->not->toContain('Draft Only');
+});
+
+test('top rated excludes reviews without a rating', function () {
+    $constructor = User::factory()->create(['name' => 'No Ratings']);
+    $puzzle = Crossword::factory()->published()->create(['user_id' => $constructor->id]);
+    PuzzleComment::factory()->count(5)->create(['crossword_id' => $puzzle->id, 'rating' => null]);
+
+    $component = Livewire::actingAs(User::factory()->create())
+        ->test('pages::leaderboard', ['tab' => 'rated']);
+
+    $names = $component->get('topRated')->pluck('name')->all();
+
+    expect($names)->not->toContain('No Ratings');
+});
+
 test('tab can be switched via url parameter', function () {
     Livewire::actingAs(User::factory()->create())
         ->test('pages::leaderboard', ['tab' => 'constructors'])
@@ -214,11 +280,12 @@ test('leaderboard tabs survive a round-trip through the database cache store', f
         'current_streak' => 2,
     ]);
     PuzzleAttempt::factory()->count(5)->completed()->create(['user_id' => $solver->id]);
-    Crossword::factory()->published()->create(['user_id' => $solver->id]);
+    $puzzle = Crossword::factory()->published()->create(['user_id' => $solver->id]);
+    PuzzleComment::factory()->count(3)->create(['crossword_id' => $puzzle->id, 'rating' => 4]);
 
     $viewer = User::factory()->create();
 
-    foreach (['solvers', 'speed', 'constructors', 'streaks'] as $tab) {
+    foreach (['solvers', 'speed', 'constructors', 'streaks', 'rated'] as $tab) {
         // First render warms the cache; the second must unserialize the stored payload.
         Livewire::actingAs($viewer)->test('pages::leaderboard', ['tab' => $tab]);
 

@@ -87,6 +87,29 @@ new #[Title('Leaderboard')] class extends Component {
         });
     }
 
+    #[Computed]
+    public function topRated()
+    {
+        return Cache::remember('leaderboard:top_rated', 300, function () {
+            return DB::table('users')
+                ->select('users.id', 'users.name')
+                ->where('users.is_anonymous', false)
+                ->join('crosswords', 'users.id', '=', 'crosswords.user_id')
+                ->where('crosswords.is_published', true)
+                ->join('puzzle_comments', 'crosswords.id', '=', 'puzzle_comments.crossword_id')
+                ->whereNotNull('puzzle_comments.rating')
+                ->groupBy('users.id', 'users.name')
+                ->havingRaw('count(puzzle_comments.id) >= 3')
+                ->selectRaw('round(avg(puzzle_comments.rating), 2) as avg_rating')
+                ->selectRaw('count(puzzle_comments.id) as review_count')
+                ->selectRaw('count(distinct crosswords.id) as rated_puzzle_count')
+                ->orderByDesc('avg_rating')
+                ->orderByDesc('review_count')
+                ->limit(50)
+                ->get();
+        });
+    }
+
     /**
      * @return array{rank: int, value: int}|null
      */
@@ -216,6 +239,46 @@ new #[Title('Leaderboard')] class extends Component {
         return ['rank' => $rank, 'longest' => $user->longest_streak, 'current' => $user->current_streak];
     }
 
+    /**
+     * @return array{rank: int, avg_rating: float, review_count: int, rated_puzzle_count: int}|null
+     */
+    #[Computed]
+    public function yourRatedRank(): ?array
+    {
+        $userId = Auth::id();
+
+        $userStats = DB::table('crosswords')
+            ->where('crosswords.user_id', $userId)
+            ->where('crosswords.is_published', true)
+            ->join('puzzle_comments', 'crosswords.id', '=', 'puzzle_comments.crossword_id')
+            ->whereNotNull('puzzle_comments.rating')
+            ->selectRaw('round(avg(puzzle_comments.rating), 2) as avg_rating')
+            ->selectRaw('count(puzzle_comments.id) as review_count')
+            ->selectRaw('count(distinct crosswords.id) as rated_puzzle_count')
+            ->first();
+
+        if (! $userStats || $userStats->review_count < 3) {
+            return null;
+        }
+
+        $avgRating = (float) $userStats->avg_rating;
+
+        $rank = (int) DB::table(
+            DB::raw('(SELECT crosswords.user_id, avg(puzzle_comments.rating) as avg_rating FROM crosswords JOIN puzzle_comments ON crosswords.id = puzzle_comments.crossword_id WHERE crosswords.is_published = 1 AND puzzle_comments.rating IS NOT NULL GROUP BY crosswords.user_id HAVING count(puzzle_comments.id) >= 3) as rankings')
+        )
+            ->join('users', 'users.id', '=', 'rankings.user_id')
+            ->where('users.is_anonymous', false)
+            ->whereRaw('rankings.avg_rating > CAST(? AS REAL)', [$avgRating])
+            ->count() + 1;
+
+        return [
+            'rank' => $rank,
+            'avg_rating' => $avgRating,
+            'review_count' => (int) $userStats->review_count,
+            'rated_puzzle_count' => (int) $userStats->rated_puzzle_count,
+        ];
+    }
+
     public function formatTime(?int $seconds): string
     {
         if ($seconds === null) {
@@ -248,6 +311,7 @@ new #[Title('Leaderboard')] class extends Component {
         <flux:radio value="speed" label="{{ __('Speed Demons') }}" />
         <flux:radio value="constructors" label="{{ __('Top Constructors') }}" />
         <flux:radio value="streaks" label="{{ __('Best Streaks') }}" />
+        <flux:radio value="rated" label="{{ __('Top Rated') }}" />
     </flux:radio.group>
 
     {{-- Top Solvers --}}
@@ -506,6 +570,75 @@ new #[Title('Leaderboard')] class extends Component {
                         </div>
                         <flux:button variant="ghost" size="sm" :href="route('crosswords.solving')" wire:navigate icon="arrow-right">
                             {{ __('Solve today') }}
+                        </flux:button>
+                    </div>
+                </div>
+            @endunless
+        @endif
+    @endif
+
+    {{-- Top Rated --}}
+    @if($tab === 'rated')
+        <div class="border-line rounded-xl border p-5">
+            <flux:heading size="lg" class="mb-1">{{ __('Top Rated') }}</flux:heading>
+            <flux:text size="sm" class="mb-4 text-zinc-500">{{ __('Ranked by average puzzle rating (minimum 3 reviews).') }}</flux:text>
+
+            @if($this->topRated->isEmpty())
+                <x-leaderboard-empty />
+            @else
+                <flux:table>
+                    <flux:table.columns>
+                        <flux:table.column>{{ __('Rank') }}</flux:table.column>
+                        <flux:table.column>{{ __('Constructor') }}</flux:table.column>
+                        <flux:table.column align="end">{{ __('Avg Rating') }}</flux:table.column>
+                        <flux:table.column align="end">{{ __('Reviews') }}</flux:table.column>
+                        <flux:table.column align="end">{{ __('Puzzles') }}</flux:table.column>
+                    </flux:table.columns>
+
+                    <flux:table.rows>
+                        @foreach($this->topRated as $index => $constructor)
+                            <flux:table.row :key="$constructor->id" @class(['bg-amber-50/50 dark:bg-amber-900/10' => $constructor->id === Auth::id()])>
+                                <flux:table.cell>
+                                    <x-leaderboard-rank :rank="$index + 1" />
+                                </flux:table.cell>
+                                <flux:table.cell variant="strong">
+                                    <a href="{{ route('constructors.show', $constructor->id) }}" wire:navigate class="hover:text-blue-600 dark:hover:text-blue-400">
+                                        {{ $constructor->name }}
+                                    </a>
+                                </flux:table.cell>
+                                <flux:table.cell align="end">
+                                    <span class="font-mono font-semibold">{{ $constructor->avg_rating }}</span>
+                                </flux:table.cell>
+                                <flux:table.cell align="end">
+                                    <span class="text-zinc-500">{{ number_format($constructor->review_count) }}</span>
+                                </flux:table.cell>
+                                <flux:table.cell align="end">
+                                    <span class="text-zinc-500">{{ number_format($constructor->rated_puzzle_count) }}</span>
+                                </flux:table.cell>
+                            </flux:table.row>
+                        @endforeach
+                    </flux:table.rows>
+                </flux:table>
+            @endif
+        </div>
+
+        @if($yourRatedRank = $this->yourRatedRank)
+            @unless($this->topRated->contains('id', Auth::id()))
+                <div class="border-line rounded-xl border border-blue-200 bg-blue-50/50 p-4 dark:border-blue-800/50 dark:bg-blue-950/20" data-test="your-rated-rank">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="flex size-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/40">
+                                <span class="text-sm font-bold text-blue-700 dark:text-blue-300">#{{ $yourRatedRank['rank'] }}</span>
+                            </div>
+                            <div>
+                                <flux:heading size="sm">{{ __('Your Rank') }}</flux:heading>
+                                <flux:text size="sm" class="text-zinc-600 dark:text-zinc-400">
+                                    {{ __(':rating avg across :count reviews', ['rating' => $yourRatedRank['avg_rating'], 'count' => $yourRatedRank['review_count']]) }}
+                                </flux:text>
+                            </div>
+                        </div>
+                        <flux:button variant="ghost" size="sm" :href="route('crosswords.index')" wire:navigate icon="arrow-right">
+                            {{ __('Build more') }}
                         </flux:button>
                     </div>
                 </div>
