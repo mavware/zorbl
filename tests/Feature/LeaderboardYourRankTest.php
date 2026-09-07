@@ -2,6 +2,7 @@
 
 use App\Models\Crossword;
 use App\Models\PuzzleAttempt;
+use App\Models\PuzzleComment;
 use App\Models\User;
 use Livewire\Livewire;
 
@@ -182,6 +183,62 @@ test('your rank card shows build more button for constructors outside top 50', f
 
     Livewire::actingAs($user)
         ->test('pages::leaderboard', ['tab' => 'constructors'])
+        ->assertSee('Build more');
+});
+
+test('your rated rank shows correct position', function () {
+    $topConstructor = User::factory()->create();
+    $topPuzzle = Crossword::factory()->published()->create(['user_id' => $topConstructor->id]);
+    PuzzleComment::factory()->count(5)->create(['crossword_id' => $topPuzzle->id, 'rating' => 5]);
+
+    $user = User::factory()->create();
+    $userPuzzle = Crossword::factory()->published()->create(['user_id' => $user->id]);
+    PuzzleComment::factory()->count(3)->create(['crossword_id' => $userPuzzle->id, 'rating' => 3]);
+
+    $component = Livewire::actingAs($user)
+        ->test('pages::leaderboard', ['tab' => 'rated']);
+
+    $rank = $component->get('yourRatedRank');
+
+    expect($rank)->not->toBeNull()
+        ->and($rank['rank'])->toBe(2)
+        ->and($rank['avg_rating'])->toBe(3.0)
+        ->and($rank['review_count'])->toBe(3);
+});
+
+test('your rated rank is null when user has fewer than 3 reviews', function () {
+    $user = User::factory()->create();
+    $puzzle = Crossword::factory()->published()->create(['user_id' => $user->id]);
+    PuzzleComment::factory()->count(2)->create(['crossword_id' => $puzzle->id, 'rating' => 5]);
+
+    $component = Livewire::actingAs($user)
+        ->test('pages::leaderboard', ['tab' => 'rated']);
+
+    expect($component->get('yourRatedRank'))->toBeNull();
+});
+
+test('your rated rank is null when user has no published puzzles', function () {
+    $user = User::factory()->create();
+
+    $component = Livewire::actingAs($user)
+        ->test('pages::leaderboard', ['tab' => 'rated']);
+
+    expect($component->get('yourRatedRank'))->toBeNull();
+});
+
+test('your rank card shows build more button for rated constructors outside top 50', function () {
+    User::factory()->count(51)->create()->each(function ($u) {
+        $puzzle = Crossword::factory()->published()->create(['user_id' => $u->id]);
+        PuzzleComment::factory()->count(5)->create(['crossword_id' => $puzzle->id, 'rating' => 5]);
+    });
+
+    $user = User::factory()->create();
+    $userPuzzle = Crossword::factory()->published()->create(['user_id' => $user->id]);
+    PuzzleComment::factory()->count(3)->create(['crossword_id' => $userPuzzle->id, 'rating' => 2]);
+
+    Livewire::actingAs($user)
+        ->test('pages::leaderboard', ['tab' => 'rated'])
+        ->assertSee('Your Rank')
         ->assertSee('Build more');
 });
 
