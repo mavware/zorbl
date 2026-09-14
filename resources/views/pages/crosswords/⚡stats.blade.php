@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\PuzzleAttempt;
+use App\Services\AchievementService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Computed;
@@ -180,6 +181,95 @@ new #[Title('Solve Statistics')] class extends Component {
         ];
     }
 
+    /**
+     * @return array<int, array{type: string, label: string, description: string, icon: string, current: int, target: int, percentage: int}>
+     */
+    #[Computed]
+    public function achievementProgress(): array
+    {
+        $user = Auth::user();
+        $earnedTypes = $user->achievements()->pluck('type')->all();
+        $completedCount = $user->puzzleAttempts()->where('is_completed', true)->count();
+
+        $progress = [];
+
+        $milestones = [
+            'first_solve' => 1,
+            'puzzles_10' => 10,
+            'puzzles_50' => 50,
+            'puzzles_100' => 100,
+        ];
+
+        foreach ($milestones as $type => $threshold) {
+            if (! in_array($type, $earnedTypes, true)) {
+                $def = AchievementService::DEFINITIONS[$type];
+                $progress[] = [
+                    'type' => $type,
+                    'label' => $def['label'],
+                    'description' => $def['description'],
+                    'icon' => $def['icon'],
+                    'current' => min($completedCount, $threshold),
+                    'target' => $threshold,
+                    'percentage' => (int) round(min($completedCount / $threshold, 1) * 100),
+                    'unit' => 'puzzles',
+                ];
+                break;
+            }
+        }
+
+        $streakMilestones = [
+            'streak_7' => 7,
+            'streak_30' => 30,
+        ];
+
+        foreach ($streakMilestones as $type => $threshold) {
+            if (! in_array($type, $earnedTypes, true)) {
+                $def = AchievementService::DEFINITIONS[$type];
+                $progress[] = [
+                    'type' => $type,
+                    'label' => $def['label'],
+                    'description' => $def['description'],
+                    'icon' => $def['icon'],
+                    'current' => min($user->current_streak, $threshold),
+                    'target' => $threshold,
+                    'percentage' => (int) round(min($user->current_streak / $threshold, 1) * 100),
+                    'unit' => 'days',
+                ];
+                break;
+            }
+        }
+
+        if (! in_array('speed_demon', $earnedTypes, true)) {
+            $fastestTime = $user->puzzleAttempts()
+                ->where('is_completed', true)
+                ->whereNotNull('solve_time_seconds')
+                ->min('solve_time_seconds');
+
+            $threshold = 120;
+            $def = AchievementService::DEFINITIONS['speed_demon'];
+
+            if ($fastestTime !== null) {
+                $percentage = (int) round(min($threshold / $fastestTime, 1) * 100);
+            } else {
+                $percentage = 0;
+            }
+
+            $progress[] = [
+                'type' => 'speed_demon',
+                'label' => $def['label'],
+                'description' => $def['description'],
+                'icon' => $def['icon'],
+                'current' => $fastestTime !== null ? max($threshold - $fastestTime + $threshold, 0) : 0,
+                'target' => $threshold,
+                'percentage' => $percentage,
+                'unit' => 'speed',
+                'fastest_time' => $fastestTime,
+            ];
+        }
+
+        return $progress;
+    }
+
     public function formatTime(?int $seconds): string
     {
         if ($seconds === null) {
@@ -244,19 +334,58 @@ new #[Title('Solve Statistics')] class extends Component {
         <div class="border-line rounded-xl border p-5">
             <flux:heading size="sm" class="mb-3">{{ __('Achievements') }}</flux:heading>
             @php($achievements = Auth::user()->achievements()->orderBy('earned_at', 'desc')->get())
-            @if($achievements->isEmpty())
+            @if($achievements->isEmpty() && empty($this->achievementProgress))
                 <flux:text size="sm" class="text-zinc-500">{{ __('Complete puzzles to earn achievements!') }}</flux:text>
             @else
-                <div class="flex flex-wrap gap-2">
-                    @foreach($achievements as $achievement)
-                        <flux:tooltip :content="$achievement->description">
-                            <div class="flex items-center gap-1.5 rounded-lg bg-amber-50 px-2.5 py-1.5 dark:bg-amber-900/20">
-                                <flux:icon :name="$achievement->icon" class="size-4 text-amber-600 dark:text-amber-400" />
-                                <span class="text-xs font-medium text-amber-800 dark:text-amber-200">{{ $achievement->label }}</span>
+                @if($achievements->isNotEmpty())
+                    <div class="flex flex-wrap gap-2">
+                        @foreach($achievements as $achievement)
+                            <flux:tooltip :content="$achievement->description">
+                                <div class="flex items-center gap-1.5 rounded-lg bg-amber-50 px-2.5 py-1.5 dark:bg-amber-900/20">
+                                    <flux:icon :name="$achievement->icon" class="size-4 text-amber-600 dark:text-amber-400" />
+                                    <span class="text-xs font-medium text-amber-800 dark:text-amber-200">{{ $achievement->label }}</span>
+                                </div>
+                            </flux:tooltip>
+                        @endforeach
+                    </div>
+                @endif
+
+                @if(count($this->achievementProgress) > 0)
+                    @if($achievements->isNotEmpty())
+                        <div class="my-3 border-t border-zinc-200 dark:border-zinc-700"></div>
+                    @endif
+                    <flux:text size="sm" class="mb-2 font-medium text-zinc-600 dark:text-zinc-400">{{ __('Next Up') }}</flux:text>
+                    <div class="space-y-3">
+                        @foreach($this->achievementProgress as $item)
+                            <div>
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-1.5">
+                                        <flux:icon :name="$item['icon']" class="size-4 text-zinc-400 dark:text-zinc-500" />
+                                        <span class="text-sm font-medium text-fg">{{ $item['label'] }}</span>
+                                    </div>
+                                    <span class="text-xs text-zinc-500 dark:text-zinc-400">
+                                        @if($item['unit'] === 'speed')
+                                            @if($item['fastest_time'] !== null)
+                                                {{ __('Best: :time (need < 2:00)', ['time' => $this->formatTime($item['fastest_time'])]) }}
+                                            @else
+                                                {{ __('Solve a puzzle in under 2:00') }}
+                                            @endif
+                                        @else
+                                            {{ $item['current'] }} / {{ $item['target'] }} {{ $item['unit'] }}
+                                        @endif
+                                    </span>
+                                </div>
+                                <div class="mt-1 h-2 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
+                                    <div
+                                        class="h-full rounded-full bg-amber-500 transition-all dark:bg-amber-400"
+                                        style="width: {{ $item['percentage'] }}%"
+                                    ></div>
+                                </div>
+                                <flux:text size="sm" class="mt-0.5 text-zinc-500">{{ $item['description'] }}</flux:text>
                             </div>
-                        </flux:tooltip>
-                    @endforeach
-                </div>
+                        @endforeach
+                    </div>
+                @endif
             @endif
         </div>
     </div>
