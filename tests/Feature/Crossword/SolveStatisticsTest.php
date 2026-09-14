@@ -249,13 +249,15 @@ test('stats page shows achievements', function () {
         ->assertSee('Speed Demon');
 });
 
-test('stats page shows empty achievements message', function () {
+test('stats page shows next up progress for new users', function () {
     $user = User::factory()->create();
 
     $this->actingAs($user);
 
     Livewire::test('pages::crosswords.stats')
-        ->assertSee('Complete puzzles to earn achievements!');
+        ->assertSee('Next Up')
+        ->assertSee('First Solve')
+        ->assertSee('0 / 1 puzzles');
 });
 
 test('stats page excludes incomplete attempts from history', function () {
@@ -561,6 +563,140 @@ test('stats page resets to page 1 when sorting changes', function () {
 
     $paginated = $component->get('paginatedAttempts');
     expect($paginated->currentPage())->toBe(1);
+});
+
+test('achievement progress shows next puzzle milestone', function () {
+    $user = User::factory()->create();
+
+    Crossword::factory()->published()->count(3)->create([
+        'width' => 5,
+        'height' => 5,
+        'grid' => Crossword::emptyGrid(5, 5),
+    ])->each(function (Crossword $crossword) use ($user) {
+        PuzzleAttempt::factory()->for($user)->for($crossword)->completed()->create([
+            'solve_time_seconds' => 120,
+        ]);
+    });
+
+    Achievement::factory()->for($user)->create(['type' => 'first_solve']);
+
+    $this->actingAs($user);
+
+    $component = Livewire::test('pages::crosswords.stats');
+    $progress = $component->get('achievementProgress');
+
+    $puzzleProgress = collect($progress)->firstWhere('type', 'puzzles_10');
+    expect($puzzleProgress)->not->toBeNull();
+    expect($puzzleProgress['current'])->toBe(3);
+    expect($puzzleProgress['target'])->toBe(10);
+    expect($puzzleProgress['percentage'])->toBe(30);
+});
+
+test('achievement progress skips earned milestones', function () {
+    $user = User::factory()->create();
+
+    Crossword::factory()->published()->count(12)->create([
+        'width' => 5,
+        'height' => 5,
+        'grid' => Crossword::emptyGrid(5, 5),
+    ])->each(function (Crossword $crossword) use ($user) {
+        PuzzleAttempt::factory()->for($user)->for($crossword)->completed()->create([
+            'solve_time_seconds' => 120,
+        ]);
+    });
+
+    Achievement::factory()->for($user)->create(['type' => 'first_solve']);
+    Achievement::factory()->for($user)->create(['type' => 'puzzles_10']);
+
+    $this->actingAs($user);
+
+    $component = Livewire::test('pages::crosswords.stats');
+    $progress = $component->get('achievementProgress');
+
+    $puzzleProgress = collect($progress)->firstWhere('unit', 'puzzles');
+    expect($puzzleProgress['type'])->toBe('puzzles_50');
+    expect($puzzleProgress['current'])->toBe(12);
+    expect($puzzleProgress['target'])->toBe(50);
+});
+
+test('achievement progress shows streak progress', function () {
+    $user = User::factory()->create(['current_streak' => 4]);
+
+    $this->actingAs($user);
+
+    $component = Livewire::test('pages::crosswords.stats');
+    $progress = $component->get('achievementProgress');
+
+    $streakProgress = collect($progress)->firstWhere('unit', 'days');
+    expect($streakProgress)->not->toBeNull();
+    expect($streakProgress['type'])->toBe('streak_7');
+    expect($streakProgress['current'])->toBe(4);
+    expect($streakProgress['target'])->toBe(7);
+    expect($streakProgress['percentage'])->toBe(57);
+});
+
+test('achievement progress shows speed demon with fastest time', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->published()->create([
+        'width' => 5,
+        'height' => 5,
+        'grid' => Crossword::emptyGrid(5, 5),
+    ]);
+
+    PuzzleAttempt::factory()->for($user)->for($crossword)->completed()->create([
+        'solve_time_seconds' => 180,
+    ]);
+
+    $this->actingAs($user);
+
+    $component = Livewire::test('pages::crosswords.stats');
+    $progress = $component->get('achievementProgress');
+
+    $speedProgress = collect($progress)->firstWhere('type', 'speed_demon');
+    expect($speedProgress)->not->toBeNull();
+    expect($speedProgress['fastest_time'])->toBe(180);
+    expect($speedProgress['percentage'])->toBe(67);
+});
+
+test('achievement progress excludes speed demon when earned', function () {
+    $user = User::factory()->create();
+    Achievement::factory()->for($user)->create(['type' => 'speed_demon']);
+
+    $this->actingAs($user);
+
+    $component = Livewire::test('pages::crosswords.stats');
+    $progress = $component->get('achievementProgress');
+
+    $speedProgress = collect($progress)->firstWhere('type', 'speed_demon');
+    expect($speedProgress)->toBeNull();
+});
+
+test('achievement progress is empty when all achievements earned', function () {
+    $user = User::factory()->create();
+
+    $types = ['first_solve', 'puzzles_10', 'puzzles_50', 'puzzles_100', 'streak_7', 'streak_30', 'speed_demon', 'first_contest', 'first_meta_solve', 'contest_winner'];
+    foreach ($types as $type) {
+        Achievement::factory()->for($user)->create(['type' => $type]);
+    }
+
+    $this->actingAs($user);
+
+    $component = Livewire::test('pages::crosswords.stats');
+    $progress = $component->get('achievementProgress');
+
+    expect($progress)->toBeEmpty();
+});
+
+test('achievement progress renders in view', function () {
+    $user = User::factory()->create(['current_streak' => 3]);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::crosswords.stats')
+        ->assertSee('Next Up')
+        ->assertSee('First Solve')
+        ->assertSee('Week Warrior')
+        ->assertSee('Speed Demon');
 });
 
 test('stats page summary cards show totals across all pages', function () {
