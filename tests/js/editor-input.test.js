@@ -1,5 +1,6 @@
 import { describe, expect, it, beforeEach } from 'vitest';
 import { crosswordGrid } from '../../resources/js/crossword-grid.js';
+import { HASH_SUBSTITUTE } from '../../resources/js/grid/helpers.js';
 
 // 3x3 grid with one block at (0,2).
 function makeGrid(overrides = {}) {
@@ -28,6 +29,7 @@ function makeGrid(overrides = {}) {
     inst.$watch = () => {};
     inst.$refs = {};
     inst.$nextTick = () => {};
+    inst.$wire = { savePrefilled: () => Promise.resolve() };
     inst.debouncedRefreshWordSuggestions = () => {};
     return inst;
 }
@@ -58,11 +60,26 @@ describe('editor handleKeydown character entry', () => {
         expect(g.grid[1][0]).toBe('#');
     });
 
-    it('never types the block marker or the shortcuts key', () => {
+    it('stores a typed # as the fullwidth substitute and keeps the cell open', () => {
         keydown('#');
+        expect(g.solution[1][0]).toBe(HASH_SUBSTITUTE);
+        expect(g.grid[1][0]).toBe(3);
+        expect(g.isBlock(1, 0)).toBe(false);
+        expect(g.selectedCol).toBe(1);
+    });
+
+    it('never types the shortcuts key', () => {
         keydown('?');
         expect(g.solution[1][0]).toBe('');
         expect(g.selectedCol).toBe(0);
+    });
+
+    it('substitutes # inside a pre-fill value', () => {
+        g.rebusCells = [[1, 0]];
+        g.rebusInputValue = ' #1 ';
+        g.applyRebus();
+        expect(g.solution[1][0]).toBe(HASH_SUBSTITUTE + '1');
+        expect(g.prefilled[1][0]).toBe(HASH_SUBSTITUTE + '1');
     });
 
     it('ignores characters typed with a modifier held', () => {

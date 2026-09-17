@@ -17,6 +17,7 @@ import {
     computeActiveWordCells,
     cleanupStyleEntry,
     isTypeableCharacter,
+    normalizeTypedValue,
 } from './grid/helpers.js';
 import { numberGrid as runNumberGrid } from './grid/numbering.js';
 import { cloneForWire, createAutosave } from './grid/persistence.js';
@@ -584,7 +585,7 @@ export function crosswordGrid({
                 if (isTypeableCharacter(key) && !e.ctrlKey && !e.metaKey) {
                     e.preventDefault();
                     const current = this.solution[this.selectedRow][this.selectedCol] || '';
-                    this.solution[this.selectedRow][this.selectedCol] = current + key.toUpperCase();
+                    this.solution[this.selectedRow][this.selectedCol] = current + normalizeTypedValue(key);
                     this.markDirty();
                     return;
                 }
@@ -634,7 +635,7 @@ export function crosswordGrid({
             if (isTypeableCharacter(key) && !e.ctrlKey && !e.metaKey) {
                 e.preventDefault();
                 if (!this.isBlock(this.selectedRow, this.selectedCol)) {
-                    this.solution[this.selectedRow][this.selectedCol] = key.toUpperCase();
+                    this.solution[this.selectedRow][this.selectedCol] = normalizeTypedValue(key);
                     this.advanceCursor();
                     this.markDirty();
                     this.debouncedRefreshWordSuggestions();
@@ -982,7 +983,7 @@ export function crosswordGrid({
         },
 
         applyRebus() {
-            const value = this.rebusInputValue.toUpperCase().trim();
+            const value = normalizeTypedValue(this.rebusInputValue.trim());
             this.showRebusInput = false;
 
             if (!value) {

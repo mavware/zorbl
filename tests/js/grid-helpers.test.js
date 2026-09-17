@@ -18,6 +18,8 @@ import {
     computeActiveWordCells,
     cleanupStyleEntry,
     isTypeableCharacter,
+    normalizeTypedValue,
+    HASH_SUBSTITUTE,
 } from '../../resources/js/grid/helpers.js';
 
 // 3×3 fully-open grid, numbered as the JS numberer would produce:
@@ -267,8 +269,8 @@ describe('isTypeableCharacter', () => {
         }
     });
 
-    it('rejects the block marker and the shortcuts-overlay key', () => {
-        expect(isTypeableCharacter('#')).toBe(false);
+    it('accepts # (it is substituted on entry) but rejects the shortcuts-overlay key', () => {
+        expect(isTypeableCharacter('#')).toBe(true);
         expect(isTypeableCharacter('?')).toBe(false);
     });
 
@@ -281,5 +283,22 @@ describe('isTypeableCharacter', () => {
         expect(isTypeableCharacter(null)).toBe(false);
         expect(isTypeableCharacter(undefined)).toBe(false);
         expect(isTypeableCharacter(5)).toBe(false);
+    });
+});
+
+describe('normalizeTypedValue', () => {
+    it('uppercases letters', () => {
+        expect(normalizeTypedValue('abc')).toBe('ABC');
+    });
+
+    it('swaps every # for the fullwidth number sign so it never reads as a block', () => {
+        expect(HASH_SUBSTITUTE).toBe('\uFF03');
+        expect(normalizeTypedValue('#')).toBe(HASH_SUBSTITUTE);
+        expect(normalizeTypedValue('#1#')).toBe(HASH_SUBSTITUTE + '1' + HASH_SUBSTITUTE);
+        expect(normalizeTypedValue('#')).not.toBe('#');
+    });
+
+    it('leaves digits and other symbols untouched', () => {
+        expect(normalizeTypedValue('7&')).toBe('7&');
     });
 });

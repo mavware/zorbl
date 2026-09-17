@@ -159,10 +159,12 @@ export function cleanupStyleEntry(styles, key) {
 
 // --- Cell input ---
 
-// Characters the solver reserves for other purposes and must never land in a
-// cell via direct typing: '#' is the block marker in grid/solution data and
-// '?' opens the keyboard-shortcuts overlay.
-const RESERVED_INPUT_CHARACTERS = new Set(['#', '?']);
+// '#' is the block marker in grid/solution data, so a typed '#' can't be
+// stored as-is. It is swapped for the look-alike fullwidth number sign.
+export const HASH_SUBSTITUTE = '\uFF03';
+
+// '?' opens the solver's keyboard-shortcuts overlay, so it can't be typed.
+const RESERVED_INPUT_CHARACTERS = new Set(['?']);
 
 // True when `char` is a single printable letter, digit, or symbol that may be
 // typed into a grid cell. Whitespace, control keys ("Enter", "Tab", …) and the
@@ -171,4 +173,10 @@ export function isTypeableCharacter(char) {
     if (typeof char !== 'string' || char.length !== 1) return false;
     if (/\s/.test(char)) return false;
     return !RESERVED_INPUT_CHARACTERS.has(char);
+}
+
+// Uppercase a typed value and replace every '#' with HASH_SUBSTITUTE so it can
+// never be mistaken for a block.
+export function normalizeTypedValue(value) {
+    return value.toUpperCase().replaceAll('#', HASH_SUBSTITUTE);
 }

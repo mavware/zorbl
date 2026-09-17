@@ -16,6 +16,7 @@ import {
     getWordCells,
     computeActiveWordCells,
     isTypeableCharacter,
+    normalizeTypedValue,
 } from './grid/helpers.js';
 import { cloneForWire, createAutosave } from './grid/persistence.js';
 
@@ -437,7 +438,7 @@ export function crosswordSolver({
                     this._pushUndo();
                     const k = cellKey(this.selectedRow, this.selectedCol);
                     const current = this.progress[this.selectedRow][this.selectedCol] || '';
-                    this.progress[this.selectedRow][this.selectedCol] = current + key.toUpperCase();
+                    this.progress[this.selectedRow][this.selectedCol] = current + normalizeTypedValue(key);
                     delete this.checked[k];
                     if (this.pencilMode) this.pencilCells[k] = true;
                     else delete this.pencilCells[k];
@@ -492,7 +493,7 @@ export function crosswordSolver({
             }
             this._pushUndo();
             const k = cellKey(this.selectedRow, this.selectedCol);
-            this.progress[this.selectedRow][this.selectedCol] = char.toUpperCase();
+            this.progress[this.selectedRow][this.selectedCol] = normalizeTypedValue(char);
             delete this.checked[k];
             if (this.pencilMode) this.pencilCells[k] = true;
             else delete this.pencilCells[k];

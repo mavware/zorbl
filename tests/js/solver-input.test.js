@@ -1,5 +1,6 @@
 import { describe, expect, it, beforeEach } from 'vitest';
 import { crosswordSolver } from '../../resources/js/crossword-solver.js';
+import { HASH_SUBSTITUTE } from '../../resources/js/grid/helpers.js';
 
 // 3x3 grid, all playable. Solution is "CAT/DOG/EEL".
 function makeSolver(overrides = {}) {
@@ -77,10 +78,17 @@ describe('typeCharacter', () => {
         expect(s.progress[0][1]).toBe('!');
     });
 
-    it('ignores whitespace, the block marker, and the shortcuts key', () => {
+    it('stores a typed # as the fullwidth substitute so it is not a block', () => {
+        s.selectedRow = 0; s.selectedCol = 0;
+        s.typeCharacter('#');
+        expect(s.progress[0][0]).toBe(HASH_SUBSTITUTE);
+        expect(s.progress[0][0]).not.toBe('#');
+        expect(s.selectedCol).toBe(1);
+    });
+
+    it('ignores whitespace, named keys, and the shortcuts key', () => {
         s.selectedRow = 0; s.selectedCol = 0;
         s.typeCharacter(' ');
-        s.typeCharacter('#');
         s.typeCharacter('?');
         s.typeCharacter('Enter');
         expect(s.progress[0][0]).toBe('');
@@ -289,12 +297,21 @@ describe('handleKeydown character entry', () => {
         expect(s.progress[0][0]).toBe('');
     });
 
-    it('appends digits and symbols in rebus mode', () => {
+    it('appends digits and symbols in rebus mode, substituting #', () => {
         s.rebusMode = true;
         keydown('A');
         keydown('1');
-        keydown('+');
-        expect(s.progress[0][0]).toBe('A1+');
+        keydown('#');
+        expect(s.progress[0][0]).toBe('A1' + HASH_SUBSTITUTE);
+    });
+
+    it('solves a puzzle whose answer contains a hash typed from the keyboard', () => {
+        s.solution = [[HASH_SUBSTITUTE, '1', 'A'], ['D', 'O', 'G'], ['E', 'E', 'L']];
+        s.progress = [['', '', ''], ['D', 'O', 'G'], ['E', 'E', 'L']];
+        keydown('#');
+        keydown('1');
+        keydown('A');
+        expect(s.solved).toBe(true);
     });
 
     it('marks the puzzle solved when the solution contains digits and symbols', () => {
