@@ -418,6 +418,7 @@
                         </summary>
                         <p class="mt-3 text-sm text-zinc-500">{{ $appName }} is a place to <em>build</em> as well as solve, with puzzles from independent constructors you won&rsquo;t find on big-paper sites. Think of it as the indie venue for crossword craft.</p>
                     </details>
+                    @if (config('crosswordbuilder.features.contests'))
                     <details class="group p-6">
                         <summary class="flex cursor-pointer items-center justify-between text-base font-semibold text-zinc-100 marker:hidden list-none">
                             Can I run a contest with my puzzles?
@@ -425,6 +426,7 @@
                         </summary>
                         <p class="mt-3 text-sm text-zinc-500">Yes. Contests let you bundle puzzles, set a window, and see a live leaderboard as solvers race to the finish.</p>
                     </details>
+                    @endif
                 </div>
             </div>
         </section>

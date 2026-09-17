@@ -25,6 +25,16 @@ class ContestResource extends Resource
 
     protected static UnitEnum|string|null $navigationGroup = 'Contests';
 
+    public static function shouldRegisterNavigation(): bool
+    {
+        return (bool) config('crosswordbuilder.features.contests');
+    }
+
+    public static function canAccess(): bool
+    {
+        return config('crosswordbuilder.features.contests') && parent::canAccess();
+    }
+
     public static function form(Schema $schema): Schema
     {
         return ContestForm::configure($schema);

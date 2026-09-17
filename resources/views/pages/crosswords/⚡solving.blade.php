@@ -119,6 +119,10 @@ new #[Title('Solving')] class extends Component {
     #[Computed]
     public function activeContests()
     {
+        if (! config('crosswordbuilder.features.contests')) {
+            return collect();
+        }
+
         return Contest::active()
             ->withCount(['entries', 'crosswords'])
             ->latest('starts_at')
@@ -129,6 +133,10 @@ new #[Title('Solving')] class extends Component {
     #[Computed]
     public function upcomingContests()
     {
+        if (! config('crosswordbuilder.features.contests')) {
+            return collect();
+        }
+
         return Contest::upcoming()
             ->withCount(['entries', 'crosswords'])
             ->orderBy('starts_at')

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureFeatureEnabled;
 use App\Http\Middleware\EnsureNotAnonymous;
 use App\Http\Middleware\RedirectIfAuthenticated;
 use App\Http\Middleware\SecurityHeaders;
@@ -29,6 +30,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->redirectUsersTo(fn () => route('crosswords.index'));
         $middleware->alias([
             'not-anonymous' => EnsureNotAnonymous::class,
+            'feature' => EnsureFeatureEnabled::class,
             'guest' => RedirectIfAuthenticated::class,
         ]);
     })

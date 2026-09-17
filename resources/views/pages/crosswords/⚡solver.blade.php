@@ -631,7 +631,7 @@ new #[Title('Solve Crossword')] class extends Component {
                         <flux:icon name="bookmark" class="size-5" />
                     </button>
                 </flux:tooltip>
-                <livewire:report-button type="puzzle" :reportable-id="$crosswordId" :key="'report-puzzle-'.$crosswordId" />
+                <livewire:report-button type="puzzle" :reportable-id="$crosswordId" :icon-only="true" :key="'report-puzzle-'.$crosswordId" />
             @endif
         </div>
 

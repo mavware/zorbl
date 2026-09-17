@@ -17,6 +17,10 @@ new class extends Component {
     #[Locked]
     public int $reportableId = 0;
 
+    /** Render as a gray icon with a tooltip instead of a labelled button. */
+    #[Locked]
+    public bool $iconOnly = false;
+
     public string $reason = '';
 
     public string $details = '';
@@ -25,7 +29,7 @@ new class extends Component {
 
     public bool $submitted = false;
 
-    public function mount(string $type, int $reportableId): void
+    public function mount(string $type, int $reportableId, bool $iconOnly = false): void
     {
         if (! in_array($type, ContentReport::REPORTABLE_TYPES, true)) {
             abort(400, 'Unknown reportable type.');
@@ -33,6 +37,7 @@ new class extends Component {
 
         $this->type = $type;
         $this->reportableId = $reportableId;
+        $this->iconOnly = $iconOnly;
     }
 
     #[Computed]
@@ -117,7 +122,31 @@ new class extends Component {
 ?>
 
 <div>
-    @if ($this->alreadyReported && ! $submitted)
+    @if ($iconOnly)
+        @if ($this->alreadyReported && ! $submitted)
+            <flux:tooltip :content="__('You\'ve already reported this.')">
+                <button
+                    type="button"
+                    class="rounded-lg p-1.5 text-zinc-400 dark:text-zinc-600"
+                    aria-label="{{ __('Reported') }}"
+                    disabled
+                >
+                    <flux:icon name="flag" class="size-5" />
+                </button>
+            </flux:tooltip>
+        @else
+            <flux:tooltip :content="__('Report')">
+                <button
+                    type="button"
+                    wire:click="open"
+                    class="rounded-lg p-1.5 text-zinc-500 transition-colors hover:text-zinc-800 dark:hover:text-zinc-200"
+                    aria-label="{{ __('Report') }}"
+                >
+                    <flux:icon name="flag" class="size-5" />
+                </button>
+            </flux:tooltip>
+        @endif
+    @elseif ($this->alreadyReported && ! $submitted)
         <flux:tooltip :content="__('You\'ve already reported this.')">
             <flux:button variant="ghost" size="sm" icon="flag" disabled>
                 {{ __('Reported') }}

@@ -46,10 +46,12 @@
                                :current="request()->routeIs('constructors.*')" wire:navigate>
                 {{ __('Constructors') }}
             </flux:sidebar.item>
-{{--            <flux:sidebar.item icon="trophy" :href="route('contests.index')" :current="request()->routeIs('contests.*')"--}}
-{{--                               wire:navigate>--}}
-{{--                {{ __('Contests') }}--}}
-{{--            </flux:sidebar.item>--}}
+            @if (config('crosswordbuilder.features.contests'))
+                <flux:sidebar.item icon="trophy" :href="route('contests.index')" :current="request()->routeIs('contests.*')"
+                                   wire:navigate>
+                    {{ __('Contests') }}
+                </flux:sidebar.item>
+            @endif
         </flux:sidebar.group>
 
 

@@ -29,7 +29,9 @@ class WelcomeEmail extends Notification implements ShouldQueue
             ->line('• '.__('Browse community puzzles and try a few solves to get a feel for the editor and solver.'))
             ->line('• '.__('Build your first puzzle — the visual editor handles symmetry, numbering, and exports for you.'))
             ->action(__('Browse puzzles'), route('puzzles.index'))
-            ->line(__('Stuck on anything? The :help has guides for building, solving, contests, and more.', ['help' => '['.__('Help Center').']('.route('help.index').')']))
+            ->line(config('crosswordbuilder.features.contests')
+                ? __('Stuck on anything? The :help has guides for building, solving, contests, and more.', ['help' => '['.__('Help Center').']('.route('help.index').')'])
+                : __('Stuck on anything? The :help has guides for building, solving, and more.', ['help' => '['.__('Help Center').']('.route('help.index').')']))
             ->salutation(__('Happy puzzling,').'  '.$appName);
     }
 

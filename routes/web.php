@@ -117,9 +117,11 @@ Route::middleware(['auth', 'verified', 'not-anonymous'])->group(function () {
 
     Route::livewire('roadmap', 'pages::roadmap.index')->name('roadmap.index');
 
-    Route::livewire('contests', 'pages::contests.index')->name('contests.index');
-    Route::livewire('contests/{contest:slug}', 'pages::contests.show')->name('contests.show');
-    Route::livewire('contests/{contest:slug}/leaderboard', 'pages::contests.leaderboard')->name('contests.leaderboard');
+    Route::middleware('feature:contests')->group(function (): void {
+        Route::livewire('contests', 'pages::contests.index')->name('contests.index');
+        Route::livewire('contests/{contest:slug}', 'pages::contests.show')->name('contests.show');
+        Route::livewire('contests/{contest:slug}/leaderboard', 'pages::contests.leaderboard')->name('contests.leaderboard');
+    });
 
     Route::livewire('support', 'pages::support.index')->name('support.index');
     Route::livewire('support/create', 'pages::support.create')->name('support.create');

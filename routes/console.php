@@ -9,6 +9,6 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('simulate:activity')->everyTenMinutes();
-Schedule::command('contests:publish-scheduled')->everyMinute();
-Schedule::command('contests:process-ended')->everyMinute();
+Schedule::command('contests:publish-scheduled')->everyMinute()->when(fn (): bool => (bool) config('crosswordbuilder.features.contests'));
+Schedule::command('contests:process-ended')->everyMinute()->when(fn (): bool => (bool) config('crosswordbuilder.features.contests'));
 Schedule::command('constructors:send-weekly-digest')->weeklyOn(1, '9:00');

@@ -172,3 +172,33 @@ test('updating a pending report stamps reviewer and time', function () {
         ->and($report->reviewed_at)->not->toBeNull()
         ->and($report->resolution_note)->toBe('Not a violation.');
 });
+
+test('icon-only report button renders a gray flag with a tooltip instead of a label', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->published()->create();
+
+    Livewire::actingAs($user)
+        ->test('report-button', ['type' => 'puzzle', 'reportableId' => $crossword->id, 'iconOnly' => true])
+        ->assertSeeHtml('aria-label="Report"')
+        ->assertSeeHtml('text-zinc-500');
+});
+
+test('icon-only report button still opens the report modal', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->published()->create();
+
+    Livewire::actingAs($user)
+        ->test('report-button', ['type' => 'puzzle', 'reportableId' => $crossword->id, 'iconOnly' => true])
+        ->call('open')
+        ->assertSet('showModal', true);
+});
+
+test('labelled report button is unchanged by default', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->published()->create();
+
+    Livewire::actingAs($user)
+        ->test('report-button', ['type' => 'puzzle', 'reportableId' => $crossword->id])
+        ->assertDontSeeHtml('aria-label="Report"')
+        ->assertSee('Report');
+});

@@ -25,4 +25,19 @@ return [
     */
 
     'max_guesses' => (int) env('CROSSWORDBUILDER_MAX_GUESSES', 6),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Feature Flags
+    |--------------------------------------------------------------------------
+    |
+    | Toggles for whole features. A disabled feature keeps its code and data
+    | but is hidden from users and admins: routes 404, the admin resource is
+    | unreachable, and scheduled jobs are skipped.
+    |
+    */
+
+    'features' => [
+        'contests' => (bool) env('CROSSWORDBUILDER_CONTESTS_ENABLED', false),
+    ],
 ];

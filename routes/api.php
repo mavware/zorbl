@@ -39,9 +39,11 @@ Route::get('/crosswords/{crossword}/comments', [PuzzleCommentController::class, 
 Route::get('/constructors/{user}', [ConstructorController::class, 'show']);
 Route::get('/constructors/{user}/crosswords', [ConstructorController::class, 'crosswords']);
 
-Route::get('/contests', [ContestController::class, 'index']);
-Route::get('/contests/{contest:slug}', [ContestController::class, 'show']);
-Route::get('/contests/{contest:slug}/leaderboard', [ContestController::class, 'leaderboard']);
+Route::middleware('feature:contests')->group(function (): void {
+    Route::get('/contests', [ContestController::class, 'index']);
+    Route::get('/contests/{contest:slug}', [ContestController::class, 'show']);
+    Route::get('/contests/{contest:slug}/leaderboard', [ContestController::class, 'leaderboard']);
+});
 
 Route::get('/clues', [ClueEntryController::class, 'index']);
 
@@ -70,9 +72,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/comments/{comment}', [PuzzleCommentController::class, 'destroy']);
 
     // Contests
-    Route::post('/contests/{contest:slug}/register', [ContestEntryController::class, 'store']);
-    Route::get('/contests/{contest:slug}/entry', [ContestEntryController::class, 'show']);
-    Route::post('/contests/{contest:slug}/meta', [ContestEntryController::class, 'submitMeta']);
+    Route::middleware('feature:contests')->group(function (): void {
+        Route::post('/contests/{contest:slug}/register', [ContestEntryController::class, 'store']);
+        Route::get('/contests/{contest:slug}/entry', [ContestEntryController::class, 'show']);
+        Route::post('/contests/{contest:slug}/meta', [ContestEntryController::class, 'submitMeta']);
+    });
 
     // Notifications
     Route::get('/notifications', [NotificationController::class, 'index']);
