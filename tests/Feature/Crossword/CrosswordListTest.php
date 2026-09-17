@@ -133,7 +133,7 @@ test('users cannot duplicate other users unpublished puzzles', function () {
     expect($user->crosswords()->count())->toBe(0);
 });
 
-test('duplicate respects puzzle limit for free users', function () {
+test('duplicate is not capped for free users', function () {
     $user = User::factory()->create();
     Crossword::factory()->for($user)->count(25)->create();
 
@@ -142,10 +142,9 @@ test('duplicate respects puzzle limit for free users', function () {
     $this->actingAs($user);
 
     Livewire\Livewire::test('pages::crosswords.index')
-        ->call('duplicatePuzzle', $crossword->id)
-        ->assertNoRedirect();
+        ->call('duplicatePuzzle', $crossword->id);
 
-    expect($user->crosswords()->count())->toBe(25);
+    expect($user->crosswords()->count())->toBe(26);
 });
 
 test('build page shows published puzzle count', function () {

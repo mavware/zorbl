@@ -116,12 +116,11 @@ test('builder is not at the limit for a fresh visitor', function () {
         ->assertDontSee('Create a free account to build more puzzles.');
 });
 
-test('create is blocked when free user is at puzzle limit', function () {
+test('free user is never at the puzzle limit', function () {
     $user = User::factory()->create();
-    Crossword::factory()->for($user)->count($user->planLimits()->maxPuzzles())->create();
+    Crossword::factory()->for($user)->count(30)->create();
 
     Livewire::actingAs($user)
         ->test('welcome-builder')
-        ->call('createPuzzle')
-        ->assertHasErrors('newWidth');
+        ->assertSet('atPuzzleLimit', false);
 });

@@ -1053,24 +1053,9 @@ class extends Component {
                 </flux:button>
                 <flux:menu>
                     <flux:menu.item wire:click="attemptExport('ipuz')">{{ __('.ipuz') }}</flux:menu.item>
-                    <flux:menu.item wire:click="attemptExport('puz')" :class="! Auth::user()->planLimits()->canExportPuz() ? 'opacity-60' : ''">
-                        {{ __('.puz (Across Lite)') }}
-                        @unless (Auth::user()->planLimits()->canExportPuz())
-                            <flux:badge color="purple" size="sm">{{ __('Pro') }}</flux:badge>
-                        @endunless
-                    </flux:menu.item>
-                    <flux:menu.item wire:click="attemptExport('jpz')" :class="! Auth::user()->planLimits()->canExportJpz() ? 'opacity-60' : ''">
-                        {{ __('.jpz (Crossword Compiler)') }}
-                        @unless (Auth::user()->planLimits()->canExportJpz())
-                            <flux:badge color="purple" size="sm">{{ __('Pro') }}</flux:badge>
-                        @endunless
-                    </flux:menu.item>
-                    <flux:menu.item wire:click="attemptExport('pdf')" :class="! Auth::user()->planLimits()->canExportPdf() ? 'opacity-60' : ''">
-                        {{ __('.pdf (Print-Ready)') }}
-                        @unless (Auth::user()->planLimits()->canExportPdf())
-                            <flux:badge color="purple" size="sm">{{ __('Pro') }}</flux:badge>
-                        @endunless
-                    </flux:menu.item>
+                    <flux:menu.item wire:click="attemptExport('puz')">{{ __('.puz (Across Lite)') }}</flux:menu.item>
+                    <flux:menu.item wire:click="attemptExport('jpz')">{{ __('.jpz (Crossword Compiler)') }}</flux:menu.item>
+                    <flux:menu.item wire:click="attemptExport('pdf')">{{ __('.pdf (Print-Ready)') }}</flux:menu.item>
                 </flux:menu>
             </flux:dropdown>
 
@@ -1224,18 +1209,6 @@ class extends Component {
                         <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clip-rule="evenodd" />
                     </svg>
                     {{ __('50 AI Clue Generations per month') }}
-                </li>
-                <li class="flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="size-4 shrink-0 text-purple-500" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clip-rule="evenodd" />
-                    </svg>
-                    {{ __('Export to .puz, .jpz, and PDF') }}
-                </li>
-                <li class="flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="size-4 shrink-0 text-purple-500" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clip-rule="evenodd" />
-                    </svg>
-                    {{ __('Unlimited puzzles') }}
                 </li>
             </ul>
 

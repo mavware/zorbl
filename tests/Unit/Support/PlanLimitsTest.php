@@ -3,16 +3,16 @@
 use App\Support\PlanLimits;
 
 describe('Free tier', function () {
-    it('limits puzzles to 25', function () {
+    it('allows unlimited puzzles', function () {
         $limits = new PlanLimits(isPro: false);
 
-        expect($limits->maxPuzzles())->toBe(25);
+        expect($limits->maxPuzzles())->toBe(PHP_INT_MAX);
     });
 
-    it('gives grandfathered users the same 25 puzzles as free', function () {
+    it('gives grandfathered users unlimited puzzles', function () {
         $limits = new PlanLimits(isPro: false, isGrandfathered: true);
 
-        expect($limits->maxPuzzles())->toBe(25);
+        expect($limits->maxPuzzles())->toBe(PHP_INT_MAX);
     });
 
     it('blocks AI features', function () {
@@ -22,18 +22,18 @@ describe('Free tier', function () {
             ->and($limits->monthlyAiClues())->toBe(0);
     });
 
-    it('limits favorite lists to 3', function () {
+    it('allows unlimited favorite lists', function () {
         $limits = new PlanLimits(isPro: false);
 
-        expect($limits->maxFavoriteLists())->toBe(3);
+        expect($limits->maxFavoriteLists())->toBe(PHP_INT_MAX);
     });
 
-    it('blocks premium export formats', function () {
+    it('allows all export formats', function () {
         $limits = new PlanLimits(isPro: false);
 
-        expect($limits->canExportPuz())->toBeFalse()
-            ->and($limits->canExportJpz())->toBeFalse()
-            ->and($limits->canExportPdf())->toBeFalse();
+        expect($limits->canExportPuz())->toBeTrue()
+            ->and($limits->canExportJpz())->toBeTrue()
+            ->and($limits->canExportPdf())->toBeTrue();
     });
 
     it('has 60 req/min API rate limit', function () {

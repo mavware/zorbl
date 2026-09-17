@@ -103,7 +103,7 @@ new #[Title('Billing')] class extends Component {
                             @elseif ($this->isPro)
                                 {{ __('You have full access to all Pro features.') }}
                             @else
-                                {{ __('Upgrade to Pro for AI tools, unlimited puzzles, and more.') }}
+                                {{ __('Upgrade to Pro for AI autofill and clue generation.') }}
                             @endif
                         </flux:subheading>
                     </div>
@@ -118,7 +118,7 @@ new #[Title('Billing')] class extends Component {
             @if (request()->query('checkout') === 'success')
                 <flux:callout variant="success" icon="check-circle">
                     <flux:callout.heading>{{ __('Welcome to Pro!') }}</flux:callout.heading>
-                    <flux:callout.text>{{ __('Your subscription is active. Enjoy AI autofill, unlimited puzzles, and all export formats.') }}</flux:callout.text>
+                    <flux:callout.text>{{ __('Your subscription is active. Enjoy AI autofill and AI clue generation.') }}</flux:callout.text>
                 </flux:callout>
             @endif
 
@@ -163,23 +163,11 @@ new #[Title('Billing')] class extends Component {
                     <div class="mb-4 space-y-2 text-sm">
                         <div class="flex items-center gap-2">
                             <flux:icon.check-circle class="size-5 text-green-500" />
-                            <span>{{ __('Unlimited puzzle creation') }}</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <flux:icon.check-circle class="size-5 text-green-500" />
                             <span>{{ __('AI Autofill — 50 uses/month') }}</span>
                         </div>
                         <div class="flex items-center gap-2">
                             <flux:icon.check-circle class="size-5 text-green-500" />
                             <span>{{ __('AI Clue Generation — 50 uses/month') }}</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <flux:icon.check-circle class="size-5 text-green-500" />
-                            <span>{{ __('All export formats (.puz, .jpz, .pdf)') }}</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <flux:icon.check-circle class="size-5 text-green-500" />
-                            <span>{{ __('Unlimited favorite lists') }}</span>
                         </div>
                     </div>
 

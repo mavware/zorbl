@@ -64,38 +64,15 @@ test('pro user has AI fill allowance', function () {
         ->and($user->planLimits()->monthlyAiFills())->toBe(50);
 });
 
-test('free user attempting pro export shows upgrade modal', function () {
+test('free user can export puz, jpz, and pdf without upgrade prompt', function (string $format) {
     $user = User::factory()->create();
     $crossword = makeCrosswordForUser($user);
 
     Livewire::actingAs($user)
         ->test('pages::crosswords.editor', ['crossword' => $crossword])
-        ->call('attemptExport', 'puz')
-        ->assertSet('showUpgradeModal', true)
-        ->assertSet('upgradeFeature', 'export');
-});
-
-test('free user attempting jpz export shows upgrade modal', function () {
-    $user = User::factory()->create();
-    $crossword = makeCrosswordForUser($user);
-
-    Livewire::actingAs($user)
-        ->test('pages::crosswords.editor', ['crossword' => $crossword])
-        ->call('attemptExport', 'jpz')
-        ->assertSet('showUpgradeModal', true)
-        ->assertSet('upgradeFeature', 'export');
-});
-
-test('free user attempting pdf export shows upgrade modal', function () {
-    $user = User::factory()->create();
-    $crossword = makeCrosswordForUser($user);
-
-    Livewire::actingAs($user)
-        ->test('pages::crosswords.editor', ['crossword' => $crossword])
-        ->call('attemptExport', 'pdf')
-        ->assertSet('showUpgradeModal', true)
-        ->assertSet('upgradeFeature', 'export');
-});
+        ->call('attemptExport', $format)
+        ->assertSet('showUpgradeModal', false);
+})->with(['puz', 'jpz', 'pdf']);
 
 test('free user can still export ipuz without upgrade prompt', function () {
     $user = User::factory()->create();

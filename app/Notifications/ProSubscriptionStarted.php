@@ -25,7 +25,7 @@ class ProSubscriptionStarted extends Notification implements ShouldQueue
         return (new MailMessage)
             ->subject(__('Welcome to :app Pro', ['app' => config('app.name')]))
             ->greeting(__('Welcome to Pro, :name!', ['name' => $notifiable->name]))
-            ->line(__('Your subscription is active. You now have access to AI autofill, AI clue generation, unlimited puzzles, and all export formats.'))
+            ->line(__('Your subscription is active. You now have access to AI autofill and AI clue generation.'))
             ->action(__('Start creating'), route('crosswords.index'))
             ->line(__('Thanks for supporting :app.', ['app' => config('app.name')]));
     }

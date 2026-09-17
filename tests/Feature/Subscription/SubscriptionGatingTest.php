@@ -47,7 +47,7 @@ describe('puzzle creation limits', function () {
             ->assertRedirect();
     });
 
-    it('blocks free users from creating a 26th puzzle', function () {
+    it('allows free users to create a 26th puzzle', function () {
         $user = User::factory()->create();
 
         Crossword::factory()->for($user)->count(25)->create();
@@ -58,21 +58,16 @@ describe('puzzle creation limits', function () {
             ->set('newHeight', 5)
             ->call('createPuzzle')
             ->assertHasNoErrors()
-            ->assertNoRedirect()
-            ->assertSet('newPuzzleLimitMessage', 'Free accounts can create up to 25 puzzles. Upgrade to Pro for unlimited.');
+            ->assertSet('newPuzzleLimitMessage', '')
+            ->assertRedirect();
     });
 
     it('clears the puzzle limit message when the new puzzle modal is toggled', function () {
         $user = User::factory()->create();
 
-        Crossword::factory()->for($user)->count(25)->create();
-
         Livewire::actingAs($user)
             ->test('pages::crosswords.index')
-            ->set('newWidth', 5)
-            ->set('newHeight', 5)
-            ->call('createPuzzle')
-            ->assertSet('newPuzzleLimitMessage', 'Free accounts can create up to 25 puzzles. Upgrade to Pro for unlimited.')
+            ->set('newPuzzleLimitMessage', 'You have reached your puzzle limit.')
             ->set('showNewModal', true)
             ->assertSet('newPuzzleLimitMessage', '');
     });
@@ -141,34 +136,34 @@ describe('export gating', function () {
             ->assertNoRedirect();
     });
 
-    it('blocks free users from exporting puz', function () {
+    it('allows free users to export puz', function () {
         $user = User::factory()->create();
         $crossword = makeTestCrossword($user);
 
         Livewire::actingAs($user)
             ->test('pages::crosswords.editor', ['crossword' => $crossword])
             ->call('exportPuz')
-            ->assertForbidden();
+            ->assertOk();
     });
 
-    it('blocks free users from exporting jpz', function () {
+    it('allows free users to export jpz', function () {
         $user = User::factory()->create();
         $crossword = makeTestCrossword($user);
 
         Livewire::actingAs($user)
             ->test('pages::crosswords.editor', ['crossword' => $crossword])
             ->call('exportJpz')
-            ->assertForbidden();
+            ->assertOk();
     });
 
-    it('blocks free users from exporting pdf', function () {
+    it('allows free users to export pdf', function () {
         $user = User::factory()->create();
         $crossword = makeTestCrossword($user);
 
         Livewire::actingAs($user)
             ->test('pages::crosswords.editor', ['crossword' => $crossword])
             ->call('exportPdf')
-            ->assertForbidden();
+            ->assertOk();
     });
 
     it('allows pro users to export puz', function () {
@@ -198,7 +193,7 @@ describe('favorite list limits', function () {
             ->assertHasNoErrors();
     });
 
-    it('blocks free users from creating a 4th list', function () {
+    it('allows free users to create a 4th list', function () {
         $user = User::factory()->create();
 
         $user->favoriteLists()->createMany([
@@ -211,7 +206,7 @@ describe('favorite list limits', function () {
             ->test('pages::favorites.index')
             ->set('newListName', 'List 4')
             ->call('createList')
-            ->assertHasErrors('newListName');
+            ->assertHasNoErrors();
     });
 
     it('allows pro users to create unlimited lists', function () {

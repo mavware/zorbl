@@ -16,11 +16,7 @@ class PlanLimits
             return config('crosswordbuilder.guest_solve_limit');
         }
 
-        if ($this->isPro) {
-            return PHP_INT_MAX;
-        }
-
-        return 25;
+        return PHP_INT_MAX;
     }
 
     public function monthlyAiFills(): int
@@ -47,22 +43,22 @@ class PlanLimits
             return 0;
         }
 
-        return $this->isPro ? PHP_INT_MAX : 3;
+        return PHP_INT_MAX;
     }
 
     public function canExportPuz(): bool
     {
-        return ! $this->isAnonymous && $this->isPro;
+        return ! $this->isAnonymous;
     }
 
     public function canExportJpz(): bool
     {
-        return ! $this->isAnonymous && $this->isPro;
+        return ! $this->isAnonymous;
     }
 
     public function canExportPdf(): bool
     {
-        return ! $this->isAnonymous && $this->isPro;
+        return ! $this->isAnonymous;
     }
 
     public function apiRateLimit(): int
