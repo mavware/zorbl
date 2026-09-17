@@ -3,6 +3,7 @@
 use App\Filament\Resources\SupportTickets\Pages\EditSupportTicket;
 use App\Filament\Resources\SupportTickets\Pages\ListSupportTickets;
 use App\Filament\Resources\SupportTickets\RelationManagers\ResponsesRelationManager;
+use App\Filament\Resources\SupportTickets\SupportTicketResource;
 use App\Models\SupportTicket;
 use App\Models\TicketResponse;
 use App\Models\User;
@@ -257,4 +258,30 @@ test('admin can edit their own response but not the submitter response', functio
         ->assertHasNoFormErrors();
 
     expect($ownReply->fresh()->body)->toBe('Corrected wording');
+});
+
+test('sidebar badge counts every ticket that is not closed', function () {
+    SupportTicket::factory()->open()->create();
+    SupportTicket::factory()->inProgress()->create();
+    SupportTicket::factory()->resolved()->create();
+    SupportTicket::factory()->closed()->count(2)->create();
+
+    expect(SupportTicketResource::getNavigationBadge())->toBe('3')
+        ->and(SupportTicketResource::getNavigationBadgeColor())->toBe('warning');
+});
+
+test('sidebar badge is hidden when every ticket is closed', function () {
+    SupportTicket::factory()->closed()->count(2)->create();
+
+    expect(SupportTicketResource::getNavigationBadge())->toBeNull();
+});
+
+test('sidebar badge is rendered in the admin navigation', function () {
+    $admin = makeSupportAdmin();
+    SupportTicket::factory()->open()->create();
+
+    $this->actingAs($admin)
+        ->get('/admin/support-tickets')
+        ->assertOk()
+        ->assertSee('Tickets not yet closed');
 });

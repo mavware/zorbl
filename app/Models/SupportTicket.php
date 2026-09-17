@@ -6,6 +6,7 @@ use Carbon\CarbonImmutable;
 use Database\Factories\SupportTicketFactory;
 use Eloquent;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -49,6 +50,17 @@ class SupportTicket extends Model
         return [
             'closed_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Scope to tickets that still need attention (anything not closed).
+     *
+     * @param  Builder<static>  $query
+     * @return Builder<static>
+     */
+    public function scopeUnclosed(Builder $query): Builder
+    {
+        return $query->where('status', '!=', 'closed');
     }
 
     /**
