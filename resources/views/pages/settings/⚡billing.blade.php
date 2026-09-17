@@ -181,10 +181,6 @@ new #[Title('Billing')] class extends Component {
                             <flux:icon.check-circle class="size-5 text-green-500" />
                             <span>{{ __('Unlimited favorite lists') }}</span>
                         </div>
-                        <div class="flex items-center gap-2">
-                            <flux:icon.check-circle class="size-5 text-green-500" />
-                            <span>{{ __('Constructor analytics') }}</span>
-                        </div>
                     </div>
 
                     <div class="mb-4 flex items-center gap-3">

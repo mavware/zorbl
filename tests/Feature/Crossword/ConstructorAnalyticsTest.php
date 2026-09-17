@@ -99,18 +99,8 @@ test('analytics link appears on my puzzles page', function () {
         ->assertSee('Analytics');
 });
 
-test('non-pro users see upgrade prompt', function () {
-    $user = User::factory()->create();
-
-    Livewire::actingAs($user)
-        ->test('constructor-analytics')
-        ->assertSee('Upgrade to Pro')
-        ->assertSee('Get detailed analytics')
-        ->assertDontSee('Puzzle Performance');
-});
-
-test('pro users see full analytics dashboard', function () {
-    $constructor = makeAnalyticsProUser();
+test('free users see full analytics dashboard', function () {
+    $constructor = User::factory()->create();
     Crossword::factory()->published()->for($constructor)->create([
         'width' => 2,
         'height' => 2,

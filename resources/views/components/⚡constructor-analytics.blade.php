@@ -278,38 +278,6 @@ new class extends Component {
 <div class="space-y-6">
     <flux:heading size="lg">{{ __('Constructor Analytics') }}</flux:heading>
 
-    @unless (Auth::user()->isPro())
-        <div class="relative">
-            {{-- Blurred preview --}}
-            <div class="pointer-events-none select-none blur-sm">
-                <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-                    @for ($i = 0; $i < 5; $i++)
-                        <div class="border-line rounded-xl border p-5">
-                            <div class="flex items-center gap-3">
-                                <div class="size-10 rounded-lg bg-page"></div>
-                                <div>
-                                    <div class="h-3 w-16 rounded bg-zinc-200 dark:bg-zinc-700"></div>
-                                    <div class="mt-1 h-6 w-10 rounded bg-zinc-200 dark:bg-zinc-700"></div>
-                                </div>
-                            </div>
-                        </div>
-                    @endfor
-                </div>
-            </div>
-
-            {{-- Overlay CTA --}}
-            <div class="absolute inset-0 flex items-center justify-center">
-                <div class="bg-surface border-line rounded-xl border /90 p-8 text-center shadow-lg /90">
-                    <flux:icon name="chart-bar" class="mx-auto mb-3 size-8 text-purple-500" />
-                    <flux:heading size="lg">{{ __('Upgrade to Pro') }}</flux:heading>
-                    <flux:subheading class="mb-4">{{ __('Get detailed analytics on how solvers interact with your puzzles.') }}</flux:subheading>
-                    <flux:button :href="route('billing.index')" wire:navigate variant="primary">
-                        {{ __('Upgrade Now') }}
-                    </flux:button>
-                </div>
-            </div>
-        </div>
-    @else
     {{-- Overview Cards --}}
     <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <div class="border-line rounded-xl border p-5">
@@ -603,5 +571,4 @@ new class extends Component {
             </div>
         </div>
     @endif
-    @endunless
 </div>

@@ -139,13 +139,12 @@ class HelpArticleSeeder extends Seeder
                 'category' => 'account-billing',
                 'slug' => 'free-vs-pro',
                 'title' => 'What does the Pro plan add?',
-                'summary' => 'AI-assisted grid filling and clue generation, plus advanced constructor analytics.',
+                'summary' => 'AI-assisted grid filling and clue generation.',
                 'body' => <<<'MD'
                 Building, publishing, and solving puzzles is free forever. The optional Pro plan adds tools for constructors who want a faster workflow:
 
                 - **AI autofill** — backtracking solver plus Claude-powered thematic fills.
                 - **AI clue generation** — single-click clue suggestions.
-                - **Constructor analytics** — solve-time distributions, completion rates, ratings over time.
 
                 You can cancel at any time from billing settings. The plan stays active through the end of the period you've paid for.
                 MD,
