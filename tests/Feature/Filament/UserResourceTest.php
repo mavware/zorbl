@@ -55,6 +55,15 @@ test('admin can view user list', function () {
         ->assertCanSeeTableRecords($users);
 });
 
+test('user list shows the most recently created users first', function () {
+    $oldest = User::factory()->create(['created_at' => now()->subDays(3)]);
+    $middle = User::factory()->create(['created_at' => now()->subDays(2)]);
+    $newest = User::factory()->create(['created_at' => now()->subDay()]);
+
+    Livewire::test(ListUsers::class)
+        ->assertCanSeeTableRecords([$this->admin, $newest, $middle, $oldest], inOrder: true);
+});
+
 test('admin can search users by name', function () {
     $target = User::factory()->create(['name' => 'Unique SearchableName']);
     User::factory()->create(['name' => 'Other Person']);

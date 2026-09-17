@@ -21,6 +21,7 @@ class UsersTable
     {
         return $table
             ->modifyQueryUsing(fn ($query) => $query->with(['roles', 'subscriptions']))
+            ->defaultSort('created_at', 'desc')
             ->columns([
                 TextColumn::make('name')
                     ->searchable(),
