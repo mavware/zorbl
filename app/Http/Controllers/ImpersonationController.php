@@ -15,7 +15,7 @@ class ImpersonationController extends Controller
     {
         $this->beginImpersonating($request->user(), $user);
 
-        return redirect('/');
+        return redirect()->route('crosswords.index');
     }
 
     /**
@@ -33,6 +33,7 @@ class ImpersonationController extends Controller
 
         Auth::loginUsingId($target->id);
         session()->put(self::SESSION_KEY, $actor->id);
+        $this->forgetSessionPasswordHash();
     }
 
     public function stop(Request $request): RedirectResponse
@@ -42,7 +43,20 @@ class ImpersonationController extends Controller
         abort_unless($originalId, 404, 'Not impersonating.');
 
         Auth::loginUsingId($originalId);
+        $this->forgetSessionPasswordHash();
 
         return redirect('/admin/users');
+    }
+
+    /**
+     * The admin panel runs Laravel's AuthenticateSession middleware, which
+     * remembers the password hash of whoever was signed in and logs the
+     * session out if a later request is made by a user with a different hash.
+     * Switching users invalidates that memory, so clear it and let the
+     * middleware record the new user on their next panel request.
+     */
+    private function forgetSessionPasswordHash(): void
+    {
+        session()->forget('password_hash_'.Auth::getDefaultDriver());
     }
 }

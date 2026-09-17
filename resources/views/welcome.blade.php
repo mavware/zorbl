@@ -120,6 +120,7 @@
         @fluxAppearance
     </head>
     <body class="bg-zinc-950 text-zinc-100 antialiased">
+        @include('partials.impersonation-banner')
         {{-- Navigation --}}
         <nav class="fixed top-0 inset-x-0 z-50 border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-lg">
             <div class="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">

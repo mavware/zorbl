@@ -88,8 +88,50 @@ test('the route-based start flow works for a regular target', function () {
 
     $this->actingAs($this->admin)
         ->post(route('impersonate.start', $target))
-        ->assertRedirect('/');
+        ->assertRedirect(route('crosswords.index'));
 
     expect(auth()->id())->toBe($target->id)
         ->and(session(ImpersonationController::SESSION_KEY))->toBe($this->admin->id);
+});
+
+test('starting impersonation lands on the app home where the banner is visible', function () {
+    $target = User::factory()->create(['name' => 'Target Person']);
+
+    $this->actingAs($this->admin)
+        ->post(route('impersonate.start', $target));
+
+    $this->get(route('crosswords.index'))
+        ->assertOk()
+        ->assertSee('Impersonating')
+        ->assertSee('Target Person')
+        ->assertSee('Leave impersonation');
+});
+
+test('the marketing home page shows the impersonation banner too', function () {
+    $target = User::factory()->create(['name' => 'Target Person']);
+
+    $this->withSession([ImpersonationController::SESSION_KEY => $this->admin->id])
+        ->actingAs($target)
+        ->get('/')
+        ->assertOk()
+        ->assertSee('Impersonating')
+        ->assertSee('Leave impersonation');
+});
+
+test('switching users clears the panel session password hash so the admin panel does not log the session out', function () {
+    $target = User::factory()->create();
+
+    $this->actingAs($this->admin)
+        ->withSession(['password_hash_web' => 'hash-recorded-for-the-admin'])
+        ->post(route('impersonate.start', $target));
+
+    expect(session()->has('password_hash_web'))->toBeFalse();
+
+    session()->put('password_hash_web', 'hash-recorded-for-the-target');
+
+    $this->post(route('impersonate.stop'))
+        ->assertRedirect('/admin/users');
+
+    expect(auth()->id())->toBe($this->admin->id)
+        ->and(session()->has('password_hash_web'))->toBeFalse();
 });

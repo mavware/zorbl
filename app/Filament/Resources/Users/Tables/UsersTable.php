@@ -124,7 +124,7 @@ class UsersTable
                     ->action(function (User $record) {
                         app(ImpersonationController::class)->beginImpersonating(Auth::user(), $record);
 
-                        return redirect('/');
+                        return redirect()->route('crosswords.index');
                     }),
             ])
             ->toolbarActions([
