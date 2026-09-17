@@ -16,6 +16,7 @@ import {
     getWordCells,
     computeActiveWordCells,
     cleanupStyleEntry,
+    isTypeableCharacter,
 } from './grid/helpers.js';
 import { numberGrid as runNumberGrid } from './grid/numbering.js';
 import { cloneForWire, createAutosave } from './grid/persistence.js';
@@ -580,7 +581,7 @@ export function crosswordGrid({
                     this.markDirty();
                     return;
                 }
-                if (/^[a-zA-Z0-9]$/.test(key)) {
+                if (isTypeableCharacter(key) && !e.ctrlKey && !e.metaKey) {
                     e.preventDefault();
                     const current = this.solution[this.selectedRow][this.selectedCol] || '';
                     this.solution[this.selectedRow][this.selectedCol] = current + key.toUpperCase();
@@ -630,7 +631,7 @@ export function crosswordGrid({
                 return;
             }
 
-            if (/^[a-zA-Z]$/.test(key)) {
+            if (isTypeableCharacter(key) && !e.ctrlKey && !e.metaKey) {
                 e.preventDefault();
                 if (!this.isBlock(this.selectedRow, this.selectedCol)) {
                     this.solution[this.selectedRow][this.selectedCol] = key.toUpperCase();

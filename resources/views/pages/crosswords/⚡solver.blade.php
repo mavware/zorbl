@@ -1430,7 +1430,7 @@ new #[Title('Solve Crossword')] class extends Component {
                 {{-- Input --}}
                 <h3 class="mb-2 text-xs font-semibold tracking-wider text-zinc-500 uppercase">{{ __('Input') }}</h3>
                 <div class="mb-4 space-y-1.5">
-                    <x-solver-shortcut keys="A – Z" :description="__('Type a letter')" />
+                    <x-solver-shortcut keys="A – Z, 0 – 9" :description="__('Type a letter, number, or symbol')" />
                     <x-solver-shortcut keys="Backspace" :description="__('Delete letter and move back')" />
                     <x-solver-shortcut keys="Delete" :description="__('Clear current cell')" />
                     <x-solver-shortcut keys="P" :description="__('Toggle pencil mode')" />

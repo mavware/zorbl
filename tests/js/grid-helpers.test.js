@@ -17,6 +17,7 @@ import {
     getWordCells,
     computeActiveWordCells,
     cleanupStyleEntry,
+    isTypeableCharacter,
 } from '../../resources/js/grid/helpers.js';
 
 // 3×3 fully-open grid, numbered as the JS numberer would produce:
@@ -251,5 +252,34 @@ describe('cleanupStyleEntry', () => {
         const styles = {};
         cleanupStyleEntry(styles, '5,5');
         expect(styles).toEqual({});
+    });
+});
+
+describe('isTypeableCharacter', () => {
+    it('accepts letters in either case', () => {
+        expect(isTypeableCharacter('a')).toBe(true);
+        expect(isTypeableCharacter('Z')).toBe(true);
+    });
+
+    it('accepts digits and symbols', () => {
+        for (const ch of ['0', '7', '!', '@', '$', '%', '&', '*', '-', '+', '/', '.', ',', "'", '"', '(', ')']) {
+            expect(isTypeableCharacter(ch), ch).toBe(true);
+        }
+    });
+
+    it('rejects the block marker and the shortcuts-overlay key', () => {
+        expect(isTypeableCharacter('#')).toBe(false);
+        expect(isTypeableCharacter('?')).toBe(false);
+    });
+
+    it('rejects whitespace, named keys, and non-strings', () => {
+        expect(isTypeableCharacter(' ')).toBe(false);
+        expect(isTypeableCharacter('\t')).toBe(false);
+        expect(isTypeableCharacter('Enter')).toBe(false);
+        expect(isTypeableCharacter('Tab')).toBe(false);
+        expect(isTypeableCharacter('')).toBe(false);
+        expect(isTypeableCharacter(null)).toBe(false);
+        expect(isTypeableCharacter(undefined)).toBe(false);
+        expect(isTypeableCharacter(5)).toBe(false);
     });
 });

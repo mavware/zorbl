@@ -68,11 +68,23 @@ describe('typeCharacter', () => {
         expect(s.selectedCol).toBe(1);
     });
 
-    it('ignores non-letter input', () => {
+    it('accepts digits and symbols', () => {
         s.selectedRow = 0; s.selectedCol = 0;
+        s.direction = 'across';
         s.typeCharacter('1');
         s.typeCharacter('!');
+        expect(s.progress[0][0]).toBe('1');
+        expect(s.progress[0][1]).toBe('!');
+    });
+
+    it('ignores whitespace, the block marker, and the shortcuts key', () => {
+        s.selectedRow = 0; s.selectedCol = 0;
+        s.typeCharacter(' ');
+        s.typeCharacter('#');
+        s.typeCharacter('?');
+        s.typeCharacter('Enter');
         expect(s.progress[0][0]).toBe('');
+        expect(s.selectedCol).toBe(0);
     });
 
     it('selects the first playable cell when nothing is selected yet', () => {
@@ -249,5 +261,48 @@ describe('swipe detection', () => {
         s.onSwipeStart({ changedTouches: [{ clientX: 100, clientY: 100 }] });
         s.onSwipeEnd({ changedTouches: [{ clientX: 130, clientY: 105 }] });
         expect(s.activeClueNumber).toBe(1);
+    });
+});
+
+describe('handleKeydown character entry', () => {
+    let s;
+    const keydown = (key, extra = {}) => s.handleKeydown({
+        key, target: { tagName: 'DIV' }, preventDefault() {}, ctrlKey: false, metaKey: false, shiftKey: false, ...extra,
+    });
+    beforeEach(() => { s = makeSolver(); s.selectedRow = 0; s.selectedCol = 0; s.direction = 'across'; });
+
+    it('types digits and symbols from a physical keyboard', () => {
+        keydown('7');
+        keydown('&');
+        expect(s.progress[0]).toEqual(['7', '&', '']);
+    });
+
+    it('does not type when a modifier key is held', () => {
+        keydown('1', { metaKey: true });
+        keydown('-', { ctrlKey: true });
+        expect(s.progress[0][0]).toBe('');
+    });
+
+    it('still opens the shortcuts overlay on ? instead of typing it', () => {
+        keydown('?');
+        expect(s.showShortcuts).toBe(true);
+        expect(s.progress[0][0]).toBe('');
+    });
+
+    it('appends digits and symbols in rebus mode', () => {
+        s.rebusMode = true;
+        keydown('A');
+        keydown('1');
+        keydown('+');
+        expect(s.progress[0][0]).toBe('A1+');
+    });
+
+    it('marks the puzzle solved when the solution contains digits and symbols', () => {
+        s.solution = [['1', '+', '1'], ['D', 'O', 'G'], ['E', 'E', 'L']];
+        s.progress = [['', '', ''], ['D', 'O', 'G'], ['E', 'E', 'L']];
+        keydown('1');
+        keydown('+');
+        keydown('1');
+        expect(s.solved).toBe(true);
     });
 });

@@ -156,3 +156,19 @@ export function cleanupStyleEntry(styles, key) {
         delete styles[key];
     }
 }
+
+// --- Cell input ---
+
+// Characters the solver reserves for other purposes and must never land in a
+// cell via direct typing: '#' is the block marker in grid/solution data and
+// '?' opens the keyboard-shortcuts overlay.
+const RESERVED_INPUT_CHARACTERS = new Set(['#', '?']);
+
+// True when `char` is a single printable letter, digit, or symbol that may be
+// typed into a grid cell. Whitespace, control keys ("Enter", "Tab", …) and the
+// reserved characters above are rejected.
+export function isTypeableCharacter(char) {
+    if (typeof char !== 'string' || char.length !== 1) return false;
+    if (/\s/.test(char)) return false;
+    return !RESERVED_INPUT_CHARACTERS.has(char);
+}

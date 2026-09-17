@@ -68,7 +68,7 @@ test('shortcuts modal includes input shortcuts', function () {
     $this->actingAs($user);
 
     Livewire::test('pages::crosswords.solver', ['crossword' => $crossword])
-        ->assertSeeHtml('Type a letter')
+        ->assertSeeHtml('Type a letter, number, or symbol')
         ->assertSeeHtml('Delete letter and move back')
         ->assertSeeHtml('Clear current cell')
         ->assertSeeHtml('Toggle pencil mode')

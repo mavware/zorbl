@@ -15,6 +15,7 @@ import {
     getClueNumberForCell,
     getWordCells,
     computeActiveWordCells,
+    isTypeableCharacter,
 } from './grid/helpers.js';
 import { cloneForWire, createAutosave } from './grid/persistence.js';
 
@@ -64,6 +65,8 @@ export function crosswordSolver({
         achievementToasts: [],
         showCelebration: false,
         showShortcuts: false,
+        // Virtual keyboard: false shows letters, true shows digits and symbols.
+        virtualKeyboardSymbols: false,
         celebrationTime: '',
         shareCopied: false,
         persistence: persistence || null,
@@ -429,7 +432,7 @@ export function crosswordSolver({
                     this.isDirty = true;
                     return;
                 }
-                if (/^[a-zA-Z0-9]$/.test(key)) {
+                if (isTypeableCharacter(key) && !e.ctrlKey && !e.metaKey) {
                     e.preventDefault();
                     this._pushUndo();
                     const k = cellKey(this.selectedRow, this.selectedCol);
@@ -470,16 +473,17 @@ export function crosswordSolver({
                 return;
             }
 
-            if (/^[a-zA-Z]$/.test(key)) {
+            if (isTypeableCharacter(key) && !e.ctrlKey && !e.metaKey) {
                 e.preventDefault();
                 this.typeCharacter(key);
             }
         },
 
-        // Write a letter into the selected cell and advance the cursor. Shared
-        // by physical-keyboard input and the on-screen virtual keyboard.
+        // Write a letter, digit, or symbol into the selected cell and advance
+        // the cursor. Shared by physical-keyboard input and the on-screen
+        // virtual keyboard.
         typeCharacter(char) {
-            if (!/^[a-zA-Z]$/.test(char)) return;
+            if (!isTypeableCharacter(char)) return;
             this.ensureCellSelected();
             if (this.selectedRow < 0) return;
             if (this.isBlock(this.selectedRow, this.selectedCol)
