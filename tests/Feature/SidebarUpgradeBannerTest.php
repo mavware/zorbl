@@ -11,7 +11,7 @@ test('free users see the upgrade banner above the support menu', function () {
     $this->actingAs($user)
         ->get(route('crosswords.index'))
         ->assertOk()
-        ->assertSee('Upgrade to Pro', false)
+        ->assertSee('Support our work', false)
         ->assertSee(route('billing.index'), false);
 });
 
@@ -28,7 +28,7 @@ test('pro subscribers do not see the upgrade banner', function () {
     $this->actingAs($user)
         ->get(route('crosswords.index'))
         ->assertOk()
-        ->assertDontSee('Upgrade to Pro', false);
+        ->assertDontSee('Support our work', false);
 });
 
 test('admins do not see the upgrade banner', function () {
@@ -39,7 +39,7 @@ test('admins do not see the upgrade banner', function () {
     $this->actingAs($admin)
         ->get(route('crosswords.index'))
         ->assertOk()
-        ->assertDontSee('Upgrade to Pro', false);
+        ->assertDontSee('Support our work', false);
 });
 
 test('guests do not see the upgrade banner', function () {
@@ -48,7 +48,7 @@ test('guests do not see the upgrade banner', function () {
     $this->actingAs($anon)
         ->get(route('crosswords.index'))
         ->assertOk()
-        ->assertDontSee('Unlock AI grid fills and clue suggestions.', false);
+        ->assertDontSee('Help keep Crossword Builder free', false);
 });
 
 test('guests do not see the favorites link', function () {

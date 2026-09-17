@@ -84,7 +84,9 @@ new #[Title('Favorites')] class extends Component {
         $limits = $user->planLimits();
 
         if ($user->favoriteLists()->count() >= $limits->maxFavoriteLists()) {
-            $this->addError('newListName', __('Free accounts can create up to :count favorite lists. Upgrade to Pro for unlimited.', ['count' => $limits->maxFavoriteLists()]));
+            $this->addError('newListName', $limits->isAnonymous()
+                ? __('Create a free account to save puzzles to favorite lists.')
+                : __('You have reached the maximum number of favorite lists.'));
 
             return;
         }

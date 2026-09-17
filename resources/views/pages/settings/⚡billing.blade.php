@@ -7,8 +7,6 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 
 new #[Title('Billing')] class extends Component {
-    public string $billingInterval = 'monthly';
-
     #[Computed]
     public function user()
     {
@@ -59,12 +57,8 @@ new #[Title('Billing')] class extends Component {
 
     public function subscribe()
     {
-        $priceId = $this->billingInterval === 'yearly'
-            ? config('services.stripe.pro_yearly_price')
-            : config('services.stripe.pro_monthly_price');
-
         $checkout = $this->user
-            ->newSubscription('default', $priceId)
+            ->newSubscription('default', config('services.stripe.pro_monthly_price'))
             ->checkout([
                 'success_url' => route('billing.index') . '?checkout=success',
                 'cancel_url' => route('billing.index') . '?checkout=cancelled',
@@ -101,9 +95,9 @@ new #[Title('Billing')] class extends Component {
                             @if ($this->isPro && $this->onGracePeriod)
                                 {{ __('Your Pro subscription ends on :date.', ['date' => $this->subscription->ends_at->format('M j, Y')]) }}
                             @elseif ($this->isPro)
-                                {{ __('You have full access to all Pro features.') }}
+                                {{ __('Thank you for supporting Crossword Builder. You have full access to all Pro features.') }}
                             @else
-                                {{ __('Upgrade to Pro for AI autofill and clue generation.') }}
+                                {{ __('Everything you need to build, publish, and solve puzzles, free.') }}
                             @endif
                         </flux:subheading>
                     </div>
@@ -117,8 +111,8 @@ new #[Title('Billing')] class extends Component {
 
             @if (request()->query('checkout') === 'success')
                 <flux:callout variant="success" icon="check-circle">
-                    <flux:callout.heading>{{ __('Welcome to Pro!') }}</flux:callout.heading>
-                    <flux:callout.text>{{ __('Your subscription is active. Enjoy AI autofill and AI clue generation.') }}</flux:callout.text>
+                    <flux:callout.heading>{{ __('Thank you for your support!') }}</flux:callout.heading>
+                    <flux:callout.text>{{ __('Your subscription is active. AI autofill and AI clue generation are now unlocked.') }}</flux:callout.text>
                 </flux:callout>
             @endif
 
@@ -155,10 +149,14 @@ new #[Title('Billing')] class extends Component {
                 </flux:card>
             @endif
 
-            {{-- Upgrade Section (Free users) --}}
+            {{-- Support Section (Free users) --}}
             @unless ($this->isPro)
                 <flux:card>
-                    <flux:heading size="sm" class="mb-4">{{ __('Upgrade to Pro') }}</flux:heading>
+                    <flux:heading size="sm" class="mb-2">{{ __('Support our work') }}</flux:heading>
+
+                    <flux:text class="mb-4">
+                        {{ __('Crossword Builder is free, and we intend to keep it that way. If you believe professional-grade crossword tools should be available to everyone, please consider supporting what we do. As a thank-you, supporters get:') }}
+                    </flux:text>
 
                     <div class="mb-4 space-y-2 text-sm">
                         <div class="flex items-center gap-2">
@@ -171,21 +169,12 @@ new #[Title('Billing')] class extends Component {
                         </div>
                     </div>
 
-                    <div class="mb-4 flex items-center gap-3">
-                        <flux:radio.group wire:model="billingInterval" variant="segmented">
-                            <flux:radio value="monthly" label="{{ __('Monthly — $5/mo') }}" />
-                            <flux:radio value="yearly" label="{{ __('Yearly — $2/mo') }}" />
-                        </flux:radio.group>
-                    </div>
-
-                    @if ($this->billingInterval === 'yearly')
-                        <flux:text size="sm" class="mb-3 text-green-600 dark:text-green-400">
-                            {{ __('Save 25% with yearly billing ($72/year)') }}
-                        </flux:text>
-                    @endif
+                    <flux:text size="sm" class="mb-4 text-zinc-600">
+                        {{ __('$5 per month. Cancel anytime.') }}
+                    </flux:text>
 
                     <flux:button wire:click="subscribe" variant="primary">
-                        {{ __('Upgrade to Pro') }}
+                        {{ __('Support Crossword Builder') }}
                     </flux:button>
                 </flux:card>
             @endunless

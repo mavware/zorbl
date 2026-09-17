@@ -93,7 +93,7 @@ class extends Component {
             <section>
                 <h2 class="text-xl font-semibold text-zinc-100">7. {{ __('Paid Plans, Billing, and Refunds') }}</h2>
                 <p class="mt-3">
-                    {{ __('Paid plans renew automatically at the interval you selected (monthly or yearly) until you cancel. Payments are processed by Stripe; we do not store your full card number. You can cancel at any time from your billing settings, and your plan stays active through the end of the paid period. Fees are non-refundable except where required by law or as stated at the time of purchase. We may change pricing with at least 30 days\' notice before your next renewal.') }}
+                    {{ __('Paid plans renew automatically each month until you cancel. Payments are processed by Stripe; we do not store your full card number. You can cancel at any time from your billing settings, and your plan stays active through the end of the paid period. Fees are non-refundable except where required by law or as stated at the time of purchase. We may change pricing with at least 30 days\' notice before your next renewal.') }}
                 </p>
             </section>
 

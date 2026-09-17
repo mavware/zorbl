@@ -33,7 +33,9 @@ it('shows free plan for non-subscribers', function () {
     Livewire::actingAs($user)
         ->test('pages::settings.billing')
         ->assertSee('Free Plan')
-        ->assertSee('Upgrade to Pro');
+        ->assertSee('Support our work')
+        ->assertSee('Support Crossword Builder')
+        ->assertDontSee('Yearly');
 });
 
 it('shows pro plan for subscribers', function () {
@@ -43,7 +45,7 @@ it('shows pro plan for subscribers', function () {
         ->test('pages::settings.billing')
         ->assertSee('Pro Plan')
         ->assertSee('Manage Subscription')
-        ->assertDontSee('Upgrade to Pro');
+        ->assertDontSee('Support our work');
 });
 
 it('shows AI usage for pro users', function () {

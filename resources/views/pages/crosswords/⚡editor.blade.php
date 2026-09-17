@@ -595,7 +595,7 @@ class extends Component {
                 'fills' => [],
                 'message' => $user->isPro()
                     ? __('You have used all 50 AI fills this month. Resets on the 1st.')
-                    : __('AI Autofill is a Pro feature. Upgrade to unlock it.'),
+                    : __('AI Autofill is a thank-you for supporters. Support Crossword Builder to unlock it.'),
                 'upgrade' => ! $user->isPro(),
             ];
         }
@@ -733,7 +733,7 @@ class extends Component {
                 'clues' => ['across' => [], 'down' => []],
                 'message' => $user->isPro()
                     ? __('You have used all 50 AI clue generations this month. Resets on the 1st.')
-                    : __('AI Clue Generation is a Pro feature. Upgrade to unlock it.'),
+                    : __('AI Clue Generation is a thank-you for supporters. Support Crossword Builder to unlock it.'),
                 'upgrade' => ! $user->isPro(),
             ];
         }
@@ -1182,18 +1182,40 @@ class extends Component {
                         <path d="M15.98 1.804a1 1 0 0 0-1.96 0l-.24 1.192a1 1 0 0 1-.784.785l-1.192.238a1 1 0 0 0 0 1.962l1.192.238a1 1 0 0 1 .785.785l.238 1.192a1 1 0 0 0 1.962 0l.238-1.192a1 1 0 0 1 .785-.785l1.192-.238a1 1 0 0 0 0-1.962l-1.192-.238a1 1 0 0 1-.785-.785l-.238-1.192ZM6.949 5.684a1 1 0 0 0-1.898 0l-.683 2.051a1 1 0 0 1-.633.633l-2.051.683a1 1 0 0 0 0 1.898l2.051.683a1 1 0 0 1 .633.633l.683 2.051a1 1 0 0 0 1.898 0l.683-2.051a1 1 0 0 1 .633-.633l2.051-.683a1 1 0 0 0 0-1.898l-2.051-.683a1 1 0 0 1-.633-.633l-.683-2.051ZM15.98 13.804a1 1 0 0 0-1.96 0l-.24 1.192a1 1 0 0 1-.784.785l-1.192.238a1 1 0 0 0 0 1.962l1.192.238a1 1 0 0 1 .785.785l.238 1.192a1 1 0 0 0 1.962 0l.238-1.192a1 1 0 0 1 .785-.785l1.192-.238a1 1 0 0 0 0-1.962l-1.192-.238a1 1 0 0 1-.785-.785l-.238-1.192Z" />
                     </svg>
                 </div>
-                <flux:heading size="lg">{{ __('Upgrade to Pro') }}</flux:heading>
+                <flux:heading size="lg">
+                    @if (Auth::user()->isAnonymous())
+                        {{ __('Create a free account') }}
+                    @else
+                        {{ __('Support our work') }}
+                    @endif
+                </flux:heading>
             </div>
 
+            @if (Auth::user()->isAnonymous())
+                <flux:text>
+                    @if ($upgradeFeature === 'export')
+                        {{ __('Export your puzzles to .puz, .jpz, and PDF formats for sharing and printing. Create a free account to unlock exports.') }}
+                    @else
+                        {{ __('Create a free account to save your work, publish puzzles, and unlock more tools.') }}
+                    @endif
+                </flux:text>
+
+                <div class="flex justify-end gap-2">
+                    <flux:button wire:click="$set('showUpgradeModal', false)">{{ __('Maybe Later') }}</flux:button>
+                    <flux:button :href="route('register')" wire:navigate variant="primary">
+                        {{ __('Sign up free') }}
+                    </flux:button>
+                </div>
+            @else
             <flux:text>
                 @if ($upgradeFeature === 'ai_fill')
-                    {{ __('AI Fill uses Claude to intelligently fill your grid with thematic words. Upgrade to Pro to unlock this feature.') }}
+                    {{ __('AI Fill uses Claude to intelligently fill your grid with thematic words. It is one of the extras we offer as a thank-you to the supporters who keep Crossword Builder free for everyone.') }}
                 @elseif ($upgradeFeature === 'ai_clues')
-                    {{ __('AI Generate Clues writes creative, high-quality clues for every word in your puzzle. Upgrade to Pro to unlock this feature.') }}
+                    {{ __('AI Generate Clues writes creative, high-quality clues for every word in your puzzle. It is one of the extras we offer as a thank-you to the supporters who keep Crossword Builder free for everyone.') }}
                 @elseif ($upgradeFeature === 'export')
-                    {{ __('Export your puzzles to .puz, .jpz, and PDF formats for sharing and printing. Upgrade to Pro to unlock this feature.') }}
+                    {{ __('Export your puzzles to .puz, .jpz, and PDF formats for sharing and printing.') }}
                 @else
-                    {{ __('Unlock AI-powered tools to build better puzzles faster. Upgrade to Pro to get started.') }}
+                    {{ __('AI-powered tools help you build better puzzles faster. They are our thank-you to the supporters who keep Crossword Builder free for everyone.') }}
                 @endif
             </flux:text>
 
@@ -1215,9 +1237,10 @@ class extends Component {
             <div class="flex justify-end gap-2">
                 <flux:button wire:click="$set('showUpgradeModal', false)">{{ __('Maybe Later') }}</flux:button>
                 <flux:button :href="route('billing.index')" wire:navigate variant="primary">
-                    {{ __('Upgrade Now') }}
+                    {{ __('Support Crossword Builder') }}
                 </flux:button>
             </div>
+            @endif
         </div>
     </flux:modal>
 

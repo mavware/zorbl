@@ -84,9 +84,7 @@ new class extends Component {
             return __('Create a free account to build more puzzles.');
         }
 
-        return $limits->isPro()
-            ? __('You have reached your puzzle limit.')
-            : __('Free accounts can create up to :count puzzle. Upgrade to Pro for unlimited.', ['count' => $limits->maxPuzzles()]);
+        return __('You have reached your puzzle limit.');
     }
 
     public function updatedPuzzleType(): void

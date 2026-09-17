@@ -210,9 +210,9 @@ new #[Title('Build')] class extends Component {
         $limits = $user->planLimits();
 
         if ($user->crosswords()->count() >= $limits->maxPuzzles()) {
-            $this->newPuzzleLimitMessage = $user->isPro()
-                ? __('You have reached your puzzle limit.')
-                : __('Free accounts can create up to :count puzzles. Upgrade to Pro for unlimited.', ['count' => $limits->maxPuzzles()]);
+            $this->newPuzzleLimitMessage = $limits->isAnonymous()
+                ? __('Create a free account to build more puzzles.')
+                : __('You have reached your puzzle limit.');
 
             return;
         }
@@ -287,9 +287,9 @@ new #[Title('Build')] class extends Component {
 
         if ($user->crosswords()->count() >= $limits->maxPuzzles()) {
             Flux::toast(
-                text: $user->isPro()
-                    ? __('You have reached your puzzle limit.')
-                    : __('Free accounts can create up to :count puzzles. Upgrade to Pro for unlimited.', ['count' => $limits->maxPuzzles()]),
+                text: $limits->isAnonymous()
+                    ? __('Create a free account to build more puzzles.')
+                    : __('You have reached your puzzle limit.'),
                 variant: 'danger',
             );
 

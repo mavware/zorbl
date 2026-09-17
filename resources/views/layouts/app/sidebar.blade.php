@@ -67,10 +67,10 @@
         >
             <div class="flex items-center gap-2">
                 <flux:icon.sparkles class="size-4 text-amber-500"/>
-                <span class="text-sm font-semibold text-zinc-100 dark:text-zinc-100">{{ __('Upgrade to Pro') }}</span>
+                <span class="text-sm font-semibold text-zinc-100 dark:text-zinc-100">{{ __('Support our work') }}</span>
             </div>
             <p class="mt-1 text-xs text-zinc-700 dark:text-zinc-400">
-                {{ __('Unlock AI grid fills and clue suggestions.') }}
+                {{ __('Help keep Crossword Builder free, and unlock AI grid fills and clue suggestions.') }}
             </p>
         </a>
     @endunless

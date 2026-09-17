@@ -102,9 +102,9 @@ test('upgrade modal renders billing link', function () {
         ->test('pages::crosswords.editor', ['crossword' => $crossword])
         ->set('showUpgradeModal', true)
         ->set('upgradeFeature', 'ai_fill')
-        ->assertSee('Upgrade to Pro')
+        ->assertSee('Support our work')
         ->assertSee('AI Fill uses Claude')
-        ->assertSee('Upgrade Now');
+        ->assertSee('Support Crossword Builder');
 });
 
 test('upgrade modal shows export description for export feature', function () {
