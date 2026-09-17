@@ -41,8 +41,9 @@ test('view allows the assigned admin', function () {
     expect($this->policy->view($this->admin, makeTicket(1, 2)))->toBeTrue();
 });
 
-test('view denies admin who is not assigned', function () {
-    expect($this->policy->view($this->admin, makeTicket(1, 99)))->toBeFalse();
+test('view allows an admin who is not assigned', function () {
+    expect($this->policy->view($this->admin, makeTicket(1, 99)))->toBeTrue();
+    expect($this->policy->view($this->admin, makeTicket(1)))->toBeTrue();
 });
 
 test('view denies non-owner non-admin', function () {
@@ -61,8 +62,9 @@ test('update allows the assigned admin', function () {
     expect($this->policy->update($this->admin, makeTicket(1, 2)))->toBeTrue();
 });
 
-test('update denies admin who is not assigned', function () {
-    expect($this->policy->update($this->admin, makeTicket(1, 99)))->toBeFalse();
+test('update allows an admin who is not assigned', function () {
+    expect($this->policy->update($this->admin, makeTicket(1, 99)))->toBeTrue();
+    expect($this->policy->update($this->admin, makeTicket(1)))->toBeTrue();
 });
 
 test('update denies non-owner non-admin', function () {
@@ -78,8 +80,9 @@ test('respond denies everyone on closed ticket', function () {
     expect($this->policy->respond($this->admin, makeTicket(1, 2, 'closed')))->toBeFalse();
 });
 
-test('respond allows the assigned admin on open ticket', function () {
+test('respond allows any admin on an open ticket', function () {
     expect($this->policy->respond($this->admin, makeTicket(1, 2, 'in_progress')))->toBeTrue();
+    expect($this->policy->respond($this->admin, makeTicket(1, null, 'open')))->toBeTrue();
 });
 
 test('respond denies non-owner non-admin', function () {
