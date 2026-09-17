@@ -5,7 +5,7 @@ namespace App\Filament\Resources\ClueEntries\Pages;
 use App\Filament\Resources\ClueEntries\ClueEntryResource;
 use App\Models\ClueEntry;
 use Filament\Resources\Pages\ListRecords;
-use Filament\Resources\Pages\ListRecords\Tab;
+use Filament\Schemas\Components\Tabs\Tab;
 use Illuminate\Database\Eloquent\Builder;
 
 class ListClueEntries extends ListRecords
