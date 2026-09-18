@@ -606,24 +606,28 @@ new #[Title('Solve Crossword')] class extends Component {
             @if(!$isOwner && $authorName)
                 <flux:text size="sm" class="text-zinc-500">
                     {{ __('by') }}
-                    <a href="{{ route('constructors.show', $authorUserId) }}" wire:navigate class="text-zinc-600 hover:text-blue-600 dark:hover:text-blue-400">{{ $authorName }}</a>
+                    <flux:tooltip content="{{ __('See this constructor\'s profile and other puzzles') }}">
+                        <a href="{{ route('constructors.show', $authorUserId) }}" wire:navigate class="text-zinc-600 hover:text-blue-600 dark:hover:text-blue-400">{{ $authorName }}</a>
+                    </flux:tooltip>
                 </flux:text>
             @endif
-            <button
-                type="button"
-                wire:click="toggleLike"
-                class="flex items-center gap-1 rounded-lg px-2 py-1 text-sm transition-colors {{ $this->isLiked ? 'text-red-500' : 'text-zinc-500 hover:text-red-400' }}"
-                aria-pressed="{{ $this->isLiked ? 'true' : 'false' }}"
-                aria-label="{{ $this->isLiked ? __('Unlike puzzle') : __('Like puzzle') }}"
-            >
-                <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 24 24" fill="{{ $this->isLiked ? 'currentColor' : 'none' }}" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
-                </svg>
-                <span aria-hidden="true">{{ $this->likesCount }}</span>
-                <span class="sr-only">{{ trans_choice('{0} no likes|{1} 1 like|[2,*] :count likes', $this->likesCount, ['count' => $this->likesCount]) }}</span>
-            </button>
+            <flux:tooltip content="{{ $this->isLiked ? __('Remove your like from this puzzle') : __('Like this puzzle to show the constructor some love') }}">
+                <button
+                    type="button"
+                    wire:click="toggleLike"
+                    class="flex items-center gap-1 rounded-lg px-2 py-1 text-sm transition-colors {{ $this->isLiked ? 'text-red-500' : 'text-zinc-500 hover:text-red-400' }}"
+                    aria-pressed="{{ $this->isLiked ? 'true' : 'false' }}"
+                    aria-label="{{ $this->isLiked ? __('Unlike puzzle') : __('Like puzzle') }}"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 24 24" fill="{{ $this->isLiked ? 'currentColor' : 'none' }}" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
+                    </svg>
+                    <span aria-hidden="true">{{ $this->likesCount }}</span>
+                    <span class="sr-only">{{ trans_choice('{0} no likes|{1} 1 like|[2,*] :count likes', $this->likesCount, ['count' => $this->likesCount]) }}</span>
+                </button>
+            </flux:tooltip>
             @if(!$isOwner)
-                <flux:tooltip content="{{ __('Add to favorites list') }}">
+                <flux:tooltip content="{{ __('Save this puzzle to one of your favorites lists') }}">
                     <button
                         type="button"
                         wire:click="$set('showAddToListModal', true)"
@@ -652,7 +656,7 @@ new #[Title('Solve Crossword')] class extends Component {
             </div>
 
             {{-- Undo --}}
-            <flux:tooltip content="{{ __('Undo (Ctrl+Z)') }}">
+            <flux:tooltip content="{{ __('Undo your last entry') }}" kbd="Ctrl+Z">
                 <button
                     type="button"
                     x-on:click="undo(); $refs.gridContainer?.focus()"
@@ -669,7 +673,7 @@ new #[Title('Solve Crossword')] class extends Component {
             </flux:tooltip>
 
             {{-- Redo --}}
-            <flux:tooltip content="{{ __('Redo (Ctrl+Shift+Z)') }}">
+            <flux:tooltip content="{{ __('Redo the entry you just undid') }}" kbd="Ctrl+Shift+Z">
                 <button
                     type="button"
                     x-on:click="redo(); $refs.gridContainer?.focus()"
@@ -686,7 +690,7 @@ new #[Title('Solve Crossword')] class extends Component {
             </flux:tooltip>
 
             {{-- Pencil mode toggle --}}
-            <flux:tooltip content="{{ __('Pencil mode (P)') }}">
+            <flux:tooltip content="{{ __('Pencil mode: enter tentative letters you can easily change later') }}" kbd="P">
                 <button
                     type="button"
                     x-on:click="pencilMode = !pencilMode; if (selectedRow >= 0) $refs.gridContainer?.focus()"
@@ -704,27 +708,33 @@ new #[Title('Solve Crossword')] class extends Component {
             </flux:tooltip>
 
             {{-- Timer --}}
-            <div class="bg-page mr-2 flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-mono text-sm tabular-nums">
-                <svg xmlns="http://www.w3.org/2000/svg" class="size-4 text-zinc-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-                </svg>
-                <span x-text="formattedTime()" :class="solved ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-800 dark:text-zinc-300'"></span>
-            </div>
+            <flux:tooltip x-bind:content="solved ? '{{ __('Your final solve time') }}' : '{{ __('Time spent solving so far (pauses when you leave the tab)') }}'">
+                <div class="bg-page mr-2 flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-mono text-sm tabular-nums">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="size-4 text-zinc-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                    </svg>
+                    <span x-text="formattedTime()" :class="solved ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-800 dark:text-zinc-300'"></span>
+                </div>
+            </flux:tooltip>
 
             {{-- Mode toggle (only show Edit for owners) --}}
             @if($isOwner)
                 <div class="flex rounded-lg border border-line">
-                    <a
-                        href="{{ route('crosswords.editor', $crosswordId) }}"
-                        wire:navigate.hover
-                        class="rounded-l-lg px-3 py-1 text-sm font-medium text-zinc-700 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
-                    >{{ __('Edit') }}</a>
-                    <span class="rounded-r-lg bg-zinc-800 px-3 py-1 text-sm font-medium text-white dark:bg-zinc-200 dark:text-zinc-900">{{ __('Solve') }}</span>
+                    <flux:tooltip content="{{ __('Switch to the editor to change the grid and clues') }}">
+                        <a
+                            href="{{ route('crosswords.editor', $crosswordId) }}"
+                            wire:navigate.hover
+                            class="rounded-l-lg px-3 py-1 text-sm font-medium text-zinc-700 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+                        >{{ __('Edit') }}</a>
+                    </flux:tooltip>
+                    <flux:tooltip content="{{ __('You are in solve mode') }}">
+                        <span class="rounded-r-lg bg-zinc-800 px-3 py-1 text-sm font-medium text-white dark:bg-zinc-200 dark:text-zinc-900">{{ __('Solve') }}</span>
+                    </flux:tooltip>
                 </div>
             @endif
 
             {{-- Check answers --}}
-            <flux:tooltip x-bind:content="Object.keys(checked).length > 0 ? '{{ __('Hide check results') }}' : '{{ __('Check answers') }}'">
+            <flux:tooltip x-bind:content="Object.keys(checked).length > 0 ? '{{ __('Hide the check results') }}' : '{{ __('Check your answers: correct letters turn green, wrong ones red') }}'">
                 <button
                     type="button"
                     x-on:click="checkAnswers()"
@@ -738,7 +748,7 @@ new #[Title('Solve Crossword')] class extends Component {
             </flux:tooltip>
 
             {{-- Reveal letter --}}
-            <flux:tooltip content="{{ __('Reveal letter') }}">
+            <flux:tooltip content="{{ __('Reveal the correct letter in the selected square') }}">
                 <button
                     x-on:click="revealLetter()"
                     class="text-fg-muted rounded-lg p-1.5 transition-colors hover:text-zinc-800 dark:hover:text-zinc-200"
@@ -752,28 +762,42 @@ new #[Title('Solve Crossword')] class extends Component {
 
             {{-- Clear progress --}}
             <flux:dropdown position="bottom" align="end">
-                <flux:button variant="ghost" size="sm" icon="x-mark" />
+                <flux:tooltip content="{{ __('Clear letters from the grid') }}">
+                    <flux:button variant="ghost" size="sm" icon="x-mark" aria-label="{{ __('Clear letters') }}" />
+                </flux:tooltip>
                 <flux:menu>
-                    <flux:menu.item x-on:click="clearProgress()">{{ __('Clear all letters') }}</flux:menu.item>
-                    <flux:menu.item x-on:click="clearErrors()" class="text-amber-600 dark:text-amber-400">{{ __('Clear incorrect letters') }}</flux:menu.item>
+                    <flux:tooltip content="{{ __('Erase every letter you have entered and start over') }}" position="left">
+                        <flux:menu.item x-on:click="clearProgress()">{{ __('Clear all letters') }}</flux:menu.item>
+                    </flux:tooltip>
+                    <flux:tooltip content="{{ __('Erase only the letters that do not match the solution') }}" position="left">
+                        <flux:menu.item x-on:click="clearErrors()" class="text-amber-600 dark:text-amber-400">{{ __('Clear incorrect letters') }}</flux:menu.item>
+                    </flux:tooltip>
                 </flux:menu>
             </flux:dropdown>
 
             {{-- Download for offline --}}
             <flux:dropdown position="bottom" align="end">
-                <flux:tooltip content="{{ __('Download for offline solving') }}">
-                    <flux:button variant="ghost" size="sm" icon="arrow-down-tray" />
+                <flux:tooltip content="{{ __('Download this puzzle to solve offline or print') }}">
+                    <flux:button variant="ghost" size="sm" icon="arrow-down-tray" aria-label="{{ __('Download puzzle') }}" />
                 </flux:tooltip>
                 <flux:menu>
-                    <flux:menu.item wire:click="attemptExport('ipuz')">{{ __('.ipuz') }}</flux:menu.item>
-                    <flux:menu.item wire:click="attemptExport('puz')">{{ __('.puz (Across Lite)') }}</flux:menu.item>
-                    <flux:menu.item wire:click="attemptExport('jpz')">{{ __('.jpz (Crossword Compiler)') }}</flux:menu.item>
-                    <flux:menu.item wire:click="attemptExport('pdf')">{{ __('.pdf (Print-Ready)') }}</flux:menu.item>
+                    <flux:tooltip content="{{ __('Open standard supported by most modern crossword apps') }}" position="left">
+                        <flux:menu.item wire:click="attemptExport('ipuz')">{{ __('.ipuz') }}</flux:menu.item>
+                    </flux:tooltip>
+                    <flux:tooltip content="{{ __('Classic format for Across Lite and many desktop solvers') }}" position="left">
+                        <flux:menu.item wire:click="attemptExport('puz')">{{ __('.puz (Across Lite)') }}</flux:menu.item>
+                    </flux:tooltip>
+                    <flux:tooltip content="{{ __('XML format for Crossword Compiler and compatible apps') }}" position="left">
+                        <flux:menu.item wire:click="attemptExport('jpz')">{{ __('.jpz (Crossword Compiler)') }}</flux:menu.item>
+                    </flux:tooltip>
+                    <flux:tooltip content="{{ __('Printable grid and clues for solving on paper') }}" position="left">
+                        <flux:menu.item wire:click="attemptExport('pdf')">{{ __('.pdf (Print-Ready)') }}</flux:menu.item>
+                    </flux:tooltip>
                 </flux:menu>
             </flux:dropdown>
 
             {{-- Keyboard shortcuts help --}}
-            <flux:tooltip content="{{ __('Keyboard shortcuts (?)') }}">
+            <flux:tooltip content="{{ __('See every keyboard shortcut for solving') }}" kbd="?">
                 <button
                     type="button"
                     x-on:click="showShortcuts = true"
@@ -790,8 +814,8 @@ new #[Title('Solve Crossword')] class extends Component {
                  constructor has allowed embedding on a published puzzle. --}}
             @if($isOwner || ($isPublished && $allowEmbed))
                 <div x-data="{ showEmbed: false }">
-                    <flux:tooltip content="{{ __('Embed this puzzle') }}">
-                        <flux:button variant="ghost" size="sm" icon="code-bracket" x-on:click="showEmbed = true" />
+                    <flux:tooltip content="{{ __('Get code to embed this puzzle on your own website') }}">
+                        <flux:button variant="ghost" size="sm" icon="code-bracket" x-on:click="showEmbed = true" aria-label="{{ __('Embed this puzzle') }}" />
                     </flux:tooltip>
 
                     <template x-teleport="body">
@@ -850,13 +874,15 @@ new #[Title('Solve Crossword')] class extends Component {
                 <template x-if="solved">
                     <span class="flex items-center gap-1.5">
                         <span class="font-semibold text-emerald-500">{{ __('Solved!') }}</span>
-                        <button
-                            x-on:click="shareResults()"
-                            class="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium text-emerald-600 transition-colors hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/30"
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z"/></svg>
-                            <span x-text="shareCopied ? '{{ __('Copied!') }}' : '{{ __('Share Results') }}'"></span>
-                        </button>
+                        <flux:tooltip content="{{ __('Copy your solve time and a link to this puzzle to share') }}">
+                            <button
+                                x-on:click="shareResults()"
+                                class="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium text-emerald-600 transition-colors hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/30"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z"/></svg>
+                                <span x-text="shareCopied ? '{{ __('Copied!') }}' : '{{ __('Share Results') }}'"></span>
+                            </button>
+                        </flux:tooltip>
                     </span>
                 </template>
             </div>

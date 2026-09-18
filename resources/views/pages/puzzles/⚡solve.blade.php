@@ -249,7 +249,7 @@ class extends Component {
 
             <div class="flex items-center gap-1">
                 {{-- Pencil mode toggle --}}
-                <flux:tooltip content="{{ __('Pencil mode (P)') }}">
+                <flux:tooltip content="{{ __('Pencil mode: enter tentative letters you can easily change later') }}" kbd="P">
                     <button
                         x-on:click="pencilMode = !pencilMode"
                         :class="['text-fg-muted', pencilMode ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' : 'hover:text-zinc-800 dark:hover:text-zinc-200']"
@@ -263,15 +263,17 @@ class extends Component {
                 </flux:tooltip>
 
                 {{-- Timer --}}
-                <div class="bg-page mr-2 flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-mono text-sm tabular-nums">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="size-4 text-zinc-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-                    </svg>
-                    <span x-text="formattedTime()" :class="solved ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-800 dark:text-zinc-300'"></span>
-                </div>
+                <flux:tooltip x-bind:content="solved ? '{{ __('Your final solve time') }}' : '{{ __('Time spent solving so far (pauses when you leave the tab)') }}'">
+                    <div class="bg-page mr-2 flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-mono text-sm tabular-nums">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="size-4 text-zinc-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                        </svg>
+                        <span x-text="formattedTime()" :class="solved ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-800 dark:text-zinc-300'"></span>
+                    </div>
+                </flux:tooltip>
 
                 {{-- Check answers --}}
-                <flux:tooltip x-bind:content="Object.keys(checked).length > 0 ? '{{ __('Hide check results') }}' : '{{ __('Check answers') }}'">
+                <flux:tooltip x-bind:content="Object.keys(checked).length > 0 ? '{{ __('Hide the check results') }}' : '{{ __('Check your answers: correct letters turn green, wrong ones red') }}'">
                     <button
                         x-on:click="checkAnswers()"
                         class="text-fg-muted rounded-lg p-1.5 transition-colors hover:text-zinc-800 dark:hover:text-zinc-200"
@@ -283,7 +285,7 @@ class extends Component {
                 </flux:tooltip>
 
                 {{-- Reveal letter --}}
-                <flux:tooltip content="{{ __('Reveal letter') }}">
+                <flux:tooltip content="{{ __('Reveal the correct letter in the selected square') }}">
                     <button
                         x-on:click="revealLetter()"
                         class="text-fg-muted rounded-lg p-1.5 transition-colors hover:text-zinc-800 dark:hover:text-zinc-200"
@@ -297,22 +299,30 @@ class extends Component {
 
                 {{-- Clear progress --}}
                 <flux:dropdown position="bottom" align="end">
-                    <flux:button variant="ghost" size="sm" icon="x-mark" />
+                    <flux:tooltip content="{{ __('Clear letters from the grid') }}">
+                        <flux:button variant="ghost" size="sm" icon="x-mark" aria-label="{{ __('Clear letters') }}" />
+                    </flux:tooltip>
                     <flux:menu>
-                        <flux:menu.item x-on:click="clearProgress()">{{ __('Clear all letters') }}</flux:menu.item>
-                        <flux:menu.item x-on:click="clearErrors()" class="text-amber-600 dark:text-amber-400">{{ __('Clear incorrect letters') }}</flux:menu.item>
+                        <flux:tooltip content="{{ __('Erase every letter you have entered and start over') }}" position="left">
+                            <flux:menu.item x-on:click="clearProgress()">{{ __('Clear all letters') }}</flux:menu.item>
+                        </flux:tooltip>
+                        <flux:tooltip content="{{ __('Erase only the letters that do not match the solution') }}" position="left">
+                            <flux:menu.item x-on:click="clearErrors()" class="text-amber-600 dark:text-amber-400">{{ __('Clear incorrect letters') }}</flux:menu.item>
+                        </flux:tooltip>
                     </flux:menu>
                 </flux:dropdown>
 
                 {{-- Share button (visible when solved) --}}
                 <template x-if="solved">
-                    <button
-                        x-on:click="shareResults()"
-                        :title="shareCopied ? '{{ __('Copied!') }}' : '{{ __('Share results') }}'"
-                        class="rounded-lg p-1.5 text-emerald-500 transition-colors hover:text-emerald-600 dark:hover:text-emerald-400"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 20 20" fill="currentColor"><path d="M13 4.5a2.5 2.5 0 11.702 4.89L8.45 12.3a2.5 2.5 0 11-.36-.891l5.252-2.91A2.5 2.5 0 0113 4.5zm-8 6a1 1 0 100 2 1 1 0 000-2zm8-5a1 1 0 100 2 1 1 0 000-2z"/></svg>
-                    </button>
+                    <flux:tooltip x-bind:content="shareCopied ? '{{ __('Copied to your clipboard') }}' : '{{ __('Copy your solve time and a link to this puzzle to share') }}'">
+                        <button
+                            x-on:click="shareResults()"
+                            class="rounded-lg p-1.5 text-emerald-500 transition-colors hover:text-emerald-600 dark:hover:text-emerald-400"
+                            aria-label="{{ __('Share results') }}"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M13 4.5a2.5 2.5 0 11.702 4.89L8.45 12.3a2.5 2.5 0 11-.36-.891l5.252-2.91A2.5 2.5 0 0113 4.5zm-8 6a1 1 0 100 2 1 1 0 000-2zm8-5a1 1 0 100 2 1 1 0 000-2z"/></svg>
+                        </button>
+                    </flux:tooltip>
                 </template>
 
                 {{-- Status --}}
@@ -323,14 +333,17 @@ class extends Component {
                     <template x-if="solved">
                         <span class="flex items-center gap-1.5">
                             <span class="font-semibold text-emerald-500">{{ __('Solved!') }}</span>
-                            <button
-                                x-on:click="shareResults()"
-                                class="rounded-md px-2 py-0.5 text-xs font-medium text-emerald-600 transition-colors hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/30"
-                                x-text="shareCopied ? '{{ __('Copied!') }}' : '{{ __('Share Results') }}'"
-                            ></button>
+                            <flux:tooltip content="{{ __('Copy your solve time and a link to this puzzle to share') }}">
+                                <button
+                                    x-on:click="shareResults()"
+                                    class="rounded-md px-2 py-0.5 text-xs font-medium text-emerald-600 transition-colors hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/30"
+                                    x-text="shareCopied ? '{{ __('Copied!') }}' : '{{ __('Share Results') }}'"
+                                ></button>
+                            </flux:tooltip>
                         </span>
                     </template>
                     <template x-if="solved">
+                        <flux:tooltip content="{{ __('Copy your solve time and a link to this puzzle to share') }}">
                         <button
                             x-on:click="shareResults()"
                             class="ml-1 inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-xs font-medium text-blue-600 transition-colors hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/30"
@@ -338,6 +351,7 @@ class extends Component {
                             <svg xmlns="http://www.w3.org/2000/svg" class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z" /></svg>
                             <span x-text="shareCopied ? '{{ __('Copied!') }}' : '{{ __('Share') }}'"></span>
                         </button>
+                        </flux:tooltip>
                     </template>
                 </div>
             </div>

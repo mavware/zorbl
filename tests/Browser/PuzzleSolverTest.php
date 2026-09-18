@@ -137,10 +137,11 @@ it('switches the mobile clue tab and scrolls to the active clue as the grid sele
 
     $solverData = 'Alpine.$data(document.querySelector(\'[x-data^="crosswordSolver"]\'))';
 
-    $page = visit(route('crosswords.solver', $crossword))->on()->mobile();
+    // On::__call opens a fresh page per method call, so keep the resolved
+    // Webpage from the first call to interact with a single page.
+    $page = visit(route('crosswords.solver', $crossword))->on()->mobile()->assertNoJavaScriptErrors();
 
-    $page->assertNoJavaScriptErrors()
-        ->click('#crossword-cell-0-0')
+    $page->click('#crossword-cell-0-0')
         ->assertScript("{$solverData}.mobileClueTab", 'across')
         ->assertPresent('#mobile-clue-across-1.bg-blue-100')
         ->assertNotPresent('#mobile-clue-down-1');
@@ -151,9 +152,11 @@ it('switches the mobile clue tab and scrolls to the active clue as the grid sele
         ->assertPresent('#mobile-clue-down-1.bg-blue-100')
         ->assertNotPresent('#mobile-clue-across-1');
 
+    // Moving right from row 2 lands on a different across word, so the tab
+    // flips back to Across and highlights whichever clue is now active.
     $page->keys('#crossword-grid', ['ArrowRight'])
         ->assertScript("{$solverData}.mobileClueTab", 'across')
-        ->assertPresent('#mobile-clue-across-1.bg-blue-100');
+        ->assertScript("document.querySelector('[id^=\"mobile-clue-across-\"].bg-blue-100')?.id === 'mobile-clue-across-' + {$solverData}.activeClueNumber");
 
     // Jump to the last across clue: the tab stays on Across and the list
     // scrolls so the highlighted clue is visible inside the panel.
@@ -167,5 +170,67 @@ it('switches the mobile clue tab and scrolls to the active clue as the grid sele
             const clue = document.getElementById('mobile-clue-across-{$lastNumber}').getBoundingClientRect();
             return clue.top >= panel.top && clue.bottom <= panel.bottom;
         })()")
+        ->assertNoJavaScriptErrors();
+});
+
+it('gives every toolbar control and menu item an informative tooltip', function () {
+    $owner = User::factory()->create();
+    $solver = User::factory()->create();
+    $crossword = Crossword::factory()
+        ->for($owner)
+        ->published()
+        ->withBlocks()
+        ->withSolution()
+        ->create();
+
+    $this->actingAs($solver);
+
+    $solverData = 'Alpine.$data(document.querySelector(\'[x-data^="crosswordSolver"]\'))';
+
+    $page = visit(route('crosswords.solver', $crossword))->assertNoJavaScriptErrors();
+
+    // Every toolbar button sits inside a Flux tooltip.
+    $page->assertScript("(() => {
+        const toolbar = document.querySelector('[data-puzzle-title]').closest('.mb-4');
+        const buttons = [...toolbar.querySelectorAll('button, a')].filter(b => b.offsetParent !== null);
+        return buttons.length > 0 && buttons.every(b => b.closest('[data-flux-tooltip]'));
+    })()");
+
+    // Menu items wrapped in tooltips still work with the keyboard and mouse.
+    $page->click('button[aria-label="Clear letters"]')
+        ->assertSee('Clear all letters')
+        ->assertSee('Clear incorrect letters')
+        ->assertScript("[...document.querySelector('[data-puzzle-title]').closest('.mb-4').querySelectorAll('[data-flux-menu] [data-flux-menu-item]')].every(i => i.closest('[data-flux-tooltip]'))");
+
+    // The open menu holds focus; arrowing down must land on the first item.
+    $page->script("document.activeElement.dispatchEvent(new KeyboardEvent('keydown', {key: 'ArrowDown', bubbles: true}))");
+    $page->assertScript("document.querySelector('[data-puzzle-title]').closest('.mb-4').querySelector('[data-flux-menu] [data-flux-menu-item][data-active]')?.textContent.trim()", 'Clear all letters');
+
+    $page->script("(() => { const d = {$solverData}; d.progress[0][0] = 'Q'; })()");
+    $page->script("document.querySelector('[data-flux-menu-item][data-active]').click()");
+    $page->assertScript("{$solverData}.progress[0][0]", '')
+        ->assertNoJavaScriptErrors();
+});
+
+it('gives guest solvers informative tooltips on every toolbar control', function () {
+    $owner = User::factory()->create();
+    $crossword = Crossword::factory()
+        ->for($owner)
+        ->published()
+        ->withBlocks()
+        ->withSolution()
+        ->create();
+
+    $page = visit(route('puzzles.solve', $crossword))->assertNoJavaScriptErrors();
+
+    $page->assertScript("(() => {
+        const toolbar = document.querySelector('[data-puzzle-title]').closest('.mb-4');
+        const buttons = [...toolbar.querySelectorAll('button, a')].filter(b => b.offsetParent !== null);
+        return buttons.length > 0 && buttons.every(b => b.closest('[data-flux-tooltip]'));
+    })()");
+
+    $page->click('button[aria-label="Clear letters"]')
+        ->assertSee('Clear incorrect letters')
+        ->assertScript("[...document.querySelector('[data-puzzle-title]').closest('.mb-4').querySelectorAll('[data-flux-menu] [data-flux-menu-item]')].every(i => i.closest('[data-flux-tooltip]'))")
         ->assertNoJavaScriptErrors();
 });
