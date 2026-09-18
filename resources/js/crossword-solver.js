@@ -88,6 +88,12 @@ export function crosswordSolver({
                 if (val) this._autosave.scheduleSave();
             });
 
+            // Keep the clue panels in sync with the grid: on narrow screens
+            // the Across/Down tab follows the typing direction, and the active
+            // clue scrolls into view in whichever list is visible.
+            this.$watch('direction', () => this.scrollActiveClueIntoView());
+            this.$watch('activeClueNumber', () => this.scrollActiveClueIntoView());
+
             if (!this.solved) this._startTimer();
 
             this._onVisibilityChange = () => {
@@ -363,13 +369,41 @@ export function crosswordSolver({
         },
 
         scrollActiveClueIntoView() {
+            const num = this.activeClueNumber;
+            if (num < 0) return;
+
+            // Switching the tab re-renders the mobile list (x-if), so the
+            // scroll has to wait until the new clue elements exist.
+            this.mobileClueTab = this.direction;
+
             this.$nextTick(() => {
-                const num = this.activeClueNumber;
-                if (num < 0) return;
-                const panel = this.direction === 'across' ? this.$refs.acrossPanel : this.$refs.downPanel;
-                const el = document.getElementById('clue-' + this.direction + '-' + num);
-                if (el && panel) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                const dir = this.direction;
+                if (this.activeClueNumber !== num || dir !== this.mobileClueTab) return;
+
+                const desktopPanel = dir === 'across' ? this.$refs.acrossPanel : this.$refs.downPanel;
+                this._scrollClueWithinPanel(desktopPanel, document.getElementById('clue-' + dir + '-' + num));
+                this._scrollClueWithinPanel(this.$refs.mobileCluePanel, document.getElementById('mobile-clue-' + dir + '-' + num));
             });
+        },
+
+        /**
+         * Scroll only the clue panel (never the page) so the clue is visible.
+         * Element.scrollIntoView would also scroll ancestor containers, which
+         * on mobile yanks the grid out from under the solver mid-word.
+         */
+        _scrollClueWithinPanel(panel, el) {
+            if (!panel || !el || !panel.contains(el)) return;
+            if (panel.offsetParent === null) return;
+
+            const panelRect = panel.getBoundingClientRect();
+            const elRect = el.getBoundingClientRect();
+            const margin = 4;
+
+            if (elRect.top < panelRect.top + margin) {
+                panel.scrollTop -= (panelRect.top + margin) - elRect.top;
+            } else if (elRect.bottom > panelRect.bottom - margin) {
+                panel.scrollTop += elRect.bottom - (panelRect.bottom - margin);
+            }
         },
 
         // --- Keyboard ---

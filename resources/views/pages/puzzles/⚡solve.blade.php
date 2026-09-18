@@ -498,11 +498,12 @@ class extends Component {
                         class="border-b-2 px-4 py-2 text-sm font-medium"
                     >{{ __('Down') }}</button>
                 </div>
-                <div class="max-h-48 space-y-0.5 overflow-y-auto py-2">
+                <div class="max-h-48 space-y-0.5 overflow-y-auto py-2" x-ref="mobileCluePanel">
                     <template x-if="mobileClueTab === 'across'">
                         <div>
                             <template x-for="clue in computedCluesAcross" :key="'m-across-' + clue.number">
                                 <div
+                                    :id="'mobile-clue-across-' + clue.number"
                                     x-on:click="selectClue('across', clue.number)"
                                     x-on:focus="selectClue('across', clue.number)"
                                     x-on:keydown.tab.prevent="focusNextClue($el, 'across', false)"
@@ -526,6 +527,7 @@ class extends Component {
                         <div>
                             <template x-for="clue in computedCluesDown" :key="'m-down-' + clue.number">
                                 <div
+                                    :id="'mobile-clue-down-' + clue.number"
                                     x-on:click="selectClue('down', clue.number)"
                                     x-on:focus="selectClue('down', clue.number)"
                                     x-on:keydown.tab.prevent="focusNextClue($el, 'down', false)"
