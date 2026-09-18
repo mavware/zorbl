@@ -47,6 +47,7 @@ new #[Title('Solve Crossword')] class extends Component {
 
     public string $title = '';
     public string $authorName = '';
+    public bool $authorIsSupporter = false;
     public int $width;
     public int $height;
     public array $grid = [];
@@ -159,7 +160,7 @@ new #[Title('Solve Crossword')] class extends Component {
     public function comments()
     {
         return PuzzleComment::where('crossword_id', $this->crosswordId)
-            ->with('user')
+            ->with('user.subscriptions')
             ->latest()
             ->get();
     }
@@ -170,13 +171,14 @@ new #[Title('Solve Crossword')] class extends Component {
         return PuzzleAttempt::where('crossword_id', $this->crosswordId)
             ->where('is_completed', true)
             ->whereNotNull('solve_time_seconds')
-            ->with('user:id,name')
+            ->with(['user:id,name', 'user.subscriptions'])
             ->orderBy('solve_time_seconds')
             ->limit(10)
             ->get()
             ->map(fn (PuzzleAttempt $a) => [
                 'user_id' => $a->user_id,
                 'name' => $a->user->name,
+                'supporter' => $a->user->isSupporter(),
                 'initials' => $a->user->initials(),
                 'time' => $a->formattedSolveTime(),
                 'seconds' => $a->solve_time_seconds,
@@ -340,6 +342,7 @@ new #[Title('Solve Crossword')] class extends Component {
         $this->attemptId = $attempt->id;
         $this->title = $crossword->displayTitle();
         $this->authorName = $crossword->user->name ?? '';
+        $this->authorIsSupporter = $crossword->user?->isSupporter() ?? false;
         $this->width = $crossword->width;
         $this->height = $crossword->height;
         $this->grid = $crossword->grid;
@@ -610,6 +613,7 @@ new #[Title('Solve Crossword')] class extends Component {
                     <flux:tooltip content="{{ __('See this constructor\'s profile and other puzzles') }}">
                         <a href="{{ route('constructors.show', $authorUserId) }}" wire:navigate class="text-zinc-600 hover:text-blue-600 dark:hover:text-blue-400">{{ $authorName }}</a>
                     </flux:tooltip>
+                    <x-supporter-badge :supporter="$authorIsSupporter" />
                 </flux:text>
             @endif
             <flux:tooltip content="{{ $this->isLiked ? __('Remove your like from this puzzle') : __('Like this puzzle to show the constructor some love') }}">
@@ -1268,7 +1272,7 @@ new #[Title('Solve Crossword')] class extends Component {
                             {{ $entry['initials'] }}
                         </div>
                         <span class="flex-1 truncate text-sm {{ $entry['user_id'] === Auth::id() ? 'font-semibold text-fg' : 'text-zinc-700 dark:text-zinc-300' }}">
-                            {{ $entry['user_id'] === Auth::id() ? __('You') : $entry['name'] }}
+                            {{ $entry['user_id'] === Auth::id() ? __('You') : $entry['name'] }} <x-supporter-badge :supporter="$entry['supporter'] ?? false" />
                         </span>
                         <span class="text-sm font-medium tabular-nums text-zinc-600 dark:text-zinc-400">{{ $entry['time'] }}</span>
                     </div>
@@ -1369,6 +1373,7 @@ new #[Title('Solve Crossword')] class extends Component {
                                 <div class="flex-1">
                                     <div class="flex items-center gap-2">
                                         <flux:text size="sm" class="font-medium">{{ $comment->user->name }}</flux:text>
+                                        <x-supporter-badge :user="$comment->user" />
                                         @if($comment->rating)
                                             <div class="flex items-center gap-0.5">
                                                 @for($i = 1; $i <= 5; $i++)
@@ -1591,7 +1596,7 @@ new #[Title('Solve Crossword')] class extends Component {
                                         {{ $entry['initials'] }}
                                     </div>
                                     <span class="flex-1 truncate text-sm {{ $entry['user_id'] === Auth::id() ? 'font-semibold text-fg' : 'text-zinc-700 dark:text-zinc-300' }}">
-                                        {{ $entry['user_id'] === Auth::id() ? __('You') : $entry['name'] }}
+                                        {{ $entry['user_id'] === Auth::id() ? __('You') : $entry['name'] }} <x-supporter-badge :supporter="$entry['supporter'] ?? false" />
                                     </span>
                                     <span class="text-sm font-medium tabular-nums text-zinc-600 dark:text-zinc-400">{{ $entry['time'] }}</span>
                                 </div>

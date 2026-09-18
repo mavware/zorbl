@@ -28,7 +28,7 @@ new #[Title('Solving')] class extends Component {
     {
         $query = Auth::user()
             ->puzzleAttempts()
-            ->with(['crossword' => fn ($q) => $q->with('user')]);
+            ->with(['crossword' => fn ($q) => $q->with('user.subscriptions')]);
 
         if ($this->filter === 'in_progress') {
             $query->where('is_completed', false);
@@ -155,7 +155,7 @@ new #[Title('Solving')] class extends Component {
 
         return Crossword::where('is_published', true)
             ->whereIn('user_id', $followingIds)
-            ->with('user:id,name')
+            ->with(['user:id,name', 'user.subscriptions'])
             ->withCount('likes')
             ->latest()
             ->limit(6)
@@ -186,7 +186,7 @@ new #[Title('Solving')] class extends Component {
         return Crossword::where('is_published', true)
             ->where('user_id', '!=', Auth::id())
             ->whereIn('id', $recentlyLikedIds->keys())
-            ->with('user:id,name')
+            ->with(['user:id,name', 'user.subscriptions'])
             ->withCount('likes')
             ->get()
             ->sortByDesc(fn ($c) => $recentlyLikedIds[$c->id] ?? 0)
@@ -199,7 +199,7 @@ new #[Title('Solving')] class extends Component {
     {
         return Crossword::where('is_published', true)
             ->where('user_id', '!=', Auth::id())
-            ->with('user:id,name')
+            ->with(['user:id,name', 'user.subscriptions'])
             ->withCount('likes')
             ->latest()
             ->limit(3)
@@ -334,7 +334,7 @@ new #[Title('Solving')] class extends Component {
                             <flux:text size="sm" class="mt-0.5 text-zinc-600 dark:text-zinc-400">
                                 <span class="font-medium text-fg">{{ $dailyPuzzle->displayTitle() }}</span>
                                 &middot;
-                                {{ __('by :author', ['author' => $dailyPuzzle->user->name ?? __('Unknown')]) }}
+                                {{ __('by :author', ['author' => $dailyPuzzle->user->name ?? __('Unknown')]) }} <x-supporter-badge :user="$dailyPuzzle->user" />
                                 &middot;
                                 {{ $dailyPuzzle->width }}&times;{{ $dailyPuzzle->height }}
                             </flux:text>
@@ -419,7 +419,7 @@ new #[Title('Solving')] class extends Component {
 
                             <flux:heading size="sm" class="truncate">{{ $attempt->crossword->displayTitle() }}</flux:heading>
                             <flux:text size="sm" class="mt-1">
-                                {{ __('by :author', ['author' => $attempt->crossword->user->name ?? __('Unknown')]) }}
+                                {{ __('by :author', ['author' => $attempt->crossword->user->name ?? __('Unknown')]) }} <x-supporter-badge :user="$attempt->crossword->user" />
                                 &middot;
                                 {{ $attempt->crossword->width }}&times;{{ $attempt->crossword->height }}
                             </flux:text>
@@ -577,7 +577,7 @@ new #[Title('Solving')] class extends Component {
                                 {{ $crossword->displayTitle() }}
                             </flux:heading>
                             <flux:text size="sm" class="mt-1 text-zinc-500">
-                                {{ __('by :author', ['author' => $crossword->user->name ?? __('Unknown')]) }}
+                                {{ __('by :author', ['author' => $crossword->user->name ?? __('Unknown')]) }} <x-supporter-badge :user="$crossword->user" />
                                 &middot;
                                 {{ $crossword->width }}&times;{{ $crossword->height }}
                             </flux:text>
@@ -623,7 +623,7 @@ new #[Title('Solving')] class extends Component {
                             <div class="min-w-0 flex-1">
                                 <div class="truncate text-sm font-medium text-fg">{{ $crossword->displayTitle() }}</div>
                                 <flux:text size="sm" class="text-zinc-500">
-                                    {{ __('by :author', ['author' => $crossword->user->name ?? __('Unknown')]) }}
+                                    {{ __('by :author', ['author' => $crossword->user->name ?? __('Unknown')]) }} <x-supporter-badge :user="$crossword->user" />
                                     &middot;
                                     <span class="text-red-400">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="inline size-3" viewBox="0 0 24 24" fill="currentColor"><path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" /></svg>
@@ -664,7 +664,7 @@ new #[Title('Solving')] class extends Component {
                             <div class="min-w-0 flex-1">
                                 <div class="truncate text-sm font-medium text-fg">{{ $crossword->displayTitle() }}</div>
                                 <flux:text size="sm" class="text-zinc-500">
-                                    {{ __('by :author', ['author' => $crossword->user->name ?? __('Unknown')]) }}
+                                    {{ __('by :author', ['author' => $crossword->user->name ?? __('Unknown')]) }} <x-supporter-badge :user="$crossword->user" />
                                     &middot;
                                     {{ $crossword->created_at->diffForHumans() }}
                                 </flux:text>

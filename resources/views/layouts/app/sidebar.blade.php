@@ -127,7 +127,7 @@
                         />
 
                         <div class="grid flex-1 text-start text-sm leading-tight">
-                            <flux:heading class="truncate">{{ auth()->user()->name }}</flux:heading>
+                            <flux:heading class="truncate">{{ auth()->user()->name }} <x-supporter-badge :user="auth()->user()" /></flux:heading>
                             <flux:text class="truncate">{{ auth()->user()->email }}</flux:text>
                         </div>
                     </div>

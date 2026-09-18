@@ -49,7 +49,7 @@ new class extends Component {
                     $q->orWhere('user_id', $authId);
                 }
             })
-            ->with(['user:id,name', 'crossword:id,title']);
+            ->with(['user:id,name', 'user.subscriptions', 'crossword:id,title']);
 
         $allowed = ['clue'];
         if ($this->sortField !== '' && in_array($this->sortField, $allowed)) {
@@ -166,7 +166,7 @@ new class extends Component {
                                 <flux:badge variant="outline" size="sm" color="lime">{{ __('Standalone') }}</flux:badge>
                             @endif
                         </flux:table.cell>
-                        <flux:table.cell class="hidden md:table-cell">{{ $entry->user->name ?? __('Unknown') }}</flux:table.cell>
+                        <flux:table.cell class="hidden md:table-cell">{{ $entry->user->name ?? __('Unknown') }} <x-supporter-badge :user="$entry->user" /></flux:table.cell>
                     </flux:table.row>
                 @endforeach
             </flux:table.rows>

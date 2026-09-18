@@ -17,6 +17,9 @@ new class extends Component {
     public string $authorName;
 
     #[Locked]
+    public bool $authorIsSupporter = false;
+
+    #[Locked]
     public int $width;
 
     #[Locked]
@@ -63,6 +66,7 @@ new class extends Component {
         $this->crosswordId = $crossword->id;
         $this->title = $crossword->displayTitle();
         $this->authorName = $crossword->user->name ?? __('Unknown');
+        $this->authorIsSupporter = $crossword->user?->isSupporter() ?? false;
         $this->width = $crossword->width;
         $this->height = $crossword->height;
         $this->grid = $crossword->grid ?? [];
@@ -164,7 +168,7 @@ new class extends Component {
 
     <flux:heading size="sm" class="truncate">{{ $title }}</flux:heading>
     <flux:text size="sm" class="mt-1">
-        {{ __('by :author', ['author' => $authorName]) }}
+        {{ __('by :author', ['author' => $authorName]) }} <x-supporter-badge :supporter="$authorIsSupporter" />
     </flux:text>
 
     <div class="mt-1.5 flex flex-wrap items-center gap-1.5">

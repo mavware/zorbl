@@ -227,9 +227,7 @@ new #[Title('Constructor Profile')] class extends Component {
             <div>
                 <flux:heading size="xl">
                     {{ $constructorName }}
-                    @if ($this->constructor->isPro())
-                        <flux:badge color="purple" size="sm" class="ml-1 align-middle">{{ __('Pro') }}</flux:badge>
-                    @endif
+                    <x-supporter-badge :user="$this->constructor" class="ml-1" />
                 </flux:heading>
                 <div class="mt-1 flex items-center gap-4 text-sm text-zinc-600">
                     <span>{{ trans_choice(':count puzzle|:count puzzles', $this->publishedPuzzles->total()) }}</span>

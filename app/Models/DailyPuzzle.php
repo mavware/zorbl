@@ -89,7 +89,7 @@ class DailyPuzzle extends Model
         );
 
         return $id
-            ? static::with('crossword.user:id,name')->find($id)
+            ? static::with(['crossword.user:id,name', 'crossword.user.subscriptions'])->find($id)
             : null;
     }
 
@@ -131,7 +131,7 @@ class DailyPuzzle extends Model
         );
 
         return $id
-            ? Crossword::with('user:id,name')->withCount('likes')->find($id)
+            ? Crossword::with(['user:id,name', 'user.subscriptions'])->withCount('likes')->find($id)
             : null;
     }
 }

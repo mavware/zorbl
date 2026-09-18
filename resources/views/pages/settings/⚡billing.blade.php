@@ -1,6 +1,6 @@
 <?php
 
-use App\Support\AiUsageTracker;
+use App\Support\SupporterGoal;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
@@ -20,39 +20,27 @@ new #[Title('Billing')] class extends Component {
     }
 
     #[Computed]
+    public function isSupporter(): bool
+    {
+        return $this->user->isSupporter();
+    }
+
+    #[Computed]
     public function subscription()
     {
         return $this->user->subscription('default');
     }
 
     #[Computed]
+    public function goal(): SupporterGoal
+    {
+        return app(SupporterGoal::class);
+    }
+
+    #[Computed]
     public function onGracePeriod(): bool
     {
         return $this->subscription?->onGracePeriod() ?? false;
-    }
-
-    #[Computed]
-    public function aiFillsUsed(): int
-    {
-        return app(AiUsageTracker::class)->monthlyCount($this->user, 'grid_fill');
-    }
-
-    #[Computed]
-    public function aiFillsRemaining(): int
-    {
-        return app(AiUsageTracker::class)->remaining($this->user, 'grid_fill');
-    }
-
-    #[Computed]
-    public function aiCluesUsed(): int
-    {
-        return app(AiUsageTracker::class)->monthlyCount($this->user, 'clue_generation');
-    }
-
-    #[Computed]
-    public function aiCluesRemaining(): int
-    {
-        return app(AiUsageTracker::class)->remaining($this->user, 'clue_generation');
     }
 
     public function subscribe()
@@ -80,35 +68,6 @@ new #[Title('Billing')] class extends Component {
 
     <x-pages::settings.layout :heading="__('Billing')" :subheading="__('Manage your subscription and billing')">
         <div class="my-6 w-full space-y-6">
-            {{-- Current Plan --}}
-            <flux:card>
-                <div class="flex items-center justify-between">
-                    <div>
-                        <flux:heading size="lg">
-                            @if ($this->isPro)
-                                {{ __('Pro Plan') }}
-                            @else
-                                {{ __('Free Plan') }}
-                            @endif
-                        </flux:heading>
-                        <flux:subheading>
-                            @if ($this->isPro && $this->onGracePeriod)
-                                {{ __('Your Pro subscription ends on :date.', ['date' => $this->subscription->ends_at->format('M j, Y')]) }}
-                            @elseif ($this->isPro)
-                                {{ __('Thank you for supporting Crossword Builder. You have full access to all Pro features.') }}
-                            @else
-                                {{ __('Everything you need to build, publish, and solve puzzles, free.') }}
-                            @endif
-                        </flux:subheading>
-                    </div>
-                    @if ($this->isPro)
-                        <flux:badge color="green" size="lg">{{ __('Pro') }}</flux:badge>
-                    @else
-                        <flux:badge color="zinc" size="lg">{{ __('Free') }}</flux:badge>
-                    @endif
-                </div>
-            </flux:card>
-
             @if (request()->query('checkout') === 'success')
                 <flux:callout variant="success" icon="check-circle">
                     <flux:callout.heading>{{ __('Thank you for your support!') }}</flux:callout.heading>
@@ -116,40 +75,7 @@ new #[Title('Billing')] class extends Component {
                 </flux:callout>
             @endif
 
-            {{-- AI Usage (Pro only) --}}
-            @if ($this->isPro)
-                <flux:card>
-                    <flux:heading size="sm" class="mb-3">{{ __('AI Usage This Month') }}</flux:heading>
-
-                    <div class="space-y-3">
-                        <div>
-                            <div class="flex justify-between text-sm">
-                                <span>{{ __('AI Autofill') }}</span>
-                                <span class="text-zinc-600">{{ $this->aiFillsUsed }} / 50</span>
-                            </div>
-                            <div class="mt-1 h-2 w-full overflow-hidden rounded-full bg-page">
-                                <div class="h-full rounded-full bg-blue-500 transition-all" style="width: {{ min(100, ($this->aiFillsUsed / 50) * 100) }}%"></div>
-                            </div>
-                        </div>
-
-                        <div>
-                            <div class="flex justify-between text-sm">
-                                <span>{{ __('AI Clue Generation') }}</span>
-                                <span class="text-zinc-600">{{ $this->aiCluesUsed }} / 50</span>
-                            </div>
-                            <div class="mt-1 h-2 w-full overflow-hidden rounded-full bg-page">
-                                <div class="h-full rounded-full bg-purple-500 transition-all" style="width: {{ min(100, ($this->aiCluesUsed / 50) * 100) }}%"></div>
-                            </div>
-                        </div>
-
-                        <flux:text size="xs" class="text-zinc-600">
-                            {{ __('Usage resets on the 1st of each month.') }}
-                        </flux:text>
-                    </div>
-                </flux:card>
-            @endif
-
-            {{-- Support Section (Free users) --}}
+            {{-- Subscribe (free users) --}}
             @unless ($this->isPro)
                 <flux:card>
                     <flux:heading size="sm" class="mb-2">{{ __('Support our work') }}</flux:heading>
@@ -167,9 +93,13 @@ new #[Title('Billing')] class extends Component {
                             <flux:icon.check-circle class="size-5 text-green-500" />
                             <span>{{ __('AI Clue Generation — 50 uses/month') }}</span>
                         </div>
+                        <div class="flex items-center gap-2">
+                            <flux:icon.check-circle class="size-5 text-green-500" />
+                            <span>{{ __('A Supporter badge next to your name') }}</span>
+                        </div>
                     </div>
 
-                    <flux:text size="sm" class="mb-4 text-zinc-600">
+                    <flux:text size="sm" class="mb-4">
                         {{ __('$5 per month. Cancel anytime.') }}
                     </flux:text>
 
@@ -179,18 +109,60 @@ new #[Title('Billing')] class extends Component {
                 </flux:card>
             @endunless
 
-            {{-- Manage Subscription (Pro users) --}}
+            {{-- Manage / unsubscribe (subscribers) --}}
             @if ($this->isPro)
                 <flux:card>
-                    <flux:heading size="sm" class="mb-2">{{ __('Manage Subscription') }}</flux:heading>
+                    <div class="mb-2 flex items-center gap-2">
+                        <flux:heading size="sm">
+                            @if ($this->isSupporter)
+                                {{ __('Thank you for supporting Crossword Builder') }}
+                            @else
+                                {{ __('Manage Subscription') }}
+                            @endif
+                        </flux:heading>
+                        <x-supporter-badge :supporter="$this->isSupporter" />
+                    </div>
+
+                    @if ($this->isSupporter && $this->onGracePeriod)
+                        <flux:text class="mb-4">
+                            {{ __('Your support has helped keep Crossword Builder free for everyone. Your subscription ends on :date, and you keep AI autofill and AI clue generation until then. You can resume anytime from the billing portal.', ['date' => $this->subscription->ends_at->format('M j, Y')]) }}
+                        </flux:text>
+                    @elseif ($this->isSupporter)
+                        <flux:text class="mb-4">
+                            {{ __('Your $5 a month goes directly toward hosting, AI costs, and keeping every tool here free for everyone. It means a lot. As a thank-you, you have full access to AI autofill and AI clue generation, and a Supporter badge appears next to your name across the site.') }}
+                        </flux:text>
+                    @endif
+
                     <flux:subheading class="mb-4">
-                        {{ __('Update your payment method, change plans, or cancel your subscription through the Stripe billing portal.') }}
+                        {{ __('Update your payment method or cancel your subscription through the Stripe billing portal.') }}
                     </flux:subheading>
                     <flux:button wire:click="manageBilling" variant="primary">
                         {{ __('Manage Billing') }}
                     </flux:button>
                 </flux:card>
             @endif
+
+            {{-- Funding goal --}}
+            <flux:card data-supporter-goal>
+                <div class="mb-2 flex items-center justify-between gap-4">
+                    <flux:heading size="sm">{{ __('Our monthly goal') }}</flux:heading>
+                    <span class="text-sm font-medium tabular-nums">
+                        {{ __('$:current of $:goal', ['current' => number_format($this->goal->currentDollars()), 'goal' => number_format($this->goal->goalDollars())]) }}
+                    </span>
+                </div>
+
+                <div class="h-3 w-full overflow-hidden rounded-full bg-page" role="progressbar" aria-valuemin="0" aria-valuemax="{{ $this->goal->goalDollars() }}" aria-valuenow="{{ $this->goal->currentDollars() }}" aria-label="{{ __('Progress toward monthly goal') }}">
+                    <div class="h-full rounded-full bg-pink-500 transition-all" style="width: {{ $this->goal->percent() }}%"></div>
+                </div>
+
+                <flux:text size="sm" class="mt-3">
+                    @if ($this->goal->isReached())
+                        {{ __('Goal reached! Thanks to :count supporter(s), Crossword Builder is fully funded this month.', ['count' => number_format($this->goal->supporterCount())]) }}
+                    @else
+                        {{ __(':percent% of the way there, with help from :count supporter(s). Every subscription brings us $5 closer to covering hosting and AI costs so the site stays free for everyone.', ['percent' => $this->goal->percent(), 'count' => number_format($this->goal->supporterCount())]) }}
+                    @endif
+                </flux:text>
+            </flux:card>
         </div>
     </x-pages::settings.layout>
 </section>

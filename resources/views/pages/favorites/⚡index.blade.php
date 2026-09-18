@@ -38,7 +38,7 @@ new #[Title('Favorites')] class extends Component {
     {
         return Auth::user()
             ->likedCrosswords()
-            ->with('user:id,name')
+            ->with(['user:id,name', 'user.subscriptions'])
             ->withCount('likes')
             ->latest('crossword_likes.created_at')
             ->get();
@@ -58,7 +58,7 @@ new #[Title('Favorites')] class extends Component {
         }
 
         return $favoriteList->crosswords()
-            ->with('user:id,name')
+            ->with(['user:id,name', 'user.subscriptions'])
             ->withCount('likes')
             ->latest('crossword_favorite_list.created_at')
             ->get();
@@ -277,7 +277,7 @@ new #[Title('Favorites')] class extends Component {
 
                         <flux:heading size="sm" class="truncate">{{ $crossword->displayTitle() }}</flux:heading>
                         <flux:text size="sm" class="mt-1">
-                            {{ __('by :author', ['author' => $crossword->user->name ?? __('Unknown')]) }}
+                            {{ __('by :author', ['author' => $crossword->user->name ?? __('Unknown')]) }} <x-supporter-badge :user="$crossword->user" />
                             &middot;
                             {{ $crossword->width }}&times;{{ $crossword->height }}
                         </flux:text>

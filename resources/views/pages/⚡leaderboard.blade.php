@@ -2,6 +2,7 @@
 
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use Laravel\Cashier\Subscription;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Computed;
@@ -85,6 +86,25 @@ new #[Title('Leaderboard')] class extends Component {
                 ->limit(50)
                 ->get();
         });
+    }
+
+    /**
+     * Ids of users with an active subscription, for the supporter badge. The
+     * ranking rows above are plain query-builder results (not User models),
+     * so we resolve badges with one lookup instead of a query per row.
+     *
+     * @return list<int>
+     */
+    #[Computed]
+    public function supporterIds(): array
+    {
+        return Subscription::query()
+            ->where('type', 'default')
+            ->active()
+            ->distinct()
+            ->pluck('user_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
     }
 
     /**
@@ -274,7 +294,7 @@ new #[Title('Leaderboard')] class extends Component {
                                 </flux:table.cell>
                                 <flux:table.cell variant="strong">
                                     <a href="{{ route('constructors.show', $solver->id) }}" wire:navigate class="hover:text-blue-600 dark:hover:text-blue-400">
-                                        {{ $solver->name }}
+                                        {{ $solver->name }} <x-supporter-badge :supporter="in_array($solver->id, $this->supporterIds, true)" />
                                     </a>
                                 </flux:table.cell>
                                 <flux:table.cell align="end">
@@ -336,7 +356,7 @@ new #[Title('Leaderboard')] class extends Component {
                                 </flux:table.cell>
                                 <flux:table.cell variant="strong">
                                     <a href="{{ route('constructors.show', $solver->id) }}" wire:navigate class="hover:text-blue-600 dark:hover:text-blue-400">
-                                        {{ $solver->name }}
+                                        {{ $solver->name }} <x-supporter-badge :supporter="in_array($solver->id, $this->supporterIds, true)" />
                                     </a>
                                 </flux:table.cell>
                                 <flux:table.cell align="end">
@@ -398,7 +418,7 @@ new #[Title('Leaderboard')] class extends Component {
                                 </flux:table.cell>
                                 <flux:table.cell variant="strong">
                                     <a href="{{ route('constructors.show', $constructor->id) }}" wire:navigate class="hover:text-blue-600 dark:hover:text-blue-400">
-                                        {{ $constructor->name }}
+                                        {{ $constructor->name }} <x-supporter-badge :supporter="in_array($constructor->id, $this->supporterIds, true)" />
                                     </a>
                                 </flux:table.cell>
                                 <flux:table.cell align="end">
@@ -465,7 +485,7 @@ new #[Title('Leaderboard')] class extends Component {
                                 </flux:table.cell>
                                 <flux:table.cell variant="strong">
                                     <a href="{{ route('constructors.show', $user->id) }}" wire:navigate class="hover:text-blue-600 dark:hover:text-blue-400">
-                                        {{ $user->name }}
+                                        {{ $user->name }} <x-supporter-badge :supporter="in_array($user->id, $this->supporterIds, true)" />
                                     </a>
                                 </flux:table.cell>
                                 <flux:table.cell align="end">

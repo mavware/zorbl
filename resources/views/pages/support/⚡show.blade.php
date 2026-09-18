@@ -22,7 +22,7 @@ new #[Title('Ticket Detail')] class extends Component {
     #[Computed]
     public function responses()
     {
-        return $this->ticket->responses()->with('user:id,name')->oldest()->get();
+        return $this->ticket->responses()->with(['user:id,name', 'user.subscriptions'])->oldest()->get();
     }
 
     public function addResponse(): void
@@ -131,6 +131,7 @@ new #[Title('Ticket Detail')] class extends Component {
                     <div class="rounded-xl border p-4 {{ $response->is_admin_response ? 'border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30' : 'border-line' }}">
                         <div class="mb-2 flex items-center gap-2">
                             <flux:text size="sm" class="font-medium">{{ $response->user->name }}</flux:text>
+                            <x-supporter-badge :user="$response->user" />
                             @if($response->is_admin_response)
                                 <flux:badge size="sm" color="blue" variant="pill">{{ __('Staff') }}</flux:badge>
                             @endif

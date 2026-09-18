@@ -19,7 +19,7 @@ class extends Component {
     public function dailyPuzzles()
     {
         $query = DailyPuzzle::where('date', '<=', today())
-            ->with('crossword.user:id,name')
+            ->with(['crossword.user:id,name', 'crossword.user.subscriptions'])
             ->orderByDesc('date');
 
         return $query->paginate(21);
@@ -152,7 +152,7 @@ class extends Component {
 
                     <flux:heading size="sm" class="truncate">{{ $crossword->displayTitle() }}</flux:heading>
                     <flux:text size="sm" class="mt-1">
-                        {{ __('by :author', ['author' => $crossword->user->name ?? __('Unknown')]) }}
+                        {{ __('by :author', ['author' => $crossword->user->name ?? __('Unknown')]) }} <x-supporter-badge :user="$crossword->user" />
                         &middot;
                         {{ $crossword->width }}&times;{{ $crossword->height }}
                     </flux:text>

@@ -16,6 +16,7 @@ class extends Component {
 
     public string $title = '';
     public string $authorName = '';
+    public bool $authorIsSupporter = false;
     public int $width;
     public int $height;
     public array $grid = [];
@@ -58,6 +59,7 @@ class extends Component {
         $this->crosswordId = $crossword->id;
         $this->title = $crossword->displayTitle();
         $this->authorName = $crossword->user->name ?? '';
+        $this->authorIsSupporter = $crossword->user?->isSupporter() ?? false;
         $this->width = $crossword->width;
         $this->height = $crossword->height;
         $this->grid = $crossword->grid;
@@ -243,7 +245,7 @@ class extends Component {
                 <flux:heading size="lg" data-puzzle-title>{{ $title }}</flux:heading>
                 @if($authorName)
                     <flux:text size="sm" class="text-zinc-500">
-                        {{ __('by') }} {{ $authorName }}
+                        {{ __('by') }} {{ $authorName }} <x-supporter-badge :supporter="$authorIsSupporter" />
                     </flux:text>
                 @endif
             </div>

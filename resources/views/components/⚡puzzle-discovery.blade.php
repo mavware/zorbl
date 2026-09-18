@@ -94,7 +94,7 @@ new class extends Component {
     {
         $query = Crossword::where('is_published', true)
             ->safeFor(Auth::user())
-            ->with('user:id,name', 'tags:id,name,slug')
+            ->with('user:id,name', 'user.subscriptions', 'tags:id,name,slug')
             ->withCount('likes')
             ->withAvg('comments as avg_rating', 'rating');
 

@@ -21,6 +21,7 @@ use Illuminate\Notifications\DatabaseNotificationCollection;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
 use Laravel\Cashier\Billable;
+use Laravel\Cashier\Subscription;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Models\Permission;
@@ -279,6 +280,28 @@ class User extends Authenticatable implements FilamentUser
         return $this->hasRole('Admin')
             || $this->hasActiveManualPro()
             || $this->subscribed('default');
+    }
+
+    /**
+     * Whether the user is a paying supporter (an active or grace-period
+     * subscription). Unlike isPro(), admin and manually granted Pro access do
+     * not count: this drives the supporter badge and the funding goal.
+     *
+     * When the subscriptions relation hasn't been eager-loaded we run a direct
+     * query instead of touching the relation, so callers on list pages never
+     * trip the lazy-loading guard; eager-load `subscriptions` where possible.
+     */
+    public function isSupporter(): bool
+    {
+        if ($this->relationLoaded('subscriptions')) {
+            return $this->subscribed('default');
+        }
+
+        return Subscription::query()
+            ->where('user_id', $this->getKey())
+            ->where('type', 'default')
+            ->active()
+            ->exists();
     }
 
     /**

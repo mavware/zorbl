@@ -53,7 +53,7 @@ new class extends Component {
     #[Computed]
     public function clues()
     {
-        $query = ClueEntry::with(['user:id,name', 'crossword:id,title']);
+        $query = ClueEntry::with(['user:id,name', 'user.subscriptions', 'crossword:id,title']);
 
         // Hide unvetted clues from everyone except the author. Moderators see
         // the queue in Filament; the rest of the library is approved-only.
@@ -413,7 +413,7 @@ new class extends Component {
                                     <flux:badge variant="outline" size="sm" color="lime">{{ __('Standalone') }}</flux:badge>
                                 @endif
                             </flux:table.cell>
-                            <flux:table.cell class="hidden md:table-cell">{{ $entry->user->name ?? __('Unknown') }}</flux:table.cell>
+                            <flux:table.cell class="hidden md:table-cell">{{ $entry->user->name ?? __('Unknown') }} <x-supporter-badge :user="$entry->user" /></flux:table.cell>
                             <flux:table.cell align="end">
                                 <div class="flex items-center justify-end gap-1">
                                     @if($entry->status === \App\Models\ClueEntry::STATUS_PENDING)

@@ -162,9 +162,7 @@ new #[Title('Constructors')] class extends Component {
                         <div class="min-w-0 flex-1">
                             <flux:heading size="sm" class="truncate group-hover:text-blue-600 dark:group-hover:text-blue-400">
                                 {{ $constructor->name }}
-                                @if($constructor->isPro())
-                                    <flux:badge color="purple" size="sm" class="ml-1 align-middle">{{ __('Pro') }}</flux:badge>
-                                @endif
+                                <x-supporter-badge :user="$constructor" class="ml-1" />
                             </flux:heading>
                             @if($constructor->bio)
                                 <flux:text size="sm" class="mt-0.5 line-clamp-1 text-zinc-500">

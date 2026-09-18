@@ -25,7 +25,7 @@ new #[Title('Leaderboard')] class extends Component {
     #[Computed]
     public function entries()
     {
-        $query = $this->contest->entries()->with('user');
+        $query = $this->contest->entries()->with('user.subscriptions');
 
         $allowed = ['rank', 'puzzles_completed', 'total_solve_time'];
         $field = in_array($this->sortField, $allowed) ? $this->sortField : 'rank';
@@ -95,7 +95,7 @@ new #[Title('Leaderboard')] class extends Component {
                                 <span class="px-2 text-sm text-zinc-600">{{ $entry->rank }}</span>
                             @endif
                         </flux:table.cell>
-                        <flux:table.cell variant="strong">{{ $entry->user->name }}</flux:table.cell>
+                        <flux:table.cell variant="strong">{{ $entry->user->name }} <x-supporter-badge :user="$entry->user" /></flux:table.cell>
                         <flux:table.cell align="center">
                             @if($entry->meta_solved)
                                 <flux:icon name="check-circle" class="inline size-5 text-green-500" />

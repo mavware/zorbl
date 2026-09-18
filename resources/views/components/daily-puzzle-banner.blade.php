@@ -28,7 +28,7 @@
             <div class="mt-1">
                 <span class="font-medium text-fg">{{ $puzzle->displayTitle() }}</span>
                 <flux:text size="sm" class="mt-0.5 text-zinc-600 dark:text-zinc-400">
-                    {{ __('by :author', ['author' => $puzzle->user->name ?? __('Unknown')]) }}
+                    {{ __('by :author', ['author' => $puzzle->user->name ?? __('Unknown')]) }} <x-supporter-badge :user="$puzzle->user" />
                     &middot;
                     {{ $puzzle->width }}&times;{{ $puzzle->height }}
                     @if($puzzle->difficulty_label)
