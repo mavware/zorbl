@@ -2,9 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ClueEntry;
 use App\Models\Crossword;
 use App\Models\HelpArticle;
 use App\Models\User;
+use App\Models\Word;
+use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Cache;
 
@@ -16,7 +20,9 @@ class SitemapController extends Controller
      * Serve sitemap.xml for crawler discovery. We list every public URL and
      * every published puzzle. Cached for an hour to avoid touching the DB on
      * every Googlebot fetch; the cache is also invalidated immediately when
-     * a puzzle is published, updated, or deleted (see CrosswordObserver).
+     * a puzzle is published, updated, or deleted (see CrosswordObserver), a
+     * help article changes (HelpArticleObserver), or a clue is approved or
+     * removed (ClueEntryObserver).
      */
     public function index(): Response
     {
@@ -88,6 +94,33 @@ class SitemapController extends Controller
                         $constructor->updated_at,
                         'weekly',
                         '0.6',
+                    );
+                }
+            });
+
+        // Word catalog pages. The catalog holds 200k+ dictionary entries, so we
+        // only list words that have at least one approved clue: those are the
+        // content-rich pages the word page itself marks indexable, while
+        // clue-less words render with noindex and would just be sitemap noise.
+        Word::query()
+            ->whereHas('clueEntries', fn (Builder $q) => $q->where('status', ClueEntry::STATUS_APPROVED))
+            ->select(['id', 'word'])
+            ->addSelect([
+                'last_clue_at' => ClueEntry::query()
+                    ->approved()
+                    ->whereColumn('clue_entries.answer', 'words.word')
+                    ->selectRaw('max(updated_at)'),
+            ])
+            ->orderBy('word')
+            ->chunk(1000, function ($chunk) use (&$urls): void {
+                foreach ($chunk as $word) {
+                    $lastClueAt = $word->getAttribute('last_clue_at');
+
+                    $urls[] = $this->urlEntry(
+                        route('words.show', $word),
+                        $lastClueAt !== null ? CarbonImmutable::parse($lastClueAt) : null,
+                        'weekly',
+                        '0.5',
                     );
                 }
             });

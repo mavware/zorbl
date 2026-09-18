@@ -1,7 +1,9 @@
 <?php
 
+use App\Models\ClueEntry;
 use App\Models\Crossword;
 use App\Models\User;
+use App\Models\Word;
 use Illuminate\Support\Facades\Cache;
 
 beforeEach(function (): void {
@@ -60,6 +62,74 @@ test('sitemap lists published puzzles and excludes drafts', function () {
     expect($xml)
         ->toContain(route('puzzles.solve', $published->id))
         ->not->toContain(route('puzzles.solve', $draft->id));
+});
+
+test('sitemap lists word pages that have approved clues and excludes the rest', function () {
+    $clued = Word::factory()->word('APPLE')->create();
+    ClueEntry::factory()->standalone()->create(['answer' => 'APPLE', 'status' => ClueEntry::STATUS_APPROVED]);
+
+    // Only a pending submission: the page is noindex, so keep it out.
+    $pendingOnly = Word::factory()->word('PEAR')->create();
+    ClueEntry::factory()->standalone()->create(['answer' => 'PEAR', 'status' => ClueEntry::STATUS_PENDING]);
+
+    $bare = Word::factory()->word('PLUM')->create();
+
+    $xml = $this->get('/sitemap.xml')->getContent();
+
+    expect($xml)
+        ->toContain(route('words.show', $clued))
+        ->not->toContain(route('words.show', $pendingOnly))
+        ->not->toContain(route('words.show', $bare));
+});
+
+test('sitemap word entries use the latest approved clue as lastmod', function () {
+    Word::factory()->word('APPLE')->create();
+
+    $this->travelTo('2026-01-05 12:00:00');
+    ClueEntry::factory()->standalone()->create(['answer' => 'APPLE', 'status' => ClueEntry::STATUS_APPROVED]);
+
+    $this->travelTo('2026-03-20 12:00:00');
+    ClueEntry::factory()->standalone()->create(['answer' => 'APPLE', 'status' => ClueEntry::STATUS_APPROVED]);
+
+    // A newer pending clue must not bump lastmod: it isn't visible on the page.
+    $this->travelTo('2026-06-01 12:00:00');
+    ClueEntry::factory()->standalone()->create(['answer' => 'APPLE', 'status' => ClueEntry::STATUS_PENDING]);
+
+    $xml = $this->get('/sitemap.xml')->getContent();
+
+    expect($xml)->toContain(
+        '<loc>'.htmlspecialchars(route('words.show', 'APPLE'), ENT_XML1).'</loc><lastmod>2026-03-20</lastmod>'
+    );
+});
+
+test('approving a clue invalidates the sitemap cache', function () {
+    $word = Word::factory()->word('APPLE')->create();
+    $clue = ClueEntry::factory()->standalone()->create(['answer' => 'APPLE', 'status' => ClueEntry::STATUS_PENDING]);
+
+    $without = $this->get('/sitemap.xml')->getContent();
+    expect($without)->not->toContain(route('words.show', $word));
+    expect(Cache::has('sitemap.xml'))->toBeTrue();
+
+    // Editing a pending clue shouldn't touch the cache.
+    $clue->update(['clue' => 'Fruit with a core']);
+    expect(Cache::has('sitemap.xml'))->toBeTrue();
+
+    $clue->update(['status' => ClueEntry::STATUS_APPROVED]);
+    expect(Cache::has('sitemap.xml'))->toBeFalse();
+
+    expect($this->get('/sitemap.xml')->getContent())->toContain(route('words.show', $word));
+});
+
+test('deleting the last approved clue for a word invalidates the sitemap cache', function () {
+    $word = Word::factory()->word('APPLE')->create();
+    $clue = ClueEntry::factory()->standalone()->create(['answer' => 'APPLE', 'status' => ClueEntry::STATUS_APPROVED]);
+
+    expect($this->get('/sitemap.xml')->getContent())->toContain(route('words.show', $word));
+
+    $clue->delete();
+    expect(Cache::has('sitemap.xml'))->toBeFalse();
+
+    expect($this->get('/sitemap.xml')->getContent())->not->toContain(route('words.show', $word));
 });
 
 test('sitemap is well-formed xml that parses cleanly', function () {
