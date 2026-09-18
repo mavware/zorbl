@@ -40,6 +40,14 @@ class AdminPanelProvider extends PanelProvider
                 fn (): string => PulseDashboard::renderAssets(),
                 scopes: PulseDashboard::class,
             )
+            ->renderHook(
+                PanelsRenderHook::SIDEBAR_LOGO_AFTER,
+                fn (): string => view('filament.components.panel-switcher')->render(),
+            )
+            ->renderHook(
+                PanelsRenderHook::TOPBAR_LOGO_AFTER,
+                fn (): string => view('filament.components.panel-switcher')->render(),
+            )
             ->usermenuitems([
                 Action::make('Dashboard')
                     ->icon('heroicon-o-home')
