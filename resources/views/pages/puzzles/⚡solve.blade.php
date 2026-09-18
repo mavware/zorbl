@@ -236,8 +236,9 @@ class extends Component {
             {{ __('Skip to crossword grid') }}
         </a>
 
-        {{-- Toolbar --}}
-        <div class="mb-4 flex flex-wrap items-center gap-2">
+        {{-- Toolbar: title and controls share a row from lg up; below that the
+             controls drop to their own row instead of squeezing the title. --}}
+        <div class="mb-4 flex flex-wrap items-center gap-2 max-lg:flex-col max-lg:items-stretch" data-solver-toolbar>
             <div class="flex flex-1 items-center gap-3">
                 <flux:heading size="lg" data-puzzle-title>{{ $title }}</flux:heading>
                 @if($authorName)
@@ -247,7 +248,7 @@ class extends Component {
                 @endif
             </div>
 
-            <div class="flex items-center gap-1">
+            <div class="flex flex-wrap items-center gap-1" data-solver-controls>
                 {{-- Pencil mode toggle --}}
                 <flux:tooltip content="{{ __('Pencil mode: enter tentative letters you can easily change later') }}" kbd="P">
                     <button

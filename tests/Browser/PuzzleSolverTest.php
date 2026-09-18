@@ -234,3 +234,27 @@ it('gives guest solvers informative tooltips on every toolbar control', function
         ->assertScript("[...document.querySelector('[data-puzzle-title]').closest('.mb-4').querySelectorAll('[data-flux-menu] [data-flux-menu-item]')].every(i => i.closest('[data-flux-tooltip]'))")
         ->assertNoJavaScriptErrors();
 });
+
+it('moves the toolbar controls to their own row below the lg breakpoint', function () {
+    $owner = User::factory()->create();
+    $solver = User::factory()->create();
+    $crossword = Crossword::factory()
+        ->for($owner)
+        ->published()
+        ->withBlocks()
+        ->withSolution()
+        ->create(['title' => 'Toolbar Breakpoint']);
+
+    $this->actingAs($solver);
+
+    $rowsScript = "(() => {
+        const title = document.querySelector('[data-puzzle-title]').getBoundingClientRect();
+        const controls = document.querySelector('[data-solver-controls]').getBoundingClientRect();
+        return controls.top >= title.bottom ? 'two-rows' : 'one-row';
+    })()";
+
+    $page = visit(route('crosswords.solver', $crossword))->assertNoJavaScriptErrors();
+
+    $page->resize(1023, 900)->assertScript($rowsScript, 'two-rows');
+    $page->resize(1400, 900)->assertScript($rowsScript, 'one-row');
+});

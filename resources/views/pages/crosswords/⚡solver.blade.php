@@ -599,8 +599,9 @@ new #[Title('Solve Crossword')] class extends Component {
         {{ __('Skip to crossword grid') }}
     </a>
 
-    {{-- Toolbar --}}
-    <div class="mb-4 flex flex-wrap items-center gap-2">
+    {{-- Toolbar: title and controls share a row from lg up; below that the
+         controls drop to their own row instead of squeezing the title. --}}
+    <div class="mb-4 flex flex-wrap items-center gap-2 max-lg:flex-col max-lg:items-stretch" data-solver-toolbar>
         <div class="flex flex-1 items-center gap-3">
             <flux:heading size="lg" data-puzzle-title>{{ $title }}</flux:heading>
             @if(!$isOwner && $authorName)
@@ -641,7 +642,7 @@ new #[Title('Solve Crossword')] class extends Component {
             @endif
         </div>
 
-        <div class="flex items-center gap-1">
+        <div class="flex flex-wrap items-center gap-1" data-solver-controls>
             {{-- Save status (lives left of the pencil button so it's visible mid-solve) --}}
             <div class="flex items-center gap-1 pr-2 text-sm text-zinc-500">
                 <template x-if="saving">
