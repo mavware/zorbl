@@ -22,11 +22,6 @@
             <flux:menu.item :href="route('profile.edit')" icon="cog" wire:navigate>
                 {{ __('Settings') }}
             </flux:menu.item>
-            @if (auth()->user()->hasRole('Admin'))
-            <flux:menu.item :href="route('filament.admin.home')" icon="star">
-                {{ __('Admin') }}
-            </flux:menu.item>
-            @endif
             <form method="POST" action="{{ route('logout') }}" class="w-full">
                 @csrf
                 <flux:menu.item

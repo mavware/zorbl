@@ -51,6 +51,18 @@ new class extends Component {
     }
 
     #[Computed]
+    public function publishedCount(): int
+    {
+        return Auth::user()->crosswords()->where('is_published', true)->count();
+    }
+
+    #[Computed]
+    public function draftCount(): int
+    {
+        return Auth::user()->crosswords()->where('is_published', false)->count();
+    }
+
+    #[Computed]
     public function totalSolves(): int
     {
         return (int) Auth::user()->crosswords()
@@ -67,17 +79,6 @@ new class extends Component {
     }
 
     #[Computed]
-    public function overallAvgSolveTime(): ?int
-    {
-        $avg = Auth::user()->crosswords()
-            ->where('is_published', true)
-            ->whereNotNull('cached_avg_solve_time')
-            ->avg('cached_avg_solve_time');
-
-        return $avg ? (int) round($avg) : null;
-    }
-
-    #[Computed]
     public function totalLikes(): int
     {
         return DB::table('crossword_likes')
@@ -86,19 +87,6 @@ new class extends Component {
                 Auth::user()->crosswords()->where('is_published', true)->select('id')
             )
             ->count();
-    }
-
-    #[Computed]
-    public function overallAvgRating(): ?float
-    {
-        $avg = PuzzleComment::whereIn(
-            'crossword_id',
-            Auth::user()->crosswords()->where('is_published', true)->select('id')
-        )
-            ->whereNotNull('rating')
-            ->avg('rating');
-
-        return $avg ? round((float) $avg, 1) : null;
     }
 
     #[Computed]
@@ -282,6 +270,30 @@ new class extends Component {
     <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <div class="border-line rounded-xl border p-5">
             <div class="flex items-center gap-3">
+                <div class="flex size-10 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/30">
+                    <flux:icon name="puzzle-piece" class="size-5 text-amber-600 dark:text-amber-400" />
+                </div>
+                <div>
+                    <flux:text size="sm" class="text-zinc-600">{{ __('Published') }}</flux:text>
+                    <div class="text-2xl font-bold text-fg">{{ $this->publishedCount }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="border-line rounded-xl border p-5">
+            <div class="flex items-center gap-3">
+                <div class="flex size-10 items-center justify-center rounded-lg bg-zinc-200 dark:bg-zinc-700">
+                    <flux:icon name="pencil" class="size-5 text-zinc-700 dark:text-zinc-400" />
+                </div>
+                <div>
+                    <flux:text size="sm" class="text-zinc-600">{{ __('Drafts') }}</flux:text>
+                    <div class="text-2xl font-bold text-fg">{{ $this->draftCount }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="border-line rounded-xl border p-5">
+            <div class="flex items-center gap-3">
                 <div class="flex size-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/30">
                     <flux:icon name="eye" class="size-5 text-blue-600 dark:text-blue-400" />
                 </div>
@@ -306,39 +318,12 @@ new class extends Component {
 
         <div class="border-line rounded-xl border p-5">
             <div class="flex items-center gap-3">
-                <div class="flex size-10 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/30">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="size-5 text-amber-600 dark:text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                </div>
-                <div>
-                    <flux:text size="sm" class="text-zinc-600">{{ __('Avg Solve Time') }}</flux:text>
-                    <div class="text-2xl font-bold text-fg">{{ $this->formatTime($this->overallAvgSolveTime) }}</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="border-line rounded-xl border p-5">
-            <div class="flex items-center gap-3">
                 <div class="flex size-10 items-center justify-center rounded-lg bg-red-100 dark:bg-red-900/30">
                     <flux:icon name="heart" class="size-5 text-red-500 dark:text-red-400" />
                 </div>
                 <div>
                     <flux:text size="sm" class="text-zinc-600">{{ __('Total Likes') }}</flux:text>
                     <div class="text-2xl font-bold text-fg">{{ $this->totalLikes }}</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="border-line rounded-xl border p-5">
-            <div class="flex items-center gap-3">
-                <div class="flex size-10 items-center justify-center rounded-lg bg-yellow-100 dark:bg-yellow-900/30">
-                    <flux:icon name="star" class="size-5 text-yellow-500 dark:text-yellow-400" />
-                </div>
-                <div>
-                    <flux:text size="sm" class="text-zinc-600">{{ __('Avg Rating') }}</flux:text>
-                    <div class="text-2xl font-bold text-fg">{{ $this->overallAvgRating ?? '—' }}</div>
-                    @if($this->totalReviews > 0)
-                        <flux:text size="sm" class="text-zinc-500">{{ trans_choice(':count review|:count reviews', $this->totalReviews) }}</flux:text>
-                    @endif
                 </div>
             </div>
         </div>

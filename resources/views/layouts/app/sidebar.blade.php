@@ -86,6 +86,12 @@
             {{ __('Support') }}
         </flux:sidebar.item>
 
+        @if (auth()->user()->hasRole('Admin'))
+            <flux:sidebar.item icon="shield-check" :href="route('filament.admin.home')">
+                {{ __('Admin') }}
+            </flux:sidebar.item>
+        @endif
+
     </flux:sidebar.nav>
 
     @unless (auth()->user()->isAnonymous())
@@ -140,11 +146,6 @@
                 <flux:menu.item :href="route('profile.edit')" icon="cog" wire:navigate>
                     {{ __('Settings') }}
                 </flux:menu.item>
-                @if (auth()->user()->hasRole('Admin'))
-                    <flux:menu.item :href="route('filament.admin.home')" icon="home">
-                        {{ __('Admin') }}
-                    </flux:menu.item>
-                @endif
             </flux:menu.radio.group>
 
             <flux:menu.separator/>

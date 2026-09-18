@@ -88,3 +88,25 @@ test('registered users see the user menu', function () {
         ->assertSee('data-test="sidebar-menu-button"', false)
         ->assertSee('Log out', false);
 });
+
+test('admins see an Admin link in the sidebar below Support', function () {
+    Role::findOrCreate('Admin');
+    $admin = User::factory()->create();
+    $admin->assignRole('Admin');
+
+    $html = $this->actingAs($admin)
+        ->get(route('crosswords.index'))
+        ->assertOk()
+        ->assertSee(route('filament.admin.home'), false)
+        ->getContent();
+
+    expect(strpos($html, route('filament.admin.home')))
+        ->toBeGreaterThan(strpos($html, route('support.index')));
+});
+
+test('non-admins do not see the Admin link', function () {
+    $this->actingAs(User::factory()->create())
+        ->get(route('crosswords.index'))
+        ->assertOk()
+        ->assertDontSee(route('filament.admin.home'), false);
+});

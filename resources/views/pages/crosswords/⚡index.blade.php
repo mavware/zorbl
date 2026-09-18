@@ -560,35 +560,6 @@ new #[Title('Build')] class extends Component {
             </div>
         @endif
 
-        {{-- Stats Cards --}}
-        <div class="grid gap-4 sm:grid-cols-2">
-            {{-- Published Puzzles --}}
-            <div class="border-line rounded-xl border p-5">
-                <div class="flex items-center gap-3">
-                    <div class="flex size-10 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/30">
-                        <flux:icon name="puzzle-piece" class="size-5 text-amber-600 dark:text-amber-400" />
-                    </div>
-                    <div>
-                        <flux:text size="sm" class="text-zinc-600">{{ __('Published') }}</flux:text>
-                        <div class="text-2xl font-bold text-fg">{{ $this->publishedCount }}</div>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Draft Puzzles --}}
-            <div class="border-line rounded-xl border p-5">
-                <div class="flex items-center gap-3">
-                    <div class="flex size-10 items-center justify-center rounded-lg bg-page">
-                        <flux:icon name="pencil" class="size-5 text-zinc-700 dark:text-zinc-400" />
-                    </div>
-                    <div>
-                        <flux:text size="sm" class="text-zinc-600">{{ __('Drafts') }}</flux:text>
-                        <div class="text-2xl font-bold text-fg">{{ $this->draftCount }}</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
         {{-- Constructor Analytics --}}
         <livewire:constructor-analytics />
 

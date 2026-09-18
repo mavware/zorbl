@@ -152,38 +152,6 @@ test('total completions only counts completed attempts', function () {
     expect($component->get('totalCompletions'))->toBe(2);
 });
 
-test('overall average solve time computes correctly', function () {
-    $constructor = makeAnalyticsProUser();
-
-    $puzzle = Crossword::factory()->published()->for($constructor)->create([
-        'width' => 2,
-        'height' => 2,
-        'grid' => [[1, 2], [3, 0]],
-    ]);
-
-    PuzzleAttempt::factory()->completed()->for($puzzle)->create(['solve_time_seconds' => 100]);
-    PuzzleAttempt::factory()->completed()->for($puzzle)->create(['solve_time_seconds' => 200]);
-    PuzzleAttempt::factory()->for($puzzle)->create(['solve_time_seconds' => null]);
-
-    $component = Livewire::actingAs($constructor)->test('constructor-analytics');
-
-    expect($component->get('overallAvgSolveTime'))->toBe(150);
-});
-
-test('overall average solve time is null when no completed attempts', function () {
-    $constructor = makeAnalyticsProUser();
-
-    Crossword::factory()->published()->for($constructor)->create([
-        'width' => 2,
-        'height' => 2,
-        'grid' => [[1, 2], [3, 0]],
-    ]);
-
-    $component = Livewire::actingAs($constructor)->test('constructor-analytics');
-
-    expect($component->get('overallAvgSolveTime'))->toBeNull();
-});
-
 test('total likes counts likes on published puzzles only', function () {
     $constructor = makeAnalyticsProUser();
     $liker = User::factory()->create();
@@ -522,63 +490,6 @@ test('sorting by a new field resets direction to ascending', function () {
         ->and($component->get('sortField'))->toBe('likes_count');
 });
 
-test('overall average rating computes from published puzzle comments', function () {
-    $constructor = makeAnalyticsProUser();
-    $solver1 = User::factory()->create();
-    $solver2 = User::factory()->create();
-
-    $puzzle = Crossword::factory()->published()->for($constructor)->create([
-        'width' => 2,
-        'height' => 2,
-        'grid' => [[1, 2], [3, 0]],
-    ]);
-
-    PuzzleComment::create(['user_id' => $solver1->id, 'crossword_id' => $puzzle->id, 'body' => 'Great!', 'rating' => 5]);
-    PuzzleComment::create(['user_id' => $solver2->id, 'crossword_id' => $puzzle->id, 'body' => 'OK', 'rating' => 3]);
-
-    $component = Livewire::actingAs($constructor)->test('constructor-analytics');
-
-    expect($component->get('overallAvgRating'))->toBe(4.0);
-});
-
-test('overall average rating excludes draft puzzle comments', function () {
-    $constructor = makeAnalyticsProUser();
-    $solver = User::factory()->create();
-
-    $published = Crossword::factory()->published()->for($constructor)->create([
-        'width' => 2,
-        'height' => 2,
-        'grid' => [[1, 2], [3, 0]],
-    ]);
-    $draft = Crossword::factory()->for($constructor)->create([
-        'width' => 2,
-        'height' => 2,
-        'grid' => [[1, 2], [3, 0]],
-        'is_published' => false,
-    ]);
-
-    PuzzleComment::create(['user_id' => $solver->id, 'crossword_id' => $published->id, 'body' => 'Nice', 'rating' => 4]);
-    PuzzleComment::create(['user_id' => User::factory()->create()->id, 'crossword_id' => $draft->id, 'body' => 'Meh', 'rating' => 1]);
-
-    $component = Livewire::actingAs($constructor)->test('constructor-analytics');
-
-    expect($component->get('overallAvgRating'))->toBe(4.0);
-});
-
-test('overall average rating is null when no reviews exist', function () {
-    $constructor = makeAnalyticsProUser();
-
-    Crossword::factory()->published()->for($constructor)->create([
-        'width' => 2,
-        'height' => 2,
-        'grid' => [[1, 2], [3, 0]],
-    ]);
-
-    $component = Livewire::actingAs($constructor)->test('constructor-analytics');
-
-    expect($component->get('overallAvgRating'))->toBeNull();
-});
-
 test('total reviews counts only comments with ratings on published puzzles', function () {
     $constructor = makeAnalyticsProUser();
     $solver1 = User::factory()->create();
@@ -673,8 +584,26 @@ test('rating displays on analytics page for pro users', function () {
     $this->actingAs($constructor)
         ->get(route('crosswords.index'))
         ->assertOk()
-        ->assertSee('Avg Rating')
-        ->assertSee('1 review');
+        // The overview no longer has an Avg Rating card; ratings live in the
+        // per-puzzle performance table.
+        ->assertDontSee('Avg Rating')
+        ->assertDontSee('Avg Solve Time')
+        ->assertSee('Reviewed Puzzle')
+        ->assertSee('5.0')
+        ->assertSee('(1)');
+});
+
+test('analytics overview shows published and draft counts', function () {
+    $constructor = makeAnalyticsProUser();
+    Crossword::factory()->published()->for($constructor)->count(2)->create();
+    Crossword::factory()->for($constructor)->create(['is_published' => false]);
+
+    $component = Livewire::actingAs($constructor)->test('constructor-analytics');
+
+    expect($component->get('publishedCount'))->toBe(2)
+        ->and($component->get('draftCount'))->toBe(1);
+
+    $component->assertSee('Published')->assertSee('Drafts');
 });
 
 test('rating trend groups ratings by month', function () {
