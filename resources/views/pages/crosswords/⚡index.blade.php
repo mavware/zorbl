@@ -391,9 +391,9 @@ new #[Title('Build')] class extends Component {
 }
 ?>
 
-<div class="space-y-6">
-        <div class="flex items-center justify-between">
-            <x-dashboard-switch active="build" />
+<div class="space-y-6" data-full-bleed>
+        <div class="flex items-center justify-between px-6 lg:px-8">
+            <flux:heading size="xl">{{ __('Build') }}</flux:heading>
 
             <div class="flex gap-2">
                 <flux:button variant="primary" icon="plus" wire:click="$set('showNewModal', true)">
@@ -407,7 +407,7 @@ new #[Title('Build')] class extends Component {
 
         {{-- First-run welcome — only visible to brand-new accounts with zero activity. --}}
         @if($this->isNewUser)
-            <div class="relative overflow-hidden rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 p-6 dark:border-amber-800/50 dark:from-amber-950/30 dark:to-orange-950/20" data-test="dashboard-welcome-hero">
+            <div class="relative mx-6 overflow-hidden rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 p-6 lg:mx-8 dark:border-amber-800/50 dark:from-amber-950/30 dark:to-orange-950/20" data-test="dashboard-welcome-hero">
                 <div class="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
                     <div class="max-w-xl">
                         <flux:heading size="lg" class="!text-amber-700 dark:!text-amber-300">
@@ -442,8 +442,10 @@ new #[Title('Build')] class extends Component {
             </div>
         @endif
 
+        <flux:separator class="bg-line" />
+
         {{-- Search & Filters --}}
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div class="flex flex-col gap-3 px-6 sm:flex-row sm:items-center lg:px-8">
             <div class="flex-1">
                 <flux:input
                     icon="magnifying-glass"
@@ -468,7 +470,7 @@ new #[Title('Build')] class extends Component {
         </div>
 
         @if(count($selectedPuzzles) > 0)
-            <div class="flex items-center justify-between rounded-lg bg-blue-50 px-4 py-2.5 dark:bg-blue-950/50">
+            <div class="mx-6 flex items-center justify-between rounded-lg bg-blue-50 px-4 py-2.5 lg:mx-8 dark:bg-blue-950/50">
                 <div class="flex items-center gap-3">
                     <flux:text size="sm" class="font-medium text-blue-700 dark:text-blue-300">
                         {{ trans_choice(':count puzzle selected|:count puzzles selected', count($selectedPuzzles)) }}
@@ -487,7 +489,7 @@ new #[Title('Build')] class extends Component {
         @endif
 
         @if($this->crosswords->isEmpty())
-            <div class="border-line-strong flex flex-col items-center justify-center rounded-xl border border-dashed py-16">
+            <div class="border-line-strong mx-6 flex flex-col items-center justify-center rounded-xl border border-dashed py-16 lg:mx-8">
                 <flux:icon name="puzzle-piece" class="mb-4 size-12 text-zinc-500" />
                 @if($search !== '' || $status !== '')
                     <flux:heading size="lg" class="mb-2">{{ __('No matching puzzles') }}</flux:heading>
@@ -506,7 +508,7 @@ new #[Title('Build')] class extends Component {
                 @endif
             </div>
         @else
-            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div class="grid gap-4 px-6 sm:grid-cols-2 lg:grid-cols-3 lg:px-8">
                 @foreach($this->crosswords as $crossword)
                     <div
                         wire:key="crossword-{{ $crossword->id }}"
@@ -560,8 +562,12 @@ new #[Title('Build')] class extends Component {
             </div>
         @endif
 
+        <flux:separator class="bg-line" />
+
         {{-- Constructor Analytics --}}
-        <livewire:constructor-analytics />
+        <div class="px-6 lg:px-8">
+            <livewire:constructor-analytics />
+        </div>
 
         {{-- New Puzzle Modal --}}
     <flux:modal wire:model="showNewModal" class="w-full max-w-lg">
@@ -577,7 +583,7 @@ new #[Title('Build')] class extends Component {
                             type="button"
                             wire:click="$set('puzzleType', @js($type->value))"
                             @class([
-                                'flex flex-col items-center gap-2 rounded-lg border-2 p-3 text-center transition-colors',
+                                'flex flex-col items-center gap-2 rounded-lg border p-3 text-center transition-colors',
                                 'border-blue-500 bg-blue-50 ring-1 ring-blue-500 dark:border-blue-400 dark:bg-blue-950/40 dark:ring-blue-400' => $puzzleType === $type->value,
                                 'border-zinc-200 hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:border-zinc-500 dark:hover:bg-zinc-800' => $puzzleType !== $type->value,
                             ])
@@ -654,7 +660,7 @@ new #[Title('Build')] class extends Component {
                             <button
                                 type="button"
                                 wire:click="$set('selectedTemplate', null)"
-                                class="border-line flex shrink-0 flex-col items-center gap-1.5 rounded-lg border-2 p-2 transition-colors {{ $selectedTemplate === null ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' : ' hover:border-zinc-400 dark:hover:border-zinc-500' }}"
+                                class="border-line flex shrink-0 flex-col items-center gap-1.5 rounded-lg border p-2 transition-colors {{ $selectedTemplate === null ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' : ' hover:border-zinc-400 dark:hover:border-zinc-500' }}"
                             >
                                 <x-grid-thumbnail :grid="Crossword::emptyGrid($newWidth, $newHeight)" :width="$newWidth" :height="$newHeight" :cell-size="6" :max-width="80" />
                                 <span class="whitespace-nowrap text-xs text-zinc-700 dark:text-zinc-400">{{ __('Blank') }}</span>
@@ -664,7 +670,7 @@ new #[Title('Build')] class extends Component {
                                 <button
                                     type="button"
                                     wire:click="$set('selectedTemplate', {{ $index }})"
-                                    class="border-line flex shrink-0 flex-col items-center gap-1.5 rounded-lg border-2 p-2 transition-colors {{ $selectedTemplate === $index ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' : ' hover:border-zinc-400 dark:hover:border-zinc-500' }}"
+                                    class="border-line flex shrink-0 flex-col items-center gap-1.5 rounded-lg border p-2 transition-colors {{ $selectedTemplate === $index ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' : ' hover:border-zinc-400 dark:hover:border-zinc-500' }}"
                                 >
                                     <x-grid-thumbnail :grid="$template['grid']" :styles="$template['styles'] ?? null" :width="$newWidth" :height="$newHeight" :cell-size="6" :max-width="80" />
                                     <span class="whitespace-nowrap text-xs text-zinc-700 dark:text-zinc-400">{{ $template['name'] }}</span>

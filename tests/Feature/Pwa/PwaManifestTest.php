@@ -20,7 +20,32 @@ test('site.webmanifest exists in public root with all PWA fields', function () {
     // Chrome requires 192 and 512 icons for installability.
     $sizes = collect($manifest['icons'])->pluck('sizes');
     expect($sizes)->toContain('192x192')->toContain('512x512');
+
+    $svgIcon = collect($manifest['icons'])->firstWhere('src', '/logo.svg');
+    expect($svgIcon)->not->toBeNull()
+        ->and($svgIcon['type'])->toBe('image/svg+xml');
+
+    foreach (collect($manifest['icons'])->pluck('src') as $src) {
+        expect(is_file(public_path(ltrim($src, '/'))))->toBeTrue("Manifest icon {$src} is missing from public/");
+    }
 });
+
+test('favicon assets exist in the public root', function () {
+    expect(is_file(public_path('logo.svg')))->toBeTrue()
+        ->and(is_file(public_path('favicon.ico')))->toBeTrue()
+        ->and(is_file(public_path('apple-touch-icon.png')))->toBeTrue();
+});
+
+test('pages declare the svg favicon with ico and apple-touch-icon fallbacks', function (string $url) {
+    $this->get($url)
+        ->assertOk()
+        ->assertSee('<link rel="icon" href="'.asset('logo.svg').'" type="image/svg+xml">', false)
+        ->assertSee('<link rel="icon" href="'.asset('favicon.ico').'" sizes="32x32">', false)
+        ->assertSee('<link rel="apple-touch-icon" href="'.asset('apple-touch-icon.png').'" sizes="180x180">', false);
+})->with([
+    'welcome' => '/',
+    'public layout' => fn () => route('puzzles.index'),
+]);
 
 test('service worker exists at the site root with the three required handlers', function () {
     $path = public_path('service-worker.js');

@@ -63,6 +63,30 @@ test('anonymous user can reach the build home and sees the guest banner', functi
         ->assertSee('building as a guest');
 });
 
+test('anonymous user sees a sign up button in place of the user menu', function () {
+    $anon = app(AnonymousUserManager::class)->create();
+
+    $this->actingAs($anon)
+        ->get(route('crosswords.index'))
+        ->assertOk()
+        ->assertSee('data-test="sidebar-sign-up-button"', false)
+        ->assertSee('data-test="mobile-sign-up-button"', false)
+        ->assertSee(route('register'))
+        ->assertDontSee('data-test="sidebar-menu-button"', false)
+        ->assertDontSee('data-test="logout-button"', false);
+});
+
+test('registered user sees the user menu instead of a sign up button', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->get(route('crosswords.index'))
+        ->assertOk()
+        ->assertSee('data-test="sidebar-menu-button"', false)
+        ->assertDontSee('data-test="sidebar-sign-up-button"', false)
+        ->assertDontSee('data-test="mobile-sign-up-button"', false);
+});
+
 test('publishing is blocked for anonymous users via observer', function () {
     $anon = app(AnonymousUserManager::class)->create();
     $crossword = Crossword::factory()->for($anon)->create(['is_published' => false]);
@@ -178,12 +202,20 @@ test('constructors query excludes anonymous users', function () {
     expect($constructors->pluck('id'))->not->toContain($anon->id);
 });
 
-test('anonymous user planLimits caps puzzles at one', function () {
+test('anonymous user planLimits caps puzzles at one by default', function () {
     $anon = app(AnonymousUserManager::class)->create();
 
     expect($anon->planLimits()->maxPuzzles())->toBe(1);
     expect($anon->planLimits()->canExportPdf())->toBeFalse();
     expect($anon->planLimits()->monthlyAiFills())->toBe(0);
+});
+
+test('anonymous user puzzle cap follows the guest_puzzle_limit config', function () {
+    config()->set('crosswordbuilder.guest_puzzle_limit', 3);
+
+    $anon = app(AnonymousUserManager::class)->create();
+
+    expect($anon->planLimits()->maxPuzzles())->toBe(3);
 });
 
 test('register page is reachable by an anonymous user', function () {

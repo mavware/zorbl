@@ -309,7 +309,7 @@ new class extends Component {
 }
 ?>
 
-<div class="space-y-4">
+<div class="@container space-y-4">
 
     <div class="mb-4 flex items-center justify-between gap-3">
         <flux:heading size="lg">{{ __('Discover Puzzles') }}</flux:heading>
@@ -439,7 +439,7 @@ new class extends Component {
             </flux:text>
         </div>
     @else
-        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div class="grid gap-4 @md:grid-cols-2 @3xl:grid-cols-3 @5xl:grid-cols-4">
             @if($showPinned)
                 <livewire:puzzle-card
                     :crossword="$pinnedDaily"

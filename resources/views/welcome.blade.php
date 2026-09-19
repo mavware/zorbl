@@ -36,10 +36,12 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
-        <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('apple-touch-icon.png') }}">
-        <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('favicon-32x32.png') }}">
-        <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('favicon-16x16.png') }}">
+        <link rel="icon" href="{{ asset('logo.svg') }}" type="image/svg+xml">
+        <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="32x32">
+        <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}" sizes="180x180">
         <link rel="manifest" href="{{ asset('site.webmanifest') }}">
+        <link rel="preconnect" href="https://fonts.bunny.net">
+        <link rel="stylesheet" href="https://fonts.bunny.net/css?family=lora:400,400i,500,500i,600,600i,700">
         <meta name="theme-color" content="#0a0a0a">
         <meta name="mobile-web-app-capable" content="yes">
         <meta name="apple-mobile-web-app-capable" content="yes">
@@ -119,116 +121,141 @@
         @vite(['resources/css/app.css', 'resources/js/app.js'])
         @fluxAppearance
     </head>
-    <body class="bg-zinc-950 text-zinc-100 antialiased">
+    <body class="bg-page text-zinc-100 antialiased">
         @include('partials.impersonation-banner')
         {{-- Navigation --}}
-        <nav class="fixed top-0 inset-x-0 z-50 border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-lg">
-            <div class="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
-                <a href="/" class="text-xl font-bold tracking-tight text-amber-500">{{ $appName }}</a>
+        <nav class="fixed top-0 inset-x-0 z-50 border-b border-zinc-800 bg-page">
+            <div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
+                <a href="/" class="flex items-center gap-3 text-xl tracking-tight text-white">
+                    <x-app-logo-icon class="h-8 w-auto" />
+                    <span>{{ $appName }}</span>
+                </a>
                 <div class="flex items-center gap-4">
 {{--                    <a href="{{ route('puzzles.index') }}" class="text-sm text-zinc-500 hover:text-zinc-100 transition">Browse Puzzles</a>--}}
                     @auth
-                        <a href="{{ route('crosswords.index') }}" class="text-sm text-zinc-500 hover:text-zinc-100 transition">Dashboard</a>
+                        <a href="{{ route('crosswords.index') }}" class="rounded-lg border border-amber-400 bg-transparent px-4 py-2 text-sm font-semibold text-amber-400 hover:bg-amber-400/10 hover:text-amber-300 transition">Dashboard</a>
                     @else
                         <a href="{{ route('login') }}" class="text-sm text-zinc-500 hover:text-zinc-100 transition">Log in</a>
-                        <a href="{{ route('register') }}" class="rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-zinc-950 hover:bg-amber-400 transition">Sign up</a>
+                        <a href="{{ route('register') }}" class="rounded-lg border border-amber-400 bg-transparent px-4 py-2 text-sm font-semibold text-amber-400 hover:bg-amber-400/10 hover:text-amber-300 transition">Sign up</a>
                     @endauth
                 </div>
             </div>
         </nav>
 
         {{-- Hero --}}
-        <section class="relative flex min-h-screen items-center justify-center overflow-hidden pt-16">
-            <div class="absolute inset-0 bg-gradient-to-b from-amber-500/5 via-transparent to-transparent"></div>
-            <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-500/10 via-transparent to-transparent"></div>
-
+        <section class="relative flex min-h-screen items-center justify-center overflow-hidden pt-4 bg-page">
             <div
-                class="relative mx-auto max-w-6xl px-6 py-20 text-center"
+                class="relative mx-auto grid w-full max-w-7xl items-start gap-12 px-6 py-20 sm:px-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16 lg:py-24"
                 x-data="{ tab: 'build', showSignup: false }"
                 x-on:show-signup-prompt.window="showSignup = true"
             >
-                {{-- Solve / Build Toggle --}}
-                <div class="relative mx-auto mb-10 inline-grid grid-cols-2 rounded-full border border-zinc-800 bg-zinc-900/60 p-1">
-                    {{-- Sliding highlight pill --}}
-                    <div
-                        class="absolute inset-y-1 left-1 w-[calc(50%-0.25rem)] rounded-full bg-amber-500 shadow-lg shadow-amber-500/20 transition-transform duration-300 ease-out"
-                        :class="tab === 'solve' && 'translate-x-full'"
-                        aria-hidden="true"
-                    ></div>
-                    <button
-                        type="button"
-                        @click="tab = 'build'"
-                        :class="tab === 'build' ? 'text-zinc-950' : 'text-zinc-400 hover:text-zinc-100 cursor-pointer'"
-                        class="flex relative rounded-full px-8 py-2.5 text-base font-semibold transition"
-                    >
-                        <flux:icon.wrench-screwdriver class="mr-2" /> Build
-                    </button>
-                    <button
-                        type="button"
-                        @click="tab = 'solve'"
-                        :class="tab === 'solve' ? 'text-zinc-950' : 'text-zinc-400 hover:text-zinc-100 cursor-pointer'"
-                        class="flex relative rounded-full px-8 py-2.5 text-base font-semibold transition"
-                    >
-                        <flux:icon.play class="mr-2" /> Solve
-                    </button>
-
-                </div>
-
-                {{-- Solve panel — the default tab. No x-cloak: it must render
-                     server-side so the LCP headline paints immediately and the
-                     hero doesn't reflow (CLS) when Alpine boots. The build panel
-                     below stays hidden via an inline display:none until Alpine. --}}
-                <div x-show="tab === 'solve'">
-                    <p class="font-bold tracking-tight text-white text-3xl sm:text-5xl">
-                        Thousands of puzzles. <span class="text-amber-500">One click away.</span>
-                    </p>
-                    <div class="mx-auto mt-10 w-full max-w-7xl rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 shadow-2xl shadow-amber-500/5 sm:p-8">
-                        <livewire:puzzle-discovery :limit="7" />
+                {{-- Hero copy — sits beside the builder panel --}}
+                <div class="flex min-w-0 flex-col text-left">
+                    <div class="font-display mb-5 text-[13px] font-semibold uppercase tracking-[0.14em] tabular-nums text-amber-400">
+                        {{ __('Free forever') }} &middot; {{ $stats['constructors'] }} {{ __('constructors') }}
                     </div>
+
+                    <h1 class="font-display mb-6 text-5xl leading-[1.02] tracking-tight text-zinc-100 sm:text-5xl lg:text-6xl">
+                        {{ __('Build a crossword') }}<br class="hidden sm:block">
+                        {{ __('in ten minutes.') }}
+                    </h1>
+
+                    <p class="mb-8 max-w-[46ch] text-[17px] leading-relaxed text-zinc-300">
+                        {{ __('A visual editor that handles symmetry, numbering and the boring bookkeeping — so you can spend the afternoon on the fill and the wordplay.') }}
+                    </p>
                 </div>
 
-                {{-- Signup Prompt Modal (for guests trying to solve a second puzzle) --}}
-                <template x-teleport="body">
-                    <div
-                        x-show="showSignup"
-                        x-cloak
-                        x-on:keydown.escape.window="showSignup = false"
-                        class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-                        x-on:click.self="showSignup = false"
-                    >
-                        <div class="mx-4 w-full max-w-md rounded-2xl bg-zinc-900 p-8 text-center shadow-xl ring-1 ring-zinc-800" x-on:click.stop>
-                            <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-500/10">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="size-8 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/>
-                                    <path d="m9 15 2 2 4-4"/>
-                                </svg>
-                            </div>
-                            <h3 class="text-xl font-bold text-zinc-100">{{ __('Ready for more puzzles?') }}</h3>
-                            <p class="mt-2 text-sm text-zinc-400">
-                                {{ __('Create a free account to solve unlimited puzzles, save your progress across devices, and track your stats.') }}
-                            </p>
-                            <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
-                                <a href="{{ route('register') }}" class="rounded-xl bg-amber-500 px-6 py-2.5 text-sm font-semibold text-zinc-950 hover:bg-amber-400 transition">
-                                    {{ __('Create Free Account') }}
-                                </a>
-                                <a href="{{ route('login') }}" class="rounded-xl border border-zinc-700 px-6 py-2.5 text-sm font-semibold text-zinc-300 hover:bg-zinc-800 transition">
-                                    {{ __('Log In') }}
-                                </a>
-                            </div>
-                            <button x-on:click="showSignup = false" class="mt-4 text-xs text-zinc-500 hover:text-zinc-300">
-                                {{ __('Maybe later') }}
-                            </button>
+                {{-- Build / Solve demo panel --}}
+                <div class="relative min-w-0 text-center">
+                    <div class="flex justify-between w-full">
+                    {{-- Solve / Build Toggle --}}
+                    <div class="relative inline-grid grid-cols-2 rounded-full border border-zinc-800 bg-zinc-900/60 p-1">
+                        {{-- Sliding highlight pill --}}
+                        <div
+                            class="absolute inset-y-1 left-1 w-[calc(50%-0.25rem)] rounded-full border border-amber-500 bg-amber-500/10 ring-1 ring-amber-500 transition-transform duration-300 ease-out"
+                            :class="tab === 'solve' && 'translate-x-full'"
+                            aria-hidden="true"
+                        ></div>
+                        <button
+                            type="button"
+                            @click="tab = 'build'"
+                            :class="tab === 'build' ? 'text-amber-300' : 'text-zinc-400 hover:text-zinc-100 cursor-pointer'"
+                            class="flex relative rounded-full px-8 py-2 font-semibold transition"
+                        >
+                            Build
+                        </button>
+                        <button
+                            type="button"
+                            @click="tab = 'solve'"
+                            :class="tab === 'solve' ? 'text-amber-300' : 'text-zinc-400 hover:text-zinc-100 cursor-pointer'"
+                            class="flex relative rounded-full px-8 py-2 font-semibold transition"
+                        >
+                            Solve
+                        </button>
+
+                    </div>
+
+
+
+                        <div x-show="tab === 'solve'" class="font-display flex text-3xl font-medium text-white">
+    Browse tons of puzzles.
+</div>
+
+<div x-show="tab === 'build'" class="font-display flex text-3xl font-medium text-white">
+    Start with a shape.
+</div>
+
+                    </div>
+                    {{-- Solve panel — the default tab. No x-cloak: it must render
+                         server-side so the LCP headline paints immediately and the
+                         hero doesn't reflow (CLS) when Alpine boots. The build panel
+                         below stays hidden via an inline display:none until Alpine. --}}
+                    <div x-show="tab === 'solve'">
+                        <div class="mt-8 w-full rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 shadow-2xl shadow-amber-500/5 sm:p-8">
+                            <livewire:puzzle-discovery :limit="7" />
                         </div>
                     </div>
-                </template>
 
-                {{-- Build panel --}}
-                <div x-show="tab === 'build'" x-cloak style="display: none">
-                    <p class="font-bold tracking-tight text-white text-3xl sm:text-5xl">
-                        Start with a shape. <span class="text-amber-500">Build from there.</span>
-                    </p>
-                    <div class="mx-auto mt-10 w-full max-w-2xl rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 shadow-2xl shadow-amber-500/5 sm:p-8">
-                        <livewire:welcome-builder />
+                    {{-- Signup Prompt Modal (for guests trying to solve a second puzzle) --}}
+                    <template x-teleport="body">
+                        <div
+                            x-show="showSignup"
+                            x-cloak
+                            x-on:keydown.escape.window="showSignup = false"
+                            class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+                            x-on:click.self="showSignup = false"
+                        >
+                            <div class="mx-4 w-full max-w-md rounded-2xl bg-zinc-900 p-8 text-center shadow-xl ring-1 ring-zinc-800" x-on:click.stop>
+                                <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-500/10">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="size-8 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/>
+                                        <path d="m9 15 2 2 4-4"/>
+                                    </svg>
+                                </div>
+                                <h3 class="text-xl font-bold text-zinc-100">{{ __('Ready for more puzzles?') }}</h3>
+                                <p class="mt-2 text-sm text-zinc-400">
+                                    {{ __('Create a free account to solve unlimited puzzles, save your progress across devices, and track your stats.') }}
+                                </p>
+                                <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
+                                    <a href="{{ route('register') }}" class="rounded-xl bg-amber-500 px-6 py-2.5 text-sm font-semibold text-zinc-950 hover:bg-amber-400 transition">
+                                        {{ __('Create Free Account') }}
+                                    </a>
+                                    <a href="{{ route('login') }}" class="rounded-xl border border-zinc-700 px-6 py-2.5 text-sm font-semibold text-zinc-300 hover:bg-zinc-800 transition">
+                                        {{ __('Log In') }}
+                                    </a>
+                                </div>
+                                <button x-on:click="showSignup = false" class="mt-4 text-xs text-zinc-500 hover:text-zinc-300">
+                                    {{ __('Maybe later') }}
+                                </button>
+                            </div>
+                        </div>
+                    </template>
+
+                    {{-- Build panel --}}
+                    <div x-show="tab === 'build'" x-cloak style="display: none">
+                        <div class="mt-8 w-full rounded-2xl border border-zinc-800 bg-zinc-900/50 px-6 py-4 shadow-2xl shadow-amber-500/5 sm:px-8 sm:py-6">
+                            <livewire:welcome-builder />
+                        </div>
                     </div>
                 </div>
             </div>
@@ -361,17 +388,17 @@
                 <h2 class="text-center text-3xl font-bold tracking-tight sm:text-4xl">How it works</h2>
                 <div class="mt-16 grid gap-12 sm:grid-cols-3">
                     <div class="text-center">
-                        <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full border-2 border-amber-500 text-xl font-bold text-amber-500">1</div>
+                        <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-amber-500 text-xl font-bold text-amber-500">1</div>
                         <h3 class="mt-4 text-lg font-semibold">Design your grid</h3>
                         <p class="mt-2 text-sm text-zinc-500">Pick a size, place blocks, and fill in answers with the visual editor. Symmetry happens automatically.</p>
                     </div>
                     <div class="text-center">
-                        <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full border-2 border-amber-500 text-xl font-bold text-amber-500">2</div>
+                        <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-amber-500 text-xl font-bold text-amber-500">2</div>
                         <h3 class="mt-4 text-lg font-semibold">Write your clues</h3>
                         <p class="mt-2 text-sm text-zinc-500">Sharpen each clue. Browse the community library when you need a spark of inspiration.</p>
                     </div>
                     <div class="text-center">
-                        <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full border-2 border-amber-500 text-xl font-bold text-amber-500">3</div>
+                        <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-amber-500 text-xl font-bold text-amber-500">3</div>
                         <h3 class="mt-4 text-lg font-semibold">Publish & solve</h3>
                         <p class="mt-2 text-sm text-zinc-500">Hit publish and your puzzle is live. Then unwind with crosswords from constructors around the world.</p>
                     </div>

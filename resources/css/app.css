@@ -1,5 +1,6 @@
 @import 'tailwindcss';
 @import '../../vendor/livewire/flux/dist/flux.css';
+@import url('https://fonts.bunny.net/css?family=lora:400,400i,500,500i,600,600i,700');
 
 @source '../views';
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
@@ -10,19 +11,35 @@
 @custom-variant pointer-coarse (@media (pointer: coarse));
 
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+    --default-font-family: 'Lora', Georgia, 'Times New Roman', serif;
+    --font-sans:    'Lora', Georgia, 'Times New Roman', serif;
+    --font-display: 'Lora', Georgia, serif;
 
-    --color-zinc-50: #fafafa;
-    --color-zinc-100: #f5f5f5;
-    --color-zinc-200: #e5e5e5;
-    --color-zinc-300: #d4d4d4;
-    --color-zinc-400: #a3a3a3;
-    --color-zinc-500: #737373;
-    --color-zinc-600: #525252;
-    --color-zinc-700: #404040;
-    --color-zinc-800: #262626;
-    --color-zinc-900: #171717;
-    --color-zinc-950: #0a0a0a;
+    /* Warm ink — replaces the cool zinc ramp */
+    --color-zinc-50:  #faf8f8;
+    --color-zinc-100: #f8f4f4;
+    --color-zinc-200: #eae7e7;
+    --color-zinc-300: #d7d3d3;
+    --color-zinc-400: #bab6b6;
+    --color-zinc-500: #9b9797;
+    --color-zinc-600: #7d7979;
+    --color-zinc-700: #605d5d;
+    --color-zinc-800: #444141;
+    --color-zinc-900: #2d2b2b;
+    --color-zinc-950: #171615;  /* the 1a page ground */
+
+    /* Classical gold — replaces amber */
+    --color-amber-50:  #fffaf2;
+    --color-amber-100: #fff3e4;
+    --color-amber-200: #ffe3bf;
+    --color-amber-300: #facb8d;
+    --color-amber-400: #e1ad66;  /* accent on dark ground */
+    --color-amber-500: #c28d41;
+    --color-amber-600: #a06f24;
+    --color-amber-700: #7d5411;  /* accent text on light ground */
+    --color-amber-800: #5a3b0a;
+    --color-amber-900: #3a270d;
+    --color-amber-950: #241806;
 
     --color-accent: var(--color-neutral-800);
     --color-accent-content: var(--color-neutral-800);
@@ -30,7 +47,7 @@
 
     /* Semantic surface tokens — change these to adjust the whole app */
     --color-page:           var(--color-zinc-100);
-    --color-surface:        #ffffff;
+    --color-surface:        var(--color-zinc-100);
     --color-elevated:       #ffffff;
     --color-muted:          var(--color-zinc-100);
 
@@ -40,7 +57,7 @@
     --color-fg-subtle:      var(--color-zinc-500);
 
     /* Semantic border tokens */
-    --color-line:           var(--color-zinc-300);
+    --color-line:           color-mix(in oklab, var(--color-zinc-300) 50%, var(--color-zinc-400));
     --color-line-soft:      var(--color-zinc-200);
     --color-line-strong:    var(--color-zinc-400);
 }
@@ -52,8 +69,8 @@
         --color-accent-foreground: var(--color-neutral-800);
 
         /* Semantic tokens — dark mode overrides */
-        --color-page:        var(--color-zinc-800);
-        --color-surface:     var(--color-zinc-900);
+        --color-page:        var(--color-zinc-950);
+        --color-surface:     var(--color-zinc-950);
         --color-elevated:    var(--color-zinc-800);
         --color-muted:       var(--color-zinc-700);
 
@@ -61,7 +78,7 @@
         --color-fg-muted:    var(--color-zinc-400);
         --color-fg-subtle:   var(--color-zinc-500);
 
-        --color-line:        var(--color-zinc-700);
+        --color-line:        color-mix(in oklab, var(--color-zinc-700) 50%, var(--color-zinc-800));
         --color-line-soft:   var(--color-zinc-800);
         --color-line-strong: var(--color-zinc-600);
     }
@@ -76,6 +93,26 @@
     ::file-selector-button {
         border-color: var(--color-gray-200, currentColor);
     }
+
+    /* Open the tracking a touch */
+    body {
+        font-family: var(--font-sans);
+        letter-spacing: 0.012em;
+    }
+
+    h1, h2, h3, h4, h5, h6,
+    [data-flux-heading] {
+        font-family: var(--font-display);
+        font-weight: 600;
+        line-height: 1.12;
+        letter-spacing: -0.02em;
+    }
+
+    /* Display sizes set lighter — the bigger the text, the lighter the cut */
+    h1 { font-weight: 400; }
+
+    /* Figures that stand as figures: stats, clue numbers, grid numbers, tables */
+    .tnum, th, td, time { font-variant-numeric: tabular-nums; }
 }
 
 [data-flux-field]:not(ui-radio, ui-checkbox) {
@@ -95,6 +132,52 @@ select:focus[data-flux-control] {
 /* \[:where(&)\]:size-4 {
     @apply size-4;
 } */
+
+/* Sidebar — the current item, and any hovered item, get amber text (icon
+   inherits) and a soft amber wash; only the current item also gets the amber
+   left bar. Un-layered so it beats Flux's data-current and hover utilities.
+   Items rendered inside a collapsed group's dropdown keep Flux's styling. */
+[data-flux-sidebar-item]:not([data-flux-sidebar-group-dropdown] *):is([data-current], :hover) {
+    @apply rounded-sm border-transparent bg-amber-500/10 text-amber-700
+        dark:bg-amber-400/10 dark:text-amber-400;
+}
+
+[data-flux-sidebar-item][data-current]:not([data-flux-sidebar-group-dropdown] *) {
+    @apply border-l-2 border-l-amber-500 dark:border-l-amber-400;
+}
+
+/* Sidebar — bump item labels up from Flux's text-sm (14px) to 15px. */
+[data-flux-sidebar-item] [data-content] {
+    @apply text-[1rem];
+}
+
+/* Sidebar — the app name in the brand header, up from Flux's text-sm. */
+[data-flux-sidebar-brand] > div:last-child {
+    @apply text-[1.1rem] tracking-wide;
+}
+
+[data-flux-sidebar-item]:not([data-flux-sidebar-group-dropdown] *) {
+    @apply py-4;
+}
+
+[data-flux-main] {
+    @apply px-0;
+}
+
+/* Main is edge-to-edge, so each page root insets itself. A page that manages
+   its own gutters (so it can run separators full-width) opts out with
+   `data-full-bleed` on its root. */
+[data-flux-main] > :not([data-full-bleed]) {
+    @apply px-6 lg:px-8;
+}
+
+/* Amber outline button — transparent ground, amber border and text, soft amber
+   wash on hover. Pair with `variant="ghost"` on a Flux button so Flux doesn't
+   paint its own background. Un-layered so it beats Flux's variant utilities. */
+.btn-amber-outline {
+    @apply border border-amber-500 bg-transparent text-amber-700 hover:bg-amber-500/10
+        dark:border-amber-400 dark:text-amber-400 dark:hover:bg-amber-400/10;
+}
 
 /* ───────────────────────────────────────────────────────────────────────────
  * Editor completion flash — celebratory pulse to green when the grid (every

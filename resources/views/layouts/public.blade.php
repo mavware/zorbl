@@ -4,8 +4,10 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
+        <link rel="icon" href="{{ asset('logo.svg') }}" type="image/svg+xml">
+        <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="32x32">
+        <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}" sizes="180x180">
         <link rel="manifest" href="{{ asset('site.webmanifest') }}">
-        <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}">
         <meta name="theme-color" content="#0a0a0a">
         <meta name="mobile-web-app-capable" content="yes">
         <meta name="apple-mobile-web-app-capable" content="yes">
@@ -13,7 +15,6 @@
         <meta name="apple-mobile-web-app-title" content="{{ config('app.name') }}">
         <title>{{ isset($title) ? $title.' — '.config('app.name') : config('app.name') }}</title>
         <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700" rel="stylesheet" />
         @stack('head_meta')
         @vite(['resources/css/app.css', 'resources/js/app.js'])
         @fluxAppearance
@@ -37,11 +38,11 @@
                 </div>
                 <div class="flex items-center gap-4">
                     @auth
-                        <a href="{{ route('crosswords.index') }}" wire:navigate class="text-fg-muted text-sm hover:text-zinc-900 dark:hover:text-zinc-100 transition">{{ __('Build') }}</a>
-                        <a href="{{ route('crosswords.solving') }}" wire:navigate class="text-fg-muted text-sm hover:text-zinc-900 dark:hover:text-zinc-100 transition">{{ __('My Solving') }}</a>
+                        <a href="{{ route('crosswords.index') }}" wire:navigate class="text-fg-muted hover:text-zinc-900 dark:hover:text-zinc-100 transition">{{ __('Build') }}</a>
+                        <a href="{{ route('crosswords.solving') }}" wire:navigate class="text-fg-mutedhover:text-zinc-900 dark:hover:text-zinc-100 transition">{{ __('My Solving') }}</a>
                     @else
-                        <a href="{{ route('login') }}" class="text-fg-muted text-sm hover:text-zinc-900 dark:hover:text-zinc-100 transition">{{ __('Log in') }}</a>
-                        <a href="{{ route('register') }}" class="rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-zinc-950 hover:bg-amber-400 transition">{{ __('Sign up') }}</a>
+                        <a href="{{ route('login') }}" class="text-fg-muted hover:text-zinc-900 dark:hover:text-zinc-100 transition">{{ __('Log in') }}</a>
+                        <a href="{{ route('register') }}" class="rounded-lg bg-amber-500 px-4 py-2 font-bold text-zinc-950 hover:bg-amber-400 transition">{{ __('Sign up') }}</a>
                     @endauth
                 </div>
             </div>
