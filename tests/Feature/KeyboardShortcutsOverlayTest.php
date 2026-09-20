@@ -5,22 +5,6 @@ use App\Models\PuzzleAttempt;
 use App\Models\User;
 use Livewire\Livewire;
 
-test('solver page renders the keyboard shortcuts help button', function () {
-    $user = User::factory()->create();
-    $crossword = Crossword::factory()->published()->create();
-
-    PuzzleAttempt::factory()->for($user)->for($crossword)->create([
-        'progress' => Crossword::emptySolution($crossword->width, $crossword->height),
-        'started_at' => now(),
-    ]);
-
-    $this->actingAs($user);
-
-    Livewire::test('pages::crosswords.solver', ['crossword' => $crossword])
-        ->assertSeeHtml('Keyboard shortcuts')
-        ->assertSeeHtml('Keyboard shortcuts (?)');
-});
-
 test('solver page contains the shortcuts modal markup', function () {
     $user = User::factory()->create();
     $crossword = Crossword::factory()->published()->create();

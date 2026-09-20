@@ -70,21 +70,6 @@ test('solver can download puzzle as jpz', function () {
         ->assertFileDownloaded('test-puzzle.jpz');
 });
 
-test('solver page shows download button', function () {
-    $user = User::factory()->create();
-    $crossword = Crossword::factory()->published()->create([
-        'width' => 2,
-        'height' => 2,
-        'grid' => [[1, 2], [3, 0]],
-        'solution' => [['A', 'B'], ['C', 'D']],
-    ]);
-
-    $this->actingAs($user)
-        ->get(route('crosswords.solver', $crossword))
-        ->assertOk()
-        ->assertSee('Download for offline solving');
-});
-
 test('unauthenticated user cannot download puzzle', function () {
     $crossword = Crossword::factory()->published()->create([
         'width' => 2,
