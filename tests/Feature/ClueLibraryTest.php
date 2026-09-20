@@ -414,3 +414,15 @@ test('clue library page appears in navigation', function () {
         ->get(route('clues.index'))
         ->assertSee('Clue Library');
 });
+
+test('the clue library shows a generated source title for clues from untitled puzzles', function () {
+    $user = User::factory()->create();
+    $puzzle = Crossword::factory()->published()->for($user)->create(['title' => null, 'width' => 15, 'height' => 15]);
+    ClueEntry::create(['answer' => 'OCEAN', 'clue' => 'Salt water', 'user_id' => $user->id, 'crossword_id' => $puzzle->id]);
+
+    Livewire::actingAs($user)
+        ->test('pages::clues.index')
+        ->assertOk()
+        ->assertSee('OCEAN')
+        ->assertSee('15×15 Standard');
+});

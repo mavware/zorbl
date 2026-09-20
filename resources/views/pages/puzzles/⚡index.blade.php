@@ -29,7 +29,10 @@ class extends Component
                 ->safeFor(null)
                 ->latest()
                 ->limit(18)
-                ->get(['id', 'title'])
+                // displayTitle() falls back to the generated "15×15 Standard
+                // Crossword" form for untitled puzzles, which reads the type,
+                // size and grid — so those columns must be selected too.
+                ->get(['id', 'title', 'width', 'height', 'puzzle_type', 'grid', 'styles'])
                 ->map(fn (Crossword $crossword): array => [
                     'name' => $crossword->displayTitle(),
                     'url' => route('puzzles.solve', $crossword),

@@ -20,6 +20,18 @@ test('browse page loads without authentication', function () {
         ->assertSee('Public Puzzle');
 });
 
+test('browse page loads when a published puzzle has no title', function () {
+    Crossword::factory()->published()->create([
+        'title' => null,
+        'width' => 15,
+        'height' => 15,
+    ]);
+
+    $this->get(route('puzzles.index'))
+        ->assertOk()
+        ->assertSee('15×15 Standard Crossword');
+});
+
 test('browse page shows only published puzzles', function () {
     Crossword::factory()->published()->create(['title' => 'Visible Puzzle']);
     Crossword::factory()->create(['title' => 'Draft Puzzle', 'is_published' => false]);

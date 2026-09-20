@@ -5,10 +5,13 @@
     'height' => 0,
     'cellSize' => 8,
     'maxWidth' => 120,
+    'frameClass' => 'rounded border border-zinc-300 bg-zinc-200 dark:border-zinc-600 dark:bg-zinc-600',
+    'openClass' => 'bg-elevated',
+    'blockClass' => 'bg-zinc-800 dark:bg-zinc-300',
 ])
 
 <div
-    {{ $attributes->merge(['class' => 'inline-grid gap-px rounded border border-zinc-300 bg-zinc-200 p-px dark:border-zinc-600 dark:bg-zinc-600']) }}
+    {{ $attributes->merge(['class' => 'inline-grid gap-px p-px '.$frameClass]) }}
     style="grid-template-columns: repeat({{ $width }}, minmax(0, 1fr)); width: {{ min($width * $cellSize, $maxWidth) }}px;"
 >
     @for($row = 0; $row < $height; $row++)
@@ -32,7 +35,7 @@
                 $shadowStyle = $shadows ? 'box-shadow: '.implode(', ', $shadows).';' : '';
             @endphp
             <div
-                class="{{ $cell === null ? 'invisible' : ($cell === '#' ? 'bg-zinc-800 dark:bg-zinc-300' : 'bg-elevated') }}"
+                class="{{ $cell === null ? 'invisible' : ($cell === '#' ? $blockClass : $openClass) }}"
                 style="aspect-ratio: 1;{{ $shadowStyle }}"
             ></div>
         @endfor

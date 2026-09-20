@@ -1,11 +1,11 @@
 @php($completeness = $crossword->completeness())
 
-<div class="mt-2 flex items-center gap-2">
-    <div class="h-1.5 flex-1 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-700">
-        <div
-            class="h-full rounded-full transition-all {{ $completeness['percentage'] === 100 ? 'bg-emerald-500' : ($completeness['percentage'] >= 60 ? 'bg-amber-500' : 'bg-zinc-400') }}"
-            style="width: {{ $completeness['percentage'] }}%"
-        ></div>
+<div>
+    <div class="meta-classical flex items-center justify-between gap-2">
+        <span>{{ $completeness['percentage'] === 100 ? __('Complete') : __('Grid & clues') }}</span>
+        <span class="font-classical text-ink tnum text-[15px] font-medium normal-case tracking-normal">{{ $completeness['percentage'] }}%</span>
     </div>
-    <span class="text-xs tabular-nums text-zinc-500">{{ $completeness['percentage'] }}%</span>
+    <div class="bg-border mt-1.5 h-0.5 w-full overflow-hidden">
+        <div class="h-full bg-amber-400 transition-all" style="width: {{ $completeness['percentage'] }}%"></div>
+    </div>
 </div>

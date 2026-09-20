@@ -53,7 +53,7 @@ new class extends Component {
     #[Computed]
     public function clues()
     {
-        $query = ClueEntry::with(['user:id,name', 'user.subscriptions', 'crossword:id,title']);
+        $query = ClueEntry::with(['user:id,name', 'user.subscriptions', 'crossword:id,title,width,height,puzzle_type,grid,styles']);
 
         // Hide unvetted clues from everyone except the author. Moderators see
         // the queue in Filament; the rest of the library is approved-only.
@@ -331,128 +331,163 @@ new class extends Component {
         <script type="application/ld+json">{!! json_encode($cluesJsonLd, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
     @endpush
 
-    <div class="flex items-center justify-between">
-        <flux:heading size="xl">{{ __('Clue Library') }}</flux:heading>
+    <div class="border-hairline flex flex-wrap items-center justify-between gap-3 border-b pb-5">
+        <h1 class="font-classical text-ink text-[32px] leading-tight font-medium">{{ __('Clue Library') }}</h1>
 
         @auth
-            <flux:button variant="primary" icon="plus" wire:click="$set('showAddModal', true)">
+            <button type="button" class="btn-classical btn-amber-outline" wire:click="$set('showAddModal', true)">
+                <flux:icon name="plus" class="size-4" />
                 {{ __('Add Clue') }}
-            </flux:button>
+            </button>
         @endauth
     </div>
 
     {{-- Search and Filters --}}
-    <div class="flex flex-col gap-4 sm:flex-row sm:items-center">
-        <div class="flex-1">
-            <flux:input icon="magnifying-glass" wire:model.live.debounce.300ms="search" placeholder="{{ __('Search by answer or clue...') }}" />
-        </div>
-        <div class="flex gap-2">
-            <flux:select wire:model.live="filter" class="w-40">
-                <flux:select.option value="all">{{ __('All Clues') }}</flux:select.option>
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <label class="relative flex-1">
+            <span class="sr-only">{{ __('Search by answer or clue...') }}</span>
+            <flux:icon name="magnifying-glass" class="text-ink-faint pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+            <input
+                type="search"
+                placeholder="{{ __('Search by answer or clue...') }}"
+                wire:model.live.debounce.300ms="search"
+                class="field-classical w-full pr-3 pl-9"
+            />
+        </label>
+        <label class="relative sm:w-44">
+            <span class="sr-only">{{ __('Filter') }}</span>
+            <select wire:model.live="filter" class="field-classical font-classical w-full appearance-none pr-9 pl-3.5 text-[15px] font-medium">
+                <option value="all">{{ __('All Clues') }}</option>
                 @auth
-                    <flux:select.option value="mine">{{ __('My Clues') }}</flux:select.option>
+                    <option value="mine">{{ __('My Clues') }}</option>
                 @endauth
-                <flux:select.option value="standalone">{{ __('Standalone') }}</flux:select.option>
-                <flux:select.option value="flagged">{{ __('Flagged') }}</flux:select.option>
-                <flux:select.option value="duplicates">{{ __('Duplicates') }}</flux:select.option>
-            </flux:select>
-        </div>
+                <option value="standalone">{{ __('Standalone') }}</option>
+                <option value="flagged">{{ __('Flagged') }}</option>
+                <option value="duplicates">{{ __('Duplicates') }}</option>
+            </select>
+            <flux:icon name="chevron-down" class="text-ink-faint pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2" />
+        </label>
     </div>
 
     {{-- Clue Table --}}
     @if($this->clues->isEmpty())
-        <div class="border-line-strong flex flex-col items-center justify-center rounded-xl border border-dashed py-16">
-            <flux:icon name="book-open" class="mb-4 size-12 text-zinc-500" />
-            <flux:heading size="lg" class="mb-2">{{ __('No clues found') }}</flux:heading>
-            <flux:text class="mb-6">
+        <div class="border-border-strong flex flex-col items-center justify-center rounded-sm border border-dashed px-6 py-16 text-center">
+            <flux:icon name="book-open" class="text-ink-faint mb-4 size-10" />
+            <h3 class="font-classical text-ink text-[26px] leading-tight font-medium">{{ __('No clues found') }}</h3>
+            <p class="text-ink-muted mt-2 text-sm">
                 @if($search)
                     {{ __('Try a different search term.') }}
                 @else
                     {{ __('Add clues to build your library, or publish puzzles to harvest clues automatically.') }}
                 @endif
-            </flux:text>
+            </p>
         </div>
     @else
-        <flux:table :paginate="$this->clues">
-            <flux:table.columns>
-                <flux:table.column sortable :sorted="$sortField === 'answer'" :direction="$sortDirection" wire:click="sortBy('answer')">{{ __('Answer') }}</flux:table.column>
-                <flux:table.column sortable :sorted="$sortField === 'clue'" :direction="$sortDirection" wire:click="sortBy('clue')">{{ __('Clue') }}</flux:table.column>
-                <flux:table.column class="hidden sm:table-cell">{{ __('Source') }}</flux:table.column>
-                <flux:table.column class="hidden md:table-cell">{{ __('Author') }}</flux:table.column>
-                <flux:table.column align="end">{{ __('Actions') }}</flux:table.column>
-            </flux:table.columns>
-
-            <flux:table.rows>
-                @foreach($this->clues as $entry)
-                    <flux:table.row :key="$entry->id" class="{{ $entry->reports_count > 0 ? 'bg-red-50/50 dark:bg-red-900/10' : '' }}">
-                        @if($editingClueId === $entry->id)
-                            <flux:table.cell>
-                                <flux:input wire:model="editAnswer" size="sm" class="w-full" />
-                            </flux:table.cell>
-                            <flux:table.cell>
-                                <flux:input wire:model="editClue" size="sm" class="w-full" />
-                            </flux:table.cell>
-                            <flux:table.cell class="hidden sm:table-cell" />
-                            <flux:table.cell class="hidden md:table-cell" />
-                            <flux:table.cell align="end">
-                                <div class="flex justify-end gap-1">
-                                    <flux:button variant="primary" size="sm" wire:click="saveEdit">{{ __('Save') }}</flux:button>
-                                    <flux:button size="sm" wire:click="cancelEdit">{{ __('Cancel') }}</flux:button>
-                                </div>
-                            </flux:table.cell>
-                        @else
-                            <flux:table.cell variant="strong">
-                                <a href="{{ route('words.show', $entry->answer) }}" wire:navigate class="font-mono font-semibold tracking-wide hover:text-amber-500 hover:underline">{{ $entry->answer }}</a>
-                                <span class="ml-1 text-xs text-zinc-500">({{ mb_strlen($entry->answer) }})</span>
-                            </flux:table.cell>
-                            <flux:table.cell>{{ $entry->clue }}</flux:table.cell>
-                            <flux:table.cell class="hidden sm:table-cell">
-                                @if($entry->crossword)
-                                    <flux:badge size="sm">{{ Str::limit($entry->crossword->title, 20) }}</flux:badge>
-                                @else
-                                    <flux:badge variant="outline" size="sm" color="lime">{{ __('Standalone') }}</flux:badge>
-                                @endif
-                            </flux:table.cell>
-                            <flux:table.cell class="hidden md:table-cell">{{ $entry->user->name ?? __('Unknown') }} <x-supporter-badge :user="$entry->user" /></flux:table.cell>
-                            <flux:table.cell align="end">
-                                <div class="flex items-center justify-end gap-1">
-                                    @if($entry->status === \App\Models\ClueEntry::STATUS_PENDING)
-                                        <flux:badge size="sm" color="amber">{{ __('Pending review') }}</flux:badge>
+        <div class="overflow-x-auto">
+            <table class="w-full border-collapse text-sm">
+                <thead>
+                    <tr class="border-hairline border-b">
+                            <th scope="col" class="px-3 py-3 text-left font-normal ">
+                                <button type="button" wire:click="sortBy('answer')" class="meta-classical hover:text-ink inline-flex items-center gap-1 transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">
+                                    {{ __('Answer') }}
+                                    @if($sortField === 'answer')
+                                        <flux:icon :name="$sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'" class="size-3 text-amber-400" />
                                     @endif
-
-                                    @if($entry->reports_count > 0)
-                                        <flux:badge size="sm" color="red">
-                                            {{ $entry->reports_count }} {{ trans_choice('report|reports', $entry->reports_count) }}
-                                        </flux:badge>
+                                </button>
+                            </th>
+                            <th scope="col" class="px-3 py-3 text-left font-normal ">
+                                <button type="button" wire:click="sortBy('clue')" class="meta-classical hover:text-ink inline-flex items-center gap-1 transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">
+                                    {{ __('Clue') }}
+                                    @if($sortField === 'clue')
+                                        <flux:icon :name="$sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'" class="size-3 text-amber-400" />
                                     @endif
+                                </button>
+                            </th>
+                        <th scope="col" class="meta-classical hidden px-3 py-3 text-left font-normal sm:table-cell">{{ __('Source') }}</th>
+                        <th scope="col" class="meta-classical hidden px-3 py-3 text-left font-normal md:table-cell">{{ __('Author') }}</th>
+                        <th scope="col" class="meta-classical px-3 py-3 text-right font-normal">{{ __('Actions') }}</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-hairline divide-y">
+                    @foreach($this->clues as $entry)
+                        <tr wire:key="clue-{{ $entry->id }}" class="align-middle">
+                            @if($editingClueId === $entry->id)
+                                <td class="px-3 py-2.5">
+                                    <input type="text" wire:model="editAnswer" class="field-classical h-9 w-full px-3 uppercase" />
+                                </td>
+                                <td class="px-3 py-2.5">
+                                    <input type="text" wire:model="editClue" class="field-classical h-9 w-full px-3" />
+                                </td>
+                                <td class="hidden px-3 py-2.5 sm:table-cell"></td>
+                                <td class="hidden px-3 py-2.5 md:table-cell"></td>
+                                <td class="px-3 py-2.5">
+                                    <div class="flex justify-end gap-2">
+                                        <button type="button" class="btn-classical btn-amber-outline h-8 px-3 text-[14px]" wire:click="saveEdit">{{ __('Save') }}</button>
+                                        <button type="button" class="btn-classical btn-classical-muted h-8 px-3 text-[14px]" wire:click="cancelEdit">{{ __('Cancel') }}</button>
+                                    </div>
+                                </td>
+                            @else
+                                <td class="px-3 py-3.5 whitespace-nowrap">
+                                    <a href="{{ route('words.show', $entry->answer) }}" wire:navigate class="font-classical text-ink hover:text-amber-300 text-[18px] leading-none font-semibold tracking-[0.06em] transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">{{ $entry->answer }}</a>
+                                    <span class="meta-classical tnum ml-1.5">({{ mb_strlen($entry->answer) }})</span>
+                                </td>
+                                <td class="text-ink px-3 py-3.5">{{ $entry->clue }}</td>
+                                <td class="hidden px-3 py-3.5 sm:table-cell">
+                                    @if($entry->crossword)
+                                        <span class="chip-classical border-ink-faint text-ink-faint max-w-full truncate">{{ Str::limit($entry->crossword->displayTitle(), 24) }}</span>
+                                    @else
+                                        <span class="chip-classical border-ink-faint text-ink-faint">{{ __('Standalone') }}</span>
+                                    @endif
+                                </td>
+                                <td class="text-ink-muted hidden px-3 py-3.5 md:table-cell">{{ $entry->user->name ?? __('Unknown') }} <x-supporter-badge :user="$entry->user" /></td>
+                                <td class="px-3 py-3.5">
+                                    <div class="flex items-center justify-end gap-2">
+                                        @if($entry->status === \App\Models\ClueEntry::STATUS_PENDING)
+                                            <span class="chip-classical border-amber-400 text-amber-400">{{ __('Pending review') }}</span>
+                                        @endif
 
-                                    @auth
-                                        <flux:dropdown position="bottom" align="end">
-                                            <flux:button variant="ghost" size="sm" icon="ellipsis-vertical" />
-                                            <flux:menu>
-                                                @can('update', $entry)
-                                                    <flux:menu.item icon="pencil" wire:click="startEditing({{ $entry->id }})">
-                                                        {{ __('Edit') }}
+                                        @if($entry->reports_count > 0)
+                                            <span class="chip-classical border-amber-400 text-amber-400 tnum">
+                                                {{ $entry->reports_count }} {{ trans_choice('report|reports', $entry->reports_count) }}
+                                            </span>
+                                        @endif
+
+                                        @auth
+                                            <flux:dropdown position="bottom" align="end">
+                                                <button type="button" class="btn-classical btn-classical-muted h-8 w-8 px-0" aria-label="{{ __('More actions') }}">
+                                                    <flux:icon name="ellipsis-vertical" class="size-4" />
+                                                </button>
+                                                <flux:menu>
+                                                    @can('update', $entry)
+                                                        <flux:menu.item icon="pencil" wire:click="startEditing({{ $entry->id }})">
+                                                            {{ __('Edit') }}
+                                                        </flux:menu.item>
+                                                    @endcan
+                                                    <flux:menu.item icon="flag" wire:click="openReportModal({{ $entry->id }})">
+                                                        {{ __('Report') }}
                                                     </flux:menu.item>
-                                                @endcan
-                                                <flux:menu.item icon="flag" wire:click="openReportModal({{ $entry->id }})">
-                                                    {{ __('Report') }}
-                                                </flux:menu.item>
-                                                @can('delete', $entry)
-                                                    <flux:menu.item icon="trash" variant="danger" wire:click="deleteClue({{ $entry->id }})" wire:confirm="{{ __('Are you sure you want to delete this clue?') }}">
-                                                        {{ __('Delete') }}
-                                                    </flux:menu.item>
-                                                @endcan
-                                            </flux:menu>
-                                        </flux:dropdown>
-                                    @endauth
-                                </div>
-                            </flux:table.cell>
-                        @endif
-                    </flux:table.row>
-                @endforeach
-            </flux:table.rows>
-        </flux:table>
+                                                    @can('delete', $entry)
+                                                        <flux:menu.item icon="trash" variant="danger" wire:click="deleteClue({{ $entry->id }})" wire:confirm="{{ __('Are you sure you want to delete this clue?') }}">
+                                                            {{ __('Delete') }}
+                                                        </flux:menu.item>
+                                                    @endcan
+                                                </flux:menu>
+                                            </flux:dropdown>
+                                        @endauth
+                                    </div>
+                                </td>
+                            @endif
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+
+        @if($this->clues->hasPages())
+            <div class="mt-4">
+                {{ $this->clues->links() }}
+            </div>
+        @endif
     @endif
 
     {{-- Add Clue Modal --}}

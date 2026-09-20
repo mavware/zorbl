@@ -6,6 +6,8 @@ use App\Enums\CrosswordLayout;
 use App\Enums\PuzzleType;
 use App\Observers\CrosswordObserver;
 use Carbon\CarbonImmutable;
+use CrosswordBuilder\CrosswordIO\Crossword as CrosswordDTO;
+use CrosswordBuilder\CrosswordIO\GridNumberer;
 use Database\Factories\CrosswordFactory;
 use Eloquent;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -17,8 +19,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use CrosswordBuilder\CrosswordIO\Crossword as CrosswordDTO;
-use CrosswordBuilder\CrosswordIO\GridNumberer;
 
 /**
  * @property int $id
@@ -428,11 +428,16 @@ class Crossword extends Model
     /**
      * Human-readable puzzle type label, including sub-types like Shaped and Barred
      * that are inferred from the grid structure rather than stored explicitly.
+     *
+     * A missing type (a legacy row, or a model loaded with a column subset that
+     * omitted `puzzle_type`) is treated as Standard rather than throwing.
      */
     public function puzzleTypeLabel(): string
     {
-        if ($this->puzzle_type !== PuzzleType::Standard) {
-            return $this->puzzle_type->label();
+        $type = $this->puzzle_type ?? PuzzleType::Standard;
+
+        if ($type !== PuzzleType::Standard) {
+            return $type->label();
         }
 
         if ($this->grid && collect($this->grid)->flatten()->contains(fn ($v) => $v === null)) {

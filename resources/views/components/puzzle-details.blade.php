@@ -1,15 +1,11 @@
-@php($completeness = $crossword->completeness())
-
-<div class="mt-1 flex gap-2 text-xs">
+<div class="meta-classical mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5">
     <flux:tooltip :content="$crossword->puzzle_type->label()">
         <flux:icon :name="$crossword->puzzle_type->icon()" class="size-3"/>
     </flux:tooltip>
 
-    <div>
-        {{ $crossword->width }}&times;{{ $crossword->height }}
-    </div>
+    <span class="tnum whitespace-nowrap">{{ $crossword->width }}&times;{{ $crossword->height }}</span>
 
-    <div>
-        {{ $crossword->updated_at->diffForHumans() }}
-    </div>
+    <span aria-hidden="true">&middot;</span>
+
+    <span class="whitespace-nowrap">{{ $crossword->updated_at->diffForHumans() }}</span>
 </div>

@@ -252,47 +252,64 @@ new #[Title('Favorites')] class extends Component {
 
     {{-- Puzzle Grid --}}
     @if($this->activeListCrosswords->isEmpty())
-        <div class="border-line-strong flex flex-col items-center justify-center rounded-xl border border-dashed py-16 px-6 text-center" data-test="favorites-empty-state">
-            <flux:icon name="heart" class="mb-4 size-12 text-zinc-500" />
-            <flux:heading size="lg" class="mb-2">{{ __('No puzzles here yet') }}</flux:heading>
-            <flux:text class="mb-4">
+        <div class="border-border-strong flex flex-col items-center justify-center rounded-sm border border-dashed px-6 py-16 text-center" data-test="favorites-empty-state">
+            <flux:icon name="heart" class="text-ink-faint mb-4 size-10" />
+            <h3 class="font-classical text-ink text-[26px] leading-tight font-medium">{{ __('No puzzles here yet') }}</h3>
+            <p class="text-ink-muted mt-2 mb-6 text-sm">
                 @if($list === 'liked')
                     {{ __('Like puzzles while browsing or solving to see them here.') }}
                 @else
                     {{ __('Add puzzles to this list from your liked puzzles.') }}
                 @endif
-            </flux:text>
-            <flux:button variant="primary" icon="puzzle-piece" :href="route('puzzles.index')" wire:navigate.hover>
+            </p>
+            <a href="{{ route('puzzles.index') }}" wire:navigate.hover class="btn-classical btn-amber-outline">
+                <flux:icon name="puzzle-piece" class="size-4" />
                 {{ __('Browse puzzles') }}
-            </flux:button>
+            </a>
         </div>
     @else
-        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div class="grid gap-[22px] [grid-template-columns:repeat(auto-fill,minmax(268px,1fr))]">
             @foreach($this->activeListCrosswords as $crossword)
-                <div wire:key="fav-{{ $crossword->id }}" class="border-line group relative rounded-xl border p-4 transition-colors hover:border-zinc-400 dark:hover:border-zinc-500">
-                    <a href="{{ route('crosswords.solver', $crossword) }}" wire:navigate class="block">
-                        <div class="mb-3 flex justify-center">
-                            <x-grid-thumbnail :grid="$crossword->grid" :width="$crossword->width" :height="$crossword->height" />
-                        </div>
-
-                        <flux:heading size="sm" class="truncate">{{ $crossword->displayTitle() }}</flux:heading>
-                        <flux:text size="sm" class="mt-1">
-                            {{ __('by :author', ['author' => $crossword->user->name ?? __('Unknown')]) }} <x-supporter-badge :user="$crossword->user" />
-                            &middot;
-                            {{ $crossword->width }}&times;{{ $crossword->height }}
-                        </flux:text>
-
-                        <div class="mt-1.5 flex items-center gap-2">
-                            <span class="flex items-center gap-1 text-xs text-zinc-500">
-                                <flux:icon name="heart" class="size-3.5" />
-                                {{ $crossword->likes_count }}
+                <article wire:key="fav-{{ $crossword->id }}" class="border-border hover:border-border-strong flex flex-col gap-3.5 rounded-sm border p-[18px] transition-colors">
+                    <div class="min-w-0">
+                        <h3 class="font-classical text-ink truncate text-[21px] leading-tight font-semibold">
+                            <a href="{{ route('crosswords.solver', $crossword) }}" wire:navigate class="hover:text-amber-300 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">
+                                {{ $crossword->displayTitle() }}
+                            </a>
+                        </h3>
+                        <div class="meta-classical mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                            <span class="flex items-center gap-1">
+                                {{ __('by :author', ['author' => $crossword->user->name ?? __('Unknown')]) }} <x-supporter-badge :user="$crossword->user" />
                             </span>
+                            <span aria-hidden="true">&middot;</span>
+                            <span class="tnum whitespace-nowrap">{{ $crossword->width }}&times;{{ $crossword->height }}</span>
                         </div>
+                    </div>
+
+                    <a href="{{ route('crosswords.solver', $crossword) }}" wire:navigate class="flex justify-center py-1 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">
+                        <x-grid-thumbnail
+                            :grid="$crossword->grid"
+                            :width="$crossword->width"
+                            :height="$crossword->height"
+                            frame-class="border-hairline bg-hairline rounded-sm border"
+                            open-class="bg-panel"
+                            block-class="bg-zinc-300"
+                        />
                     </a>
 
-                    <div class="absolute top-2 right-2 opacity-0 transition-opacity group-hover:opacity-100">
+                    <div class="meta-classical flex items-center gap-1">
+                        <flux:icon name="heart" class="size-3.5" />
+                        <span class="font-classical text-ink tnum text-[15px] font-medium tracking-normal">{{ $crossword->likes_count }}</span>
+                    </div>
+
+                    <div class="flex items-center justify-between gap-2 pt-1">
+                        <a href="{{ route('crosswords.solver', $crossword) }}" wire:navigate class="btn-classical btn-amber-outline">
+                            {{ __('Solve') }}
+                        </a>
                         <flux:dropdown position="bottom" align="end">
-                            <flux:button variant="ghost" size="sm" icon="ellipsis-vertical" />
+                            <button type="button" class="btn-classical btn-classical-muted w-9 px-0" aria-label="{{ __('More actions') }}">
+                                <flux:icon name="ellipsis-vertical" class="size-4" />
+                            </button>
                             <flux:menu>
                                 @if($list === 'liked')
                                     <flux:menu.item icon="folder-plus" wire:click="openAddToListModal({{ $crossword->id }})">
@@ -305,7 +322,7 @@ new #[Title('Favorites')] class extends Component {
                             </flux:menu>
                         </flux:dropdown>
                     </div>
-                </div>
+                </article>
             @endforeach
         </div>
     @endif
