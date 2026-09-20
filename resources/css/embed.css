@@ -7,6 +7,13 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
+    /* Match the app: every named radius above `sm` collapses to 0.25rem. */
+    --radius-md:  0.25rem;
+    --radius-lg:  0.25rem;
+    --radius-xl:  0.25rem;
+    --radius-2xl: 0.25rem;
+    --radius-3xl: 0.25rem;
+
     --font-sans: 'Lora', Georgia, 'Times New Roman', serif;
 
     --color-zinc-50: #fafafa;

@@ -5,8 +5,8 @@
 </head>
 <body class="min-h-screen bg-page">
 @include('partials.impersonation-banner')
-<flux:sidebar sticky collapsible="mobile" class="bg-surface border-line border-e px-0!">
-    <flux:sidebar.header class="px-4 pb-4 border-b border-line">
+<flux:sidebar sticky collapsible="mobile" class="bg-surface border-line border-e px-0! pt-0!">
+    <flux:sidebar.header class="p-4 border-b border-line">
         <x-app-logo :sidebar="true" href="{{ route('crosswords.index') }}" wire:navigate/>
         <flux:sidebar.collapse class="lg:hidden"/>
     </flux:sidebar.header>

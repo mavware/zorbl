@@ -6,8 +6,8 @@ use CrosswordBuilder\CrosswordIO\Exceptions\PdfImportException;
 use CrosswordBuilder\CrosswordIO\Exceptions\PuzImportException;
 use App\Enums\PuzzleType;
 use App\Models\Crossword;
+use App\Livewire\Concerns\ExportsCrossword;
 use App\Services\GridTemplateProvider;
-use App\Services\PdfExporter;
 use CrosswordBuilder\CrosswordIO\GridNumberer;
 use CrosswordBuilder\CrosswordIO\ImportDetector;
 use Flux\Flux;
@@ -17,9 +17,9 @@ use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithFileUploads;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 
 new #[Title('Build')] class extends Component {
+    use ExportsCrossword;
     use WithFileUploads;
 
     public bool $showNewModal = false;
@@ -32,14 +32,8 @@ new #[Title('Build')] class extends Component {
     public string $importError = '';
     public string $newPuzzleLimitMessage = '';
 
-    /** @var list<int> */
-    public array $selectedPuzzles = [];
-
-    public bool $showBatchPdfModal = false;
-
-    public string $batchPdfOrientation = 'portrait';
-
-    public string $batchPdfTitle = '';
+    /** The puzzle a PDF export was requested for from its card menu. */
+    public ?int $pdfExportPuzzleId = null;
 
     #[Url]
     public string $search = '';
@@ -328,65 +322,51 @@ new #[Title('Build')] class extends Component {
         $crossword->delete();
     }
 
-    public function togglePuzzleSelection(int $id): void
+    /**
+     * Open the PDF export settings for one puzzle, chosen from its card menu.
+     */
+    public function choosePdfExportFor(int $id): void
     {
-        if (in_array($id, $this->selectedPuzzles)) {
-            $this->selectedPuzzles = array_values(array_diff($this->selectedPuzzles, [$id]));
-        } else {
-            $this->selectedPuzzles[] = $id;
-        }
+        $this->pdfExportPuzzleId = $id;
+        $this->attemptExport('pdf');
     }
 
-    public function selectAllPuzzles(): void
+    #[Computed]
+    public function pdfExportCrossword(): ?Crossword
     {
-        $this->selectedPuzzles = $this->crosswords->pluck('id')->all();
+        return $this->pdfExportPuzzleId === null ? null : Crossword::find($this->pdfExportPuzzleId);
     }
 
-    public function clearSelection(): void
+    protected function getExportableCrossword(): Crossword
     {
-        $this->selectedPuzzles = [];
+        $crossword = Crossword::findOrFail($this->pdfExportPuzzleId);
+        $this->authorize('view', $crossword);
+
+        return $crossword;
     }
 
-    public function openBatchPdfExport(): void
+    protected function getPdfIncludeSolution(): bool
     {
-        if (empty($this->selectedPuzzles)) {
-            return;
-        }
-
-        $this->batchPdfOrientation = 'portrait';
-        $this->batchPdfTitle = '';
-        $this->showBatchPdfModal = true;
+        return true;
     }
 
-    public function exportBatchPdf(): StreamedResponse
+    protected function getExportPlanGates(): array
     {
-        $this->showBatchPdfModal = false;
-
-        $crosswords = Crossword::whereIn('id', $this->selectedPuzzles)
-            ->where('user_id', Auth::id())
-            ->get()
-            ->sortBy(fn (Crossword $c) => array_search($c->id, $this->selectedPuzzles));
-
-        $orientation = in_array($this->batchPdfOrientation, ['portrait', 'landscape']) ? $this->batchPdfOrientation : 'portrait';
-        $title = trim($this->batchPdfTitle) ?: null;
-
-        $exporter = app(PdfExporter::class);
-        $pdf = $exporter->exportBatch($crosswords, $orientation, $title);
-
-        $filename = str($title ?? 'puzzles-collection')->slug()->append('.pdf')->toString();
-
-        $this->selectedPuzzles = [];
-
-        return response()->streamDownload(function () use ($pdf) {
-            echo $pdf;
-        }, $filename, ['Content-Type' => 'application/pdf']);
+        return [
+            'puz' => null,
+            'jpz' => null,
+            'pdf' => 'canExportPdf',
+        ];
     }
 
-    public function cancelBatchPdfExport(): void
+    protected function onExportUpgradeRequired(string $format): void
     {
-        $this->showBatchPdfModal = false;
-        $this->batchPdfOrientation = 'portrait';
-        $this->batchPdfTitle = '';
+        $this->pdfExportPuzzleId = null;
+
+        Flux::toast(
+            text: __('Create a free account to export PDFs.'),
+            variant: 'warning',
+        );
     }
 }
 ?>
@@ -469,25 +449,6 @@ new #[Title('Build')] class extends Component {
             </div>
         </div>
 
-        @if(count($selectedPuzzles) > 0)
-            <div class="mx-6 flex items-center justify-between rounded-lg bg-blue-50 px-4 py-2.5 lg:mx-8 dark:bg-blue-950/50">
-                <div class="flex items-center gap-3">
-                    <flux:text size="sm" class="font-medium text-blue-700 dark:text-blue-300">
-                        {{ trans_choice(':count puzzle selected|:count puzzles selected', count($selectedPuzzles)) }}
-                    </flux:text>
-                    <flux:button variant="ghost" size="sm" wire:click="selectAllPuzzles">
-                        {{ __('Select All') }}
-                    </flux:button>
-                    <flux:button variant="ghost" size="sm" wire:click="clearSelection">
-                        {{ __('Clear') }}
-                    </flux:button>
-                </div>
-                <flux:button size="sm" icon="document-arrow-down" wire:click="openBatchPdfExport">
-                    {{ __('Export PDF') }}
-                </flux:button>
-            </div>
-        @endif
-
         @if($this->crosswords->isEmpty())
             <div class="border-line-strong mx-6 flex flex-col items-center justify-center rounded-xl border border-dashed py-16 lg:mx-8">
                 <flux:icon name="puzzle-piece" class="mb-4 size-12 text-zinc-500" />
@@ -512,17 +473,8 @@ new #[Title('Build')] class extends Component {
                 @foreach($this->crosswords as $crossword)
                     <div
                         wire:key="crossword-{{ $crossword->id }}"
-                        @class([
-                            'border-line group relative rounded-xl border p-4 transition-colors hover:border-zinc-400 dark:hover:border-zinc-500',
-                            'border-blue-400 bg-blue-50/50 dark:border-blue-500 dark:bg-blue-950/30' => in_array($crossword->id, $selectedPuzzles),
-                        ])
+                        class="border-line group relative rounded-xl border p-4 transition-colors hover:border-zinc-400 dark:hover:border-zinc-500"
                     >
-                        <div class="absolute top-2 left-2 z-10">
-                            <flux:checkbox
-                                :checked="in_array($crossword->id, $selectedPuzzles)"
-                                wire:click="togglePuzzleSelection({{ $crossword->id }})"
-                            />
-                        </div>
                         <a href="{{ route('crosswords.editor', $crossword) }}" wire:navigate class="block">
                             <div class="mb-3 flex justify-center">
                                 <x-grid-thumbnail :grid="$crossword->grid" :width="$crossword->width" :height="$crossword->height" />
@@ -550,6 +502,9 @@ new #[Title('Build')] class extends Component {
                                 <flux:menu>
                                     <flux:menu.item icon="document-duplicate" wire:click="duplicatePuzzle({{ $crossword->id }})">
                                         {{ __('Duplicate') }}
+                                    </flux:menu.item>
+                                    <flux:menu.item icon="document-arrow-down" wire:click="choosePdfExportFor({{ $crossword->id }})">
+                                        {{ __('Export PDF') }}
                                     </flux:menu.item>
                                     <flux:menu.item icon="trash" variant="danger" wire:click="deletePuzzle({{ $crossword->id }})" wire:confirm="{{ __('Are you sure you want to delete this puzzle?') }}">
                                         {{ __('Delete') }}
@@ -698,32 +653,37 @@ new #[Title('Build')] class extends Component {
         </div>
     </flux:modal>
 
-    {{-- Batch PDF Export Modal --}}
-    <flux:modal wire:model="showBatchPdfModal">
+    {{-- PDF Export Settings Modal --}}
+    <flux:modal wire:model="showPdfExportModal">
         <div class="space-y-6">
-            <flux:heading size="lg">{{ __('Export as PDF') }}</flux:heading>
+            <flux:heading size="lg">{{ __('PDF Export Settings') }}</flux:heading>
+            <flux:text>{{ __('Configure the page orientation, add an image, and optional narrative text for your PDF export.') }}</flux:text>
 
-            <flux:text size="sm" class="text-zinc-500">
-                {{ trans_choice(':count puzzle will be combined into a single PDF.|:count puzzles will be combined into a single PDF.', count($selectedPuzzles)) }}
-            </flux:text>
+            <flux:radio.group wire:model="pdfOrientation" label="{{ __('Orientation') }}">
+                <flux:radio value="portrait" label="{{ __('Portrait') }}" description="{{ __('Standard vertical layout (8.5 × 11 in)') }}" />
+                <flux:radio value="landscape" label="{{ __('Landscape') }}" description="{{ __('Horizontal layout (11 × 8.5 in) — better for wide puzzles') }}" />
+            </flux:radio.group>
 
-            <flux:field>
-                <flux:label>{{ __('Collection Title') }} <span class="text-xs font-normal text-zinc-500"> {{ __('(optional)') }}</span></flux:label>
-                <flux:input wire:model="batchPdfTitle" placeholder="{{ __('e.g. Weekly Puzzle Pack') }}" />
-                <flux:description>{{ __('Adds a cover page with this title.') }}</flux:description>
-            </flux:field>
+            <div>
+                <flux:input type="file" wire:model="pdfImage" label="{{ __('Header Image') }}" accept="image/png,image/jpeg,image/gif,image/webp" />
+                <flux:text class="mt-1">{{ __('Optional image displayed above the puzzle grid (max 2 MB).') }}</flux:text>
+                @if ($this->pdfExportCrossword?->pdf_image && !$pdfRemoveImage)
+                    <div class="mt-2 flex items-center gap-2">
+                        <flux:text class="text-sm text-green-600 dark:text-green-400">{{ __('Current image saved.') }}</flux:text>
+                        <flux:button size="xs" variant="danger" wire:click="$set('pdfRemoveImage', true)">{{ __('Remove') }}</flux:button>
+                    </div>
+                @elseif ($pdfRemoveImage)
+                    <div class="mt-2">
+                        <flux:text class="text-sm text-amber-600 dark:text-amber-400">{{ __('Image will be removed on export.') }}</flux:text>
+                    </div>
+                @endif
+            </div>
 
-            <flux:field>
-                <flux:label>{{ __('Orientation') }}</flux:label>
-                <flux:radio.group wire:model="batchPdfOrientation" variant="segmented">
-                    <flux:radio value="portrait" label="{{ __('Portrait') }}" />
-                    <flux:radio value="landscape" label="{{ __('Landscape') }}" />
-                </flux:radio.group>
-            </flux:field>
+            <flux:textarea wire:model="pdfNarrative" label="{{ __('Narrative Text') }}" placeholder="{{ __('Add introductory text, theme explanation, or instructions that will appear above the puzzle grid...') }}" rows="4" />
 
             <div class="flex justify-end gap-2">
-                <flux:button wire:click="cancelBatchPdfExport">{{ __('Cancel') }}</flux:button>
-                <flux:button variant="primary" icon="document-arrow-down" wire:click="exportBatchPdf">{{ __('Export') }}</flux:button>
+                <flux:button wire:click="cancelPdfExport">{{ __('Cancel') }}</flux:button>
+                <flux:button variant="primary" wire:click="confirmPdfExport">{{ __('Export PDF') }}</flux:button>
             </div>
         </div>
     </flux:modal>

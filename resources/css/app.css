@@ -11,6 +11,15 @@
 @custom-variant pointer-coarse (@media (pointer: coarse));
 
 @theme {
+    /* Tighter corners everywhere: every named radius above `sm` collapses to
+       the `sm` value, so rounded-md/lg/xl/2xl/3xl all render at 0.25rem.
+       `rounded-full` and `rounded-xs` are untouched. */
+    --radius-md:  0.25rem;
+    --radius-lg:  0.25rem;
+    --radius-xl:  0.25rem;
+    --radius-2xl: 0.25rem;
+    --radius-3xl: 0.25rem;
+
     --default-font-family: 'Lora', Georgia, 'Times New Roman', serif;
     --font-sans:    'Lora', Georgia, 'Times New Roman', serif;
     --font-display: 'Lora', Georgia, serif;
@@ -161,7 +170,7 @@ select:focus[data-flux-control] {
 }
 
 [data-flux-main] {
-    @apply px-0;
+    @apply px-0 pt-0;
 }
 
 /* Main is edge-to-edge, so each page root insets itself. A page that manages
@@ -169,6 +178,12 @@ select:focus[data-flux-control] {
    `data-full-bleed` on its root. */
 [data-flux-main] > :not([data-full-bleed]) {
     @apply px-6 lg:px-8;
+}
+
+/* Main has no top padding so a banner can sit flush. When nothing is rendered
+   above the page root, the root supplies the top gutter itself. */
+[data-flux-main] > :first-child:not([data-banner]) {
+    @apply pt-6 lg:pt-8;
 }
 
 /* Amber outline button — transparent ground, amber border and text, soft amber
@@ -197,7 +212,7 @@ select:focus[data-flux-control] {
 
 .editor-complete-flash {
     animation: editor-complete-flash 0.8s ease-in-out;
-    border-radius: 0.5rem;
+    border-radius: var(--radius-sm);
 }
 
 /* Register --bar-color as an interpolatable color so the @keyframes below
