@@ -97,7 +97,7 @@
        variables survive even though only Blade references them. */
     :root {
         --logo-fill:   #b68235;
-        --logo-ink:    #f8f4f4;
+        --logo-ink:    #ffffff;
         --logo-radius: 4px;
         --logo-font:   var(--font-classical);
         --logo-weight: 600;

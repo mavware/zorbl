@@ -29,9 +29,9 @@
         /* The classical 4px control corner reads as Flux's rounded-lg here */
         --radius-sm: 0.5rem;
 
-        /* Logo mark: stock amber tile with dark bold sans initials */
+        /* Logo mark: stock amber tile with white bold sans initials */
         --logo-fill:   var(--color-amber-500);
-        --logo-ink:    var(--color-zinc-950);
+        --logo-ink:    #ffffff;
         --logo-radius: 6px;
         --logo-font:   var(--font-sans);
         --logo-weight: 700;
