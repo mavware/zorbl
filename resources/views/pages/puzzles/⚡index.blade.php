@@ -134,7 +134,7 @@ class extends Component
                     {{ __('Create a free account to solve unlimited puzzles, save your progress across devices, and track your stats.') }}
                 </p>
                 <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
-                    <a href="{{ route('register') }}" class="rounded-xl bg-amber-500 px-6 py-2.5 text-sm font-semibold text-zinc-950 hover:bg-amber-400 transition">
+                    <a href="{{ route('register') }}" class="btn-amber-outline rounded-xl border px-6 py-2.5 text-sm font-semibold transition">
                         {{ __('Create Free Account') }}
                     </a>
                     <a href="{{ route('login') }}" class="border-line-strong rounded-xl border px-6 py-2.5 text-sm font-semibold text-zinc-800 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-700 transition">

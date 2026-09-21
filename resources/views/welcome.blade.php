@@ -237,7 +237,7 @@
                                     {{ __('Create a free account to solve unlimited puzzles, save your progress across devices, and track your stats.') }}
                                 </p>
                                 <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
-                                    <a href="{{ route('register') }}" class="rounded-xl bg-amber-500 px-6 py-2.5 text-sm font-semibold text-zinc-950 hover:bg-amber-400 transition">
+                                    <a href="{{ route('register') }}" class="btn-amber-outline rounded-xl border px-6 py-2.5 text-sm font-semibold transition">
                                         {{ __('Create Free Account') }}
                                     </a>
                                     <a href="{{ route('login') }}" class="rounded-xl border border-zinc-700 px-6 py-2.5 text-sm font-semibold text-zinc-300 hover:bg-zinc-800 transition">
@@ -466,11 +466,11 @@
                 <p class="mt-4 text-zinc-500">Join {{ $appName }} and start crafting or solving today.</p>
                 <div class="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
                     @auth
-                        <a href="{{ route('crosswords.index') }}" class="rounded-xl bg-amber-500 px-8 py-3.5 text-base font-semibold text-zinc-950 shadow-lg shadow-amber-500/20 hover:bg-amber-400 transition">
+                        <a href="{{ route('crosswords.index') }}" class="btn-amber-outline rounded-xl border px-8 py-3.5 text-base font-semibold transition">
                             Go to dashboard
                         </a>
                     @else
-                        <a href="{{ route('register') }}" class="rounded-xl bg-amber-500 px-8 py-3.5 text-base font-semibold text-zinc-950 shadow-lg shadow-amber-500/20 hover:bg-amber-400 transition">
+                        <a href="{{ route('register') }}" class="btn-amber-outline rounded-xl border px-8 py-3.5 text-base font-semibold transition">
                             Create your free account
                         </a>
                         <a href="{{ route('puzzles.index') }}" class="rounded-xl border border-zinc-700 px-8 py-3.5 text-base font-semibold text-zinc-100 hover:border-zinc-500 hover:bg-zinc-800 transition">
