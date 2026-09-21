@@ -90,30 +90,37 @@
 
 /* Component normalisation — the classical primitives are stroke-only and
    small-caps; under Modern they take main's filled Flux button and badge
-   treatment. Un-layered so these beat the primitives' own utilities. */
+   treatment. Un-layered so these beat the primitives' own utilities.
+
+   Filled (accent): header buttons and the standalone amber CTAs (welcome
+   nav, sidebar sign-up, guest banner). In-page buttons that pair
+   btn-amber-outline with the btn-classical chassis (card actions, form
+   submits) take the secondary surface so a grid of cards stays quiet. */
 :root[data-theme="modern"] .btn-header-primary,
-:root[data-theme="modern"] .btn-amber-outline {
+:root[data-theme="modern"] .btn-amber-outline:not(.btn-classical) {
     background-color: var(--color-accent);
     border-color: transparent;
     color: var(--color-accent-foreground);
 }
 
 :root[data-theme="modern"] .btn-header-primary:hover,
-:root[data-theme="modern"] .btn-amber-outline:hover {
+:root[data-theme="modern"] .btn-amber-outline:not(.btn-classical):hover {
     background-color: color-mix(in oklab, var(--color-accent), transparent 10%);
     border-color: transparent;
     color: var(--color-accent-foreground);
 }
 
 :root[data-theme="modern"] .btn-header-secondary,
-:root[data-theme="modern"] .btn-classical-muted {
+:root[data-theme="modern"] .btn-classical-muted,
+:root[data-theme="modern"] .btn-classical.btn-amber-outline {
     background-color: var(--color-elevated);
     border-color: var(--color-line-strong);
     color: var(--color-fg);
 }
 
 :root[data-theme="modern"] .btn-header-secondary:hover,
-:root[data-theme="modern"] .btn-classical-muted:hover {
+:root[data-theme="modern"] .btn-classical-muted:hover,
+:root[data-theme="modern"] .btn-classical.btn-amber-outline:hover {
     background-color: var(--color-muted);
     border-color: var(--color-line-strong);
     color: var(--color-fg);
