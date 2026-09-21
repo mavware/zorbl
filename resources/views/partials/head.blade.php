@@ -6,7 +6,7 @@
     {{ filled($title ?? null) ? $title.' - '.config('app.name') : config('app.name') }}
 </title>
 
-<link rel="icon" href="{{ asset('logo.svg') }}" type="image/svg+xml">
+<link rel="icon" href="{{ asset(\App\Enums\Theme::current()->logoFile()) }}" type="image/svg+xml">
 <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="32x32">
 <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}" sizes="180x180">
 <link rel="manifest" href="{{ asset('site.webmanifest') }}">

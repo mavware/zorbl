@@ -1,5 +1,7 @@
 <?php
 
+use App\Enums\Theme;
+
 test('site.webmanifest exists in public root with all PWA fields', function () {
     $path = public_path('site.webmanifest');
     expect(is_file($path))->toBeTrue();
@@ -32,6 +34,7 @@ test('site.webmanifest exists in public root with all PWA fields', function () {
 
 test('favicon assets exist in the public root', function () {
     expect(is_file(public_path('logo.svg')))->toBeTrue()
+        ->and(is_file(public_path('logo-modern.svg')))->toBeTrue()
         ->and(is_file(public_path('favicon.ico')))->toBeTrue()
         ->and(is_file(public_path('apple-touch-icon.png')))->toBeTrue();
 });
@@ -39,7 +42,7 @@ test('favicon assets exist in the public root', function () {
 test('pages declare the svg favicon with ico and apple-touch-icon fallbacks', function (string $url) {
     $this->get($url)
         ->assertOk()
-        ->assertSee('<link rel="icon" href="'.asset('logo.svg').'" type="image/svg+xml">', false)
+        ->assertSee('<link rel="icon" href="'.asset(Theme::current()->logoFile()).'" type="image/svg+xml">', false)
         ->assertSee('<link rel="icon" href="'.asset('favicon.ico').'" sizes="32x32">', false)
         ->assertSee('<link rel="apple-touch-icon" href="'.asset('apple-touch-icon.png').'" sizes="180x180">', false);
 })->with([
