@@ -19,8 +19,15 @@
         --tracking-body:    normal;
         --tracking-heading: normal;
         --leading-heading:  inherit;
-        --weight-heading:   inherit;
-        --weight-display:   inherit;
+        --weight-heading:   500;
+        --weight-display:   600;
+
+        /* Labels drop the small-caps treatment */
+        --label-transform:      none;
+        --label-tracking-scale: 0;
+
+        /* The classical 4px control corner reads as Flux's rounded-lg here */
+        --radius-sm: 0.5rem;
 
         /* Cool zinc */
         --color-zinc-50:  #fafafa;
@@ -54,10 +61,10 @@
         --color-ink:           var(--color-zinc-100);
         --color-ink-muted:     var(--color-zinc-400);
         --color-ink-faint:     var(--color-zinc-500);
-        --color-hairline:      rgb(255 255 255 / 0.1);
-        --color-border:        rgb(255 255 255 / 0.15);
-        --color-border-strong: rgb(255 255 255 / 0.25);
-        --color-border-hover:  rgb(255 255 255 / 0.4);
+        --color-hairline:      var(--color-line);
+        --color-border:        var(--color-line);
+        --color-border-strong: var(--color-line-strong);
+        --color-border-hover:  var(--color-fg-subtle);
 
         --color-page:           var(--color-zinc-100);
         --color-surface:        #ffffff;
@@ -79,4 +86,51 @@
         --color-line-soft:   var(--color-zinc-800);
         --color-line-strong: var(--color-zinc-600);
     }
+}
+
+/* Component normalisation — the classical primitives are stroke-only and
+   small-caps; under Modern they take main's filled Flux button and badge
+   treatment. Un-layered so these beat the primitives' own utilities. */
+:root[data-theme="modern"] .btn-header-primary,
+:root[data-theme="modern"] .btn-amber-outline {
+    background-color: var(--color-accent);
+    border-color: transparent;
+    color: var(--color-accent-foreground);
+}
+
+:root[data-theme="modern"] .btn-header-primary:hover,
+:root[data-theme="modern"] .btn-amber-outline:hover {
+    background-color: color-mix(in oklab, var(--color-accent), transparent 10%);
+    border-color: transparent;
+    color: var(--color-accent-foreground);
+}
+
+:root[data-theme="modern"] .btn-header-secondary,
+:root[data-theme="modern"] .btn-classical-muted {
+    background-color: var(--color-elevated);
+    border-color: var(--color-line-strong);
+    color: var(--color-fg);
+}
+
+:root[data-theme="modern"] .btn-header-secondary:hover,
+:root[data-theme="modern"] .btn-classical-muted:hover {
+    background-color: var(--color-muted);
+    border-color: var(--color-line-strong);
+    color: var(--color-fg);
+}
+
+:root[data-theme="modern"] .chip-classical,
+:root[data-theme="modern"] .badge-classical {
+    background-color: color-mix(in oklab, currentColor 14%, transparent);
+    border-color: transparent;
+    border-radius: var(--radius-md);
+    font-size: 12px;
+}
+
+:root[data-theme="modern"] .badge-classical {
+    font-size: 11px;
+}
+
+:root[data-theme="modern"] .meta-classical {
+    font-size: 12px;
 }

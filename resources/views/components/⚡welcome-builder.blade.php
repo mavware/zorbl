@@ -322,7 +322,7 @@ new class extends Component {
             type="button"
             wire:click="createPuzzle"
             @disabled($this->atPuzzleLimit)
-            class="flex mr-3 rounded-xl border border-amber-500 bg-transparent px-8 py-2.5 text-base font-semibold text-amber-400 transition hover:bg-amber-500/10 hover:text-amber-300 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-amber-400"
+            class="btn-amber-outline flex mr-3 rounded-xl border px-8 py-2.5 text-base font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-amber-400"
         >
             {{ __('Start building') }}
         </button>

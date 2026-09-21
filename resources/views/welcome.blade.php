@@ -133,10 +133,10 @@
                 <div class="flex items-center gap-4">
 {{--                    <a href="{{ route('puzzles.index') }}" class="text-sm text-zinc-500 hover:text-zinc-100 transition">Browse Puzzles</a>--}}
                     @auth
-                        <a href="{{ route('crosswords.index') }}" class="rounded-lg border border-amber-400 bg-transparent px-4 py-2 text-sm font-semibold text-amber-400 hover:bg-amber-400/10 hover:text-amber-300 transition">Dashboard</a>
+                        <a href="{{ route('crosswords.index') }}" class="btn-amber-outline rounded-lg border px-4 py-2 text-sm font-semibold transition">Dashboard</a>
                     @else
                         <a href="{{ route('login') }}" class="text-sm text-zinc-500 hover:text-zinc-100 transition">Log in</a>
-                        <a href="{{ route('register') }}" class="rounded-lg border border-amber-400 bg-transparent px-4 py-2 text-sm font-semibold text-amber-400 hover:bg-amber-400/10 hover:text-amber-300 transition">Sign up</a>
+                        <a href="{{ route('register') }}" class="btn-amber-outline rounded-lg border px-4 py-2 text-sm font-semibold transition">Sign up</a>
                     @endauth
                 </div>
             </div>
@@ -151,7 +151,7 @@
             >
                 {{-- Hero copy — sits beside the builder panel --}}
                 <div class="flex min-w-0 flex-col text-left">
-                    <div class="font-display mb-5 text-[13px] font-semibold uppercase tracking-[0.14em] tabular-nums text-amber-400">
+                    <div class="label-classical font-display mb-5 text-[13px] font-semibold tabular-nums text-amber-400 [--label-tracking:0.14em]">
                         {{ __('Free forever') }} &middot; {{ $stats['constructors'] }} {{ __('constructors') }}
                     </div>
 

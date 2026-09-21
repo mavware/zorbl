@@ -149,20 +149,34 @@ select:focus[data-flux-control] {
     @apply border-border-strong text-ink hover:border-border-hover;
 }
 
+/* Label expression shared by kickers, meta lines and chips: uppercase and
+   tracked under Classical, plain under Modern. Set `--label-tracking` on the
+   element to declare its tracking (default 0.1em). */
+.label-classical {
+    text-transform: var(--label-transform);
+    letter-spacing: calc(var(--label-tracking, 0.1em) * var(--label-tracking-scale));
+}
+
 /* Meta line: small caps in ink faint. */
 .meta-classical {
-    @apply text-[11px] uppercase tracking-[0.1em] text-ink-faint;
+    @apply text-[11px] text-ink-faint;
+    text-transform: var(--label-transform);
+    letter-spacing: calc(0.1em * var(--label-tracking-scale));
 }
 
 /* Status chip: uppercase outline, no fill. Colour set by the caller. */
 .chip-classical {
-    @apply inline-flex h-6 shrink-0 items-center rounded-sm border px-2 text-[11px] uppercase tracking-[0.1em] leading-none;
+    @apply inline-flex h-6 shrink-0 items-center rounded-sm border px-2 text-[11px] leading-none;
+    text-transform: var(--label-transform);
+    letter-spacing: calc(0.1em * var(--label-tracking-scale));
 }
 
 /* Card badge: the tighter chip used on puzzle cards. 2px radius, 10px, never
    squeezed by a long title. Colour set by the caller. */
 .badge-classical {
-    @apply inline-flex shrink-0 items-center rounded-[2px] border px-[7px] py-[3px] text-[10px] uppercase tracking-[0.12em] leading-none;
+    @apply inline-flex shrink-0 items-center rounded-[2px] border px-[7px] py-[3px] text-[10px] leading-none;
+    text-transform: var(--label-transform);
+    letter-spacing: calc(0.12em * var(--label-tracking-scale));
 }
 
 /* Form fields on the Classical filter bar. */

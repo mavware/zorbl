@@ -15,8 +15,8 @@
     $tag = 'h'.max(1, min(6, (int) $level));
 
     $titleClasses = match ($size) {
-        'md' => 'font-classical text-ink m-0 text-[28px] leading-none font-normal sm:text-[30px]',
-        default => 'font-classical text-ink m-0 text-[34px] leading-none font-normal sm:text-[46px]',
+        'md' => 'font-classical text-ink m-0 text-[28px] leading-none font-(--weight-display) sm:text-[30px]',
+        default => 'font-classical text-ink m-0 text-[34px] leading-none font-(--weight-display) sm:text-[46px]',
     };
 
     $wrapperClasses = ($size === 'md' ? 'pb-5' : 'pt-[34px] pb-6').($bleed ? ' -mx-6 px-6 lg:-mx-8 lg:px-8' : ' px-6 lg:px-8');
@@ -36,7 +36,7 @@
             @endif
 
             @if($hasSlot($kicker))
-                <div class="font-classical mb-2 text-[12px] font-semibold tracking-[0.14em] text-amber-400 uppercase">{{ $kicker }}</div>
+                <div class="label-classical font-classical mb-2 text-[12px] font-semibold text-amber-400 [--label-tracking:0.14em]">{{ $kicker }}</div>
             @endif
 
             <{{ $tag }} class="{{ $titleClasses }}">{{ $title }}</{{ $tag }}>

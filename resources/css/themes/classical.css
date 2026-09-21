@@ -27,6 +27,12 @@
     --weight-heading:   600;
     --weight-display:   400;
 
+    /* Label expression: the small-caps treatment on kickers, meta lines and
+       chips. Tracking is declared per use and multiplied by the scale, so a
+       theme can switch it off (scale 0) without knowing each value. */
+    --label-transform:      uppercase;
+    --label-tracking-scale: 1;
+
     /* Classical system (dark ground) — headings, buttons and numerals set in
        Cormorant; body in Lora. Colour is stroke, never fill. */
     --color-ground:        var(--color-zinc-950);   /* #171615 */
