@@ -416,7 +416,7 @@ new #[Title('Build')] class extends Component {
                         </div>
                     </div>
                 </div>
-        
+
                 </x-slot:body>
             @endif
 
@@ -467,7 +467,6 @@ new #[Title('Build')] class extends Component {
 
         @if($this->crosswords->isEmpty())
             <div class="border-border-strong mx-6 flex flex-col items-center justify-center rounded-sm border border-dashed px-6 py-16 text-center lg:mx-8">
-                <flux:icon name="puzzle-piece" class="text-ink-faint mb-4 size-10" />
                 @if($search !== '' || $status !== '')
                     <h3 class="font-classical text-ink text-[26px] leading-tight font-medium">{{ __('No matching puzzles') }}</h3>
                     <p class="text-ink-muted mt-2 text-sm">{{ __('Try adjusting your search or filters.') }}</p>
