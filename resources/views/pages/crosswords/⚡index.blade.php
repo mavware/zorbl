@@ -380,10 +380,12 @@ new #[Title('Build')] class extends Component {
                 {{ __('Import Puzzle') }}
             </x-header-button>
 
-            <x-slot:footer>
-                {{-- Builder Stats — flush under the header rule --}}
-                <livewire:constructor-stats key="constructor-stats" />
-            </x-slot:footer>
+            @unless($this->isNewUser)
+                <x-slot:footer>
+                    {{-- Builder Stats — flush under the header rule --}}
+                    <livewire:constructor-stats key="constructor-stats" />
+                </x-slot:footer>
+            @endunless
         </x-page-header>
 
         {{-- First-run welcome — only visible to brand-new accounts with zero activity. --}}
@@ -421,6 +423,11 @@ new #[Title('Build')] class extends Component {
                     </div>
                 </div>
             </div>
+        @endif
+
+        @if($this->isNewUser)
+            {{-- Builder Stats — below the welcome hero for brand-new accounts --}}
+            <livewire:constructor-stats key="constructor-stats" />
         @endif
 
         {{-- Search & Filters --}}
