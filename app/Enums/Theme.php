@@ -25,4 +25,16 @@ enum Theme: string
             self::Modern => 'Modern',
         };
     }
+
+    /**
+     * The static SVG mark used where CSS cannot reach: the favicon. The in-page
+     * logo is inline SVG driven by the --logo-* tokens instead.
+     */
+    public function logoFile(): string
+    {
+        return match ($this) {
+            self::Classical => 'logo.svg',
+            self::Modern => 'logo-modern.svg',
+        };
+    }
 }

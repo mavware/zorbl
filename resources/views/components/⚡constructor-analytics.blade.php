@@ -323,7 +323,7 @@ new class extends Component {
 
                     {{-- X-axis labels --}}
                     @foreach($this->ratingTrend as $point)
-                        <text :x="x({{ $loop->index }})" :y="height - 4" text-anchor="middle" class="fill-ink-faint text-[10px] uppercase tracking-[0.1em]" x-text="formatMonth('{{ $point['month'] }}')"></text>
+                        <text :x="x({{ $loop->index }})" :y="height - 4" text-anchor="middle" class="fill-ink-faint label-classical text-[10px]" x-text="formatMonth('{{ $point['month'] }}')"></text>
                     @endforeach
 
                     {{-- Tooltip --}}

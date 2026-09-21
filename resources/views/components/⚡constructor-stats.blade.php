@@ -49,7 +49,7 @@ new class extends Component {
 
 <div>
     {{-- Overview Cards --}}
-    <div class="border-hairline -mx-6 grid border-b sm:grid-cols-2 lg:-mx-8 lg:grid-cols-5">
+    <div class="border-hairline grid border-b sm:grid-cols-2 lg:grid-cols-5">
         @foreach ([
             ['icon' => 'puzzle-piece', 'label' => __('Published'), 'value' => $this->publishedCount],
             ['icon' => 'pencil', 'label' => __('Drafts'), 'value' => $this->draftCount],

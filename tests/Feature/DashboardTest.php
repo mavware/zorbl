@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Crossword;
 use App\Models\User;
 
 /*
@@ -72,4 +73,22 @@ test('the sidebar marks build current on the build page and solve current on the
     $this->actingAs($user)
         ->get(route('crosswords.solving'))
         ->assertSeeInOrder(['href="'.route('crosswords.solving').'"', 'data-current'], false);
+});
+
+test('the build page shows the welcome hero inside the header above the stats band for a new user', function () {
+    $newUser = User::factory()->create();
+
+    $this->actingAs($newUser)
+        ->get(route('crosswords.index'))
+        ->assertOk()
+        ->assertSeeInOrder(['data-page-header-body', 'data-test="dashboard-welcome-hero"', 'data-page-header-footer', 'Total Solves'], false);
+
+    $builder = User::factory()->create();
+    Crossword::factory()->for($builder)->create();
+
+    $this->actingAs($builder)
+        ->get(route('crosswords.index'))
+        ->assertOk()
+        ->assertSeeInOrder(['data-page-header-footer', 'Total Solves'], false)
+        ->assertDontSee('data-test="dashboard-welcome-hero"', false);
 });

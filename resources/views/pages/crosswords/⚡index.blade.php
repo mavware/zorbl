@@ -379,49 +379,54 @@ new #[Title('Build')] class extends Component {
             <x-header-button variant="secondary" icon="arrow-up-tray" wire:click="$set('showImportModal', true)">
                 {{ __('Import Puzzle') }}
             </x-header-button>
+
+            @if($this->isNewUser)
+                {{-- First-run welcome — inside the header, above its rule, so the stats band below stays attached. --}}
+                <x-slot:body>
+                <div class="relative overflow-hidden rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 p-6 dark:border-amber-800/50 dark:from-amber-950/30 dark:to-orange-950/20" data-test="dashboard-welcome-hero">
+                    <div class="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+                        <div class="max-w-xl">
+                            <flux:heading size="lg" class="!text-amber-700 dark:!text-amber-300">
+                                {{ __('Welcome to :app, :name!', ['app' => config('app.name'), 'name' => auth()->user()->name]) }}
+                            </flux:heading>
+                            <flux:text class="mt-2">
+                                {{ __('You\'re all set up. Two good ways to get started:') }}
+                            </flux:text>
+                            <ul class="mt-3 space-y-2 text-sm text-zinc-700 dark:text-zinc-300">
+                                <li class="flex items-start gap-2">
+                                    <flux:icon name="play" class="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                                    <span>{{ __('Try a solve — pick any puzzle from the community to see how the editor and solver feel.') }}</span>
+                                </li>
+                                <li class="flex items-start gap-2">
+                                    <flux:icon name="pencil-square" class="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                                    <span>{{ __('Build your first puzzle — the editor handles symmetry, numbering, and exports for you.') }}</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="flex flex-shrink-0 flex-col gap-2 sm:items-end">
+                            <flux:button variant="primary" icon="plus" wire:click="$set('showNewModal', true)">
+                                {{ __('Build a puzzle') }}
+                            </flux:button>
+                            <flux:button variant="ghost" icon="play" :href="route('crosswords.solving')" wire:navigate>
+                                {{ __('Browse puzzles to solve') }}
+                            </flux:button>
+                            <a href="{{ route('help.index') }}" wire:navigate class="mt-1 text-xs text-zinc-600 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200">
+                                {{ __('Read the Help Center →') }}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                </x-slot:body>
+            @endif
+
+            <x-slot:footer>
+                {{-- Builder Stats — flush under the header rule --}}
+                <livewire:constructor-stats key="constructor-stats" />
+            </x-slot:footer>
         </x-page-header>
 
         {{-- First-run welcome — only visible to brand-new accounts with zero activity. --}}
-        @if($this->isNewUser)
-            <div class="relative mx-6 overflow-hidden rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 p-6 lg:mx-8 dark:border-amber-800/50 dark:from-amber-950/30 dark:to-orange-950/20" data-test="dashboard-welcome-hero">
-                <div class="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-                    <div class="max-w-xl">
-                        <flux:heading size="lg" class="!text-amber-700 dark:!text-amber-300">
-                            {{ __('Welcome to :app, :name!', ['app' => config('app.name'), 'name' => auth()->user()->name]) }}
-                        </flux:heading>
-                        <flux:text class="mt-2">
-                            {{ __('You\'re all set up. Two good ways to get started:') }}
-                        </flux:text>
-                        <ul class="mt-3 space-y-2 text-sm text-zinc-700 dark:text-zinc-300">
-                            <li class="flex items-start gap-2">
-                                <flux:icon name="play" class="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400" />
-                                <span>{{ __('Try a solve — pick any puzzle from the community to see how the editor and solver feel.') }}</span>
-                            </li>
-                            <li class="flex items-start gap-2">
-                                <flux:icon name="pencil-square" class="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400" />
-                                <span>{{ __('Build your first puzzle — the editor handles symmetry, numbering, and exports for you.') }}</span>
-                            </li>
-                        </ul>
-                    </div>
-                    <div class="flex flex-shrink-0 flex-col gap-2 sm:items-end">
-                        <flux:button variant="primary" icon="plus" wire:click="$set('showNewModal', true)">
-                            {{ __('Build a puzzle') }}
-                        </flux:button>
-                        <flux:button variant="ghost" icon="play" :href="route('crosswords.solving')" wire:navigate>
-                            {{ __('Browse puzzles to solve') }}
-                        </flux:button>
-                        <a href="{{ route('help.index') }}" wire:navigate class="mt-1 text-xs text-zinc-600 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200">
-                            {{ __('Read the Help Center →') }}
-                        </a>
-                    </div>
-                </div>
-            </div>
-        @endif
-
-        {{-- Builder Stats --}}
-        <div class="px-6 lg:px-8">
-            <livewire:constructor-stats key="constructor-stats" />
-        </div>
 
         {{-- Search & Filters --}}
         <div class="flex flex-col gap-3 px-6 py-5 sm:flex-row sm:items-center lg:px-8">
@@ -462,7 +467,6 @@ new #[Title('Build')] class extends Component {
 
         @if($this->crosswords->isEmpty())
             <div class="border-border-strong mx-6 flex flex-col items-center justify-center rounded-sm border border-dashed px-6 py-16 text-center lg:mx-8">
-                <flux:icon name="puzzle-piece" class="text-ink-faint mb-4 size-10" />
                 @if($search !== '' || $status !== '')
                     <h3 class="font-classical text-ink text-[26px] leading-tight font-medium">{{ __('No matching puzzles') }}</h3>
                     <p class="text-ink-muted mt-2 text-sm">{{ __('Try adjusting your search or filters.') }}</p>

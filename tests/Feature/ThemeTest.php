@@ -37,3 +37,16 @@ test('an unknown theme falls back to classical', function (mixed $configured) {
     'null' => [null],
     'empty string' => [''],
 ]);
+
+test('the svg favicon follows the configured theme', function (string $theme, string $file) {
+    config(['app.theme' => $theme]);
+
+    expect(Theme::from($theme)->logoFile())->toBe($file);
+
+    $this->get('/')
+        ->assertOk()
+        ->assertSee('<link rel="icon" href="'.asset($file).'" type="image/svg+xml">', false);
+})->with([
+    'classical' => ['classical', 'logo.svg'],
+    'modern' => ['modern', 'logo-modern.svg'],
+]);

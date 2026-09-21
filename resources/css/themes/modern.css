@@ -19,8 +19,22 @@
         --tracking-body:    normal;
         --tracking-heading: normal;
         --leading-heading:  inherit;
-        --weight-heading:   inherit;
-        --weight-display:   inherit;
+        --weight-heading:   500;
+        --weight-display:   600;
+
+        /* Labels drop the small-caps treatment */
+        --label-transform:      none;
+        --label-tracking-scale: 0;
+
+        /* The classical 4px control corner reads as Flux's rounded-lg here */
+        --radius-sm: 0.5rem;
+
+        /* Logo mark: stock amber tile with dark bold sans initials */
+        --logo-fill:   var(--color-amber-500);
+        --logo-ink:    var(--color-zinc-950);
+        --logo-radius: 6px;
+        --logo-font:   var(--font-sans);
+        --logo-weight: 700;
 
         /* Cool zinc */
         --color-zinc-50:  #fafafa;
@@ -54,10 +68,10 @@
         --color-ink:           var(--color-zinc-100);
         --color-ink-muted:     var(--color-zinc-400);
         --color-ink-faint:     var(--color-zinc-500);
-        --color-hairline:      rgb(255 255 255 / 0.1);
-        --color-border:        rgb(255 255 255 / 0.15);
-        --color-border-strong: rgb(255 255 255 / 0.25);
-        --color-border-hover:  rgb(255 255 255 / 0.4);
+        --color-hairline:      var(--color-line);
+        --color-border:        var(--color-line);
+        --color-border-strong: var(--color-line-strong);
+        --color-border-hover:  var(--color-fg-subtle);
 
         --color-page:           var(--color-zinc-100);
         --color-surface:        #ffffff;
@@ -79,4 +93,58 @@
         --color-line-soft:   var(--color-zinc-800);
         --color-line-strong: var(--color-zinc-600);
     }
+}
+
+/* Component normalisation — the classical primitives are stroke-only and
+   small-caps; under Modern chips take main's filled badge treatment and the
+   secondary buttons take the elevated surface. Primary actions stay amber
+   outline in both themes: header buttons and the standalone amber CTAs keep
+   btn-amber-outline's own stroke, and Flux's primary variant (modal and form
+   submits) is restyled below to match. Un-layered so these beat the
+   primitives' own utilities. */
+:root[data-theme="modern"] .btn-header-secondary,
+:root[data-theme="modern"] .btn-classical-muted,
+:root[data-theme="modern"] .btn-classical.btn-amber-outline {
+    background-color: var(--color-elevated);
+    border-color: var(--color-line-strong);
+    color: var(--color-fg);
+}
+
+:root[data-theme="modern"] .btn-header-secondary:hover,
+:root[data-theme="modern"] .btn-classical-muted:hover,
+:root[data-theme="modern"] .btn-classical.btn-amber-outline:hover {
+    background-color: var(--color-muted);
+    border-color: var(--color-line-strong);
+    color: var(--color-fg);
+}
+
+/* Flux primary buttons: identified by the accent background utility Flux
+   applies to variant="primary". Same amber outline as btn-amber-outline. */
+:root[data-theme="modern"] [data-flux-button][class*="bg-[var(--color-accent)]"] {
+    background-color: transparent;
+    border: 1px solid var(--color-amber-400);
+    color: var(--color-amber-400);
+    box-shadow: none;
+}
+
+:root[data-theme="modern"] [data-flux-button][class*="bg-[var(--color-accent)]"]:hover {
+    background-color: color-mix(in oklab, var(--color-amber-400) 10%, transparent);
+    border-color: var(--color-amber-300);
+    color: var(--color-amber-300);
+}
+
+:root[data-theme="modern"] .chip-classical,
+:root[data-theme="modern"] .badge-classical {
+    background-color: color-mix(in oklab, currentColor 14%, transparent);
+    border-color: transparent;
+    border-radius: var(--radius-md);
+    font-size: 12px;
+}
+
+:root[data-theme="modern"] .badge-classical {
+    font-size: 11px;
+}
+
+:root[data-theme="modern"] .meta-classical {
+    font-size: 12px;
 }

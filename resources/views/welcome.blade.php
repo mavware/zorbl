@@ -36,7 +36,7 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
-        <link rel="icon" href="{{ asset('logo.svg') }}" type="image/svg+xml">
+        <link rel="icon" href="{{ asset(\App\Enums\Theme::current()->logoFile()) }}" type="image/svg+xml">
         <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="32x32">
         <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}" sizes="180x180">
         <link rel="manifest" href="{{ asset('site.webmanifest') }}">
@@ -133,10 +133,10 @@
                 <div class="flex items-center gap-4">
 {{--                    <a href="{{ route('puzzles.index') }}" class="text-sm text-zinc-500 hover:text-zinc-100 transition">Browse Puzzles</a>--}}
                     @auth
-                        <a href="{{ route('crosswords.index') }}" class="rounded-lg border border-amber-400 bg-transparent px-4 py-2 text-sm font-semibold text-amber-400 hover:bg-amber-400/10 hover:text-amber-300 transition">Dashboard</a>
+                        <a href="{{ route('crosswords.index') }}" class="btn-amber-outline rounded-lg border px-4 py-2 text-sm font-semibold transition">Dashboard</a>
                     @else
                         <a href="{{ route('login') }}" class="text-sm text-zinc-500 hover:text-zinc-100 transition">Log in</a>
-                        <a href="{{ route('register') }}" class="rounded-lg border border-amber-400 bg-transparent px-4 py-2 text-sm font-semibold text-amber-400 hover:bg-amber-400/10 hover:text-amber-300 transition">Sign up</a>
+                        <a href="{{ route('register') }}" class="btn-amber-outline rounded-lg border px-4 py-2 text-sm font-semibold transition">Sign up</a>
                     @endauth
                 </div>
             </div>
@@ -151,7 +151,7 @@
             >
                 {{-- Hero copy — sits beside the builder panel --}}
                 <div class="flex min-w-0 flex-col text-left">
-                    <div class="font-display mb-5 text-[13px] font-semibold uppercase tracking-[0.14em] tabular-nums text-amber-400">
+                    <div class="label-classical font-display mb-5 text-[13px] font-semibold tabular-nums text-amber-400 [--label-tracking:0.14em]">
                         {{ __('Free forever') }} &middot; {{ $stats['constructors'] }} {{ __('constructors') }}
                     </div>
 
@@ -237,7 +237,7 @@
                                     {{ __('Create a free account to solve unlimited puzzles, save your progress across devices, and track your stats.') }}
                                 </p>
                                 <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
-                                    <a href="{{ route('register') }}" class="rounded-xl bg-amber-500 px-6 py-2.5 text-sm font-semibold text-zinc-950 hover:bg-amber-400 transition">
+                                    <a href="{{ route('register') }}" class="btn-amber-outline rounded-xl border px-6 py-2.5 text-sm font-semibold transition">
                                         {{ __('Create Free Account') }}
                                     </a>
                                     <a href="{{ route('login') }}" class="rounded-xl border border-zinc-700 px-6 py-2.5 text-sm font-semibold text-zinc-300 hover:bg-zinc-800 transition">
@@ -466,11 +466,11 @@
                 <p class="mt-4 text-zinc-500">Join {{ $appName }} and start crafting or solving today.</p>
                 <div class="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
                     @auth
-                        <a href="{{ route('crosswords.index') }}" class="rounded-xl bg-amber-500 px-8 py-3.5 text-base font-semibold text-zinc-950 shadow-lg shadow-amber-500/20 hover:bg-amber-400 transition">
+                        <a href="{{ route('crosswords.index') }}" class="btn-amber-outline rounded-xl border px-8 py-3.5 text-base font-semibold transition">
                             Go to dashboard
                         </a>
                     @else
-                        <a href="{{ route('register') }}" class="rounded-xl bg-amber-500 px-8 py-3.5 text-base font-semibold text-zinc-950 shadow-lg shadow-amber-500/20 hover:bg-amber-400 transition">
+                        <a href="{{ route('register') }}" class="btn-amber-outline rounded-xl border px-8 py-3.5 text-base font-semibold transition">
                             Create your free account
                         </a>
                         <a href="{{ route('puzzles.index') }}" class="rounded-xl border border-zinc-700 px-8 py-3.5 text-base font-semibold text-zinc-100 hover:border-zinc-500 hover:bg-zinc-800 transition">

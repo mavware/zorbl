@@ -27,6 +27,12 @@
     --weight-heading:   600;
     --weight-display:   400;
 
+    /* Label expression: the small-caps treatment on kickers, meta lines and
+       chips. Tracking is declared per use and multiplied by the scale, so a
+       theme can switch it off (scale 0) without knowing each value. */
+    --label-transform:      uppercase;
+    --label-tracking-scale: 1;
+
     /* Classical system (dark ground) — headings, buttons and numerals set in
        Cormorant; body in Lora. Colour is stroke, never fill. */
     --color-ground:        var(--color-zinc-950);   /* #171615 */
@@ -87,6 +93,16 @@
 }
 
 @layer theme {
+    /* Logo mark (inline SVG in <x-app-logo-icon>). Kept outside @theme so the
+       variables survive even though only Blade references them. */
+    :root {
+        --logo-fill:   #b68235;
+        --logo-ink:    #f8f4f4;
+        --logo-radius: 4px;
+        --logo-font:   var(--font-classical);
+        --logo-weight: 600;
+    }
+
     .dark {
         --color-accent: var(--color-white);
         --color-accent-content: var(--color-white);
