@@ -1046,19 +1046,6 @@ class extends Component {
                 </flux:tooltip>
             @endif
 
-            {{-- Export --}}
-            <flux:dropdown position="bottom" align="end">
-                <flux:button variant="ghost" size="sm" icon="arrow-down-tray">
-                    {{ __('Export') }}
-                </flux:button>
-                <flux:menu>
-                    <flux:menu.item wire:click="attemptExport('ipuz')">{{ __('.ipuz') }}</flux:menu.item>
-                    <flux:menu.item wire:click="attemptExport('puz')">{{ __('.puz (Across Lite)') }}</flux:menu.item>
-                    <flux:menu.item wire:click="attemptExport('jpz')">{{ __('.jpz (Crossword Compiler)') }}</flux:menu.item>
-                    <flux:menu.item wire:click="attemptExport('pdf')">{{ __('.pdf (Print-Ready)') }}</flux:menu.item>
-                </flux:menu>
-            </flux:dropdown>
-
             {{-- Settings --}}
             <flux:tooltip content="{{ __('Puzzle settings') }}">
                 <flux:button variant="ghost" size="sm" icon="cog-6-tooth" wire:click="$set('showSettingsModal', true)"/>
@@ -1247,7 +1234,22 @@ class extends Component {
     {{-- Settings Modal --}}
     <flux:modal wire:model="showSettingsModal">
         <div class="space-y-6">
-            <flux:heading size="lg">{{ __('Puzzle Settings') }}</flux:heading>
+            <div class="flex items-center justify-between gap-4 pe-8">
+                <flux:heading size="lg">{{ __('Puzzle Settings') }}</flux:heading>
+
+                {{-- Export --}}
+                <flux:dropdown position="bottom" align="end">
+                    <flux:button variant="ghost" size="sm" icon="arrow-down-tray">
+                        {{ __('Export') }}
+                    </flux:button>
+                    <flux:menu>
+                        <flux:menu.item wire:click="attemptExport('ipuz')">{{ __('.ipuz') }}</flux:menu.item>
+                        <flux:menu.item wire:click="attemptExport('puz')">{{ __('.puz (Across Lite)') }}</flux:menu.item>
+                        <flux:menu.item wire:click="attemptExport('jpz')">{{ __('.jpz (Crossword Compiler)') }}</flux:menu.item>
+                        <flux:menu.item wire:click="attemptExport('pdf')">{{ __('.pdf (Print-Ready)') }}</flux:menu.item>
+                    </flux:menu>
+                </flux:dropdown>
+            </div>
 
             <flux:field>
                 <flux:label>{{ __('Title') }}</flux:label>

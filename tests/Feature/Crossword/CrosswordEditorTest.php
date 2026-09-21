@@ -135,6 +135,19 @@ test('settings modal saves all metadata fields', function () {
         ->and($crossword->metadata['min_answer_length'])->toBe(4);
 });
 
+test('settings modal shows the export menu at the top', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create();
+
+    $this->actingAs($user);
+
+    $html = Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->assertSeeInOrder(['Puzzle Settings', 'Export', '.ipuz', '.puz (Across Lite)', '.jpz (Crossword Compiler)', '.pdf (Print-Ready)', 'Title'])
+        ->html();
+
+    expect(substr_count($html, "attemptExport('ipuz')"))->toBe(1);
+});
+
 test('settings modal loads existing metadata on mount', function () {
     $user = User::factory()->create();
     $crossword = Crossword::factory()->for($user)->create([
