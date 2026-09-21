@@ -96,7 +96,8 @@
    nav, sidebar sign-up, guest banner). In-page buttons that pair
    btn-amber-outline with the btn-classical chassis (card actions) take the
    secondary surface so a grid of cards stays quiet; a form's primary submit
-   opts back into the fill with btn-classical-primary. */
+   (or any other button that should fill here but keeps its own classical
+   stroke) opts into the fill with btn-classical-primary. */
 :root[data-theme="modern"] .btn-header-primary,
 :root[data-theme="modern"] .btn-amber-outline:not(.btn-classical),
 :root[data-theme="modern"] .btn-classical-primary {
