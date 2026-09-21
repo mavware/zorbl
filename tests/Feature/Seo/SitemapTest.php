@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\SitemapController;
 use App\Models\ClueEntry;
 use App\Models\Crossword;
 use App\Models\User;
@@ -7,20 +8,39 @@ use App\Models\Word;
 use Illuminate\Support\Facades\Cache;
 
 beforeEach(function (): void {
-    Cache::forget('sitemap.xml');
+    foreach ([SitemapController::CACHE_KEY_INDEX, ...array_values(SitemapController::SECTIONS)] as $key) {
+        Cache::forget($key);
+    }
 });
 
-test('sitemap.xml is served with xml content type', function () {
+// --- Sitemap index ---
+
+test('sitemap.xml serves a sitemap index with xml content type', function () {
     $response = $this->get('/sitemap.xml');
 
     $response->assertOk()
         ->assertHeader('content-type', 'application/xml; charset=UTF-8');
 
-    expect($response->getContent())->toStartWith('<?xml version="1.0"');
+    $xml = $response->getContent();
+    expect($xml)
+        ->toStartWith('<?xml version="1.0"')
+        ->toContain('<sitemapindex')
+        ->toContain(route('sitemap.section', 'pages'))
+        ->toContain(route('sitemap.section', 'puzzles'))
+        ->toContain(route('sitemap.section', 'constructors'))
+        ->toContain(route('sitemap.section', 'words'));
 });
 
-test('sitemap lists core public pages', function () {
-    $xml = $this->get('/sitemap.xml')->getContent();
+test('sitemap index is well-formed xml', function () {
+    libxml_use_internal_errors(true);
+    $document = simplexml_load_string($this->get('/sitemap.xml')->getContent());
+    expect($document)->not->toBeFalse();
+});
+
+// --- Pages sitemap ---
+
+test('pages sitemap lists core public pages', function () {
+    $xml = $this->get('/sitemaps/pages.xml')->getContent();
 
     expect($xml)
         ->toContain(route('home'))
@@ -36,45 +56,47 @@ test('sitemap lists core public pages', function () {
         ->toContain(route('legal.dmca'));
 });
 
-test('sitemap lists the constructors directory and public profiles', function () {
+// --- Constructors sitemap ---
+
+test('constructors sitemap lists the directory and public profiles', function () {
     $constructor = User::factory()->create();
     Crossword::factory()->published()->for($constructor)->create();
 
-    // A user with only a draft is not a public constructor.
     $draftOnly = User::factory()->create();
     Crossword::factory()->for($draftOnly)->create(['is_published' => false]);
 
-    $xml = $this->get('/sitemap.xml')->getContent();
+    $xml = $this->get('/sitemaps/constructors.xml')->getContent();
 
     expect($xml)
-        ->toContain(route('constructors.index'))
         ->toContain(route('constructors.show', $constructor->id))
-        // Constructors with no published puzzles are excluded.
         ->not->toContain(route('constructors.show', $draftOnly->id));
 });
 
-test('sitemap lists published puzzles and excludes drafts', function () {
+// --- Puzzles sitemap ---
+
+test('puzzles sitemap lists published puzzles and excludes drafts', function () {
     $published = Crossword::factory()->published()->create();
     $draft = Crossword::factory()->create(['is_published' => false]);
 
-    $xml = $this->get('/sitemap.xml')->getContent();
+    $xml = $this->get('/sitemaps/puzzles.xml')->getContent();
 
     expect($xml)
         ->toContain(route('puzzles.solve', $published->id))
         ->not->toContain(route('puzzles.solve', $draft->id));
 });
 
-test('sitemap lists word pages that have approved clues and excludes the rest', function () {
+// --- Words sitemap ---
+
+test('words sitemap lists word pages with approved clues and excludes the rest', function () {
     $clued = Word::factory()->word('APPLE')->create();
     ClueEntry::factory()->standalone()->create(['answer' => 'APPLE', 'status' => ClueEntry::STATUS_APPROVED]);
 
-    // Only a pending submission: the page is noindex, so keep it out.
     $pendingOnly = Word::factory()->word('PEAR')->create();
     ClueEntry::factory()->standalone()->create(['answer' => 'PEAR', 'status' => ClueEntry::STATUS_PENDING]);
 
     $bare = Word::factory()->word('PLUM')->create();
 
-    $xml = $this->get('/sitemap.xml')->getContent();
+    $xml = $this->get('/sitemaps/words.xml')->getContent();
 
     expect($xml)
         ->toContain(route('words.show', $clued))
@@ -82,7 +104,7 @@ test('sitemap lists word pages that have approved clues and excludes the rest', 
         ->not->toContain(route('words.show', $bare));
 });
 
-test('sitemap word entries use the latest approved clue as lastmod', function () {
+test('words sitemap entries use the latest approved clue as lastmod', function () {
     Word::factory()->word('APPLE')->create();
 
     $this->travelTo('2026-01-05 12:00:00');
@@ -91,102 +113,111 @@ test('sitemap word entries use the latest approved clue as lastmod', function ()
     $this->travelTo('2026-03-20 12:00:00');
     ClueEntry::factory()->standalone()->create(['answer' => 'APPLE', 'status' => ClueEntry::STATUS_APPROVED]);
 
-    // A newer pending clue must not bump lastmod: it isn't visible on the page.
     $this->travelTo('2026-06-01 12:00:00');
     ClueEntry::factory()->standalone()->create(['answer' => 'APPLE', 'status' => ClueEntry::STATUS_PENDING]);
 
-    $xml = $this->get('/sitemap.xml')->getContent();
+    $xml = $this->get('/sitemaps/words.xml')->getContent();
 
     expect($xml)->toContain(
         '<loc>'.htmlspecialchars(route('words.show', 'APPLE'), ENT_XML1).'</loc><lastmod>2026-03-20</lastmod>'
     );
 });
 
-test('approving a clue invalidates the sitemap cache', function () {
+// --- Cache invalidation ---
+
+test('approving a clue invalidates the words sitemap cache', function () {
     $word = Word::factory()->word('APPLE')->create();
     $clue = ClueEntry::factory()->standalone()->create(['answer' => 'APPLE', 'status' => ClueEntry::STATUS_PENDING]);
 
-    $without = $this->get('/sitemap.xml')->getContent();
+    $without = $this->get('/sitemaps/words.xml')->getContent();
     expect($without)->not->toContain(route('words.show', $word));
-    expect(Cache::has('sitemap.xml'))->toBeTrue();
+    expect(Cache::has(SitemapController::CACHE_KEY_WORDS))->toBeTrue();
 
-    // Editing a pending clue shouldn't touch the cache.
     $clue->update(['clue' => 'Fruit with a core']);
-    expect(Cache::has('sitemap.xml'))->toBeTrue();
+    expect(Cache::has(SitemapController::CACHE_KEY_WORDS))->toBeTrue();
 
     $clue->update(['status' => ClueEntry::STATUS_APPROVED]);
-    expect(Cache::has('sitemap.xml'))->toBeFalse();
+    expect(Cache::has(SitemapController::CACHE_KEY_WORDS))->toBeFalse();
+    expect(Cache::has(SitemapController::CACHE_KEY_INDEX))->toBeFalse();
 
-    expect($this->get('/sitemap.xml')->getContent())->toContain(route('words.show', $word));
+    expect($this->get('/sitemaps/words.xml')->getContent())->toContain(route('words.show', $word));
 });
 
-test('deleting the last approved clue for a word invalidates the sitemap cache', function () {
+test('deleting the last approved clue invalidates the words sitemap cache', function () {
     $word = Word::factory()->word('APPLE')->create();
     $clue = ClueEntry::factory()->standalone()->create(['answer' => 'APPLE', 'status' => ClueEntry::STATUS_APPROVED]);
 
-    expect($this->get('/sitemap.xml')->getContent())->toContain(route('words.show', $word));
+    expect($this->get('/sitemaps/words.xml')->getContent())->toContain(route('words.show', $word));
 
     $clue->delete();
-    expect(Cache::has('sitemap.xml'))->toBeFalse();
+    expect(Cache::has(SitemapController::CACHE_KEY_WORDS))->toBeFalse();
 
-    expect($this->get('/sitemap.xml')->getContent())->not->toContain(route('words.show', $word));
+    expect($this->get('/sitemaps/words.xml')->getContent())->not->toContain(route('words.show', $word));
 });
 
-test('sitemap is well-formed xml that parses cleanly', function () {
+test('child sitemaps are well-formed xml', function () {
     Crossword::factory()->published()->count(3)->create();
 
-    $xml = $this->get('/sitemap.xml')->getContent();
+    foreach (['pages', 'puzzles', 'constructors', 'words'] as $section) {
+        $xml = $this->get("/sitemaps/{$section}.xml")->getContent();
 
-    libxml_use_internal_errors(true);
-    $document = simplexml_load_string($xml);
+        libxml_use_internal_errors(true);
+        $document = simplexml_load_string($xml);
 
-    expect($document)->not->toBeFalse();
-    expect((array) $document->url)->not->toBeEmpty();
+        expect($document)->not->toBeFalse();
+    }
 });
 
-test('publishing a puzzle invalidates the sitemap cache', function () {
-    $cached = $this->get('/sitemap.xml')->getContent();
-    expect(Cache::has('sitemap.xml'))->toBeTrue();
+test('publishing a puzzle invalidates the puzzles sitemap cache', function () {
+    $this->get('/sitemaps/puzzles.xml');
+    expect(Cache::has(SitemapController::CACHE_KEY_PUZZLES))->toBeTrue();
 
     $crossword = Crossword::factory()->create(['is_published' => false]);
 
-    // Drafts shouldn't touch the cache.
-    expect(Cache::has('sitemap.xml'))->toBeTrue();
+    expect(Cache::has(SitemapController::CACHE_KEY_PUZZLES))->toBeTrue();
 
     $crossword->update(['is_published' => true]);
 
-    expect(Cache::has('sitemap.xml'))->toBeFalse();
+    expect(Cache::has(SitemapController::CACHE_KEY_PUZZLES))->toBeFalse();
+    expect(Cache::has(SitemapController::CACHE_KEY_INDEX))->toBeFalse();
 
-    $fresh = $this->get('/sitemap.xml')->getContent();
-    expect($fresh)
-        ->toContain(route('puzzles.solve', $crossword->id))
-        ->and($fresh)->not->toBe($cached);
+    $fresh = $this->get('/sitemaps/puzzles.xml')->getContent();
+    expect($fresh)->toContain(route('puzzles.solve', $crossword->id));
 });
 
-test('unpublishing a puzzle invalidates the sitemap cache', function () {
+test('unpublishing a puzzle invalidates the puzzles sitemap cache', function () {
     $crossword = Crossword::factory()->published()->create();
-    $withPuzzle = $this->get('/sitemap.xml')->getContent();
+    $withPuzzle = $this->get('/sitemaps/puzzles.xml')->getContent();
     expect($withPuzzle)->toContain(route('puzzles.solve', $crossword->id));
 
     $crossword->update(['is_published' => false]);
-    expect(Cache::has('sitemap.xml'))->toBeFalse();
+    expect(Cache::has(SitemapController::CACHE_KEY_PUZZLES))->toBeFalse();
 
-    $withoutPuzzle = $this->get('/sitemap.xml')->getContent();
+    $withoutPuzzle = $this->get('/sitemaps/puzzles.xml')->getContent();
     expect($withoutPuzzle)->not->toContain(route('puzzles.solve', $crossword->id));
 });
 
-test('editing a draft does not invalidate the sitemap cache', function () {
+test('editing a draft does not invalidate any sitemap cache', function () {
     $crossword = Crossword::factory()->create(['is_published' => false]);
 
+    $this->get('/sitemaps/puzzles.xml');
     $this->get('/sitemap.xml');
-    expect(Cache::has('sitemap.xml'))->toBeTrue();
+    expect(Cache::has(SitemapController::CACHE_KEY_PUZZLES))->toBeTrue();
+    expect(Cache::has(SitemapController::CACHE_KEY_INDEX))->toBeTrue();
 
     $crossword->update(['title' => 'Renamed draft']);
 
-    expect(Cache::has('sitemap.xml'))->toBeTrue();
+    expect(Cache::has(SitemapController::CACHE_KEY_PUZZLES))->toBeTrue();
+    expect(Cache::has(SitemapController::CACHE_KEY_INDEX))->toBeTrue();
 });
 
-test('robots.txt references the sitemap', function () {
+test('invalid section returns 404', function () {
+    $this->get('/sitemaps/invalid.xml')->assertNotFound();
+});
+
+// --- robots.txt ---
+
+test('robots.txt references the sitemap index', function () {
     $response = $this->get('/robots.txt');
 
     $response->assertOk()
@@ -202,7 +233,6 @@ test('robots.txt disallows the private app surface but not public pages', functi
         ->toContain('Disallow: /crosswords')
         ->toContain('Disallow: /solving')
         ->toContain('Disallow: /settings')
-        // Public paths must remain crawlable (never disallowed).
         ->not->toContain('Disallow: /puzzles')
         ->not->toContain('Disallow: /help')
         ->not->toContain('Disallow: /tools')

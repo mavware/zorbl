@@ -5,7 +5,6 @@ namespace App\Observers;
 use App\Http\Controllers\SitemapController;
 use App\Models\Crossword;
 use App\Support\ProfanityFilter;
-use Illuminate\Support\Facades\Cache;
 
 class CrosswordObserver
 {
@@ -78,7 +77,10 @@ class CrosswordObserver
         $wasPublished = (bool) ($crossword->getOriginal('is_published') ?? false);
 
         if ($isPublished || $wasPublished) {
-            Cache::forget(SitemapController::CACHE_KEY);
+            SitemapController::invalidate([
+                SitemapController::CACHE_KEY_PUZZLES,
+                SitemapController::CACHE_KEY_CONSTRUCTORS,
+            ]);
         }
     }
 }

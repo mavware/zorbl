@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\SitemapController;
 use App\Models\Crossword;
 use App\Models\User;
 use App\Support\ProfanityFilter;
@@ -158,11 +159,11 @@ test('guest solver still works for clean puzzles', function () {
 });
 
 test('sitemap excludes profanity-flagged puzzles', function () {
-    Cache::forget('sitemap.xml');
+    Cache::forget(SitemapController::CACHE_KEY_PUZZLES);
     $clean = Crossword::factory()->published()->create(['title' => 'Clean puzzle']);
     $dirty = Crossword::factory()->published()->create(['title' => 'Borfle puzzle']);
 
-    $xml = $this->get('/sitemap.xml')->getContent();
+    $xml = $this->get('/sitemaps/puzzles.xml')->getContent();
 
     expect($xml)
         ->toContain(route('puzzles.solve', $clean->id))

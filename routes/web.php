@@ -11,6 +11,9 @@ use Illuminate\Support\Facades\Route;
 Route::view('/', 'welcome')->name('home');
 
 Route::get('sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
+Route::get('sitemaps/{section}.xml', [SitemapController::class, 'section'])
+    ->whereIn('section', array_keys(SitemapController::SECTIONS))
+    ->name('sitemap.section');
 
 Route::get('robots.txt', function () {
     // Keep public marketing/puzzle/help pages crawlable; disallow the

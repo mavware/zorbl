@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\SitemapController;
 use App\Models\HelpArticle;
 use App\Models\User;
 use Illuminate\Support\Facades\Cache;
@@ -94,11 +95,11 @@ test('article page emits Article json-ld', function () {
 });
 
 test('sitemap includes published help articles and skips drafts', function () {
-    Cache::forget('sitemap.xml');
+    Cache::forget(SitemapController::CACHE_KEY_PAGES);
     $visible = HelpArticle::factory()->create(['slug' => 'visible-help']);
     $draft = HelpArticle::factory()->draft()->create(['slug' => 'hidden-help']);
 
-    $xml = $this->get('/sitemap.xml')->getContent();
+    $xml = $this->get('/sitemaps/pages.xml')->getContent();
 
     expect($xml)
         ->toContain(route('help.index'))
@@ -107,12 +108,12 @@ test('sitemap includes published help articles and skips drafts', function () {
 });
 
 test('publishing a help article busts the sitemap cache', function () {
-    $this->get('/sitemap.xml');
-    expect(Cache::has('sitemap.xml'))->toBeTrue();
+    $this->get('/sitemaps/pages.xml');
+    expect(Cache::has(SitemapController::CACHE_KEY_PAGES))->toBeTrue();
 
     HelpArticle::factory()->draft()->create()->update(['is_published' => true]);
 
-    expect(Cache::has('sitemap.xml'))->toBeFalse();
+    expect(Cache::has(SitemapController::CACHE_KEY_PAGES))->toBeFalse();
 });
 
 test('admin can access the help articles resource', function () {
