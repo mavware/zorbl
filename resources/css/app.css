@@ -41,6 +41,13 @@
 
     /* Figures that stand as figures: stats, clue numbers, grid numbers, tables */
     .tnum, th, td, time { font-variant-numeric: tabular-nums; }
+
+    /* Tailwind v4's preflight leaves buttons on the default cursor; restore
+       the pointer for anything clickable that is not disabled. */
+    button:not(:disabled),
+    [role="button"]:not(:disabled) {
+        cursor: pointer;
+    }
 }
 
 [data-flux-field]:not(ui-radio, ui-checkbox) {

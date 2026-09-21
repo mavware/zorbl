@@ -133,10 +133,10 @@
                 <div class="flex items-center gap-4">
 {{--                    <a href="{{ route('puzzles.index') }}" class="text-sm text-zinc-500 hover:text-zinc-100 transition">Browse Puzzles</a>--}}
                     @auth
-                        <a href="{{ route('crosswords.index') }}" class="btn-amber-outline rounded-lg border px-4 py-2 text-sm font-semibold transition">Dashboard</a>
+                        <a href="{{ route('crosswords.index') }}" class="btn-amber-outline btn-classical-primary rounded-lg border px-4 py-2 text-sm font-semibold transition">Dashboard</a>
                     @else
                         <a href="{{ route('login') }}" class="text-sm text-zinc-500 hover:text-zinc-100 transition">Log in</a>
-                        <a href="{{ route('register') }}" class="btn-amber-outline rounded-lg border px-4 py-2 text-sm font-semibold transition">Sign up</a>
+                        <a href="{{ route('register') }}" class="btn-amber-outline btn-classical-primary rounded-lg border px-4 py-2 text-sm font-semibold transition">Sign up</a>
                     @endauth
                 </div>
             </div>
