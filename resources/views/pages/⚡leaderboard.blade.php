@@ -429,7 +429,9 @@ new #[Title('Leaderboard')] class extends Component {
                         <div>
                             <div class="font-classical text-ink text-[18px] leading-tight font-semibold">{{ __('Your Rank') }}</div>
                             <div class="text-ink-muted mt-0.5 text-sm">
-                                {{ trans_choice(':count published puzzle|:count published puzzles', $yourConstructorRank['published_count']) }}\n                                &middot;\n                                {{ trans_choice(':count total solve|:count total solves', $yourConstructorRank['value']) }}
+                                {{ trans_choice(':count published puzzle|:count published puzzles', $yourConstructorRank['published_count']) }}
+                                &middot;
+                                {{ trans_choice(':count total solve|:count total solves', $yourConstructorRank['value']) }}
                             </div>
                         </div>
                     </div>
@@ -494,7 +496,11 @@ new #[Title('Leaderboard')] class extends Component {
                         <div>
                             <div class="font-classical text-ink text-[18px] leading-tight font-semibold">{{ __('Your Rank') }}</div>
                             <div class="text-ink-muted mt-0.5 text-sm">
-                                {{ __('Best: :best days', ['best' => $yourStreakRank['longest']]) }}\n                                @if($yourStreakRank['current'] > 0)\n                                    &middot;\n                                    {{ __('Current: :current days', ['current' => $yourStreakRank['current']]) }}\n                                @endif
+                                {{ __('Best: :best days', ['best' => $yourStreakRank['longest']]) }}
+                                @if($yourStreakRank['current'] > 0)
+                                    &middot;
+                                    {{ __('Current: :current days', ['current' => $yourStreakRank['current']]) }}
+                                @endif
                             </div>
                         </div>
                     </div>
