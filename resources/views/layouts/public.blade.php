@@ -42,7 +42,7 @@
                         <a href="{{ route('crosswords.solving') }}" wire:navigate class="text-fg-muted hover:text-zinc-900 dark:hover:text-zinc-100 transition">{{ __('My Solving') }}</a>
                     @else
                         <a href="{{ route('login') }}" class="text-fg-muted hover:text-zinc-900 dark:hover:text-zinc-100 transition">{{ __('Log in') }}</a>
-                        <a href="{{ route('register') }}" class="rounded-lg bg-amber-500 px-4 py-2 font-bold text-zinc-950 hover:bg-amber-400 transition">{{ __('Sign up') }}</a>
+                        <a href="{{ route('register') }}" class="btn-amber-outline rounded-lg border px-4 py-2 font-bold transition">{{ __('Sign up') }}</a>
                     @endauth
                 </div>
             </div>
