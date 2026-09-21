@@ -56,6 +56,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Application Theme
+    |--------------------------------------------------------------------------
+    |
+    | The visual theme the layouts render. Each theme is a set of design
+    | tokens (palette, type, radii) in resources/css/themes, selected by the
+    | data-theme attribute on <html>. Supported: "classical", "modern".
+    | Unknown values fall back to "classical".
+    |
+    */
+
+    'theme' => env('APP_THEME', 'classical'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |
