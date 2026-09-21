@@ -215,12 +215,11 @@ new #[Title('Solve Statistics')] class extends Component {
 ?>
 
 <div class="space-y-6">
-    <div class="flex items-center justify-between">
-        <flux:heading size="xl">{{ __('Solve Statistics') }}</flux:heading>
-        <flux:button variant="ghost" size="sm" :href="route('crosswords.solving')" wire:navigate icon="arrow-left">
+    <x-page-header :title="__('Solve Statistics')">
+        <x-header-button variant="secondary" icon="arrow-left" :href="route('crosswords.solving')" wire:navigate>
             {{ __('Back to Solving') }}
-        </flux:button>
-    </div>
+        </x-header-button>
+    </x-page-header>
 
     {{-- Streak & Achievements --}}
     <div class="grid gap-4 sm:grid-cols-2">

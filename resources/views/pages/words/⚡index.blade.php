@@ -154,12 +154,10 @@ new class extends Component {
         <script type="application/ld+json">{!! json_encode($wordsJsonLd, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
     @endpush
 
-    <div class="border-hairline border-b pb-5">
-        <h1 class="font-classical text-ink text-[32px] leading-tight font-medium">{{ __('Word Catalog') }}</h1>
-        <p class="text-ink-muted mt-2 max-w-2xl text-sm">
-            {{ __('Browse :count crossword answers. Search by pattern — use ? for any single letter and * for any run of letters.', ['count' => number_format($this->totalWords)]) }}
-        </p>
-    </div>
+    <x-page-header
+        :title="__('Word Catalog')"
+        :subtitle="__('Browse :count crossword answers. Search by pattern — use ? for any single letter and * for any run of letters.', ['count' => number_format($this->totalWords)])"
+    />
 
     {{-- Search and Filters --}}
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center">

@@ -200,13 +200,11 @@ new #[Title('Favorites')] class extends Component {
 ?>
 
 <div class="space-y-6">
-    <div class="flex items-center justify-between">
-        <flux:heading size="xl">{{ __('Favorites') }}</flux:heading>
-
-        <flux:button variant="primary" icon="plus" wire:click="$set('showNewListModal', true)">
+    <x-page-header :title="__('Favorites')">
+        <x-header-button icon="plus" wire:click="$set('showNewListModal', true)">
             {{ __('New List') }}
-        </flux:button>
-    </div>
+        </x-header-button>
+    </x-page-header>
 
     {{-- List Tabs --}}
     <div class="flex flex-wrap gap-2">

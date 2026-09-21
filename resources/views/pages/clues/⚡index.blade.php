@@ -331,16 +331,13 @@ new class extends Component {
         <script type="application/ld+json">{!! json_encode($cluesJsonLd, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
     @endpush
 
-    <div class="border-hairline flex flex-wrap items-center justify-between gap-3 border-b pb-5">
-        <h1 class="font-classical text-ink text-[32px] leading-tight font-medium">{{ __('Clue Library') }}</h1>
-
+    <x-page-header :title="__('Clue Library')">
         @auth
-            <button type="button" class="btn-classical btn-amber-outline" wire:click="$set('showAddModal', true)">
-                <flux:icon name="plus" class="size-4" />
+            <x-header-button icon="plus" wire:click="$set('showAddModal', true)">
                 {{ __('Add Clue') }}
-            </button>
+            </x-header-button>
         @endauth
-    </div>
+    </x-page-header>
 
     {{-- Search and Filters --}}
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center">

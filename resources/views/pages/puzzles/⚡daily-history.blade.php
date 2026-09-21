@@ -102,83 +102,96 @@ class extends Component {
         <script type="application/ld+json">{!! json_encode($dailyJsonLd, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
     @endpush
 
-    <div class="flex items-center justify-between">
-        <div>
-            <flux:heading size="xl">{{ __('Daily Puzzle History') }}</flux:heading>
-            <flux:text class="mt-1 text-zinc-600">{{ __('Catch up on puzzles you may have missed.') }}</flux:text>
-        </div>
-        <flux:button variant="ghost" size="sm" :href="route('puzzles.index')" wire:navigate icon="arrow-left">
+    <x-page-header :title="__('Daily Puzzle History')" :subtitle="__('Catch up on puzzles you may have missed.')">
+        <x-header-button variant="secondary" icon="arrow-left" :href="route('puzzles.index')" wire:navigate>
             {{ __('Browse Puzzles') }}
-        </flux:button>
-    </div>
+        </x-header-button>
+    </x-page-header>
 
     @php $results = $this->dailyPuzzles; @endphp
 
     @if($results->isEmpty())
-        <div class="border-line-strong flex flex-col items-center justify-center rounded-xl border border-dashed py-12">
-            <flux:icon name="calendar" class="mb-4 size-12 text-zinc-500" />
-            <flux:heading size="lg" class="mb-2">{{ __('No daily puzzles yet') }}</flux:heading>
-            <flux:text class="text-zinc-500">{{ __('Check back soon for daily puzzles.') }}</flux:text>
+        <div class="border-border-strong flex flex-col items-center justify-center rounded-sm border border-dashed px-6 py-16 text-center">
+            <flux:icon name="calendar" class="text-ink-faint mb-4 size-10" />
+            <h3 class="font-classical text-ink text-[26px] leading-tight font-medium">{{ __('No daily puzzles yet') }}</h3>
+            <p class="text-ink-muted mt-2 text-sm">{{ __('Check back soon for daily puzzles.') }}</p>
         </div>
     @else
-        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div class="grid gap-[22px] [grid-template-columns:repeat(auto-fill,minmax(268px,1fr))]">
             @foreach($results as $daily)
                 @php
                     $crossword = $daily->crossword;
                     $isSolved = isset($this->solvedCrosswordIds[$crossword->id]);
                     $isToday = $daily->date->isToday();
                 @endphp
-                <div
+                <article
                     wire:key="daily-{{ $daily->id }}"
-                    class="border-line group rounded-xl border p-4 transition-colors hover:border-zinc-400 dark:hover:border-zinc-500 {{ $isToday ? 'ring-2 ring-amber-400/50' : '' }}"
+                    @class([
+                        'flex flex-col gap-3.5 rounded-sm border p-[18px] transition-colors',
+                        'border-amber-400/60 hover:border-amber-400' => $isToday,
+                        'border-border hover:border-border-strong' => ! $isToday,
+                    ])
                 >
-                    <div class="mb-3 flex items-center justify-between">
-                        <div class="flex items-center gap-2">
-                            <flux:badge size="sm" color="{{ $isToday ? 'amber' : 'zinc' }}">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <div class="flex flex-wrap items-center gap-1.5">
+                            <span class="chip-classical tnum {{ $isToday ? 'border-amber-400 text-amber-400' : 'border-ink-faint text-ink-faint' }}">
                                 {{ $daily->date->format('M j, Y') }}
-                            </flux:badge>
+                            </span>
                             @if($isToday)
-                                <flux:badge size="sm" color="amber">{{ __('Today') }}</flux:badge>
+                                <span class="chip-classical border-amber-400 text-amber-400">{{ __('Today') }}</span>
                             @endif
                         </div>
                         @if($isSolved)
-                            <flux:badge size="sm" color="green" icon="check-circle">{{ __('Solved') }}</flux:badge>
+                            <span class="chip-classical border-amber-400 text-amber-400 gap-1">
+                                <flux:icon name="check-circle" class="size-3" />
+                                {{ __('Solved') }}
+                            </span>
                         @endif
                     </div>
 
-                    <div class="mb-3 flex justify-center">
-                        <x-grid-thumbnail :grid="$crossword->grid" :width="$crossword->width" :height="$crossword->height" />
+                    <div class="min-w-0">
+                        <h3 class="font-classical text-ink truncate text-[21px] leading-tight font-semibold">{{ $crossword->displayTitle() }}</h3>
+                        <div class="meta-classical mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                            <span class="flex items-center gap-1">
+                                {{ __('by :author', ['author' => $crossword->user->name ?? __('Unknown')]) }} <x-supporter-badge :user="$crossword->user" />
+                            </span>
+                            <span aria-hidden="true">&middot;</span>
+                            <span class="tnum whitespace-nowrap">{{ $crossword->width }}&times;{{ $crossword->height }}</span>
+                        </div>
                     </div>
 
-                    <flux:heading size="sm" class="truncate">{{ $crossword->displayTitle() }}</flux:heading>
-                    <flux:text size="sm" class="mt-1">
-                        {{ __('by :author', ['author' => $crossword->user->name ?? __('Unknown')]) }} <x-supporter-badge :user="$crossword->user" />
-                        &middot;
-                        {{ $crossword->width }}&times;{{ $crossword->height }}
-                    </flux:text>
+                    <div class="flex justify-center py-1">
+                        <x-grid-thumbnail
+                            :grid="$crossword->grid"
+                            :width="$crossword->width"
+                            :height="$crossword->height"
+                            frame-class="border-hairline bg-hairline rounded-sm border"
+                            open-class="bg-panel"
+                            block-class="bg-zinc-300"
+                        />
+                    </div>
 
-                    <div class="mt-1.5 flex flex-wrap items-center gap-1.5">
+                    <div class="flex flex-wrap items-center gap-1.5">
                         @if($crossword->difficulty_label)
-                            <flux:badge
-                                size="sm"
-                                :color="match($crossword->difficulty_label) { 'Easy' => 'green', 'Medium' => 'amber', 'Hard' => 'orange', 'Expert' => 'red', default => 'zinc' }"
-                            >{{ __($crossword->difficulty_label) }}</flux:badge>
+                            <span class="chip-classical border-ink-faint text-ink-faint">{{ __($crossword->difficulty_label) }}</span>
                         @endif
-                        <flux:badge size="sm" variant="outline">{{ $crossword->width }}&times;{{ $crossword->height }}</flux:badge>
+                        <span class="chip-classical border-ink-faint text-ink-faint tnum">{{ $crossword->width }}&times;{{ $crossword->height }}</span>
                     </div>
 
-                    <div class="mt-3">
+                    <div class="pt-1">
                         @if($isSolved)
-                            <flux:button size="sm" variant="filled" wire:click="startSolving({{ $crossword->id }})" icon="eye">
+                            <button type="button" class="btn-classical btn-classical-muted" wire:click="startSolving({{ $crossword->id }})">
+                                <flux:icon name="eye" class="size-4" />
                                 {{ __('View Solution') }}
-                            </flux:button>
+                            </button>
                         @else
-                            <flux:button size="sm" variant="primary" wire:click="startSolving({{ $crossword->id }})" icon="play">
+                            <button type="button" class="btn-classical btn-amber-outline" wire:click="startSolving({{ $crossword->id }})">
+                                <flux:icon name="play" class="size-4" />
                                 {{ __('Solve') }}
-                            </flux:button>
+                            </button>
                         @endif
                     </div>
-                </div>
+                </article>
             @endforeach
         </div>
 

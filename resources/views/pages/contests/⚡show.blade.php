@@ -95,40 +95,29 @@ new #[Title('Contest')] class extends Component {
 
 <div class="mx-auto max-w-4xl space-y-8">
     {{-- Contest Header --}}
-    <div>
-        <div class="mb-3 flex items-center gap-2">
+    <x-page-header :title="$contest->title">
+        <x-slot:badges>
             @if($contest->isActive())
-                <flux:badge color="green" size="sm">{{ __('Active') }}</flux:badge>
+                <span class="chip-classical border-amber-400 text-amber-400">{{ __('Active') }}</span>
             @elseif($contest->isUpcoming())
-                <flux:badge color="blue" size="sm">{{ __('Upcoming') }}</flux:badge>
+                <span class="chip-classical border-ink-faint text-ink-faint">{{ __('Upcoming') }}</span>
             @elseif($contest->hasEnded())
-                <flux:badge color="zinc" size="sm">{{ __('Ended') }}</flux:badge>
+                <span class="chip-classical border-ink-faint text-ink-faint">{{ __('Ended') }}</span>
             @endif
             @if($contest->is_featured)
-                <flux:badge color="amber" size="sm">{{ __('Featured') }}</flux:badge>
+                <span class="chip-classical border-amber-400 text-amber-400">{{ __('Featured') }}</span>
             @endif
-        </div>
+        </x-slot:badges>
 
-        <flux:heading size="2xl">{{ $contest->title }}</flux:heading>
-
-        <div class="mt-2 flex flex-wrap items-center gap-4">
-            <flux:text size="sm">
-                {{ $contest->starts_at->format('M j, Y g:ia') }} &ndash; {{ $contest->ends_at->format('M j, Y g:ia') }}
-            </flux:text>
-            <flux:text size="sm">
-                <span class="font-medium">{{ $contest->crosswords_count }}</span> {{ __('puzzles') }}
-            </flux:text>
-            <flux:text size="sm">
-                <span class="font-medium">{{ $contest->entries_count }}</span> {{ __('participants') }}
-            </flux:text>
-        </div>
-
-        @if($contest->isActive() && $contest->ends_at->isFuture())
-            <flux:text size="sm" class="mt-2 font-medium text-amber-600 dark:text-amber-400">
-                {{ __('Ends :time', ['time' => $contest->ends_at->diffForHumans()]) }}
-            </flux:text>
-        @endif
-    </div>
+        <x-slot:meta>
+            <span class="tnum whitespace-nowrap">{{ $contest->starts_at->format('M j, Y g:ia') }} &ndash; {{ $contest->ends_at->format('M j, Y g:ia') }}</span>
+            <span class="whitespace-nowrap"><span class="font-classical text-ink tnum text-[15px] font-medium tracking-normal">{{ $contest->crosswords_count }}</span> {{ __('puzzles') }}</span>
+            <span class="whitespace-nowrap"><span class="font-classical text-ink tnum text-[15px] font-medium tracking-normal">{{ $contest->entries_count }}</span> {{ __('participants') }}</span>
+            @if($contest->isActive() && $contest->ends_at->isFuture())
+                <span class="whitespace-nowrap text-amber-400">{{ __('Ends :time', ['time' => $contest->ends_at->diffForHumans()]) }}</span>
+            @endif
+        </x-slot:meta>
+    </x-page-header>
 
     {{-- Description & Rules --}}
     @if($contest->description)
@@ -166,39 +155,43 @@ new #[Title('Contest')] class extends Component {
     @endauth
 
     {{-- Puzzle List --}}
-    <div class="space-y-4">
-        <flux:heading size="xl">{{ __('Puzzles') }}</flux:heading>
+    <div class="space-y-5">
+        <h2 class="font-classical text-ink border-hairline border-b pb-3.5 text-[26px] leading-tight font-medium">{{ __('Puzzles') }}</h2>
 
-        <div class="border-line divide-y divide-zinc-200 rounded-xl border dark:divide-zinc-700">
+        <div class="border-border divide-hairline divide-y rounded-sm border">
             @foreach($this->crosswords as $index => $crossword)
                 <div
                     wire:key="puzzle-{{ $crossword->id }}"
-                    class="flex items-center justify-between p-4"
+                    class="flex flex-wrap items-center justify-between gap-3 px-[18px] py-3.5"
                 >
-                    <div class="flex items-center gap-3">
-                        <span class="bg-page flex size-8 items-center justify-center rounded-full text-sm font-medium">
+                    <div class="flex min-w-0 items-center gap-3.5">
+                        <span class="border-border-strong font-classical text-ink tnum flex size-8 shrink-0 items-center justify-center rounded-full border text-[15px] font-medium">
                             {{ $index + 1 }}
                         </span>
-                        <div>
-                            <flux:heading size="sm">{{ $crossword->displayTitle() }}</flux:heading>
-                            <flux:text size="xs">
-                                {{ $crossword->width }}&times;{{ $crossword->height }}
+                        <div class="min-w-0">
+                            <div class="font-classical text-ink truncate text-[18px] leading-tight font-semibold">{{ $crossword->displayTitle() }}</div>
+                            <div class="meta-classical mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                                <span class="tnum whitespace-nowrap">{{ $crossword->width }}&times;{{ $crossword->height }}</span>
                                 @if($crossword->pivot->extraction_hint)
-                                    &middot; {{ $crossword->pivot->extraction_hint }}
+                                    <span aria-hidden="true">&middot;</span>
+                                    <span>{{ $crossword->pivot->extraction_hint }}</span>
                                 @endif
-                            </flux:text>
+                            </div>
                         </div>
                     </div>
 
                     <div class="flex items-center gap-3">
                         @if(isset($this->puzzleStatuses[$crossword->id]))
-                            <flux:badge color="green" size="sm" icon="check">{{ __('Solved') }}</flux:badge>
+                            <span class="chip-classical border-amber-400 text-amber-400 gap-1">
+                                <flux:icon name="check" class="size-3" />
+                                {{ __('Solved') }}
+                            </span>
                         @endif
 
                         @if($this->entry && $contest->isActive())
-                            <flux:button size="sm" :href="route('crosswords.solver', $crossword)" wire:navigate>
+                            <a href="{{ route('crosswords.solver', $crossword) }}" wire:navigate class="btn-classical btn-amber-outline h-8 px-3 text-[14px]">
                                 {{ __('Solve') }}
-                            </flux:button>
+                            </a>
                         @endif
                     </div>
                 </div>

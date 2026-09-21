@@ -219,48 +219,38 @@ new #[Title('Constructor Profile')] class extends Component {
     @endpush
 
     {{-- Profile Header --}}
-    <div class="flex items-start justify-between">
-        <div class="flex items-center gap-4">
-            <div class="flex size-16 items-center justify-center rounded-full bg-zinc-200 text-xl font-bold text-zinc-700 dark:bg-zinc-700 dark:text-zinc-300">
+    <x-page-header :subtitle="$this->constructor->bio">
+        <x-slot:leading>
+            <div class="border-border-strong font-classical text-ink flex size-16 items-center justify-center rounded-full border text-[22px] font-medium tracking-[0.06em]">
                 {{ $this->constructor->initials() }}
             </div>
-            <div>
-                <flux:heading size="xl">
-                    {{ $constructorName }}
-                    <x-supporter-badge :user="$this->constructor" class="ml-1" />
-                </flux:heading>
-                <div class="mt-1 flex items-center gap-4 text-sm text-zinc-600">
-                    <span>{{ trans_choice(':count puzzle|:count puzzles', $this->publishedPuzzles->total()) }}</span>
-                    <span>{{ trans_choice(':count follower|:count followers', $this->followersCount) }}</span>
-                    <span>{{ __(':count total solves', ['count' => $this->totalSolves]) }}</span>
-                </div>
-                @if($this->constructor->bio)
-                    <flux:text size="sm" class="mt-1.5 max-w-xl text-zinc-600 dark:text-zinc-400">
-                        {{ $this->constructor->bio }}
-                    </flux:text>
-                @endif
-                <flux:text size="sm" class="mt-0.5 text-zinc-500">
-                    {{ __('Joined :date', ['date' => $this->constructor->created_at->format('M Y')]) }}
-                </flux:text>
-            </div>
-        </div>
+        </x-slot:leading>
+
+        <x-slot:title>
+            {{ $constructorName }}
+            <x-supporter-badge :user="$this->constructor" class="ml-1" />
+        </x-slot:title>
+
+        <x-slot:meta>
+            <span class="tnum whitespace-nowrap">{{ trans_choice(':count puzzle|:count puzzles', $this->publishedPuzzles->total()) }}</span>
+            <span class="tnum whitespace-nowrap">{{ trans_choice(':count follower|:count followers', $this->followersCount) }}</span>
+            <span class="tnum whitespace-nowrap">{{ __(':count total solves', ['count' => $this->totalSolves]) }}</span>
+            <span class="whitespace-nowrap">{{ __('Joined :date', ['date' => $this->constructor->created_at->format('M Y')]) }}</span>
+        </x-slot:meta>
 
         @auth
             @if(Auth::id() !== $constructorId)
-                <div class="flex items-center gap-2">
-                    <flux:button
-                        wire:click="toggleFollow"
-                        :variant="$this->isFollowing ? 'ghost' : 'primary'"
-                        size="sm"
-                        :icon="$this->isFollowing ? 'user-minus' : 'user-plus'"
-                    >
-                        {{ $this->isFollowing ? __('Unfollow') : __('Follow') }}
-                    </flux:button>
-                    <livewire:report-button type="profile" :reportable-id="$constructorId" :key="'report-profile-'.$constructorId" />
-                </div>
+                <x-header-button
+                    wire:click="toggleFollow"
+                    :variant="$this->isFollowing ? 'secondary' : 'primary'"
+                    :icon="$this->isFollowing ? 'user-minus' : 'user-plus'"
+                >
+                    {{ $this->isFollowing ? __('Unfollow') : __('Follow') }}
+                </x-header-button>
+                <livewire:report-button type="profile" :reportable-id="$constructorId" :key="'report-profile-'.$constructorId" />
             @endif
         @endauth
-    </div>
+    </x-page-header>
 
     {{-- Published Puzzles --}}
     <div>

@@ -46,10 +46,9 @@ new #[Title('Ticket Detail')] class extends Component {
 ?>
 
 <div class="space-y-6">
-    <div class="flex items-center gap-4">
-        <flux:button variant="ghost" icon="arrow-left" :href="route('support.index')" wire:navigate />
-        <flux:heading size="xl" class="truncate">{{ $ticket->subject }}</flux:heading>
-    </div>
+    <x-page-header :title="$ticket->subject">
+        <x-header-button variant="secondary" icon="arrow-left" :href="route('support.index')" wire:navigate aria-label="{{ __('Support Tickets') }}" />
+    </x-page-header>
 
     {{-- Status badges --}}
     <div class="flex flex-wrap items-center gap-2">

@@ -257,10 +257,7 @@ new #[Title('Leaderboard')] class extends Component {
 ?>
 
 <div class="mx-auto max-w-4xl space-y-6">
-    <div>
-        <flux:heading size="xl">{{ __('Leaderboard') }}</flux:heading>
-        <flux:text class="mt-1 text-zinc-600">{{ __('See how the community ranks across different categories.') }}</flux:text>
-    </div>
+    <x-page-header :title="__('Leaderboard')" :subtitle="__('See how the community ranks across different categories.')" />
 
     {{-- Tab Navigation --}}
     <flux:radio.group wire:model.live="tab" variant="segmented" size="sm">

@@ -105,18 +105,11 @@ class extends Component
         <script type="application/ld+json">{!! json_encode($browseJsonLd, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
     @endpush
 
-    <div class="flex items-center justify-between">
-        <flux:heading size="xl">{{ __('Browse Puzzles') }}</flux:heading>
-        <flux:button
-            wire:click="surpriseMe"
-            variant="ghost"
-            size="sm"
-            icon="sparkles"
-            data-test="surprise-me-button"
-        >
+    <x-page-header :title="__('Browse Puzzles')">
+        <x-header-button variant="secondary" icon="sparkles" wire:click="surpriseMe" data-test="surprise-me-button">
             {{ __('Surprise Me') }}
-        </flux:button>
-    </div>
+        </x-header-button>
+    </x-page-header>
 
     <livewire:puzzle-discovery />
 

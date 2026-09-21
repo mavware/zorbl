@@ -372,18 +372,14 @@ new #[Title('Build')] class extends Component {
 ?>
 
 <div class="space-y-6" data-full-bleed>
-        <div class="flex items-center justify-between px-6 lg:px-8">
-            <flux:heading size="xl">{{ __('Build') }}</flux:heading>
-
-            <div class="flex gap-2">
-                <flux:button variant="primary" icon="plus" wire:click="$set('showNewModal', true)">
-                    {{ __('New Puzzle') }}
-                </flux:button>
-                <flux:button icon="arrow-up-tray" wire:click="$set('showImportModal', true)">
-                    {{ __('Import Puzzle') }}
-                </flux:button>
-            </div>
-        </div>
+        <x-page-header :kicker="__('Your workshop')" :title="__('Build puzzles')" :bleed="false">
+            <x-header-button icon="plus" wire:click="$set('showNewModal', true)">
+                {{ __('New Puzzle') }}
+            </x-header-button>
+            <x-header-button variant="secondary" icon="arrow-up-tray" wire:click="$set('showImportModal', true)">
+                {{ __('Import Puzzle') }}
+            </x-header-button>
+        </x-page-header>
 
         {{-- First-run welcome — only visible to brand-new accounts with zero activity. --}}
         @if($this->isNewUser)
@@ -421,8 +417,6 @@ new #[Title('Build')] class extends Component {
                 </div>
             </div>
         @endif
-
-        <flux:separator class="bg-line" />
 
         {{-- Search & Filters --}}
         <div class="border-hairline flex flex-col gap-3 border-b px-6 py-5 sm:flex-row sm:items-center lg:px-8">

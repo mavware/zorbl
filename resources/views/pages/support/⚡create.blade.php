@@ -33,10 +33,9 @@ new #[Title('Submit a Ticket')] class extends Component {
 ?>
 
 <div class="space-y-6">
-    <div class="flex items-center gap-4">
-        <flux:button variant="ghost" icon="arrow-left" :href="route('support.index')" wire:navigate />
-        <flux:heading size="xl">{{ __('Submit a Support Ticket') }}</flux:heading>
-    </div>
+    <x-page-header :title="__('Submit a Support Ticket')">
+        <x-header-button variant="secondary" icon="arrow-left" :href="route('support.index')" wire:navigate aria-label="{{ __('Support Tickets') }}" />
+    </x-page-header>
 
     <div class="mx-auto max-w-2xl space-y-6">
         <flux:callout icon="question-mark-circle" color="amber">

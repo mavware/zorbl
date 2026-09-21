@@ -34,13 +34,11 @@ new #[Title('Support Tickets')] class extends Component {
 ?>
 
 <div class="space-y-6">
-    <div class="flex items-center justify-between">
-        <flux:heading size="xl">{{ __('Support Tickets') }}</flux:heading>
-
-        <flux:button variant="primary" icon="plus" :href="route('support.create')" wire:navigate>
+    <x-page-header :title="__('Support Tickets')">
+        <x-header-button icon="plus" :href="route('support.create')" wire:navigate>
             {{ __('New Ticket') }}
-        </flux:button>
-    </div>
+        </x-header-button>
+    </x-page-header>
 
     <div class="flex items-center gap-4">
         <flux:select wire:model.live="statusFilter" class="w-48">

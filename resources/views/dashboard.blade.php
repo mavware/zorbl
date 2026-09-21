@@ -1,3 +1,3 @@
 <x-layouts::app :title="__('Dashboard')">
-    <flux:heading size="xl">{{ __('Dashboard') }}</flux:heading>
+    <x-page-header :title="__('Dashboard')" />
 </x-layouts::app>

@@ -160,18 +160,13 @@ new #[Title('Roadmap')] class extends Component {
 ?>
 
 <div class="space-y-6">
-    <div class="flex items-center justify-between">
-        <div>
-            <flux:heading size="xl">{{ __('Roadmap') }}</flux:heading>
-            <flux:text class="mt-1">{{ __('Upcoming features, fixes, and improvements.') }}</flux:text>
-        </div>
-
+    <x-page-header :title="__('Roadmap')" :subtitle="__('Upcoming features, fixes, and improvements.')">
         @if($this->canManage)
-            <flux:button variant="primary" icon="plus" wire:click="$set('showAddModal', true)">
+            <x-header-button icon="plus" wire:click="$set('showAddModal', true)">
                 {{ __('Add Item') }}
-            </flux:button>
+            </x-header-button>
         @endif
-    </div>
+    </x-page-header>
 
     {{-- Type Filter --}}
     <div class="flex gap-2">

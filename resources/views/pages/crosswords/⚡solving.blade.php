@@ -288,23 +288,14 @@ new #[Title('Solving')] class extends Component {
 <div class="space-y-8">
     {{-- My Attempts --}}
     <div class="space-y-4">
-        <div class="flex items-center justify-between">
-            <flux:heading size="xl">{{ __('Solve') }}</flux:heading>
-            <div class="flex items-center gap-2">
-                <flux:button
-                    wire:click="surpriseMe"
-                    variant="ghost"
-                    size="sm"
-                    icon="sparkles"
-                    data-test="surprise-me-button"
-                >
-                    {{ __('Surprise Me') }}
-                </flux:button>
-                <flux:button variant="ghost" size="sm" :href="route('crosswords.stats')" wire:navigate icon="chart-bar">
-                    {{ __('Stats') }}
-                </flux:button>
-            </div>
-        </div>
+        <x-page-header :title="__('Solve')">
+            <x-header-button variant="secondary" icon="sparkles" wire:click="surpriseMe" data-test="surprise-me-button">
+                {{ __('Surprise Me') }}
+            </x-header-button>
+            <x-header-button variant="secondary" icon="chart-bar" :href="route('crosswords.stats')" wire:navigate>
+                {{ __('Stats') }}
+            </x-header-button>
+        </x-page-header>
 
         {{-- Puzzle of the Day --}}
         @if($dailyPuzzle = $this->dailyPuzzle)

@@ -35,6 +35,7 @@
     --color-hairline:      rgb(243 242 242 / 0.14);
     --color-border:        rgb(243 242 242 / 0.18);
     --color-border-strong: rgb(243 242 242 / 0.25);
+    --color-border-hover:  rgb(243 242 242 / 0.4);
 
     /* Warm ink — replaces the cool zinc ramp */
     --color-zinc-50:  #faf8f8;
@@ -193,8 +194,9 @@ select:focus[data-flux-control] {
 }
 
 /* Main has no top padding so a banner can sit flush. When nothing is rendered
-   above the page root, the root supplies the top gutter itself. */
-[data-flux-main] > :first-child:not([data-banner]) {
+   above the page root, the root supplies the top gutter itself — unless the
+   page opens with an <x-page-header>, which carries its own 34px top padding. */
+[data-flux-main] > :first-child:not([data-banner]):not(:has([data-page-header])) {
     @apply pt-6 lg:pt-8;
 }
 
@@ -218,6 +220,22 @@ select:focus[data-flux-control] {
 
 .btn-classical-muted {
     @apply border-border-strong text-ink-muted hover:border-ink-muted hover:text-ink;
+}
+
+/* Header buttons (<x-header-button>): outline only, never filled. Cormorant
+   15/600, 11px 20px padding, 4px radius. Primary is amber, secondary is ink on
+   a border-strong stroke; both lift on hover and take the amber focus ring. */
+.btn-header {
+    @apply font-classical inline-flex items-center justify-center gap-2 rounded-sm border px-5 py-[11px] text-[15px] leading-none font-semibold whitespace-nowrap transition-colors;
+    @apply focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400;
+}
+
+.btn-header-primary {
+    @apply border-amber-400 text-amber-400 hover:border-amber-300 hover:text-amber-300;
+}
+
+.btn-header-secondary {
+    @apply border-border-strong text-ink hover:border-border-hover;
 }
 
 /* Meta line: small caps in ink faint. */

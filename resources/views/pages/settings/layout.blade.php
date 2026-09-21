@@ -13,8 +13,7 @@
     <flux:separator class="md:hidden" />
 
     <div class="flex-1 self-stretch max-md:pt-6">
-        <flux:heading>{{ $heading ?? '' }}</flux:heading>
-        <flux:subheading>{{ $subheading ?? '' }}</flux:subheading>
+        <x-page-header :title="$heading ?? ''" :subtitle="$subheading ?? ''" :level="2" size="md" :bleed="false" class="px-0! lg:px-0!" />
 
         <div class="mt-5 w-full max-w-lg">
             {{ $slot }}
