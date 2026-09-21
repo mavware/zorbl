@@ -5,45 +5,50 @@
 </head>
 <body class="min-h-screen bg-page">
 @include('partials.impersonation-banner')
-<flux:sidebar sticky collapsible="mobile" class="bg-surface border-line border-e">
-    <flux:sidebar.header>
+<flux:sidebar sticky collapsible="mobile" class="bg-surface border-line border-e px-0! pt-0!">
+    <flux:sidebar.header class="p-4 border-b border-line">
         <x-app-logo :sidebar="true" href="{{ route('crosswords.index') }}" wire:navigate/>
         <flux:sidebar.collapse class="lg:hidden"/>
     </flux:sidebar.header>
 
     <flux:sidebar.nav>
-        <flux:sidebar.group class="grid mb-2">
-            <flux:sidebar.item icon="home" :href="route('crosswords.index')"
-                               :current="request()->routeIs('crosswords.index') || request()->routeIs('crosswords.editor') || request()->routeIs('crosswords.solving') || request()->routeIs('crosswords.solver')"
-                               class="font-bold" wire:navigate>
-                {{ __('Dashboard') }}
+        <flux:sidebar.group class="grid mb-2 px-4">
+            <flux:sidebar.item icon="wrench-screwdriver" :href="route('crosswords.index')"
+                               :current="request()->routeIs('crosswords.index') || request()->routeIs('crosswords.editor')"
+                               wire:navigate>
+                {{ __('Build') }}
             </flux:sidebar.item>
+            <flux:sidebar.item icon="play" :href="route('crosswords.solving')"
+                               :current="request()->routeIs('crosswords.solving') || request()->routeIs('crosswords.solver') || request()->routeIs('crosswords.stats')"
+                               wire:navigate>
+                {{ __('Solve') }}
+            </flux:sidebar.item>
+            @unless (auth()->user()->isAnonymous())
+                <flux:sidebar.item icon="heart" :href="route('favorites.index')"
+                                   :current="request()->routeIs('favorites.index')"
+                                   wire:navigate>
+                    {{ __('Favorites') }}
+                </flux:sidebar.item>
+            @endunless
         </flux:sidebar.group>
 
-        <flux:sidebar.group class="grid border-t border-t-zinc-700 mb-2 pt-2">
+        <div class="px-7 pb-2">
+            <flux:separator class="bg-line" />
+        </div>
+
+        <flux:sidebar.group class="grid mb-2 px-4">
             <flux:sidebar.item icon="book-open" :href="route('clues.index')"
-                               :current="request()->routeIs('clues.index')" wire:navigate>
+                               :current="request()->routeIs('clues.index')"
+                               wire:navigate>
                 {{ __('Clue Library') }}
             </flux:sidebar.item>
             <flux:sidebar.item icon="language" :href="route('words.index')" :current="request()->routeIs('words.*')"
                                wire:navigate>
                 {{ __('Word Catalog') }}
             </flux:sidebar.item>
-        </flux:sidebar.group>
-
-        <flux:sidebar.group class="grid border-t border-t-zinc-700 mb-2 pt-2">
-            @unless (auth()->user()->isAnonymous())
-                <flux:sidebar.item icon="heart" :href="route('favorites.index')"
-                                   :current="request()->routeIs('favorites.index')" wire:navigate>
-                    {{ __('Favorites') }}
-                </flux:sidebar.item>
-            @endunless
-{{--            <flux:sidebar.item icon="trophy" :href="route('leaderboard')" :current="request()->routeIs('leaderboard')"--}}
-{{--                               wire:navigate>--}}
-{{--                {{ __('Leaderboard') }}--}}
-{{--            </flux:sidebar.item>--}}
             <flux:sidebar.item icon="users" :href="route('constructors.index')"
-                               :current="request()->routeIs('constructors.*')" wire:navigate>
+                               :current="request()->routeIs('constructors.*')"
+                               wire:navigate>
                 {{ __('Constructors') }}
             </flux:sidebar.item>
             @if (config('crosswordbuilder.features.contests'))
@@ -63,7 +68,7 @@
         <a
             href="{{ route('billing.index') }}"
             wire:navigate
-            class="mx-3 mb-2 block rounded-lg border border-amber-500/30 bg-gradient-to-br from-amber-500/10 to-amber-500/5 p-3 transition hover:border-amber-500/50 hover:from-amber-500/15 hover:to-amber-500/10"
+            class="mx-7 mb-2 block rounded-lg border border-amber-500/30 bg-gradient-to-br from-amber-500/10 to-amber-500/5 p-3 transition hover:border-amber-500/50 hover:from-amber-500/15 hover:to-amber-500/10"
         >
             <div class="flex items-center gap-2">
                 <flux:icon.sparkles class="size-4 text-amber-500"/>
@@ -75,7 +80,7 @@
         </a>
     @endunless
 
-    <flux:sidebar.nav>
+    <flux:sidebar.nav class="border-t border-line px-4">
         <flux:sidebar.item icon="question-mark-circle" :href="route('help.index')"
                            :current="request()->routeIs('help.*')" wire:navigate>
             {{ __('Help Center') }}
@@ -94,11 +99,28 @@
 
     </flux:sidebar.nav>
 
-    @unless (auth()->user()->isAnonymous())
-        <x-desktop-user-menu class="hidden lg:block" :name="auth()->user()->name"/>
-    @endunless
+    <div class="hidden px-7 lg:block">
+        <flux:separator class="bg-line" />
+    </div>
 
-    <div class="mx-3 mb-3 mt-2 hidden flex-wrap gap-x-3 gap-y-1 text-xs text-zinc-500 lg:flex dark:text-zinc-600">
+    <div class="hidden px-4 lg:block">
+        @if (auth()->user()->isAnonymous())
+            <flux:button
+                :href="route('register')"
+                variant="ghost"
+                icon="user-plus"
+                class="btn-amber-outline w-full"
+                data-test="sidebar-sign-up-button"
+                wire:navigate
+            >
+                {{ __('Sign up') }}
+            </flux:button>
+        @else
+            <x-desktop-user-menu :name="auth()->user()->name"/>
+        @endif
+    </div>
+
+    <div class="mx-7 mb-3 mt-2 hidden flex-wrap gap-x-3 gap-y-1 text-xs text-zinc-500 lg:flex dark:text-zinc-600">
         <a href="{{ route('legal.terms') }}" wire:navigate
            class="hover:text-zinc-700 dark:hover:text-zinc-400">{{ __('Terms') }}</a>
         <a href="{{ route('legal.privacy') }}" wire:navigate
@@ -116,7 +138,19 @@
 
     <flux:spacer/>
 
-    @unless (auth()->user()->isAnonymous())
+    @if (auth()->user()->isAnonymous())
+    <flux:button
+        :href="route('register')"
+        variant="ghost"
+        size="sm"
+        icon="user-plus"
+        class="btn-amber-outline"
+        data-test="mobile-sign-up-button"
+        wire:navigate
+    >
+        {{ __('Sign up') }}
+    </flux:button>
+    @else
     <flux:dropdown position="top" align="end">
         <flux:profile
             :initials="auth()->user()->initials()"
@@ -164,7 +198,7 @@
             </form>
         </flux:menu>
     </flux:dropdown>
-    @endunless
+    @endif
 </flux:header>
 
 {{ $slot }}

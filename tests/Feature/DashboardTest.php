@@ -35,9 +35,41 @@ test('the solve page titles itself with a switch to the build page', function ()
         ->assertSeeHtml('href="'.route('crosswords.index').'"');
 });
 
-test('the sidebar shows a single dashboard item for build and solve', function () {
+test('the sidebar lists build first and solve second instead of a dashboard item', function () {
     $this->actingAs(User::factory()->create())
         ->get(route('crosswords.index'))
         ->assertOk()
-        ->assertSee('Dashboard');
+        ->assertSeeInOrder([
+            'href="'.route('crosswords.index').'"',
+            'Build',
+            'href="'.route('crosswords.solving').'"',
+            'Solve',
+        ], false)
+        ->assertDontSee('>Dashboard<', false);
+});
+
+test('the sidebar separates its nav groups and the user menu with inset separators', function () {
+    $this->actingAs(User::factory()->create())
+        ->get(route('crosswords.index'))
+        ->assertOk()
+        ->assertSeeInOrder([
+            route('favorites.index'),
+            'data-flux-separator',
+            route('clues.index'),
+            route('support.index'),
+            'data-flux-separator',
+            'data-test="sidebar-menu-button"',
+        ], false);
+});
+
+test('the sidebar marks build current on the build page and solve current on the solve page', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->get(route('crosswords.index'))
+        ->assertSeeInOrder(['href="'.route('crosswords.index').'"', 'data-current'], false);
+
+    $this->actingAs($user)
+        ->get(route('crosswords.solving'))
+        ->assertSeeInOrder(['href="'.route('crosswords.solving').'"', 'data-current'], false);
 });

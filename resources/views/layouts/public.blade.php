@@ -38,11 +38,11 @@
                 </div>
                 <div class="flex items-center gap-4">
                     @auth
-                        <a href="{{ route('crosswords.index') }}" wire:navigate class="text-fg-muted text-sm hover:text-zinc-900 dark:hover:text-zinc-100 transition">{{ __('Build') }}</a>
-                        <a href="{{ route('crosswords.solving') }}" wire:navigate class="text-fg-muted text-sm hover:text-zinc-900 dark:hover:text-zinc-100 transition">{{ __('My Solving') }}</a>
+                        <a href="{{ route('crosswords.index') }}" wire:navigate class="text-fg-muted hover:text-zinc-900 dark:hover:text-zinc-100 transition">{{ __('Build') }}</a>
+                        <a href="{{ route('crosswords.solving') }}" wire:navigate class="text-fg-muted hover:text-zinc-900 dark:hover:text-zinc-100 transition">{{ __('My Solving') }}</a>
                     @else
-                        <a href="{{ route('login') }}" class="text-fg-muted text-sm hover:text-zinc-900 dark:hover:text-zinc-100 transition">{{ __('Log in') }}</a>
-                        <a href="{{ route('register') }}" class="rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-zinc-950 hover:bg-amber-400 transition">{{ __('Sign up') }}</a>
+                        <a href="{{ route('login') }}" class="text-fg-muted hover:text-zinc-900 dark:hover:text-zinc-100 transition">{{ __('Log in') }}</a>
+                        <a href="{{ route('register') }}" class="rounded-lg bg-amber-500 px-4 py-2 font-bold text-zinc-950 hover:bg-amber-400 transition">{{ __('Sign up') }}</a>
                     @endauth
                 </div>
             </div>
