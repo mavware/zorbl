@@ -36,9 +36,9 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
-        <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('apple-touch-icon.png') }}">
-        <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('favicon-32x32.png') }}">
-        <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('favicon-16x16.png') }}">
+        <link rel="icon" href="{{ asset('logo.svg') }}" type="image/svg+xml">
+        <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="32x32">
+        <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}" sizes="180x180">
         <link rel="manifest" href="{{ asset('site.webmanifest') }}">
         <meta name="theme-color" content="#0a0a0a">
         <meta name="mobile-web-app-capable" content="yes">
@@ -124,7 +124,10 @@
         {{-- Navigation --}}
         <nav class="fixed top-0 inset-x-0 z-50 border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-lg">
             <div class="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
-                <a href="/" class="text-xl font-bold tracking-tight text-amber-500">{{ $appName }}</a>
+                <a href="/" class="flex items-center gap-3 text-xl tracking-tight text-white">
+                    <x-app-logo-icon class="h-8 w-auto" />
+                    <span>{{ $appName }}</span>
+                </a>
                 <div class="flex items-center gap-4">
 {{--                    <a href="{{ route('puzzles.index') }}" class="text-sm text-zinc-500 hover:text-zinc-100 transition">Browse Puzzles</a>--}}
                     @auth
