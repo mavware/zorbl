@@ -170,6 +170,9 @@ new class extends Component {
 <div>
     {{-- Puzzle Performance Table --}}
     <div class="py-6">
+        <h2 class="font-classical text-ink text-[22px] leading-tight font-medium">{{ __('Puzzle Analytics') }}</h2>
+        <p class="text-ink-muted mt-1 mb-5 text-sm">{{ __('How solvers are getting on with each of your published puzzles.') }}</p>
+
         @if($this->publishedPuzzles->isEmpty())
             <div class="border-border-strong flex flex-col items-center justify-center rounded-sm border border-dashed px-6 py-10 text-center">
                 <flux:icon name="chart-bar" class="text-ink-faint mb-3 size-8" />

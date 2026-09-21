@@ -31,6 +31,23 @@ test('analytics page is accessible for authenticated users', function () {
         ->assertSeeLivewire('constructor-analytics');
 });
 
+test('the puzzle analytics table has a title', function () {
+    $user = makeAnalyticsProUser();
+    Crossword::factory()->for($user)->create(['is_published' => true]);
+
+    $this->actingAs($user)
+        ->get(route('crosswords.index'))
+        ->assertOk()
+        ->assertSeeInOrder(['Puzzle Analytics', 'Attempts', 'Completion Rate']);
+});
+
+test('the puzzle analytics title shows above the empty state too', function () {
+    $this->actingAs(makeAnalyticsProUser())
+        ->get(route('crosswords.index'))
+        ->assertOk()
+        ->assertSeeInOrder(['Puzzle Analytics', 'Publish puzzles to see analytics']);
+});
+
 test('analytics page shows empty state without published puzzles', function () {
     $user = makeAnalyticsProUser();
 
