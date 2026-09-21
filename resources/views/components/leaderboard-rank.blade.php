@@ -2,11 +2,11 @@
 
 @if($rank <= 3)
     <span @class([
-        'inline-flex size-7 items-center justify-center rounded-full text-sm font-bold text-white',
-        'bg-amber-500' => $rank === 1,
-        'bg-zinc-400' => $rank === 2,
-        'bg-amber-700' => $rank === 3,
+        'font-classical tnum inline-flex size-7 items-center justify-center rounded-full border text-[14px] font-semibold',
+        'border-amber-400 text-amber-400' => $rank === 1,
+        'border-ink text-ink' => $rank === 2,
+        'border-ink-faint text-ink-faint' => $rank === 3,
     ])>{{ $rank }}</span>
 @else
-    <span class="px-2 text-sm text-zinc-600">{{ $rank }}</span>
+    <span class="font-classical text-ink-faint tnum inline-flex size-7 items-center justify-center text-[14px] font-medium">{{ $rank }}</span>
 @endif

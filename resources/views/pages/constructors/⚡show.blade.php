@@ -219,84 +219,84 @@ new #[Title('Constructor Profile')] class extends Component {
     @endpush
 
     {{-- Profile Header --}}
-    <div class="flex items-start justify-between">
-        <div class="flex items-center gap-4">
-            <div class="flex size-16 items-center justify-center rounded-full bg-zinc-200 text-xl font-bold text-zinc-700 dark:bg-zinc-700 dark:text-zinc-300">
+    <x-page-header :kicker="__('Constructor')" :subtitle="$this->constructor->bio">
+        <x-slot:leading>
+            <div class="border-border-strong font-classical text-ink flex size-16 items-center justify-center rounded-full border text-[22px] font-medium tracking-[0.06em]">
                 {{ $this->constructor->initials() }}
             </div>
-            <div>
-                <flux:heading size="xl">
-                    {{ $constructorName }}
-                    <x-supporter-badge :user="$this->constructor" class="ml-1" />
-                </flux:heading>
-                <div class="mt-1 flex items-center gap-4 text-sm text-zinc-600">
-                    <span>{{ trans_choice(':count puzzle|:count puzzles', $this->publishedPuzzles->total()) }}</span>
-                    <span>{{ trans_choice(':count follower|:count followers', $this->followersCount) }}</span>
-                    <span>{{ __(':count total solves', ['count' => $this->totalSolves]) }}</span>
-                </div>
-                @if($this->constructor->bio)
-                    <flux:text size="sm" class="mt-1.5 max-w-xl text-zinc-600 dark:text-zinc-400">
-                        {{ $this->constructor->bio }}
-                    </flux:text>
-                @endif
-                <flux:text size="sm" class="mt-0.5 text-zinc-500">
-                    {{ __('Joined :date', ['date' => $this->constructor->created_at->format('M Y')]) }}
-                </flux:text>
-            </div>
-        </div>
+        </x-slot:leading>
+
+        <x-slot:title>
+            {{ $constructorName }}
+            <x-supporter-badge :user="$this->constructor" class="ml-1" />
+        </x-slot:title>
+
+        <x-slot:meta>
+            <span class="tnum whitespace-nowrap">{{ trans_choice(':count puzzle|:count puzzles', $this->publishedPuzzles->total()) }}</span>
+            <span class="tnum whitespace-nowrap">{{ trans_choice(':count follower|:count followers', $this->followersCount) }}</span>
+            <span class="tnum whitespace-nowrap">{{ __(':count total solves', ['count' => $this->totalSolves]) }}</span>
+            <span class="whitespace-nowrap">{{ __('Joined :date', ['date' => $this->constructor->created_at->format('M Y')]) }}</span>
+        </x-slot:meta>
 
         @auth
             @if(Auth::id() !== $constructorId)
-                <div class="flex items-center gap-2">
-                    <flux:button
-                        wire:click="toggleFollow"
-                        :variant="$this->isFollowing ? 'ghost' : 'primary'"
-                        size="sm"
-                        :icon="$this->isFollowing ? 'user-minus' : 'user-plus'"
-                    >
-                        {{ $this->isFollowing ? __('Unfollow') : __('Follow') }}
-                    </flux:button>
-                    <livewire:report-button type="profile" :reportable-id="$constructorId" :key="'report-profile-'.$constructorId" />
-                </div>
+                <x-header-button
+                    wire:click="toggleFollow"
+                    :variant="$this->isFollowing ? 'secondary' : 'primary'"
+                    :icon="$this->isFollowing ? 'user-minus' : 'user-plus'"
+                >
+                    {{ $this->isFollowing ? __('Unfollow') : __('Follow') }}
+                </x-header-button>
+                <livewire:report-button type="profile" :reportable-id="$constructorId" :key="'report-profile-'.$constructorId" />
             @endif
         @endauth
-    </div>
+    </x-page-header>
 
     {{-- Published Puzzles --}}
     <div>
-        <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <flux:heading size="lg">{{ __('Published Puzzles') }}</flux:heading>
+        <div class="border-hairline mb-6 flex flex-col gap-3 border-y py-5 lg:flex-row lg:items-center lg:justify-between">
+            <h2 class="font-classical text-ink text-[26px] leading-tight font-medium">{{ __('Published Puzzles') }}</h2>
 
             <div class="flex flex-wrap items-center gap-3">
-                <flux:input
-                    icon="magnifying-glass"
-                    placeholder="{{ __('Search puzzles...') }}"
-                    wire:model.live.debounce.300ms="search"
-                    size="sm"
-                    class="w-48"
-                />
+                <label class="relative w-full sm:w-56">
+                    <span class="sr-only">{{ __('Search puzzles...') }}</span>
+                    <flux:icon name="magnifying-glass" class="text-ink-faint pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+                    <input
+                        type="search"
+                        placeholder="{{ __('Search puzzles...') }}"
+                        wire:model.live.debounce.300ms="search"
+                        class="field-classical w-full pr-3 pl-9"
+                    />
+                </label>
 
-                <flux:radio.group wire:model.live="difficulty" variant="segmented" size="sm">
-                    <flux:radio value="" label="{{ __('All') }}" />
-                    <flux:radio value="Easy" label="{{ __('Easy') }}" />
-                    <flux:radio value="Medium" label="{{ __('Medium') }}" />
-                    <flux:radio value="Hard" label="{{ __('Hard') }}" />
-                    <flux:radio value="Expert" label="{{ __('Expert') }}" />
-                </flux:radio.group>
+                <div class="border-border-strong divide-hairline inline-flex h-10 divide-x overflow-hidden rounded-sm border" role="radiogroup" aria-label="{{ __('Difficulty') }}">
+                    @foreach (['' => __('All'), 'Easy' => __('Easy'), 'Medium' => __('Medium'), 'Hard' => __('Hard'), 'Expert' => __('Expert')] as $value => $label)
+                        <label class="cursor-pointer">
+                            <input type="radio" name="difficulty" value="{{ $value }}" wire:model.live="difficulty" class="peer sr-only" />
+                            <span class="font-classical text-ink-muted hover:text-ink peer-checked:bg-amber-400/10 peer-checked:text-amber-400 peer-focus-visible:outline-2 peer-focus-visible:-outline-offset-2 peer-focus-visible:outline-amber-400 flex h-full items-center px-3.5 text-[15px] font-medium transition-colors">
+                                {{ $label }}
+                            </span>
+                        </label>
+                    @endforeach
+                </div>
 
-                <flux:select wire:model.live="sortBy" size="sm" class="w-36">
-                    <flux:select.option value="newest">{{ __('Newest') }}</flux:select.option>
-                    <flux:select.option value="oldest">{{ __('Oldest') }}</flux:select.option>
-                    <flux:select.option value="most_liked">{{ __('Most Liked') }}</flux:select.option>
-                    <flux:select.option value="most_played">{{ __('Most Played') }}</flux:select.option>
-                </flux:select>
+                <label class="relative">
+                    <span class="sr-only">{{ __('Sort') }}</span>
+                    <select wire:model.live="sortBy" class="field-classical font-classical appearance-none pr-9 pl-3.5 text-[15px] font-medium">
+                        <option value="newest">{{ __('Sort') }}: {{ __('Newest') }}</option>
+                        <option value="oldest">{{ __('Sort') }}: {{ __('Oldest') }}</option>
+                        <option value="most_liked">{{ __('Sort') }}: {{ __('Most Liked') }}</option>
+                        <option value="most_played">{{ __('Sort') }}: {{ __('Most Played') }}</option>
+                    </select>
+                    <flux:icon name="chevron-down" class="text-ink-faint pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2" />
+                </label>
             </div>
         </div>
 
         @if($this->publishedPuzzles->isEmpty())
-            <div class="border-line-strong flex flex-col items-center justify-center rounded-lg border border-dashed py-8">
-                <flux:icon name="puzzle-piece" class="mb-2 size-8 text-zinc-500" />
-                <flux:text size="sm" class="text-zinc-500">
+            <div class="border-border-strong flex flex-col items-center justify-center rounded-sm border border-dashed px-6 py-12 text-center">
+                <flux:icon name="puzzle-piece" class="text-ink-faint mb-4 size-10" />
+                <h3 class="font-classical text-ink text-[22px] leading-tight font-medium">
                     @if($this->search !== '')
                         {{ __('No puzzles match your search.') }}
                     @elseif($this->difficulty !== '')
@@ -304,55 +304,61 @@ new #[Title('Constructor Profile')] class extends Component {
                     @else
                         {{ __('No published puzzles yet.') }}
                     @endif
-                </flux:text>
+                </h3>
             </div>
         @else
-            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div class="grid gap-[22px] [grid-template-columns:repeat(auto-fill,minmax(268px,1fr))]">
                 @foreach($this->publishedPuzzles as $puzzle)
                     <a
                         href="{{ Auth::check() ? route('crosswords.solver', $puzzle) : route('puzzles.solve', $puzzle) }}"
                         wire:navigate
-                        class="border-line group rounded-xl border p-4 transition-colors hover:border-zinc-400 dark:hover:border-zinc-600"
+                        class="border-border hover:border-border-strong group flex flex-col gap-3.5 rounded-sm border p-[18px] transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
                     >
-                        <div class="mb-3 flex justify-center">
-                            <x-grid-thumbnail :grid="$puzzle->grid" :width="$puzzle->width" :height="$puzzle->height" />
-                        </div>
-                        <div class="mb-2 flex items-start justify-between">
-                            <flux:heading size="sm" class="group-hover:text-blue-600 dark:group-hover:text-blue-400">
-                                {{ $puzzle->displayTitle() }}
-                            </flux:heading>
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="min-w-0">
+                                <h3 class="font-classical text-ink group-hover:text-amber-300 truncate text-[21px] leading-tight font-semibold transition-colors">
+                                    {{ $puzzle->displayTitle() }}
+                                </h3>
+                                <div class="meta-classical mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                                    <span class="tnum whitespace-nowrap">{{ $puzzle->width }}&times;{{ $puzzle->height }}</span>
+                                    <span aria-hidden="true">&middot;</span>
+                                    <span class="whitespace-nowrap">{{ $puzzle->created_at->diffForHumans() }}</span>
+                                </div>
+                            </div>
                             @if($puzzle->difficulty_label)
-                                <span @class([
-                                    'rounded-full px-2 py-0.5 text-xs font-medium',
-                                    'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' => $puzzle->difficulty_label === 'Easy',
-                                    'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' => $puzzle->difficulty_label === 'Medium',
-                                    'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' => $puzzle->difficulty_label === 'Hard',
-                                    'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' => $puzzle->difficulty_label === 'Expert',
-                                ])>{{ $puzzle->difficulty_label }}</span>
+                                <span class="chip-classical border-ink-faint text-ink-faint">{{ $puzzle->difficulty_label }}</span>
                             @endif
                         </div>
-                        <div class="flex items-center gap-3 text-xs text-zinc-500">
-                            <span>{{ $puzzle->width }}&times;{{ $puzzle->height }}</span>
-                            <span class="flex items-center gap-0.5">
+
+                        <div class="flex justify-center py-1">
+                            <x-grid-thumbnail
+                                :grid="$puzzle->grid"
+                                :width="$puzzle->width"
+                                :height="$puzzle->height"
+                                frame-class="border-hairline bg-hairline rounded-sm border"
+                                open-class="bg-panel"
+                                block-class="bg-zinc-300"
+                            />
+                        </div>
+
+                        <div class="meta-classical flex flex-wrap items-center gap-x-4 gap-y-1">
+                            <span class="flex items-center gap-1 whitespace-nowrap">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="size-3.5" viewBox="0 0 24 24" fill="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" /></svg>
-                                {{ $puzzle->likes_count }}
+                                <span class="font-classical text-ink tnum text-[15px] font-medium tracking-normal">{{ $puzzle->likes_count }}</span>
                             </span>
-                            <span class="flex items-center gap-0.5">
+                            <span class="flex items-center gap-1 whitespace-nowrap">
                                 <flux:icon name="play" class="size-3.5" />
-                                {{ $puzzle->cached_attempts_count }}
+                                <span class="font-classical text-ink tnum text-[15px] font-medium tracking-normal">{{ $puzzle->cached_attempts_count }}</span>
                             </span>
                             @if($puzzle->cached_attempts_count > 0)
                                 @php($completionRate = round(($puzzle->cached_completed_count / $puzzle->cached_attempts_count) * 100))
-                                <span @class([
-                                    'text-emerald-600 dark:text-emerald-400' => $completionRate >= 75,
-                                    'text-amber-600 dark:text-amber-400' => $completionRate >= 40 && $completionRate < 75,
-                                    'text-zinc-600' => $completionRate < 40,
-                                ])>{{ $completionRate }}% {{ __('solved') }}</span>
+                                <span class="whitespace-nowrap"><span class="font-classical text-ink tnum text-[15px] font-medium tracking-normal">{{ $completionRate }}%</span> {{ __('solved') }}</span>
                             @endif
                         </div>
-                        <flux:text size="sm" class="mt-1 text-zinc-500">
-                            {{ $puzzle->created_at->diffForHumans() }}
-                        </flux:text>
+
+                        <div class="pt-1">
+                            <span class="btn-classical btn-amber-outline">{{ __('Solve') }}</span>
+                        </div>
                     </a>
                 @endforeach
             </div>

@@ -49,7 +49,7 @@ new class extends Component {
                     $q->orWhere('user_id', $authId);
                 }
             })
-            ->with(['user:id,name', 'user.subscriptions', 'crossword:id,title']);
+            ->with(['user:id,name', 'user.subscriptions', 'crossword:id,title,width,height,puzzle_type,grid,styles']);
 
         $allowed = ['clue'];
         if ($this->sortField !== '' && in_array($this->sortField, $allowed)) {
@@ -125,51 +125,68 @@ new class extends Component {
 
     {{-- Back Link --}}
     <div>
-        <flux:button variant="ghost" icon="arrow-left" :href="route('words.index')" wire:navigate>
+        <a href="{{ route('words.index') }}" wire:navigate class="btn-classical btn-classical-muted h-8 px-3 text-[14px]">
+            <flux:icon name="arrow-left" class="size-4" />
             {{ __('Word Catalog') }}
-        </flux:button>
+        </a>
     </div>
 
     {{-- Word Header --}}
-    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <flux:heading size="xl" class="font-mono tracking-wider">{{ $this->word->word }}</flux:heading>
-        <div class="flex gap-2">
-            <flux:badge size="lg">{{ $this->word->length }} {{ __('letters') }}</flux:badge>
-            <flux:badge size="lg" variant="outline">{{ __('Score') }}: {{ number_format($this->word->score, 1) }}</flux:badge>
-            <flux:badge size="lg" variant="outline" color="lime">{{ number_format($this->clues->total()) }} {{ trans_choice('clue|clues', $this->clues->total()) }}</flux:badge>
+    <div class="border-hairline flex flex-col gap-4 border-b pb-5 sm:flex-row sm:items-end sm:justify-between">
+        <h1 class="font-classical text-ink text-[40px] leading-none font-semibold tracking-[0.08em]">{{ $this->word->word }}</h1>
+        <div class="flex flex-wrap gap-2">
+            <span class="chip-classical border-ink-faint text-ink-faint tnum h-7 px-2.5">{{ $this->word->length }} {{ __('letters') }}</span>
+            <span class="chip-classical border-ink-faint text-ink-faint tnum h-7 px-2.5">{{ __('Score') }}: {{ number_format($this->word->score, 1) }}</span>
+            <span class="chip-classical border-amber-400 text-amber-400 tnum h-7 px-2.5">{{ number_format($this->clues->total()) }} {{ trans_choice('clue|clues', $this->clues->total()) }}</span>
         </div>
     </div>
 
     {{-- Clues Table --}}
     @if($this->clues->isEmpty())
-        <div class="border-line-strong flex flex-col items-center justify-center rounded-xl border border-dashed py-16">
-            <flux:icon name="book-open" class="mb-4 size-12 text-zinc-500" />
-            <flux:heading size="lg" class="mb-2">{{ __('No clues found') }}</flux:heading>
-            <flux:text>{{ __('No clues have been recorded for this word yet.') }}</flux:text>
+        <div class="border-border-strong flex flex-col items-center justify-center rounded-sm border border-dashed px-6 py-16 text-center">
+            <flux:icon name="book-open" class="text-ink-faint mb-4 size-10" />
+            <h3 class="font-classical text-ink text-[26px] leading-tight font-medium">{{ __('No clues found') }}</h3>
+            <p class="text-ink-muted mt-2 text-sm">{{ __('No clues have been recorded for this word yet.') }}</p>
         </div>
     @else
-        <flux:table :paginate="$this->clues">
-            <flux:table.columns>
-                <flux:table.column sortable :sorted="$sortField === 'clue'" :direction="$sortDirection" wire:click="sortBy('clue')">{{ __('Clue') }}</flux:table.column>
-                <flux:table.column class="hidden sm:table-cell">{{ __('Source') }}</flux:table.column>
-                <flux:table.column class="hidden md:table-cell">{{ __('Author') }}</flux:table.column>
-            </flux:table.columns>
+        <div class="overflow-x-auto">
+            <table class="w-full border-collapse text-sm">
+                <thead>
+                    <tr class="border-hairline border-b">
+                        <th scope="col" class="px-3 py-3 text-left font-normal">
+                            <button type="button" wire:click="sortBy('clue')" class="meta-classical hover:text-ink inline-flex items-center gap-1 transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">
+                                {{ __('Clue') }}
+                                @if($sortField === 'clue')
+                                    <flux:icon :name="$sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'" class="size-3 text-amber-400" />
+                                @endif
+                            </button>
+                        </th>
+                        <th scope="col" class="meta-classical hidden px-3 py-3 text-left font-normal sm:table-cell">{{ __('Source') }}</th>
+                        <th scope="col" class="meta-classical hidden px-3 py-3 text-left font-normal md:table-cell">{{ __('Author') }}</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-hairline divide-y">
+                    @foreach($this->clues as $entry)
+                        <tr wire:key="clue-{{ $entry->id }}" class="align-middle">
+                            <td class="text-ink px-3 py-3.5">{{ $entry->clue }}</td>
+                            <td class="hidden px-3 py-3.5 sm:table-cell">
+                                @if($entry->crossword)
+                                    <span class="chip-classical border-ink-faint text-ink-faint max-w-full truncate">{{ Str::limit($entry->crossword->displayTitle(), 24) }}</span>
+                                @else
+                                    <span class="chip-classical border-ink-faint text-ink-faint">{{ __('Standalone') }}</span>
+                                @endif
+                            </td>
+                            <td class="text-ink-muted hidden px-3 py-3.5 md:table-cell">{{ $entry->user->name ?? __('Unknown') }} <x-supporter-badge :user="$entry->user" /></td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
 
-            <flux:table.rows>
-                @foreach($this->clues as $entry)
-                    <flux:table.row :key="$entry->id">
-                        <flux:table.cell>{{ $entry->clue }}</flux:table.cell>
-                        <flux:table.cell class="hidden sm:table-cell">
-                            @if($entry->crossword)
-                                <flux:badge size="sm">{{ Str::limit($entry->crossword->title, 20) }}</flux:badge>
-                            @else
-                                <flux:badge variant="outline" size="sm" color="lime">{{ __('Standalone') }}</flux:badge>
-                            @endif
-                        </flux:table.cell>
-                        <flux:table.cell class="hidden md:table-cell">{{ $entry->user->name ?? __('Unknown') }} <x-supporter-badge :user="$entry->user" /></flux:table.cell>
-                    </flux:table.row>
-                @endforeach
-            </flux:table.rows>
-        </flux:table>
+        @if($this->clues->hasPages())
+            <div class="mt-4">
+                {{ $this->clues->links() }}
+            </div>
+        @endif
     @endif
 </div>

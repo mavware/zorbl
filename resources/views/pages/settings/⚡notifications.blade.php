@@ -60,32 +60,31 @@ new #[Title('Notification preferences')] class extends Component {
     @include('partials.settings-heading')
 
     <x-pages::settings.layout :heading="__('Notifications')" :subheading="__('Choose which notifications you receive')">
-        <div class="my-6 space-y-4">
+        <div class="border-border divide-hairline my-6 divide-y rounded-sm border">
             @foreach(App\Enums\NotificationType::cases() as $type)
-                <div
-                    wire:key="pref-{{ $type->value }}"
-                    class="rounded-lg border border-zinc-200 px-4 py-3 dark:border-zinc-700"
-                >
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <flux:text class="font-medium">{{ $type->label() }}</flux:text>
-                            <flux:text size="sm" class="text-zinc-500 dark:text-zinc-400">{{ $type->description() }}</flux:text>
+                <div wire:key="pref-{{ $type->value }}" class="px-[18px] py-3.5">
+                    <div class="flex items-center justify-between gap-4">
+                        <div class="min-w-0">
+                            <div class="text-ink text-sm font-medium">{{ $type->label() }}</div>
+                            <div class="text-ink-muted mt-0.5 text-sm">{{ $type->description() }}</div>
                         </div>
-                        <flux:switch
+                        <x-switch-classical
                             wire:click="toggle('{{ $type->value }}')"
                             :checked="$preferences[$type->value] ?? true"
+                            aria-label="{{ $type->label() }}"
                         />
                     </div>
 
                     @if($this->supportsEmail($type) && ($preferences[$type->value] ?? true))
-                        <div class="mt-3 flex items-center justify-between border-t border-zinc-100 pt-3 pl-4 dark:border-zinc-700/50">
-                            <div>
-                                <flux:text size="sm" class="font-medium">{{ __('Email notifications') }}</flux:text>
-                                <flux:text size="sm" class="text-zinc-500 dark:text-zinc-400">{{ __('Also receive an email when this happens') }}</flux:text>
+                        <div class="border-hairline mt-3 flex items-center justify-between gap-4 border-t pt-3 pl-4">
+                            <div class="min-w-0">
+                                <div class="text-ink text-sm font-medium">{{ __('Email notifications') }}</div>
+                                <div class="text-ink-muted mt-0.5 text-sm">{{ __('Also receive an email when this happens') }}</div>
                             </div>
-                            <flux:switch
+                            <x-switch-classical
                                 wire:click="toggle('{{ $type->value }}_email')"
                                 :checked="$preferences[$type->value.'_email'] ?? false"
+                                aria-label="{{ __('Email notifications') }}"
                             />
                         </div>
                     @endif

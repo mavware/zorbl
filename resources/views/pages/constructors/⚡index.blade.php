@@ -113,77 +113,84 @@ new #[Title('Constructors')] class extends Component {
         <script type="application/ld+json">{!! json_encode($constructorsJsonLd, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
     @endpush
 
-    <flux:heading size="xl">{{ __('Constructors') }}</flux:heading>
+    <x-page-header :kicker="__('Community')" :title="__('Constructors')" />
 
     {{-- Search & Sort --}}
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div class="flex-1">
-            <flux:input
-                icon="magnifying-glass"
+        <label class="relative flex-1">
+            <span class="sr-only">{{ __('Search constructors...') }}</span>
+            <flux:icon name="magnifying-glass" class="text-ink-faint pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+            <input
+                type="search"
                 placeholder="{{ __('Search constructors...') }}"
                 wire:model.live.debounce.300ms="search"
+                class="field-classical w-full pr-3 pl-9"
             />
-        </div>
-        <flux:select wire:model.live="sortBy" size="sm" class="w-44">
-            <flux:select.option value="most_puzzles">{{ __('Most Puzzles') }}</flux:select.option>
-            <flux:select.option value="most_liked">{{ __('Most Liked') }}</flux:select.option>
-            <flux:select.option value="most_solved">{{ __('Most Solved') }}</flux:select.option>
-            <flux:select.option value="most_followers">{{ __('Most Followers') }}</flux:select.option>
-            <flux:select.option value="newest">{{ __('Newest') }}</flux:select.option>
-        </flux:select>
+        </label>
+        <label class="relative sm:w-52">
+            <span class="sr-only">{{ __('Sort') }}</span>
+            <select wire:model.live="sortBy" class="field-classical font-classical w-full appearance-none pr-9 pl-3.5 text-[15px] font-medium">
+                <option value="most_puzzles">{{ __('Sort') }}: {{ __('Most Puzzles') }}</option>
+                <option value="most_liked">{{ __('Sort') }}: {{ __('Most Liked') }}</option>
+                <option value="most_solved">{{ __('Sort') }}: {{ __('Most Solved') }}</option>
+                <option value="most_followers">{{ __('Sort') }}: {{ __('Most Followers') }}</option>
+                <option value="newest">{{ __('Sort') }}: {{ __('Newest') }}</option>
+            </select>
+            <flux:icon name="chevron-down" class="text-ink-faint pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2" />
+        </label>
     </div>
 
     {{-- Constructor Grid --}}
     @if($this->constructors->isEmpty())
-        <div class="border-line-strong flex flex-col items-center justify-center rounded-xl border border-dashed py-12">
-            <flux:icon name="users" class="mb-4 size-12 text-zinc-500" />
-            <flux:heading size="lg" class="mb-2">{{ __('No constructors found') }}</flux:heading>
-            <flux:text class="text-zinc-500">
+        <div class="border-border-strong flex flex-col items-center justify-center rounded-sm border border-dashed px-6 py-16 text-center">
+            <flux:icon name="users" class="text-ink-faint mb-4 size-10" />
+            <h3 class="font-classical text-ink text-[26px] leading-tight font-medium">{{ __('No constructors found') }}</h3>
+            <p class="text-ink-muted mt-2 text-sm">
                 @if($search !== '')
                     {{ __('Try a different search term.') }}
                 @else
                     {{ __('No constructors have published puzzles yet.') }}
                 @endif
-            </flux:text>
+            </p>
         </div>
     @else
-        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div class="grid gap-[22px] [grid-template-columns:repeat(auto-fill,minmax(268px,1fr))]">
             @foreach($this->constructors as $constructor)
                 <a
                     href="{{ route('constructors.show', $constructor) }}"
                     wire:navigate
                     wire:key="constructor-{{ $constructor->id }}"
-                    class="border-line group rounded-xl border p-5 transition-colors hover:border-zinc-400 dark:hover:border-zinc-600"
+                    class="border-border hover:border-border-strong group flex flex-col gap-4 rounded-sm border p-[18px] transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
                 >
-                    <div class="flex items-center gap-3">
-                        <div class="flex size-12 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-lg font-bold text-zinc-700 dark:bg-zinc-700 dark:text-zinc-300">
+                    <div class="flex items-center gap-3.5">
+                        <div class="border-border-strong font-classical text-ink flex size-12 shrink-0 items-center justify-center rounded-full border text-[17px] font-medium tracking-[0.06em]">
                             {{ $constructor->initials() }}
                         </div>
                         <div class="min-w-0 flex-1">
-                            <flux:heading size="sm" class="truncate group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                            <h3 class="font-classical text-ink group-hover:text-amber-300 truncate text-[21px] leading-tight font-semibold transition-colors">
                                 {{ $constructor->name }}
                                 <x-supporter-badge :user="$constructor" class="ml-1" />
-                            </flux:heading>
+                            </h3>
                             @if($constructor->bio)
-                                <flux:text size="sm" class="mt-0.5 line-clamp-1 text-zinc-500">
+                                <p class="text-ink-muted mt-0.5 line-clamp-1 text-sm">
                                     {{ $constructor->bio }}
-                                </flux:text>
+                                </p>
                             @endif
                         </div>
                     </div>
 
-                    <div class="mt-4 grid grid-cols-3 gap-3 text-center">
+                    <div class="border-hairline divide-hairline grid grid-cols-3 divide-x border-t pt-3.5 text-center">
                         <div>
-                            <div class="text-lg font-semibold text-fg">{{ $constructor->published_puzzles_count }}</div>
-                            <flux:text size="sm" class="text-zinc-500">{{ __('Puzzles') }}</flux:text>
+                            <div class="font-classical text-ink tnum text-[22px] leading-none font-medium">{{ $constructor->published_puzzles_count }}</div>
+                            <div class="meta-classical mt-1.5">{{ __('Puzzles') }}</div>
                         </div>
                         <div>
-                            <div class="text-lg font-semibold text-fg">{{ (int) $constructor->total_solves }}</div>
-                            <flux:text size="sm" class="text-zinc-500">{{ __('Solves') }}</flux:text>
+                            <div class="font-classical text-ink tnum text-[22px] leading-none font-medium">{{ (int) $constructor->total_solves }}</div>
+                            <div class="meta-classical mt-1.5">{{ __('Solves') }}</div>
                         </div>
                         <div>
-                            <div class="text-lg font-semibold text-fg">{{ $constructor->followers_count }}</div>
-                            <flux:text size="sm" class="text-zinc-500">{{ __('Followers') }}</flux:text>
+                            <div class="font-classical text-ink tnum text-[22px] leading-none font-medium">{{ $constructor->followers_count }}</div>
+                            <div class="meta-classical mt-1.5">{{ __('Followers') }}</div>
                         </div>
                     </div>
                 </a>

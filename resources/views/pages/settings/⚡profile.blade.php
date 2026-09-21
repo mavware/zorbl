@@ -90,63 +90,71 @@ new #[Title('Profile settings')] class extends Component {
 <section class="w-full">
     @include('partials.settings-heading')
 
-    <flux:heading class="sr-only">{{ __('Profile settings') }}</flux:heading>
+    <h2 class="sr-only">{{ __('Profile settings') }}</h2>
 
     <x-pages::settings.layout :heading="__('Profile')" :subheading="__('Update your name and email address')">
         <form wire:submit="updateProfileInformation" class="my-6 w-full space-y-6">
-            <flux:input wire:model="name" :label="__('Name')" type="text" required autofocus autocomplete="name" />
+            <label class="block">
+                <span class="meta-classical mb-1.5 block">{{ __('Name') }}</span>
+                <input type="text" wire:model="name" required autofocus autocomplete="name" class="field-classical w-full px-3.5" />
+                @error('name') <p class="mt-1.5 text-xs text-amber-400">{{ $message }}</p> @enderror
+            </label>
 
-            <flux:field>
-                <flux:label>{{ __('Copyright name') }}</flux:label>
-                <flux:input wire:model="copyrightName" type="text" :placeholder="Auth::user()->name" />
-                <flux:description>{{ __('Used as the default copyright holder on your puzzles. Defaults to your name if blank.') }}</flux:description>
-                <flux:error name="copyrightName" />
-            </flux:field>
+            <label class="block">
+                <span class="meta-classical mb-1.5 block">{{ __('Copyright name') }}</span>
+                <input type="text" wire:model="copyrightName" placeholder="{{ Auth::user()->name }}" class="field-classical w-full px-3.5" />
+                <span class="text-ink-muted mt-1.5 block text-sm">{{ __('Used as the default copyright holder on your puzzles. Defaults to your name if blank.') }}</span>
+                @error('copyrightName') <p class="mt-1.5 text-xs text-amber-400">{{ $message }}</p> @enderror
+            </label>
 
-            <flux:field>
-                <flux:label>{{ __('Bio') }}</flux:label>
-                <flux:textarea wire:model="bio" rows="3" :placeholder="__('Tell solvers a little about yourself…')" />
-                <flux:description>{{ __('Displayed on your public constructor profile. Max 500 characters.') }}</flux:description>
-                <flux:error name="bio" />
-            </flux:field>
+            <label class="block">
+                <span class="meta-classical mb-1.5 block">{{ __('Bio') }}</span>
+                <textarea wire:model="bio" rows="3" placeholder="{{ __('Tell solvers a little about yourself…') }}" class="field-classical w-full px-3.5"></textarea>
+                <span class="text-ink-muted mt-1.5 block text-sm">{{ __('Displayed on your public constructor profile. Max 500 characters.') }}</span>
+                @error('bio') <p class="mt-1.5 text-xs text-amber-400">{{ $message }}</p> @enderror
+            </label>
 
             <div>
-                <flux:input wire:model="email" :label="__('Email')" type="email" required autocomplete="email" />
+                <label class="block">
+                    <span class="meta-classical mb-1.5 block">{{ __('Email') }}</span>
+                    <input type="email" wire:model="email" required autocomplete="email" class="field-classical w-full px-3.5" />
+                    @error('email') <p class="mt-1.5 text-xs text-amber-400">{{ $message }}</p> @enderror
+                </label>
 
                 @if ($this->hasUnverifiedEmail)
                     <div>
-                        <flux:text class="mt-4">
+                        <p class="text-ink-muted mt-4 text-sm">
                             {{ __('Your email address is unverified.') }}
 
-                            <flux:link class="text-sm cursor-pointer" wire:click.prevent="resendVerificationNotification">
+                            <button type="button" wire:click="resendVerificationNotification" class="text-amber-400 hover:text-amber-300 cursor-pointer underline underline-offset-4 transition-colors">
                                 {{ __('Click here to re-send the verification email.') }}
-                            </flux:link>
-                        </flux:text>
+                            </button>
+                        </p>
 
                         @if (session('status') === 'verification-link-sent')
-                            <flux:text class="mt-2 font-medium !dark:text-green-400 !text-green-600">
+                            <p class="mt-2 text-sm font-medium text-amber-400">
                                 {{ __('A new verification link has been sent to your email address.') }}
-                            </flux:text>
+                            </p>
                         @endif
                     </div>
                 @endif
             </div>
 
-            <flux:field variant="inline">
-                <flux:checkbox wire:model="safeSearchEnabled" data-test="safe-search-toggle" />
-                <flux:label>{{ __('Safe Search') }}</flux:label>
-                <flux:description>
-                    {{ __('Hide puzzles whose title or clues contain profanity or strong language. Recommended for solvers of all ages.') }}
-                </flux:description>
-                <flux:error name="safeSearchEnabled" />
-            </flux:field>
+            <label class="flex items-start gap-3">
+                <input type="checkbox" wire:model="safeSearchEnabled" data-test="safe-search-toggle" class="check-classical mt-0.5" />
+                <span class="min-w-0">
+                    <span class="text-ink block text-sm font-medium">{{ __('Safe Search') }}</span>
+                    <span class="text-ink-muted mt-0.5 block text-sm">
+                        {{ __('Hide puzzles whose title or clues contain profanity or strong language. Recommended for solvers of all ages.') }}
+                    </span>
+                    @error('safeSearchEnabled') <p class="mt-1.5 text-xs text-amber-400">{{ $message }}</p> @enderror
+                </span>
+            </label>
 
             <div class="flex items-center gap-4">
-                <div class="flex items-center justify-end">
-                    <flux:button variant="primary" type="submit" class="w-full" data-test="update-profile-button">
-                        {{ __('Save') }}
-                    </flux:button>
-                </div>
+                <button type="submit" class="btn-classical btn-amber-outline" data-test="update-profile-button">
+                    {{ __('Save') }}
+                </button>
 
                 <x-action-message class="me-3" on="profile-updated">
                     {{ __('Saved.') }}

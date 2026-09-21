@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\ClueEntry;
+use App\Models\Crossword;
 use App\Models\User;
 use App\Models\Word;
 use Livewire\Livewire;
@@ -212,4 +213,16 @@ test('unrelated clues are not shown on the show page', function () {
         ->test('pages::words.show', ['word' => $word])
         ->assertSee('Large body of water')
         ->assertDontSee('Flowing waterway');
+});
+
+test('the word detail page shows a generated source title for clues from untitled puzzles', function () {
+    $user = User::factory()->create();
+    $word = Word::factory()->word('OCEAN')->create();
+    $puzzle = Crossword::factory()->published()->for($user)->create(['title' => null, 'width' => 15, 'height' => 15]);
+    ClueEntry::create(['answer' => 'OCEAN', 'clue' => 'Salt water', 'user_id' => $user->id, 'crossword_id' => $puzzle->id, 'status' => ClueEntry::STATUS_APPROVED]);
+
+    Livewire::test('pages::words.show', ['word' => $word])
+        ->assertOk()
+        ->assertSee('Salt water')
+        ->assertSee('15×15 Standard');
 });

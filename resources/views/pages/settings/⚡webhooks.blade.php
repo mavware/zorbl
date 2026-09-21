@@ -96,50 +96,57 @@ new #[Title('Webhook settings')] class extends Component {
 
     <x-pages::settings.layout :heading="__('Webhooks')" :subheading="__('Receive HTTP callbacks when events happen on your puzzles')">
         <div class="my-6 space-y-6">
-            <div class="flex items-center justify-between">
-                <flux:text>{{ __('Your webhook endpoints') }}</flux:text>
-                <flux:button variant="primary" size="sm" icon="plus" wire:click="$set('showCreateModal', true)">
+            <div class="flex items-center justify-between gap-3">
+                <p class="text-ink text-sm">{{ __('Your webhook endpoints') }}</p>
+                <button type="button" class="btn-classical btn-amber-outline" wire:click="$set('showCreateModal', true)">
+                    <flux:icon name="plus" class="size-4" />
                     {{ __('Add endpoint') }}
-                </flux:button>
+                </button>
             </div>
 
             @if ($this->endpoints->isEmpty())
-                <flux:callout>
-                    <x-slot:heading>{{ __('No webhooks configured') }}</x-slot:heading>
-                    {{ __('Add a webhook endpoint to receive notifications when events happen on your puzzles.') }}
-                </flux:callout>
+                <div class="border-border-strong flex flex-col items-center justify-center rounded-sm border border-dashed px-6 py-10 text-center">
+                    <h3 class="font-classical text-ink text-[22px] leading-tight font-medium">{{ __('No webhooks configured') }}</h3>
+                    <p class="text-ink-muted mt-2 text-sm">{{ __('Add a webhook endpoint to receive notifications when events happen on your puzzles.') }}</p>
+                </div>
             @else
                 <div class="space-y-3">
                     @foreach ($this->endpoints as $endpoint)
-                        <div class="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
+                        <div class="border-border rounded-sm border p-[18px]">
                             <div class="flex items-start justify-between gap-3">
                                 <div class="min-w-0 flex-1">
-                                    <div class="flex items-center gap-2">
-                                        <flux:text class="truncate font-mono text-sm">{{ $endpoint->url }}</flux:text>
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <span class="text-ink truncate font-mono text-sm">{{ $endpoint->url }}</span>
                                         @if ($endpoint->is_active)
-                                            <flux:badge color="green" size="sm">{{ __('Active') }}</flux:badge>
+                                            <span class="chip-classical border-amber-400 text-amber-400">{{ __('Active') }}</span>
                                         @else
-                                            <flux:badge color="zinc" size="sm">{{ __('Inactive') }}</flux:badge>
+                                            <span class="chip-classical border-ink-faint text-ink-faint">{{ __('Inactive') }}</span>
                                         @endif
                                     </div>
                                     @if ($endpoint->description)
-                                        <flux:text class="mt-1 text-xs text-zinc-500">{{ $endpoint->description }}</flux:text>
+                                        <p class="text-ink-muted mt-1 text-sm">{{ $endpoint->description }}</p>
                                     @endif
-                                    <div class="mt-2 flex flex-wrap gap-1">
+                                    <div class="mt-2 flex flex-wrap gap-1.5">
                                         @foreach ($endpoint->events as $event)
-                                            <flux:badge size="sm">{{ App\Enums\WebhookEvent::tryFrom($event)?->label() ?? $event }}</flux:badge>
+                                            <span class="chip-classical border-ink-faint text-ink-faint">{{ App\Enums\WebhookEvent::tryFrom($event)?->label() ?? $event }}</span>
                                         @endforeach
                                     </div>
                                     @if ($endpoint->last_triggered_at)
-                                        <flux:text class="mt-1 text-xs text-zinc-400">
+                                        <p class="meta-classical mt-2">
                                             {{ __('Last triggered :time', ['time' => $endpoint->last_triggered_at->diffForHumans()]) }}
-                                        </flux:text>
+                                        </p>
                                     @endif
                                 </div>
-                                <div class="flex items-center gap-1">
-                                    <flux:button size="sm" variant="subtle" icon="eye" wire:click="viewDeliveries({{ $endpoint->id }})" />
-                                    <flux:button size="sm" variant="subtle" icon="{{ $endpoint->is_active ? 'pause' : 'play' }}" wire:click="toggleEndpoint({{ $endpoint->id }})" />
-                                    <flux:button size="sm" variant="subtle" icon="trash" wire:click="deleteEndpoint({{ $endpoint->id }})" wire:confirm="{{ __('Are you sure you want to delete this webhook endpoint?') }}" />
+                                <div class="flex shrink-0 items-center gap-1.5">
+                                    <button type="button" class="btn-classical btn-classical-muted h-8 w-8 px-0" wire:click="viewDeliveries({{ $endpoint->id }})" aria-label="{{ __('Recent deliveries') }}">
+                                        <flux:icon name="eye" class="size-4" />
+                                    </button>
+                                    <button type="button" class="btn-classical btn-classical-muted h-8 w-8 px-0" wire:click="toggleEndpoint({{ $endpoint->id }})" aria-label="{{ $endpoint->is_active ? __('Pause') : __('Resume') }}">
+                                        <flux:icon :name="$endpoint->is_active ? 'pause' : 'play'" class="size-4" />
+                                    </button>
+                                    <button type="button" class="btn-classical btn-classical-muted h-8 w-8 px-0" wire:click="deleteEndpoint({{ $endpoint->id }})" wire:confirm="{{ __('Are you sure you want to delete this webhook endpoint?') }}" aria-label="{{ __('Delete') }}">
+                                        <flux:icon name="trash" class="size-4" />
+                                    </button>
                                 </div>
                             </div>
                         </div>

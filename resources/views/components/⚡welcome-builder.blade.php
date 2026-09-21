@@ -205,17 +205,17 @@ new class extends Component {
 }
 ?>
 
-<div class="space-y-6 text-left">
+<div class="space-y-4 text-left">
     {{-- Puzzle Type Selector --}}
     <div>
-        <flux:label class="mb-2 text-zinc-200">{{ __('Puzzle Type') }}</flux:label>
-        <div class="grid grid-cols-3 gap-3">
+        <flux:label class="mb-2 text-zinc-200">{{ __('PUZZLE TYPE') }}</flux:label>
+        <div class="grid grid-cols-3 gap-3 mt-2">
             @foreach (PuzzleType::cases() as $type)
                 <button
                     type="button"
                     wire:click="$set('puzzleType', @js($type->value))"
                     @class([
-                        'flex flex-col items-center gap-2 rounded-lg border-2 p-3 text-center transition-colors',
+                        'flex cursor-pointer flex-col items-center gap-2 rounded-lg border p-3 text-center transition-colors',
                         'border-amber-500 bg-amber-500/10 ring-1 ring-amber-500' => $puzzleType === $type->value,
                         'border-zinc-700 hover:border-zinc-500 hover:bg-zinc-800/50' => $puzzleType !== $type->value,
                     ])
@@ -239,7 +239,7 @@ new class extends Component {
     {{-- Grid Dimensions --}}
     <div class="grid grid-cols-2 gap-4">
         <flux:field>
-            <flux:label class="text-zinc-200">{{ $this->selectedPuzzleType->requiresSquare() ? __('Size') : __('Width') }}</flux:label>
+            <flux:label class="text-zinc-200">{{ $this->selectedPuzzleType->requiresSquare() ? __('SIZE') : __('WIDTH') }}</flux:label>
             <flux:input
                 type="number"
                 wire:model.live.debounce.300ms="newWidth"
@@ -252,7 +252,7 @@ new class extends Component {
 
         @if (! $this->selectedPuzzleType->requiresSquare())
             <flux:field>
-                <flux:label class="text-zinc-200">{{ __('Height') }}</flux:label>
+                <flux:label class="text-zinc-200">{{ __('HEIGHT') }}</flux:label>
                 <flux:input type="number" wire:model.live.debounce.300ms="newHeight" min="3" max="40" />
                 <flux:error name="newHeight" />
             </flux:field>
@@ -286,13 +286,13 @@ new class extends Component {
                 <flux:icon.loading class="size-5 text-zinc-400" />
             </div>
             @if(count($this->templates) > 0)
-                <flux:label class="mb-2 text-zinc-200">{{ __('Grid Template') }} <span class="text-zinc-500 text-xs font-normal"> {{ __('(optional)') }}</span></flux:label>
-                <div class="flex min-h-[6.5rem] gap-3 overflow-x-auto pb-2">
+                <flux:label class="text-zinc-200">{{ __('GRID TEMPLATE') }} <span class="text-zinc-500 ml-2 text-xs font-normal"> {{ __('(optional)') }}</span></flux:label>
+                <div class="flex min-h-[6.5rem] gap-3 overflow-x-auto pb-2 mt-2">
                     {{-- Blank grid option --}}
                     <button
                         type="button"
                         wire:click="$set('selectedTemplate', null)"
-                        class="flex shrink-0 flex-col items-center gap-1.5 rounded-lg border-2 p-2 transition-colors {{ $selectedTemplate === null ? 'border-amber-500 bg-amber-500/10' : 'border-zinc-700 hover:border-zinc-500' }}"
+                        class="flex shrink-0 flex-col items-center gap-1.5 rounded-lg border p-2 transition-colors {{ $selectedTemplate === null ? 'border-amber-500 bg-amber-500/10' : 'border-zinc-700 hover:border-zinc-500' }}"
                     >
                         <x-grid-thumbnail :grid="Crossword::emptyGrid($newWidth, $newHeight)" :width="$newWidth" :height="$newHeight" :cell-size="6" :max-width="80" />
                         <span class="whitespace-nowrap text-xs text-zinc-400">{{ __('Blank') }}</span>
@@ -302,7 +302,7 @@ new class extends Component {
                         <button
                             type="button"
                             wire:click="$set('selectedTemplate', {{ $index }})"
-                            class="flex shrink-0 flex-col items-center gap-1.5 rounded-lg border-2 p-2 transition-colors {{ $selectedTemplate === $index ? 'border-amber-500 bg-amber-500/10' : 'border-zinc-700 hover:border-zinc-500' }}"
+                            class="flex shrink-0 flex-col items-center gap-1.5 rounded-lg border p-2 transition-colors {{ $selectedTemplate === $index ? 'border-amber-500 bg-amber-500/10' : 'border-zinc-700 hover:border-zinc-500' }}"
                         >
                             <x-grid-thumbnail :grid="$template['grid']" :styles="$template['styles'] ?? null" :width="$newWidth" :height="$newHeight" :cell-size="6" :max-width="80" />
                             <span class="whitespace-nowrap text-xs text-zinc-400">{{ $template['name'] }}</span>
@@ -317,21 +317,25 @@ new class extends Component {
         </div>
     @endif
 
-    <div class="flex flex-col items-center gap-2 pt-2">
-        @if ($this->atPuzzleLimit)
-            <div class="flex">
-                <flux:icon.exclamation-triangle class=" size-4 mr-2 text-red-400" />
-                <flux:text size="sm" class="text-center text-red-400"> {{ $this->limitMessage }}</flux:text>
-            </div>
-
-        @endif
+    <div class="flex items-center gap-2 pt-2">
         <button
             type="button"
             wire:click="createPuzzle"
             @disabled($this->atPuzzleLimit)
-            class="rounded-xl bg-amber-500 px-8 py-3.5 text-base font-semibold text-zinc-950 shadow-lg shadow-amber-500/20 transition hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none disabled:hover:bg-amber-500"
+            class="flex mr-3 rounded-xl border border-amber-500 bg-transparent px-8 py-2.5 text-base font-semibold text-amber-400 transition hover:bg-amber-500/10 hover:text-amber-300 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-amber-400"
         >
             {{ __('Start building') }}
         </button>
+        @if ($this->atPuzzleLimit)
+            <div class="flex items-center">
+                <flux:icon.exclamation-triangle class="size-4 mr-2 text-red-400" />
+                <flux:text size="sm" class="text-red-400">{{ $this->limitMessage }}</flux:text>
+            </div>
+        @else
+            <div class="flex items-center">
+                <flux:text size="sm" class="text-zinc-600">{{ __('No sign-in needed for your first puzzle.') }}</flux:text>
+            </div>
+        @endif
+
     </div>
 </div>

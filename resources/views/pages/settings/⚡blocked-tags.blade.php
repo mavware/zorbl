@@ -37,24 +37,26 @@ new class extends Component {
     }
 }; ?>
 
-<section class="mt-10 space-y-6">
-    <div class="relative mb-5">
-        <flux:heading>{{ __('Blocked tags') }}</flux:heading>
-        <flux:subheading>{{ __('Puzzles with these tags will be hidden from your browse results.') }}</flux:subheading>
-    </div>
+<section class="border-hairline mt-10 space-y-5 border-t pt-8">
+        <div class="border-hairline mb-5 border-b pb-3.5">
+            <h2 class="font-classical text-ink text-[22px] leading-tight font-medium">{{ __('Blocked tags') }}</h2>
+            <p class="meta-classical mt-1.5 normal-case tracking-normal">{{ __('Puzzles with these tags will be hidden from your browse results.') }}</p>
+        </div>
 
     @if($this->tags->isEmpty())
-        <flux:text class="text-zinc-500">{{ __('No tags available yet.') }}</flux:text>
+        <p class="text-ink-muted text-sm">{{ __('No tags available yet.') }}</p>
     @else
         <div class="flex flex-wrap gap-2">
             @foreach($this->tags as $tag)
                 <button
+                    type="button"
                     wire:click="toggleTag({{ $tag->id }})"
                     wire:key="blocked-tag-{{ $tag->id }}"
+                    aria-pressed="{{ in_array($tag->id, $blockedTagIds) ? 'true' : 'false' }}"
                     @class([
-                        'inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors',
-                        'border-red-300 bg-red-50 text-red-700 dark:border-red-700 dark:bg-red-900/30 dark:text-red-400' => in_array($tag->id, $blockedTagIds),
-                        'border-zinc-300 bg-white text-zinc-800 hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:border-zinc-500' => ! in_array($tag->id, $blockedTagIds),
+                        'font-classical inline-flex h-8 items-center gap-1.5 rounded-sm border px-3 text-[15px] font-medium transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400',
+                        'border-amber-400 text-amber-400' => in_array($tag->id, $blockedTagIds),
+                        'border-border-strong text-ink-muted hover:border-border-hover hover:text-ink' => ! in_array($tag->id, $blockedTagIds),
                     ])
                 >
                     @if(in_array($tag->id, $blockedTagIds))
@@ -68,9 +70,9 @@ new class extends Component {
         </div>
 
         @if(count($blockedTagIds) > 0)
-            <flux:text size="sm" class="text-zinc-600">
+            <p class="meta-classical tnum">
                 {{ trans_choice(':count tag blocked|:count tags blocked', count($blockedTagIds)) }}
-            </flux:text>
+            </p>
         @endif
     @endif
 

@@ -137,41 +137,30 @@ new #[Title('Security settings')] class extends Component {
 <section class="w-full">
     @include('partials.settings-heading')
 
-    <flux:heading class="sr-only">{{ __('Security settings') }}</flux:heading>
+    <h2 class="sr-only">{{ __('Security settings') }}</h2>
 
     <x-pages::settings.layout :heading="__('Update password')" :subheading="__('Ensure your account is using a long, random password to stay secure')">
         <form method="POST" wire:submit="updatePassword" class="mt-6 space-y-6">
-            <flux:input
-                wire:model="current_password"
-                :label="__('Current password')"
-                type="password"
-                required
-                autocomplete="current-password"
-                viewable
-            />
-            <flux:input
-                wire:model="password"
-                :label="__('New password')"
-                type="password"
-                required
-                autocomplete="new-password"
-                viewable
-            />
-            <flux:input
-                wire:model="password_confirmation"
-                :label="__('Confirm password')"
-                type="password"
-                required
-                autocomplete="new-password"
-                viewable
-            />
+            <label class="block">
+                <span class="meta-classical mb-1.5 block">{{ __('Current password') }}</span>
+                <input type="password" wire:model="current_password" required autocomplete="current-password" class="field-classical w-full px-3.5" />
+                @error('current_password') <p class="mt-1.5 text-xs text-amber-400">{{ $message }}</p> @enderror
+            </label>
+            <label class="block">
+                <span class="meta-classical mb-1.5 block">{{ __('New password') }}</span>
+                <input type="password" wire:model="password" required autocomplete="new-password" class="field-classical w-full px-3.5" />
+                @error('password') <p class="mt-1.5 text-xs text-amber-400">{{ $message }}</p> @enderror
+            </label>
+            <label class="block">
+                <span class="meta-classical mb-1.5 block">{{ __('Confirm password') }}</span>
+                <input type="password" wire:model="password_confirmation" required autocomplete="new-password" class="field-classical w-full px-3.5" />
+                @error('password_confirmation') <p class="mt-1.5 text-xs text-amber-400">{{ $message }}</p> @enderror
+            </label>
 
             <div class="flex items-center gap-4">
-                <div class="flex items-center justify-end">
-                    <flux:button variant="primary" type="submit" class="w-full" data-test="update-password-button">
-                        {{ __('Save') }}
-                    </flux:button>
-                </div>
+                <button type="submit" class="btn-classical btn-amber-outline" data-test="update-password-button">
+                    {{ __('Save') }}
+                </button>
 
                 <x-action-message class="me-3" on="password-updated">
                     {{ __('Saved.') }}
@@ -179,26 +168,23 @@ new #[Title('Security settings')] class extends Component {
             </div>
         </form>
 
-        <section class="mt-12">
-            <flux:heading>{{ __('Browser sessions') }}</flux:heading>
-            <flux:subheading>
-                {{ __('If you suspect your account has been compromised, log out of every other browser and device you may have signed in from.') }}
-            </flux:subheading>
+        <section class="border-hairline mt-12 border-t pt-8">
+        <div class="border-hairline mb-5 border-b pb-3.5">
+            <h2 class="font-classical text-ink text-[22px] leading-tight font-medium">{{ __('Browser sessions') }}</h2>
+            <p class="meta-classical mt-1.5 normal-case tracking-normal">{{ __('If you suspect your account has been compromised, log out of every other browser and device you may have signed in from.') }}</p>
+        </div>
 
             <form method="POST" wire:submit="logoutOtherBrowserSessions" class="mt-6 space-y-6">
-                <flux:input
-                    wire:model="logout_other_password"
-                    :label="__('Current password')"
-                    type="password"
-                    required
-                    autocomplete="current-password"
-                    viewable
-                />
+            <label class="block">
+                <span class="meta-classical mb-1.5 block">{{ __('Current password') }}</span>
+                <input type="password" wire:model="logout_other_password" required autocomplete="current-password" class="field-classical w-full px-3.5" />
+                @error('logout_other_password') <p class="mt-1.5 text-xs text-amber-400">{{ $message }}</p> @enderror
+            </label>
 
                 <div class="flex items-center gap-4">
-                    <flux:button variant="primary" type="submit" data-test="logout-other-sessions-button">
+                    <button type="submit" class="btn-classical btn-classical-muted" data-test="logout-other-sessions-button">
                         {{ __('Log out other browser sessions') }}
-                    </flux:button>
+                    </button>
 
                     <x-action-message class="me-3" on="other-sessions-revoked">
                         {{ __('Done.') }}
@@ -208,39 +194,35 @@ new #[Title('Security settings')] class extends Component {
         </section>
 
         @if ($canManageTwoFactor)
-            <section class="mt-12">
-                <flux:heading>{{ __('Two-factor authentication') }}</flux:heading>
-                <flux:subheading>{{ __('Manage your two-factor authentication settings') }}</flux:subheading>
+            <section class="border-hairline mt-12 border-t pt-8">
+        <div class="border-hairline mb-5 border-b pb-3.5">
+            <h2 class="font-classical text-ink text-[22px] leading-tight font-medium">{{ __('Two-factor authentication') }}</h2>
+            <p class="meta-classical mt-1.5 normal-case tracking-normal">{{ __('Manage your two-factor authentication settings') }}</p>
+        </div>
 
-                <div class="flex flex-col w-full mx-auto space-y-6 text-sm" wire:cloak>
+                <div class="mx-auto flex w-full flex-col space-y-6 text-sm" wire:cloak>
                     @if ($twoFactorEnabled)
                         <div class="space-y-4">
-                            <flux:text>
+                            <p class="text-ink-muted text-sm leading-[1.65]">
                                 {{ __('You will be prompted for a secure, random pin during login, which you can retrieve from the TOTP-supported application on your phone.') }}
-                            </flux:text>
+                            </p>
 
                             <div class="flex justify-start">
-                                <flux:button
-                                    variant="danger"
-                                    wire:click="disable"
-                                >
+                                <button type="button" class="btn-classical btn-classical-muted" wire:click="disable">
                                     {{ __('Disable 2FA') }}
-                                </flux:button>
+                                </button>
                             </div>
 
                             <livewire:pages::settings.two-factor.recovery-codes :$requiresConfirmation />
                         </div>
                     @else
                         <div class="space-y-4">
-                            <flux:text variant="subtle">
+                            <p class="text-ink-muted text-sm leading-[1.65]">
                                 {{ __('When you enable two-factor authentication, you will be prompted for a secure pin during login. This pin can be retrieved from a TOTP-supported application on your phone.') }}
-                            </flux:text>
+                            </p>
 
                             <flux:modal.trigger name="two-factor-setup-modal">
-                                <flux:button
-                                    variant="primary"
-                                    wire:click="$dispatch('start-two-factor-setup')"
-                                >
+                                <flux:button variant="ghost" class="btn-classical btn-amber-outline" wire:click="$dispatch('start-two-factor-setup')">
                                     {{ __('Enable 2FA') }}
                                 </flux:button>
                             </flux:modal.trigger>

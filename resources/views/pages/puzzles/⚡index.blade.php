@@ -29,7 +29,10 @@ class extends Component
                 ->safeFor(null)
                 ->latest()
                 ->limit(18)
-                ->get(['id', 'title'])
+                // displayTitle() falls back to the generated "15×15 Standard
+                // Crossword" form for untitled puzzles, which reads the type,
+                // size and grid — so those columns must be selected too.
+                ->get(['id', 'title', 'width', 'height', 'puzzle_type', 'grid', 'styles'])
                 ->map(fn (Crossword $crossword): array => [
                     'name' => $crossword->displayTitle(),
                     'url' => route('puzzles.solve', $crossword),
@@ -102,18 +105,11 @@ class extends Component
         <script type="application/ld+json">{!! json_encode($browseJsonLd, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
     @endpush
 
-    <div class="flex items-center justify-between">
-        <flux:heading size="xl">{{ __('Browse Puzzles') }}</flux:heading>
-        <flux:button
-            wire:click="surpriseMe"
-            variant="ghost"
-            size="sm"
-            icon="sparkles"
-            data-test="surprise-me-button"
-        >
+    <x-page-header :kicker="__('Discover')" :title="__('Browse Puzzles')">
+        <x-header-button variant="secondary" icon="sparkles" wire:click="surpriseMe" data-test="surprise-me-button">
             {{ __('Surprise Me') }}
-        </flux:button>
-    </div>
+        </x-header-button>
+    </x-page-header>
 
     <livewire:puzzle-discovery />
 

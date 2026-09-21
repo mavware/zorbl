@@ -154,55 +154,108 @@ new class extends Component {
         <script type="application/ld+json">{!! json_encode($wordsJsonLd, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
     @endpush
 
-    <flux:heading size="xl">{{ __('Word Catalog') }}</flux:heading>
-    <flux:text class="-mt-4 max-w-2xl">
-        {{ __('Browse :count crossword answers. Search by pattern — use ? for any single letter and * for any run of letters.', ['count' => number_format($this->totalWords)]) }}
-    </flux:text>
+    <x-page-header
+        :kicker="__('Reference')"
+        :title="__('Word Catalog')"
+        :subtitle="__('Browse :count crossword answers. Search by pattern — use ? for any single letter and * for any run of letters.', ['count' => number_format($this->totalWords)])"
+    />
 
     {{-- Search and Filters --}}
-    <div class="flex flex-col gap-4 sm:flex-row sm:items-center">
-        <div class="flex-1">
-            <flux:input icon="magnifying-glass" wire:model.live.debounce.300ms="search" placeholder="{{ __('Search words — ? = any letter (C???T), * = any run (e.g. C?T, S*E)') }}" />
-        </div>
-        <div class="w-28">
-            <flux:input wire:model.live.debounce.300ms="length" type="number" min="2" max="30" placeholder="{{ __('Length') }}" />
-        </div>
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <label class="relative flex-1">
+            <span class="sr-only">{{ __('Search words — ? = any letter (C???T), * = any run (e.g. C?T, S*E)') }}</span>
+            <flux:icon name="magnifying-glass" class="text-ink-faint pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+            <input
+                type="search"
+                placeholder="{{ __('Search words — ? = any letter (C???T), * = any run (e.g. C?T, S*E)') }}"
+                wire:model.live.debounce.300ms="search"
+                class="field-classical w-full pr-3 pl-9"
+            />
+        </label>
+        <label class="sm:w-28">
+            <span class="sr-only">{{ __('Length') }}</span>
+            <input
+                type="number"
+                min="2"
+                max="30"
+                placeholder="{{ __('Length') }}"
+                wire:model.live.debounce.300ms="length"
+                class="field-classical tnum w-full px-3.5"
+            />
+        </label>
     </div>
 
     {{-- Word Table --}}
     @if($this->words->isEmpty())
-        <div class="border-line-strong flex flex-col items-center justify-center rounded-xl border border-dashed py-16">
-            <flux:icon name="language" class="mb-4 size-12 text-zinc-500" />
-            <flux:heading size="lg" class="mb-2">{{ __('No words found') }}</flux:heading>
-            <flux:text>
+        <div class="border-border-strong flex flex-col items-center justify-center rounded-sm border border-dashed px-6 py-16 text-center">
+            <flux:icon name="language" class="text-ink-faint mb-4 size-10" />
+            <h3 class="font-classical text-ink text-[26px] leading-tight font-medium">{{ __('No words found') }}</h3>
+            <p class="text-ink-muted mt-2 text-sm">
                 @if($search)
                     {{ __('Try a different search term.') }}
                 @else
                     {{ __('The word catalog is empty. Run the word list generator to populate it.') }}
                 @endif
-            </flux:text>
+            </p>
         </div>
     @else
-        <flux:table :paginate="$this->words">
-            <flux:table.columns>
-                <flux:table.column sortable :sorted="$sortField === 'word'" :direction="$sortDirection" wire:click="sortBy('word')">{{ __('Word') }}</flux:table.column>
-                <flux:table.column sortable :sorted="$sortField === 'length'" :direction="$sortDirection" wire:click="sortBy('length')">{{ __('Length') }}</flux:table.column>
-                <flux:table.column sortable :sorted="$sortField === 'score'" :direction="$sortDirection" wire:click="sortBy('score')">{{ __('Score') }}</flux:table.column>
-                <flux:table.column sortable :sorted="$sortField === 'clue_count'" :direction="$sortDirection" wire:click="sortBy('clue_count')">{{ __('Clues') }}</flux:table.column>
-            </flux:table.columns>
+        <div class="overflow-x-auto">
+            <table class="w-full border-collapse text-sm">
+                <thead>
+                    <tr class="border-hairline border-b">
+                            <th scope="col" class="px-3 py-3 text-left font-normal ">
+                                <button type="button" wire:click="sortBy('word')" class="meta-classical hover:text-ink inline-flex items-center gap-1 transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">
+                                    {{ __('Word') }}
+                                    @if($sortField === 'word')
+                                        <flux:icon :name="$sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'" class="size-3 text-amber-400" />
+                                    @endif
+                                </button>
+                            </th>
+                            <th scope="col" class="px-3 py-3 text-left font-normal ">
+                                <button type="button" wire:click="sortBy('length')" class="meta-classical hover:text-ink inline-flex items-center gap-1 transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">
+                                    {{ __('Length') }}
+                                    @if($sortField === 'length')
+                                        <flux:icon :name="$sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'" class="size-3 text-amber-400" />
+                                    @endif
+                                </button>
+                            </th>
+                            <th scope="col" class="px-3 py-3 text-left font-normal ">
+                                <button type="button" wire:click="sortBy('score')" class="meta-classical hover:text-ink inline-flex items-center gap-1 transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">
+                                    {{ __('Score') }}
+                                    @if($sortField === 'score')
+                                        <flux:icon :name="$sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'" class="size-3 text-amber-400" />
+                                    @endif
+                                </button>
+                            </th>
+                            <th scope="col" class="px-3 py-3 text-left font-normal ">
+                                <button type="button" wire:click="sortBy('clue_count')" class="meta-classical hover:text-ink inline-flex items-center gap-1 transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">
+                                    {{ __('Clues') }}
+                                    @if($sortField === 'clue_count')
+                                        <flux:icon :name="$sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'" class="size-3 text-amber-400" />
+                                    @endif
+                                </button>
+                            </th>
+                    </tr>
+                </thead>
+                <tbody class="divide-hairline divide-y">
+                    @foreach($this->words as $word)
+                        <tr wire:key="word-{{ $word->id }}" x-on:click="window.location.href = '{{ route('words.show', $word) }}'" class="group cursor-pointer">
+                            <td class="px-3 py-3.5 whitespace-nowrap">
+                                <a href="{{ route('words.show', $word) }}" wire:navigate class="font-classical text-ink group-hover:text-amber-300 text-[18px] leading-none font-semibold tracking-[0.06em] transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">{{ $word->word }}</a>
+                            </td>
+                            <td class="font-classical text-ink tnum px-3 py-3.5 text-[15px] font-medium">{{ $word->length }}</td>
+                            <td class="font-classical text-ink tnum px-3 py-3.5 text-[15px] font-medium">{{ number_format($word->score, 1) }}</td>
+                            <td class="font-classical text-ink tnum px-3 py-3.5 text-[15px] font-medium">{{ number_format($word->clue_count) }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
 
-            <flux:table.rows>
-                @foreach($this->words as $word)
-                    <flux:table.row :key="$word->id" x-on:click="window.location.href = '{{ route('words.show', $word) }}'" class="cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-700">
-                        <flux:table.cell variant="strong">
-                                {{ $word->word }}
-                        </flux:table.cell>
-                        <flux:table.cell>{{ $word->length }}</flux:table.cell>
-                        <flux:table.cell>{{ number_format($word->score, 1) }}</flux:table.cell>
-                        <flux:table.cell>{{ number_format($word->clue_count) }}</flux:table.cell>
-                    </flux:table.row>
-                @endforeach
-            </flux:table.rows>
-        </flux:table>
+        @if($this->words->hasPages())
+            <div class="mt-4">
+                {{ $this->words->links() }}
+            </div>
+        @endif
     @endif
 </div>

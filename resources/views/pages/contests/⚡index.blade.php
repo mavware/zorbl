@@ -39,45 +39,40 @@ new #[Title('Contests')] class extends Component {
 <div class="space-y-10">
     {{-- Active Contests --}}
     <div class="space-y-4">
-        <flux:heading size="xl">{{ __('Active Contests') }}</flux:heading>
+        <x-page-header :kicker="__('Compete')" :title="__('Active Contests')" />
 
         @if($this->activeContests->isEmpty())
-            <div class="border-line-strong flex flex-col items-center justify-center rounded-xl border border-dashed py-12">
-                <flux:icon name="trophy" class="mb-4 size-12 text-zinc-500" />
-                <flux:heading size="lg" class="mb-2">{{ __('No active contests') }}</flux:heading>
-                <flux:text>{{ __('Check back soon for new contests.') }}</flux:text>
+            <div class="border-border-strong flex flex-col items-center justify-center rounded-sm border border-dashed px-6 py-16 text-center">
+                <flux:icon name="trophy" class="text-ink-faint mb-4 size-10" />
+                <h3 class="font-classical text-ink text-[26px] leading-tight font-medium">{{ __('No active contests') }}</h3>
+                <p class="text-ink-muted mt-2 text-sm">{{ __('Check back soon for new contests.') }}</p>
             </div>
         @else
-            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div class="grid gap-[22px] [grid-template-columns:repeat(auto-fill,minmax(268px,1fr))]">
                 @foreach($this->activeContests as $contest)
                     <a
                         href="{{ route('contests.show', $contest) }}"
                         wire:navigate
                         wire:key="active-{{ $contest->id }}"
-                        class="border-line group rounded-xl border p-5 transition-colors hover:border-zinc-400 dark:hover:border-zinc-500"
+                        class="border-border hover:border-border-strong group flex flex-col gap-3 rounded-sm border p-[18px] transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
                     >
-                        <div class="mb-3 flex items-center gap-2">
-                            <flux:badge color="green" size="sm">{{ __('Active') }}</flux:badge>
+                        <div class="flex flex-wrap items-center gap-1.5">
+                            <span class="chip-classical border-amber-400 text-amber-400">{{ __('Active') }}</span>
                             @if($contest->is_featured)
-                                <flux:badge color="amber" size="sm">{{ __('Featured') }}</flux:badge>
+                                <span class="chip-classical border-amber-400 text-amber-400">{{ __('Featured') }}</span>
                             @endif
                         </div>
-                        <flux:heading size="lg" class="truncate">{{ $contest->title }}</flux:heading>
-                        <flux:text size="sm" class="mt-1">
+                        <h3 class="font-classical text-ink group-hover:text-amber-300 truncate text-[21px] leading-tight font-semibold transition-colors">{{ $contest->title }}</h3>
+                        <div class="meta-classical tnum">
                             {{ $contest->starts_at->format('M j') }} &ndash; {{ $contest->ends_at->format('M j, Y') }}
-                        </flux:text>
-                        <div class="mt-3 flex items-center gap-4">
-                            <flux:text size="sm">
-                                <span class="font-medium">{{ $contest->crosswords_count }}</span> {{ __('puzzles') }}
-                            </flux:text>
-                            <flux:text size="sm">
-                                <span class="font-medium">{{ $contest->entries_count }}</span> {{ __('participants') }}
-                            </flux:text>
+                        </div>
+                        <div class="meta-classical flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                            <span class="whitespace-nowrap"><span class="font-classical text-ink tnum text-[15px] font-medium tracking-normal">{{ $contest->crosswords_count }}</span> {{ __('puzzles') }}</span>
+                            <span aria-hidden="true">&middot;</span>
+                            <span class="whitespace-nowrap"><span class="font-classical text-ink tnum text-[15px] font-medium tracking-normal">{{ $contest->entries_count }}</span> {{ __('participants') }}</span>
                         </div>
                         @if($contest->ends_at->isFuture())
-                            <flux:text size="xs" class="mt-2 text-amber-600 dark:text-amber-400">
-                                {{ __('Ends :time', ['time' => $contest->ends_at->diffForHumans()]) }}
-                            </flux:text>
+                            <div class="meta-classical text-amber-400">{{ __('Ends :time', ['time' => $contest->ends_at->diffForHumans()]) }}</div>
                         @endif
                     </a>
                 @endforeach
@@ -87,37 +82,32 @@ new #[Title('Contests')] class extends Component {
 
     {{-- Upcoming Contests --}}
     @if($this->upcomingContests->isNotEmpty())
-        <div class="space-y-4">
-            <flux:heading size="xl">{{ __('Upcoming Contests') }}</flux:heading>
-            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div class="space-y-5">
+            <h2 class="font-classical text-ink border-hairline border-b pb-3.5 text-[26px] leading-tight font-medium">{{ __('Upcoming Contests') }}</h2>
+            <div class="grid gap-[22px] [grid-template-columns:repeat(auto-fill,minmax(268px,1fr))]">
                 @foreach($this->upcomingContests as $contest)
                     <a
                         href="{{ route('contests.show', $contest) }}"
                         wire:navigate
                         wire:key="upcoming-{{ $contest->id }}"
-                        class="border-line group rounded-xl border p-5 transition-colors hover:border-zinc-400 dark:hover:border-zinc-500"
+                        class="border-border hover:border-border-strong group flex flex-col gap-3 rounded-sm border p-[18px] transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
                     >
-                        <div class="mb-3 flex items-center gap-2">
-                            <flux:badge color="blue" size="sm">{{ __('Upcoming') }}</flux:badge>
+                        <div class="flex flex-wrap items-center gap-1.5">
+                            <span class="chip-classical border-ink-faint text-ink-faint">{{ __('Upcoming') }}</span>
                             @if($contest->is_featured)
-                                <flux:badge color="amber" size="sm">{{ __('Featured') }}</flux:badge>
+                                <span class="chip-classical border-amber-400 text-amber-400">{{ __('Featured') }}</span>
                             @endif
                         </div>
-                        <flux:heading size="lg" class="truncate">{{ $contest->title }}</flux:heading>
-                        <flux:text size="sm" class="mt-1">
+                        <h3 class="font-classical text-ink group-hover:text-amber-300 truncate text-[21px] leading-tight font-semibold transition-colors">{{ $contest->title }}</h3>
+                        <div class="meta-classical tnum">
                             {{ $contest->starts_at->format('M j') }} &ndash; {{ $contest->ends_at->format('M j, Y') }}
-                        </flux:text>
-                        <div class="mt-3 flex items-center gap-4">
-                            <flux:text size="sm">
-                                <span class="font-medium">{{ $contest->crosswords_count }}</span> {{ __('puzzles') }}
-                            </flux:text>
-                            <flux:text size="sm">
-                                <span class="font-medium">{{ $contest->entries_count }}</span> {{ __('participants') }}
-                            </flux:text>
                         </div>
-                        <flux:text size="xs" class="mt-2 text-blue-600 dark:text-blue-400">
-                            {{ __('Starts :time', ['time' => $contest->starts_at->diffForHumans()]) }}
-                        </flux:text>
+                        <div class="meta-classical flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                            <span class="whitespace-nowrap"><span class="font-classical text-ink tnum text-[15px] font-medium tracking-normal">{{ $contest->crosswords_count }}</span> {{ __('puzzles') }}</span>
+                            <span aria-hidden="true">&middot;</span>
+                            <span class="whitespace-nowrap"><span class="font-classical text-ink tnum text-[15px] font-medium tracking-normal">{{ $contest->entries_count }}</span> {{ __('participants') }}</span>
+                        </div>
+                        <div class="meta-classical">{{ __('Starts :time', ['time' => $contest->starts_at->diffForHumans()]) }}</div>
                     </a>
                 @endforeach
             </div>
@@ -126,30 +116,27 @@ new #[Title('Contests')] class extends Component {
 
     {{-- Past Contests --}}
     @if($this->pastContests->isNotEmpty())
-        <div class="space-y-4">
-            <flux:heading size="xl">{{ __('Past Contests') }}</flux:heading>
-            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div class="space-y-5">
+            <h2 class="font-classical text-ink border-hairline border-b pb-3.5 text-[26px] leading-tight font-medium">{{ __('Past Contests') }}</h2>
+            <div class="grid gap-[22px] [grid-template-columns:repeat(auto-fill,minmax(268px,1fr))]">
                 @foreach($this->pastContests as $contest)
                     <a
                         href="{{ route('contests.show', $contest) }}"
                         wire:navigate
                         wire:key="past-{{ $contest->id }}"
-                        class="border-line group rounded-xl border p-5 transition-colors hover:border-zinc-400 dark:hover:border-zinc-500"
+                        class="border-border hover:border-border-strong group flex flex-col gap-3 rounded-sm border p-[18px] transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
                     >
-                        <div class="mb-3">
-                            <flux:badge color="zinc" size="sm">{{ __('Ended') }}</flux:badge>
+                        <div class="flex flex-wrap items-center gap-1.5">
+                            <span class="chip-classical border-ink-faint text-ink-faint">{{ __('Ended') }}</span>
                         </div>
-                        <flux:heading size="lg" class="truncate">{{ $contest->title }}</flux:heading>
-                        <flux:text size="sm" class="mt-1">
+                        <h3 class="font-classical text-ink group-hover:text-amber-300 truncate text-[21px] leading-tight font-semibold transition-colors">{{ $contest->title }}</h3>
+                        <div class="meta-classical tnum">
                             {{ $contest->starts_at->format('M j') }} &ndash; {{ $contest->ends_at->format('M j, Y') }}
-                        </flux:text>
-                        <div class="mt-3 flex items-center gap-4">
-                            <flux:text size="sm">
-                                <span class="font-medium">{{ $contest->crosswords_count }}</span> {{ __('puzzles') }}
-                            </flux:text>
-                            <flux:text size="sm">
-                                <span class="font-medium">{{ $contest->entries_count }}</span> {{ __('participants') }}
-                            </flux:text>
+                        </div>
+                        <div class="meta-classical flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                            <span class="whitespace-nowrap"><span class="font-classical text-ink tnum text-[15px] font-medium tracking-normal">{{ $contest->crosswords_count }}</span> {{ __('puzzles') }}</span>
+                            <span aria-hidden="true">&middot;</span>
+                            <span class="whitespace-nowrap"><span class="font-classical text-ink tnum text-[15px] font-medium tracking-normal">{{ $contest->entries_count }}</span> {{ __('participants') }}</span>
                         </div>
                     </a>
                 @endforeach
