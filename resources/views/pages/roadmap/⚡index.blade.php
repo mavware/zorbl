@@ -170,21 +170,25 @@ new #[Title('Roadmap')] class extends Component {
 
     {{-- Type Filter --}}
     <div class="flex gap-2">
-        <flux:select wire:model.live="filter" class="w-44">
-            <flux:select.option value="all">{{ __('All Types') }}</flux:select.option>
-            <flux:select.option value="feature">{{ __('Features') }}</flux:select.option>
-            <flux:select.option value="fix">{{ __('Fixes') }}</flux:select.option>
-            <flux:select.option value="improvement">{{ __('Improvements') }}</flux:select.option>
-        </flux:select>
+        <label class="relative w-52">
+            <span class="sr-only">{{ __('Type') }}</span>
+            <select wire:model.live="filter" class="field-classical font-classical w-full appearance-none pr-9 pl-3.5 text-[15px] font-medium">
+                <option value="all">{{ __('All Types') }}</option>
+                <option value="feature">{{ __('Features') }}</option>
+                <option value="fix">{{ __('Fixes') }}</option>
+                <option value="improvement">{{ __('Improvements') }}</option>
+            </select>
+            <flux:icon name="chevron-down" class="text-ink-faint pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2" />
+        </label>
     </div>
 
     {{-- In Progress --}}
     @if($this->groupedItems['in_progress']->isNotEmpty())
         <section>
-            <div class="mb-3 flex items-center gap-2">
-                <flux:icon name="arrow-path" class="size-5 text-blue-500" />
-                <flux:heading size="lg">{{ __('In Progress') }}</flux:heading>
-                <flux:badge size="sm">{{ $this->groupedItems['in_progress']->count() }}</flux:badge>
+            <div class="border-hairline mb-4 flex items-center gap-2.5 border-b pb-3.5">
+                <flux:icon name="arrow-path" class="text-amber-400 size-5" />
+                <h2 class="font-classical text-ink text-[26px] leading-tight font-medium">{{ __('In Progress') }}</h2>
+                <span class="chip-classical border-ink-faint text-ink-faint tnum">{{ $this->groupedItems['in_progress']->count() }}</span>
             </div>
             <div class="grid gap-3">
                 @foreach($this->groupedItems['in_progress'] as $item)
@@ -197,10 +201,10 @@ new #[Title('Roadmap')] class extends Component {
     {{-- Planned --}}
     @if($this->groupedItems['planned']->isNotEmpty())
         <section>
-            <div class="mb-3 flex items-center gap-2">
-                <flux:icon name="clock" class="size-5 text-zinc-500" />
-                <flux:heading size="lg">{{ __('Planned') }}</flux:heading>
-                <flux:badge size="sm">{{ $this->groupedItems['planned']->count() }}</flux:badge>
+            <div class="border-hairline mb-4 flex items-center gap-2.5 border-b pb-3.5">
+                <flux:icon name="clock" class="text-ink-faint size-5" />
+                <h2 class="font-classical text-ink text-[26px] leading-tight font-medium">{{ __('Planned') }}</h2>
+                <span class="chip-classical border-ink-faint text-ink-faint tnum">{{ $this->groupedItems['planned']->count() }}</span>
             </div>
             <div class="grid gap-3">
                 @foreach($this->groupedItems['planned'] as $item)
@@ -213,10 +217,10 @@ new #[Title('Roadmap')] class extends Component {
     {{-- Completed --}}
     @if($this->groupedItems['completed']->isNotEmpty())
         <section>
-            <div class="mb-3 flex items-center gap-2">
-                <flux:icon name="check-circle" class="size-5 text-green-500" />
-                <flux:heading size="lg">{{ __('Completed') }}</flux:heading>
-                <flux:badge size="sm">{{ $this->groupedItems['completed']->count() }}</flux:badge>
+            <div class="border-hairline mb-4 flex items-center gap-2.5 border-b pb-3.5">
+                <flux:icon name="check-circle" class="text-ink-faint size-5" />
+                <h2 class="font-classical text-ink text-[26px] leading-tight font-medium">{{ __('Completed') }}</h2>
+                <span class="chip-classical border-ink-faint text-ink-faint tnum">{{ $this->groupedItems['completed']->count() }}</span>
             </div>
             <div class="grid gap-3">
                 @foreach($this->groupedItems['completed'] as $item)
@@ -228,10 +232,10 @@ new #[Title('Roadmap')] class extends Component {
 
     {{-- Empty State --}}
     @if($this->groupedItems['in_progress']->isEmpty() && $this->groupedItems['planned']->isEmpty() && $this->groupedItems['completed']->isEmpty())
-        <div class="border-line-strong flex flex-col items-center justify-center rounded-xl border border-dashed py-16">
-            <flux:icon name="map" class="mb-4 size-12 text-zinc-500" />
-            <flux:heading size="lg" class="mb-2">{{ __('No roadmap items yet') }}</flux:heading>
-            <flux:text>{{ __('Add features, fixes, and improvements to share what\'s coming next.') }}</flux:text>
+        <div class="border-border-strong flex flex-col items-center justify-center rounded-sm border border-dashed px-6 py-16 text-center">
+            <flux:icon name="map" class="text-ink-faint mb-4 size-10" />
+            <h3 class="font-classical text-ink text-[26px] leading-tight font-medium">{{ __('No roadmap items yet') }}</h3>
+            <p class="text-ink-muted mt-2 text-sm">{{ __('Add features, fixes, and improvements to share what\'s coming next.') }}</p>
         </div>
     @endif
 

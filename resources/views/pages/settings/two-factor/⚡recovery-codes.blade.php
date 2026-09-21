@@ -46,55 +46,51 @@ new class extends Component {
 }; ?>
 
 <div
-    class="py-6 space-y-6 border shadow-sm rounded-xl border-zinc-300 dark:border-white/10"
+    class="border-border space-y-5 rounded-sm border p-[18px]"
     wire:cloak
     x-data="{ showRecoveryCodes: false }"
 >
-    <div class="px-6 space-y-2">
+    <div class="space-y-1.5">
         <div class="flex items-center gap-2">
-            <flux:icon.lock-closed variant="outline" class="size-4"/>
-            <flux:heading size="lg" level="3">{{ __('2FA recovery codes') }}</flux:heading>
+            <flux:icon name="lock-closed" variant="outline" class="text-ink-faint size-4" />
+            <h3 class="font-classical text-ink text-[19px] leading-tight font-semibold">{{ __('2FA recovery codes') }}</h3>
         </div>
-        <flux:text variant="subtle">
+        <p class="text-ink-muted text-sm leading-[1.65]">
             {{ __('Recovery codes let you regain access if you lose your 2FA device. Store them in a secure password manager.') }}
-        </flux:text>
+        </p>
     </div>
 
-    <div class="px-6">
+    <div>
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <flux:button
+            <button
+                type="button"
                 x-show="!showRecoveryCodes"
-                icon="eye"
-                icon:variant="outline"
-                variant="primary"
+                class="btn-classical btn-amber-outline"
                 @click="showRecoveryCodes = true;"
                 aria-expanded="false"
                 aria-controls="recovery-codes-section"
             >
+                <flux:icon name="eye" variant="outline" class="size-4" />
                 {{ __('View recovery codes') }}
-            </flux:button>
+            </button>
 
-            <flux:button
+            <button
+                type="button"
                 x-show="showRecoveryCodes"
-                icon="eye-slash"
-                icon:variant="outline"
-                variant="primary"
+                class="btn-classical btn-amber-outline"
                 @click="showRecoveryCodes = false"
                 aria-expanded="true"
                 aria-controls="recovery-codes-section"
             >
+                <flux:icon name="eye-slash" variant="outline" class="size-4" />
                 {{ __('Hide recovery codes') }}
-            </flux:button>
+            </button>
 
             @if (filled($recoveryCodes))
-                <flux:button
-                    x-show="showRecoveryCodes"
-                    icon="arrow-path"
-                    variant="filled"
-                    wire:click="regenerateRecoveryCodes"
-                >
+                <button type="button" x-show="showRecoveryCodes" class="btn-classical btn-classical-muted" wire:click="regenerateRecoveryCodes">
+                    <flux:icon name="arrow-path" class="size-4" />
                     {{ __('Regenerate codes') }}
-                </flux:button>
+                </button>
             @endif
         </div>
 
@@ -107,28 +103,24 @@ new class extends Component {
         >
             <div class="mt-3 space-y-3">
                 @error('recoveryCodes')
-                    <flux:callout variant="danger" icon="x-circle" heading="{{$message}}"/>
+                    <div class="border-amber-400/60 rounded-sm border p-3.5 text-sm text-amber-400">{{ $message }}</div>
                 @enderror
 
                 @if (filled($recoveryCodes))
                     <div
-                        class="grid gap-1 p-4 font-mono text-sm rounded-lg bg-zinc-100 dark:bg-white/5"
+                        class="border-border text-ink grid gap-1 rounded-sm border p-4 font-mono text-sm"
                         role="list"
                         aria-label="{{ __('Recovery codes') }}"
                     >
                         @foreach($recoveryCodes as $code)
-                            <div
-                                role="listitem"
-                                class="select-text"
-                                wire:loading.class="opacity-50 animate-pulse"
-                            >
+                            <div role="listitem" class="select-text" wire:loading.class="opacity-50 animate-pulse">
                                 {{ $code }}
                             </div>
                         @endforeach
                     </div>
-                    <flux:text variant="subtle" class="text-xs">
+                    <p class="text-ink-muted text-xs leading-[1.65]">
                         {{ __('Each recovery code can be used once to access your account and will be removed after use. If you need more, click Regenerate codes above.') }}
-                    </flux:text>
+                    </p>
                 @endif
             </div>
         </div>

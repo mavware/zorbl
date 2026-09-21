@@ -1,42 +1,44 @@
-<div class="border-line group flex items-start gap-4 rounded-xl border p-4">
-    <div class="mt-0.5">
-        <flux:icon :name="$this->statusIcon($item->status)" class="{{ match($item->status) { 'in_progress' => 'text-blue-500', 'completed' => 'text-green-500', default => 'text-zinc-500' } }} size-5" />
+<div class="border-border hover:border-border-strong flex items-start gap-4 rounded-sm border p-[18px] transition-colors">
+    <div class="{{ match($item->status) { 'in_progress' => 'border-amber-400 text-amber-400', default => 'border-border-strong text-ink-faint' } }} flex size-9 shrink-0 items-center justify-center rounded-sm border">
+        <flux:icon :name="$this->statusIcon($item->status)" class="size-4" />
     </div>
 
     <div class="min-w-0 flex-1">
-        <div class="flex items-center gap-2">
-            <flux:heading size="sm" class="{{ $item->status === 'completed' ? 'line-through opacity-60' : '' }}">
+        <div class="flex flex-wrap items-center gap-2">
+            <h3 class="font-classical text-[19px] leading-tight font-semibold {{ $item->status === 'completed' ? 'text-ink-muted line-through' : 'text-ink' }}">
                 {{ $item->title }}
-            </flux:heading>
-            <flux:badge size="sm" :color="$this->typeColor($item->type)">
-                {{ $this->typeLabel($item->type) }}
-            </flux:badge>
+            </h3>
+            <span class="chip-classical border-ink-faint text-ink-faint">{{ $this->typeLabel($item->type) }}</span>
         </div>
 
         @if($item->description)
-            <flux:text class="mt-1 text-sm">{{ $item->description }}</flux:text>
+            <p class="text-ink-muted mt-1.5 text-sm leading-[1.65]">{{ $item->description }}</p>
         @endif
 
-        <div class="mt-2 flex items-center gap-3 text-xs text-zinc-500">
-            @if($item->target_date)
-                <span class="flex items-center gap-1">
-                    <flux:icon name="calendar" class="size-3.5" />
-                    {{ $item->target_date->format('M j, Y') }}
-                </span>
-            @endif
-            @if($item->completed_date)
-                <span class="flex items-center gap-1">
-                    <flux:icon name="check" class="size-3.5" />
-                    {{ __('Completed') }} {{ $item->completed_date->format('M j, Y') }}
-                </span>
-            @endif
-        </div>
+        @if($item->target_date || $item->completed_date)
+            <div class="meta-classical mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1">
+                @if($item->target_date)
+                    <span class="flex items-center gap-1 whitespace-nowrap">
+                        <flux:icon name="calendar" class="size-3.5" />
+                        <span class="tnum">{{ $item->target_date->format('M j, Y') }}</span>
+                    </span>
+                @endif
+                @if($item->completed_date)
+                    <span class="flex items-center gap-1 whitespace-nowrap">
+                        <flux:icon name="check" class="size-3.5" />
+                        <span class="tnum">{{ __('Completed') }} {{ $item->completed_date->format('M j, Y') }}</span>
+                    </span>
+                @endif
+            </div>
+        @endif
     </div>
 
     @if($canManage ?? false)
-        <div class="shrink-0 opacity-0 transition-opacity group-hover:opacity-100">
+        <div class="shrink-0">
             <flux:dropdown position="bottom" align="end">
-                <flux:button variant="ghost" size="sm" icon="ellipsis-vertical" />
+                <button type="button" class="btn-classical btn-classical-muted h-8 w-8 px-0" aria-label="{{ __('More actions') }}">
+                    <flux:icon name="ellipsis-vertical" class="size-4" />
+                </button>
                 <flux:menu>
                     <flux:menu.item icon="pencil" wire:click="openEditModal({{ $item->id }})">
                         {{ __('Edit') }}

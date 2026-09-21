@@ -254,6 +254,22 @@ select:focus[data-flux-control] {
     @apply focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400;
 }
 
+/* Checkbox: outline square that fills with a soft amber wash and an amber check. */
+.check-classical {
+    @apply border-border-strong size-4 shrink-0 cursor-pointer appearance-none rounded-sm border bg-transparent transition-colors;
+    @apply checked:border-amber-400 checked:bg-amber-400/15 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400;
+}
+
+.check-classical:checked {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23e1ad66' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.5 8.5l3 3 6-7'/%3E%3C/svg%3E");
+    background-size: 100% 100%;
+}
+
+/* Multi-line fields grow with their `rows` instead of taking the fixed height. */
+textarea.field-classical {
+    @apply h-auto py-2.5 leading-[1.65];
+}
+
 /* ───────────────────────────────────────────────────────────────────────────
  * Editor completion flash — celebratory pulse to green when the grid (every
  * playable cell filled) or the clue panels (every clue text written) reach

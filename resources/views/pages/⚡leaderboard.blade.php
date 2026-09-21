@@ -260,69 +260,69 @@ new #[Title('Leaderboard')] class extends Component {
     <x-page-header :title="__('Leaderboard')" :subtitle="__('See how the community ranks across different categories.')" />
 
     {{-- Tab Navigation --}}
-    <flux:radio.group wire:model.live="tab" variant="segmented" size="sm">
-        <flux:radio value="solvers" label="{{ __('Top Solvers') }}" />
-        <flux:radio value="speed" label="{{ __('Speed Demons') }}" />
-        <flux:radio value="constructors" label="{{ __('Top Constructors') }}" />
-        <flux:radio value="streaks" label="{{ __('Best Streaks') }}" />
-    </flux:radio.group>
+    <div class="border-border-strong divide-hairline inline-flex h-10 max-w-full divide-x overflow-x-auto rounded-sm border" role="radiogroup" aria-label="{{ __('Leaderboard') }}">
+        @foreach (['solvers' => __('Top Solvers'), 'speed' => __('Speed Demons'), 'constructors' => __('Top Constructors'), 'streaks' => __('Best Streaks')] as $value => $label)
+            <label class="cursor-pointer">
+                <input type="radio" name="tab" value="{{ $value }}" wire:model.live="tab" class="peer sr-only" />
+                <span class="font-classical text-ink-muted hover:text-ink peer-checked:bg-amber-400/10 peer-checked:text-amber-400 peer-focus-visible:outline-2 peer-focus-visible:-outline-offset-2 peer-focus-visible:outline-amber-400 flex h-full items-center px-3.5 text-[15px] font-medium whitespace-nowrap transition-colors">
+                    {{ $label }}
+                </span>
+            </label>
+        @endforeach
+    </div>
 
     {{-- Top Solvers --}}
     @if($tab === 'solvers')
-        <div class="border-line rounded-xl border p-5">
-            <flux:heading size="lg" class="mb-1">{{ __('Top Solvers') }}</flux:heading>
-            <flux:text size="sm" class="mb-4 text-zinc-500">{{ __('Ranked by total puzzles completed.') }}</flux:text>
+        <div class="border-border rounded-sm border p-[18px]">
+            <div class="border-hairline mb-2 border-b pb-3.5">
+                <h2 class="font-classical text-ink text-[22px] leading-tight font-medium">{{ __('Top Solvers') }}</h2>
+                <p class="meta-classical mt-1.5">{{ __('Ranked by total puzzles completed.') }}</p>
+            </div>
 
             @if($this->topSolvers->isEmpty())
-                <x-leaderboard-empty />
+                <div class="mt-3"><x-leaderboard-empty /></div>
             @else
-                <flux:table>
-                    <flux:table.columns>
-                        <flux:table.column>{{ __('Rank') }}</flux:table.column>
-                        <flux:table.column>{{ __('Solver') }}</flux:table.column>
-                        <flux:table.column align="end">{{ __('Puzzles Solved') }}</flux:table.column>
-                    </flux:table.columns>
-
-                    <flux:table.rows>
-                        @foreach($this->topSolvers as $index => $solver)
-                            <flux:table.row :key="$solver->id" @class(['bg-amber-50/50 dark:bg-amber-900/10' => $solver->id === Auth::id()])>
-                                <flux:table.cell>
-                                    <x-leaderboard-rank :rank="$index + 1" />
-                                </flux:table.cell>
-                                <flux:table.cell variant="strong">
-                                    <a href="{{ route('constructors.show', $solver->id) }}" wire:navigate class="hover:text-blue-600 dark:hover:text-blue-400">
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse text-sm">
+                        <thead>
+                            <tr class="border-hairline border-b">
+                            <th scope="col" class="meta-classical px-3 py-3 text-left font-normal">{{ __('Rank') }}</th>
+                            <th scope="col" class="meta-classical px-3 py-3 text-left font-normal">{{ __('Solver') }}</th>
+                            <th scope="col" class="meta-classical px-3 py-3 text-right font-normal">{{ __('Puzzles Solved') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-hairline divide-y">
+                            @foreach($this->topSolvers as $index => $solver)
+                                <tr wire:key="solver-{{ $solver->id }}" @class(['align-middle', 'shadow-[inset_2px_0_0_0_var(--color-amber-400)]' => $solver->id === Auth::id()])>
+                                    <td class="w-14 px-3 py-3"><x-leaderboard-rank :rank="$index + 1" /></td>
+                                    <td class="px-3 py-3"><a href="{{ route('constructors.show', $solver->id) }}" wire:navigate class="font-classical text-ink hover:text-amber-300 text-[17px] leading-tight font-semibold transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">
                                         {{ $solver->name }} <x-supporter-badge :supporter="in_array($solver->id, $this->supporterIds, true)" />
-                                    </a>
-                                </flux:table.cell>
-                                <flux:table.cell align="end">
-                                    <span class="font-mono font-semibold">{{ number_format($solver->completed_count) }}</span>
-                                </flux:table.cell>
-                            </flux:table.row>
-                        @endforeach
-                    </flux:table.rows>
-                </flux:table>
+                                    </a></td>
+                                    <td class="px-3 py-3 text-right whitespace-nowrap"><span class="font-classical text-ink tnum text-[16px] font-medium">{{ number_format($solver->completed_count) }}</span></td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
             @endif
         </div>
 
         @if($yourSolverRank = $this->yourSolverRank)
             @unless($this->topSolvers->contains('id', Auth::id()))
-                <div class="border-line rounded-xl border border-blue-200 bg-blue-50/50 p-4 dark:border-blue-800/50 dark:bg-blue-950/20" data-test="your-solver-rank">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <div class="flex size-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/40">
-                                <span class="text-sm font-bold text-blue-700 dark:text-blue-300">#{{ $yourSolverRank['rank'] }}</span>
-                            </div>
-                            <div>
-                                <flux:heading size="sm">{{ __('Your Rank') }}</flux:heading>
-                                <flux:text size="sm" class="text-zinc-600 dark:text-zinc-400">
-                                    {{ trans_choice(':count puzzle solved|:count puzzles solved', $yourSolverRank['value']) }}
-                                </flux:text>
+                <div class="border-amber-400/60 flex flex-wrap items-center justify-between gap-3 rounded-sm border p-[18px]" data-test="your-solver-rank">
+                    <div class="flex items-center gap-3.5">
+                        <div class="border-amber-400 font-classical text-amber-400 tnum flex size-10 shrink-0 items-center justify-center rounded-sm border text-[15px] font-semibold">#{{ $yourSolverRank['rank'] }}</div>
+                        <div>
+                            <div class="font-classical text-ink text-[18px] leading-tight font-semibold">{{ __('Your Rank') }}</div>
+                            <div class="text-ink-muted mt-0.5 text-sm">
+                                {{ trans_choice(':count puzzle solved|:count puzzles solved', $yourSolverRank['value']) }}
                             </div>
                         </div>
-                        <flux:button variant="ghost" size="sm" :href="route('crosswords.solving')" wire:navigate icon="arrow-right">
-                            {{ __('Solve more') }}
-                        </flux:button>
                     </div>
+                        <a href="{{ route('crosswords.solving') }}" wire:navigate class="btn-classical btn-classical-muted">
+                            {{ __('Solve more') }}
+                            <flux:icon name="arrow-right" class="size-4" />
+                        </a>
                 </div>
             @endunless
         @endif
@@ -330,58 +330,51 @@ new #[Title('Leaderboard')] class extends Component {
 
     {{-- Speed Demons --}}
     @if($tab === 'speed')
-        <div class="border-line rounded-xl border p-5">
-            <flux:heading size="lg" class="mb-1">{{ __('Speed Demons') }}</flux:heading>
-            <flux:text size="sm" class="mb-4 text-zinc-500">{{ __('Ranked by average solve time (minimum 5 solves).') }}</flux:text>
+        <div class="border-border rounded-sm border p-[18px]">
+            <div class="border-hairline mb-2 border-b pb-3.5">
+                <h2 class="font-classical text-ink text-[22px] leading-tight font-medium">{{ __('Speed Demons') }}</h2>
+                <p class="meta-classical mt-1.5">{{ __('Ranked by average solve time (minimum 5 solves).') }}</p>
+            </div>
 
             @if($this->speedDemons->isEmpty())
-                <x-leaderboard-empty />
+                <div class="mt-3"><x-leaderboard-empty /></div>
             @else
-                <flux:table>
-                    <flux:table.columns>
-                        <flux:table.column>{{ __('Rank') }}</flux:table.column>
-                        <flux:table.column>{{ __('Solver') }}</flux:table.column>
-                        <flux:table.column align="end">{{ __('Avg Time') }}</flux:table.column>
-                        <flux:table.column align="end">{{ __('Solves') }}</flux:table.column>
-                    </flux:table.columns>
-
-                    <flux:table.rows>
-                        @foreach($this->speedDemons as $index => $solver)
-                            <flux:table.row :key="$solver->id" @class(['bg-amber-50/50 dark:bg-amber-900/10' => $solver->id === Auth::id()])>
-                                <flux:table.cell>
-                                    <x-leaderboard-rank :rank="$index + 1" />
-                                </flux:table.cell>
-                                <flux:table.cell variant="strong">
-                                    <a href="{{ route('constructors.show', $solver->id) }}" wire:navigate class="hover:text-blue-600 dark:hover:text-blue-400">
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse text-sm">
+                        <thead>
+                            <tr class="border-hairline border-b">
+                            <th scope="col" class="meta-classical px-3 py-3 text-left font-normal">{{ __('Rank') }}</th>
+                            <th scope="col" class="meta-classical px-3 py-3 text-left font-normal">{{ __('Solver') }}</th>
+                            <th scope="col" class="meta-classical px-3 py-3 text-right font-normal">{{ __('Avg Time') }}</th>
+                            <th scope="col" class="meta-classical px-3 py-3 text-right font-normal">{{ __('Solves') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-hairline divide-y">
+                            @foreach($this->speedDemons as $index => $solver)
+                                <tr wire:key="solver-{{ $solver->id }}" @class(['align-middle', 'shadow-[inset_2px_0_0_0_var(--color-amber-400)]' => $solver->id === Auth::id()])>
+                                    <td class="w-14 px-3 py-3"><x-leaderboard-rank :rank="$index + 1" /></td>
+                                    <td class="px-3 py-3"><a href="{{ route('constructors.show', $solver->id) }}" wire:navigate class="font-classical text-ink hover:text-amber-300 text-[17px] leading-tight font-semibold transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">
                                         {{ $solver->name }} <x-supporter-badge :supporter="in_array($solver->id, $this->supporterIds, true)" />
-                                    </a>
-                                </flux:table.cell>
-                                <flux:table.cell align="end">
-                                    <span class="font-mono font-semibold">{{ $this->formatTime((int) $solver->avg_time) }}</span>
-                                </flux:table.cell>
-                                <flux:table.cell align="end">
-                                    <span class="text-zinc-500">{{ number_format($solver->solved_count) }}</span>
-                                </flux:table.cell>
-                            </flux:table.row>
-                        @endforeach
-                    </flux:table.rows>
-                </flux:table>
+                                    </a></td>
+                                    <td class="px-3 py-3 text-right whitespace-nowrap"><span class="font-classical text-ink tnum text-[16px] font-medium">{{ $this->formatTime((int) $solver->avg_time) }}</span></td>
+                                    <td class="px-3 py-3 text-right whitespace-nowrap"><span class="text-ink-muted tnum">{{ number_format($solver->solved_count) }}</span></td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
             @endif
         </div>
 
         @if($yourSpeedRank = $this->yourSpeedRank)
             @unless($this->speedDemons->contains('id', Auth::id()))
-                <div class="border-line rounded-xl border border-blue-200 bg-blue-50/50 p-4 dark:border-blue-800/50 dark:bg-blue-950/20" data-test="your-speed-rank">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <div class="flex size-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/40">
-                                <span class="text-sm font-bold text-blue-700 dark:text-blue-300">#{{ $yourSpeedRank['rank'] }}</span>
-                            </div>
-                            <div>
-                                <flux:heading size="sm">{{ __('Your Rank') }}</flux:heading>
-                                <flux:text size="sm" class="text-zinc-600 dark:text-zinc-400">
-                                    {{ __('Avg :time across :count solves', ['time' => $this->formatTime($yourSpeedRank['value']), 'count' => $yourSpeedRank['solved_count']]) }}
-                                </flux:text>
+                <div class="border-amber-400/60 flex flex-wrap items-center justify-between gap-3 rounded-sm border p-[18px]" data-test="your-speed-rank">
+                    <div class="flex items-center gap-3.5">
+                        <div class="border-amber-400 font-classical text-amber-400 tnum flex size-10 shrink-0 items-center justify-center rounded-sm border text-[15px] font-semibold">#{{ $yourSpeedRank['rank'] }}</div>
+                        <div>
+                            <div class="font-classical text-ink text-[18px] leading-tight font-semibold">{{ __('Your Rank') }}</div>
+                            <div class="text-ink-muted mt-0.5 text-sm">
+                                {{ __('Avg :time across :count solves', ['time' => $this->formatTime($yourSpeedRank['value']), 'count' => $yourSpeedRank['solved_count']]) }}
                             </div>
                         </div>
                     </div>
@@ -392,66 +385,58 @@ new #[Title('Leaderboard')] class extends Component {
 
     {{-- Top Constructors --}}
     @if($tab === 'constructors')
-        <div class="border-line rounded-xl border p-5">
-            <flux:heading size="lg" class="mb-1">{{ __('Top Constructors') }}</flux:heading>
-            <flux:text size="sm" class="mb-4 text-zinc-500">{{ __('Ranked by total solves across their published puzzles.') }}</flux:text>
+        <div class="border-border rounded-sm border p-[18px]">
+            <div class="border-hairline mb-2 border-b pb-3.5">
+                <h2 class="font-classical text-ink text-[22px] leading-tight font-medium">{{ __('Top Constructors') }}</h2>
+                <p class="meta-classical mt-1.5">{{ __('Ranked by total solves across their published puzzles.') }}</p>
+            </div>
 
             @if($this->topConstructors->isEmpty())
-                <x-leaderboard-empty />
+                <div class="mt-3"><x-leaderboard-empty /></div>
             @else
-                <flux:table>
-                    <flux:table.columns>
-                        <flux:table.column>{{ __('Rank') }}</flux:table.column>
-                        <flux:table.column>{{ __('Constructor') }}</flux:table.column>
-                        <flux:table.column align="end">{{ __('Published') }}</flux:table.column>
-                        <flux:table.column align="end">{{ __('Total Solves') }}</flux:table.column>
-                    </flux:table.columns>
-
-                    <flux:table.rows>
-                        @foreach($this->topConstructors as $index => $constructor)
-                            <flux:table.row :key="$constructor->id" @class(['bg-amber-50/50 dark:bg-amber-900/10' => $constructor->id === Auth::id()])>
-                                <flux:table.cell>
-                                    <x-leaderboard-rank :rank="$index + 1" />
-                                </flux:table.cell>
-                                <flux:table.cell variant="strong">
-                                    <a href="{{ route('constructors.show', $constructor->id) }}" wire:navigate class="hover:text-blue-600 dark:hover:text-blue-400">
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse text-sm">
+                        <thead>
+                            <tr class="border-hairline border-b">
+                            <th scope="col" class="meta-classical px-3 py-3 text-left font-normal">{{ __('Rank') }}</th>
+                            <th scope="col" class="meta-classical px-3 py-3 text-left font-normal">{{ __('Constructor') }}</th>
+                            <th scope="col" class="meta-classical px-3 py-3 text-right font-normal">{{ __('Published') }}</th>
+                            <th scope="col" class="meta-classical px-3 py-3 text-right font-normal">{{ __('Total Solves') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-hairline divide-y">
+                            @foreach($this->topConstructors as $index => $constructor)
+                                <tr wire:key="constructor-{{ $constructor->id }}" @class(['align-middle', 'shadow-[inset_2px_0_0_0_var(--color-amber-400)]' => $constructor->id === Auth::id()])>
+                                    <td class="w-14 px-3 py-3"><x-leaderboard-rank :rank="$index + 1" /></td>
+                                    <td class="px-3 py-3"><a href="{{ route('constructors.show', $constructor->id) }}" wire:navigate class="font-classical text-ink hover:text-amber-300 text-[17px] leading-tight font-semibold transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">
                                         {{ $constructor->name }} <x-supporter-badge :supporter="in_array($constructor->id, $this->supporterIds, true)" />
-                                    </a>
-                                </flux:table.cell>
-                                <flux:table.cell align="end">
-                                    <span class="text-zinc-500">{{ number_format($constructor->published_count) }}</span>
-                                </flux:table.cell>
-                                <flux:table.cell align="end">
-                                    <span class="font-mono font-semibold">{{ number_format($constructor->total_solves) }}</span>
-                                </flux:table.cell>
-                            </flux:table.row>
-                        @endforeach
-                    </flux:table.rows>
-                </flux:table>
+                                    </a></td>
+                                    <td class="px-3 py-3 text-right whitespace-nowrap"><span class="text-ink-muted tnum">{{ number_format($constructor->published_count) }}</span></td>
+                                    <td class="px-3 py-3 text-right whitespace-nowrap"><span class="font-classical text-ink tnum text-[16px] font-medium">{{ number_format($constructor->total_solves) }}</span></td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
             @endif
         </div>
 
         @if($yourConstructorRank = $this->yourConstructorRank)
             @unless($this->topConstructors->contains('id', Auth::id()))
-                <div class="border-line rounded-xl border border-blue-200 bg-blue-50/50 p-4 dark:border-blue-800/50 dark:bg-blue-950/20" data-test="your-constructor-rank">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <div class="flex size-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/40">
-                                <span class="text-sm font-bold text-blue-700 dark:text-blue-300">#{{ $yourConstructorRank['rank'] }}</span>
-                            </div>
-                            <div>
-                                <flux:heading size="sm">{{ __('Your Rank') }}</flux:heading>
-                                <flux:text size="sm" class="text-zinc-600 dark:text-zinc-400">
-                                    {{ trans_choice(':count published puzzle|:count published puzzles', $yourConstructorRank['published_count']) }}
-                                    &middot;
-                                    {{ trans_choice(':count total solve|:count total solves', $yourConstructorRank['value']) }}
-                                </flux:text>
+                <div class="border-amber-400/60 flex flex-wrap items-center justify-between gap-3 rounded-sm border p-[18px]" data-test="your-constructor-rank">
+                    <div class="flex items-center gap-3.5">
+                        <div class="border-amber-400 font-classical text-amber-400 tnum flex size-10 shrink-0 items-center justify-center rounded-sm border text-[15px] font-semibold">#{{ $yourConstructorRank['rank'] }}</div>
+                        <div>
+                            <div class="font-classical text-ink text-[18px] leading-tight font-semibold">{{ __('Your Rank') }}</div>
+                            <div class="text-ink-muted mt-0.5 text-sm">
+                                {{ trans_choice(':count published puzzle|:count published puzzles', $yourConstructorRank['published_count']) }}\n                                &middot;\n                                {{ trans_choice(':count total solve|:count total solves', $yourConstructorRank['value']) }}
                             </div>
                         </div>
-                        <flux:button variant="ghost" size="sm" :href="route('crosswords.index')" wire:navigate icon="arrow-right">
-                            {{ __('Build more') }}
-                        </flux:button>
                     </div>
+                        <a href="{{ route('crosswords.index') }}" wire:navigate class="btn-classical btn-classical-muted">
+                            {{ __('Build more') }}
+                            <flux:icon name="arrow-right" class="size-4" />
+                        </a>
                 </div>
             @endunless
         @endif
@@ -459,72 +444,64 @@ new #[Title('Leaderboard')] class extends Component {
 
     {{-- Streak Leaders --}}
     @if($tab === 'streaks')
-        <div class="border-line rounded-xl border p-5">
-            <flux:heading size="lg" class="mb-1">{{ __('Best Streaks') }}</flux:heading>
-            <flux:text size="sm" class="mb-4 text-zinc-500">{{ __('Ranked by longest daily solving streak.') }}</flux:text>
+        <div class="border-border rounded-sm border p-[18px]">
+            <div class="border-hairline mb-2 border-b pb-3.5">
+                <h2 class="font-classical text-ink text-[22px] leading-tight font-medium">{{ __('Best Streaks') }}</h2>
+                <p class="meta-classical mt-1.5">{{ __('Ranked by longest daily solving streak.') }}</p>
+            </div>
 
             @if($this->streakLeaders->isEmpty())
-                <x-leaderboard-empty />
+                <div class="mt-3"><x-leaderboard-empty /></div>
             @else
-                <flux:table>
-                    <flux:table.columns>
-                        <flux:table.column>{{ __('Rank') }}</flux:table.column>
-                        <flux:table.column>{{ __('Solver') }}</flux:table.column>
-                        <flux:table.column align="end">{{ __('Best Streak') }}</flux:table.column>
-                        <flux:table.column align="end">{{ __('Current Streak') }}</flux:table.column>
-                    </flux:table.columns>
-
-                    <flux:table.rows>
-                        @foreach($this->streakLeaders as $index => $user)
-                            <flux:table.row :key="$user->id" @class(['bg-amber-50/50 dark:bg-amber-900/10' => $user->id === Auth::id()])>
-                                <flux:table.cell>
-                                    <x-leaderboard-rank :rank="$index + 1" />
-                                </flux:table.cell>
-                                <flux:table.cell variant="strong">
-                                    <a href="{{ route('constructors.show', $user->id) }}" wire:navigate class="hover:text-blue-600 dark:hover:text-blue-400">
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse text-sm">
+                        <thead>
+                            <tr class="border-hairline border-b">
+                            <th scope="col" class="meta-classical px-3 py-3 text-left font-normal">{{ __('Rank') }}</th>
+                            <th scope="col" class="meta-classical px-3 py-3 text-left font-normal">{{ __('Solver') }}</th>
+                            <th scope="col" class="meta-classical px-3 py-3 text-right font-normal">{{ __('Best Streak') }}</th>
+                            <th scope="col" class="meta-classical px-3 py-3 text-right font-normal">{{ __('Current Streak') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-hairline divide-y">
+                            @foreach($this->streakLeaders as $index => $user)
+                                <tr wire:key="user-{{ $user->id }}" @class(['align-middle', 'shadow-[inset_2px_0_0_0_var(--color-amber-400)]' => $user->id === Auth::id()])>
+                                    <td class="w-14 px-3 py-3"><x-leaderboard-rank :rank="$index + 1" /></td>
+                                    <td class="px-3 py-3"><a href="{{ route('constructors.show', $user->id) }}" wire:navigate class="font-classical text-ink hover:text-amber-300 text-[17px] leading-tight font-semibold transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">
                                         {{ $user->name }} <x-supporter-badge :supporter="in_array($user->id, $this->supporterIds, true)" />
-                                    </a>
-                                </flux:table.cell>
-                                <flux:table.cell align="end">
-                                    <span class="font-mono font-semibold">{{ $user->longest_streak }} {{ __('days') }}</span>
-                                </flux:table.cell>
-                                <flux:table.cell align="end">
-                                    @if($user->current_streak > 0)
-                                        <span class="font-mono text-orange-600 dark:text-orange-400">{{ $user->current_streak }} {{ __('days') }}</span>
-                                    @else
-                                        <span class="text-zinc-400">—</span>
-                                    @endif
-                                </flux:table.cell>
-                            </flux:table.row>
-                        @endforeach
-                    </flux:table.rows>
-                </flux:table>
+                                    </a></td>
+                                    <td class="px-3 py-3 text-right whitespace-nowrap"><span class="font-classical text-ink tnum text-[16px] font-medium">{{ $user->longest_streak }} {{ __('days') }}</span></td>
+                                    <td class="px-3 py-3 text-right whitespace-nowrap">
+                                        @if($user->current_streak > 0)
+                                            <span class="font-classical tnum text-[16px] font-medium text-amber-400">{{ $user->current_streak }} {{ __('days') }}</span>
+                                        @else
+                                            <span class="text-ink-faint">&mdash;</span>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
             @endif
         </div>
 
         @if($yourStreakRank = $this->yourStreakRank)
             @unless($this->streakLeaders->contains('id', Auth::id()))
-                <div class="border-line rounded-xl border border-blue-200 bg-blue-50/50 p-4 dark:border-blue-800/50 dark:bg-blue-950/20" data-test="your-streak-rank">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <div class="flex size-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/40">
-                                <span class="text-sm font-bold text-blue-700 dark:text-blue-300">#{{ $yourStreakRank['rank'] }}</span>
-                            </div>
-                            <div>
-                                <flux:heading size="sm">{{ __('Your Rank') }}</flux:heading>
-                                <flux:text size="sm" class="text-zinc-600 dark:text-zinc-400">
-                                    {{ __('Best: :best days', ['best' => $yourStreakRank['longest']]) }}
-                                    @if($yourStreakRank['current'] > 0)
-                                        &middot;
-                                        {{ __('Current: :current days', ['current' => $yourStreakRank['current']]) }}
-                                    @endif
-                                </flux:text>
+                <div class="border-amber-400/60 flex flex-wrap items-center justify-between gap-3 rounded-sm border p-[18px]" data-test="your-streak-rank">
+                    <div class="flex items-center gap-3.5">
+                        <div class="border-amber-400 font-classical text-amber-400 tnum flex size-10 shrink-0 items-center justify-center rounded-sm border text-[15px] font-semibold">#{{ $yourStreakRank['rank'] }}</div>
+                        <div>
+                            <div class="font-classical text-ink text-[18px] leading-tight font-semibold">{{ __('Your Rank') }}</div>
+                            <div class="text-ink-muted mt-0.5 text-sm">
+                                {{ __('Best: :best days', ['best' => $yourStreakRank['longest']]) }}\n                                @if($yourStreakRank['current'] > 0)\n                                    &middot;\n                                    {{ __('Current: :current days', ['current' => $yourStreakRank['current']]) }}\n                                @endif
                             </div>
                         </div>
-                        <flux:button variant="ghost" size="sm" :href="route('crosswords.solving')" wire:navigate icon="arrow-right">
-                            {{ __('Solve today') }}
-                        </flux:button>
                     </div>
+                        <a href="{{ route('crosswords.solving') }}" wire:navigate class="btn-classical btn-classical-muted">
+                            {{ __('Solve today') }}
+                            <flux:icon name="arrow-right" class="size-4" />
+                        </a>
                 </div>
             @endunless
         @endif

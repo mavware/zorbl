@@ -222,37 +222,31 @@ new #[Title('Solve Statistics')] class extends Component {
     </x-page-header>
 
     {{-- Streak & Achievements --}}
-    <div class="grid gap-4 sm:grid-cols-2">
-        <div class="border-line rounded-xl border p-5">
-            <div class="flex items-center gap-3">
-                <div class="flex size-10 items-center justify-center rounded-lg bg-orange-100 dark:bg-orange-900/30">
-                    <flux:icon name="fire" class="size-5 text-orange-600 dark:text-orange-400" />
-                </div>
-                <div>
-                    <flux:text size="sm" class="text-zinc-600">{{ __('Current Streak') }}</flux:text>
-                    <div class="text-2xl font-bold text-fg">
-                        {{ Auth::user()->current_streak }} {{ __('days') }}
-                    </div>
-                    <flux:text size="sm" class="text-zinc-500">
-                        {{ __('Best: :days days', ['days' => Auth::user()->longest_streak]) }}
-                    </flux:text>
-                </div>
+    <div class="grid gap-[22px] sm:grid-cols-2">
+        <div class="border-amber-400/60 flex items-center gap-4 rounded-sm border p-[18px]">
+            <div class="border-amber-400 flex size-12 shrink-0 items-center justify-center rounded-sm border text-amber-400">
+                <flux:icon name="fire" class="size-6" />
+            </div>
+            <div>
+                <div class="meta-classical">{{ __('Current Streak') }}</div>
+                <div class="font-classical tnum text-[30px] leading-none font-medium text-amber-400">{{ Auth::user()->current_streak }} {{ __('days') }}</div>
+                <div class="meta-classical mt-1.5">{{ __('Best: :days days', ['days' => Auth::user()->longest_streak]) }}</div>
             </div>
         </div>
 
-        <div class="border-line rounded-xl border p-5">
-            <flux:heading size="sm" class="mb-3">{{ __('Achievements') }}</flux:heading>
+        <div class="border-border rounded-sm border p-[18px]">
+            <h2 class="font-classical text-ink mb-3 text-[19px] leading-tight font-semibold">{{ __('Achievements') }}</h2>
             @php($achievements = Auth::user()->achievements()->orderBy('earned_at', 'desc')->get())
             @if($achievements->isEmpty())
-                <flux:text size="sm" class="text-zinc-500">{{ __('Complete puzzles to earn achievements!') }}</flux:text>
+                <p class="text-ink-muted text-sm">{{ __('Complete puzzles to earn achievements!') }}</p>
             @else
                 <div class="flex flex-wrap gap-2">
                     @foreach($achievements as $achievement)
                         <flux:tooltip :content="$achievement->description">
-                            <div class="flex items-center gap-1.5 rounded-lg bg-amber-50 px-2.5 py-1.5 dark:bg-amber-900/20">
-                                <flux:icon :name="$achievement->icon" class="size-4 text-amber-600 dark:text-amber-400" />
-                                <span class="text-xs font-medium text-amber-800 dark:text-amber-200">{{ $achievement->label }}</span>
-                            </div>
+                            <span class="chip-classical border-amber-400 text-amber-400 h-7 gap-1.5 px-2.5">
+                                <flux:icon :name="$achievement->icon" class="size-3.5" />
+                                {{ $achievement->label }}
+                            </span>
                         </flux:tooltip>
                     @endforeach
                 </div>
@@ -261,88 +255,78 @@ new #[Title('Solve Statistics')] class extends Component {
     </div>
 
     {{-- Summary Cards --}}
-    <div class="grid gap-4 sm:grid-cols-4">
-        <div class="border-line rounded-xl border p-5">
-            <div class="flex items-center gap-3">
-                <div class="flex size-10 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/30">
-                    <flux:icon name="check-circle" class="size-5 text-emerald-600 dark:text-emerald-400" />
-                </div>
-                <div>
-                    <flux:text size="sm" class="text-zinc-600">{{ __('Puzzles Solved') }}</flux:text>
-                    <div class="text-2xl font-bold text-fg">{{ $this->totalSolved }}</div>
-                </div>
+    <div class="border-border divide-hairline grid divide-y rounded-sm border sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-4">
+        <div class="flex items-center gap-4 p-[18px] sm:border-hairline sm:border-e sm:border-b lg:border-b-0">
+            <div class="border-border-strong text-ink-faint flex size-10 shrink-0 items-center justify-center rounded-sm border">
+                <flux:icon name="check-circle" class="size-5" />
+            </div>
+            <div class="min-w-0">
+                <div class="meta-classical">{{ __('Puzzles Solved') }}</div>
+                <div class="font-classical text-ink tnum text-[30px] leading-none font-medium">{{ $this->totalSolved }}</div>
             </div>
         </div>
 
-        <div class="border-line rounded-xl border p-5">
-            <div class="flex items-center gap-3">
-                <div class="flex size-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/30">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="size-5 text-blue-600 dark:text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                </div>
-                <div>
-                    <flux:text size="sm" class="text-zinc-600">{{ __('Average Time') }}</flux:text>
-                    <div class="text-2xl font-bold text-fg">{{ $this->formatTime($this->averageTime) }}</div>
-                </div>
+        <div class="flex items-center gap-4 p-[18px] sm:border-hairline sm:border-b lg:border-e lg:border-b-0">
+            <div class="border-border-strong text-ink-faint flex size-10 shrink-0 items-center justify-center rounded-sm border">
+                <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
+            <div class="min-w-0">
+                <div class="meta-classical">{{ __('Average Time') }}</div>
+                <div class="font-classical text-ink tnum text-[30px] leading-none font-medium">{{ $this->formatTime($this->averageTime) }}</div>
             </div>
         </div>
 
-        <div class="border-line rounded-xl border p-5">
-            <div class="flex items-center gap-3">
-                <div class="flex size-10 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/30">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="size-5 text-amber-600 dark:text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-                </div>
-                <div>
-                    <flux:text size="sm" class="text-zinc-600">{{ __('Fastest Solve') }}</flux:text>
-                    <div class="text-2xl font-bold text-fg">{{ $this->fastestSolve ? $this->formatTime($this->fastestSolve->solve_time_seconds) : '—' }}</div>
-                    @if($this->fastestSolve)
-                        <flux:text size="sm" class="truncate text-zinc-500">{{ $this->fastestSolve->crossword->title }}</flux:text>
-                    @endif
-                </div>
+        <div class="flex items-center gap-4 p-[18px] sm:border-hairline sm:border-e">
+            <div class="border-border-strong text-ink-faint flex size-10 shrink-0 items-center justify-center rounded-sm border">
+                <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            </div>
+            <div class="min-w-0">
+                <div class="meta-classical">{{ __('Fastest Solve') }}</div>
+                <div class="font-classical text-ink tnum text-[30px] leading-none font-medium">{{ $this->fastestSolve ? $this->formatTime($this->fastestSolve->solve_time_seconds) : '—' }}</div>
+                @if($this->fastestSolve)
+                    <div class="meta-classical mt-1.5 truncate normal-case tracking-normal">{{ $this->fastestSolve->crossword->title }}</div>
+                @endif
             </div>
         </div>
 
         @if($this->communityComparison['total'] > 0)
-            <div class="border-line rounded-xl border p-5">
-                <div class="flex items-center gap-3">
-                    <div class="flex size-10 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-900/30">
-                        <flux:icon name="arrow-trending-up" class="size-5 text-purple-600 dark:text-purple-400" />
-                    </div>
-                    <div>
-                        <flux:text size="sm" class="text-zinc-600">{{ __('Faster Than Avg') }}</flux:text>
-                        <div class="text-2xl font-bold text-fg">
-                            {{ round(($this->communityComparison['faster'] / $this->communityComparison['total']) * 100) }}%
-                        </div>
-                        <flux:text size="sm" class="text-zinc-500">
-                            {{ __(':count of :total puzzles', ['count' => $this->communityComparison['faster'], 'total' => $this->communityComparison['total']]) }}
-                        </flux:text>
-                    </div>
-                </div>
+        <div class="flex items-center gap-4 p-[18px] ">
+            <div class="border-border-strong text-ink-faint flex size-10 shrink-0 items-center justify-center rounded-sm border">
+                <flux:icon name="arrow-trending-up" class="size-5" />
             </div>
+            <div class="min-w-0">
+                <div class="meta-classical">{{ __('Faster Than Avg') }}</div>
+                <div class="font-classical text-ink tnum text-[30px] leading-none font-medium">{{ round(($this->communityComparison['faster'] / $this->communityComparison['total']) * 100) }}%</div>
+                <div class="meta-classical mt-1.5">{{ __(':count of :total puzzles', ['count' => $this->communityComparison['faster'], 'total' => $this->communityComparison['total']]) }}</div>
+            </div>
+        </div>
         @endif
     </div>
 
     {{-- Average by Size --}}
     @if(count($this->averageBySize) > 0)
-        <div class="border-line rounded-xl border p-5">
-            <flux:heading size="lg" class="mb-4">{{ __('Times by Grid Size') }}</flux:heading>
-            <div class="grid gap-4 sm:grid-cols-3">
+        <div class="border-border rounded-sm border p-[18px]">
+            <div class="border-hairline mb-5 border-b pb-3.5">
+                <h2 class="font-classical text-ink text-[22px] leading-tight font-medium">{{ __('Times by Grid Size') }}</h2>
+            </div>
+            <div class="grid gap-[22px] sm:grid-cols-3">
                 @foreach($this->averageBySize as $size)
-                    <div class="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700/50">
-                        <flux:heading size="sm">{{ $size['label'] }}</flux:heading>
-                        <div class="mt-2 space-y-1">
-                            <div class="flex justify-between">
-                                <flux:text size="sm" class="text-zinc-600">{{ __('Solved') }}</flux:text>
-                                <span class="text-sm font-medium text-fg">{{ $size['count'] }}</span>
+                    <div class="border-border rounded-sm border p-4">
+                        <div class="font-classical text-ink text-[19px] leading-tight font-semibold">{{ $size['label'] }}</div>
+                        <dl class="divide-hairline mt-3 divide-y">
+                            <div class="flex items-center justify-between py-1.5">
+                                <dt class="meta-classical">{{ __('Solved') }}</dt>
+                                <dd class="font-classical text-ink tnum text-[15px] font-medium">{{ $size['count'] }}</dd>
                             </div>
-                            <div class="flex justify-between">
-                                <flux:text size="sm" class="text-zinc-600">{{ __('Average') }}</flux:text>
-                                <span class="text-sm font-mono font-medium text-fg">{{ $this->formatTime($size['average']) }}</span>
+                            <div class="flex items-center justify-between py-1.5">
+                                <dt class="meta-classical">{{ __('Average') }}</dt>
+                                <dd class="font-classical text-ink tnum text-[15px] font-medium">{{ $this->formatTime($size['average']) }}</dd>
                             </div>
-                            <div class="flex justify-between">
-                                <flux:text size="sm" class="text-zinc-600">{{ __('Fastest') }}</flux:text>
-                                <span class="text-sm font-mono font-medium text-emerald-600 dark:text-emerald-400">{{ $this->formatTime($size['fastest']) }}</span>
+                            <div class="flex items-center justify-between py-1.5">
+                                <dt class="meta-classical">{{ __('Fastest') }}</dt>
+                                <dd class="font-classical tnum text-[15px] font-medium text-amber-400">{{ $this->formatTime($size['fastest']) }}</dd>
                             </div>
-                        </div>
+                        </dl>
                     </div>
                 @endforeach
             </div>
@@ -351,29 +335,28 @@ new #[Title('Solve Statistics')] class extends Component {
 
     {{-- Average by Difficulty --}}
     @if(count($this->averageByDifficulty) > 0)
-        <div class="border-line rounded-xl border p-5">
-            <flux:heading size="lg" class="mb-4">{{ __('Times by Difficulty') }}</flux:heading>
-            <div class="grid gap-4 sm:grid-cols-4">
+        <div class="border-border rounded-sm border p-[18px]">
+            <div class="border-hairline mb-5 border-b pb-3.5">
+                <h2 class="font-classical text-ink text-[22px] leading-tight font-medium">{{ __('Times by Difficulty') }}</h2>
+            </div>
+            <div class="grid gap-[22px] sm:grid-cols-2 lg:grid-cols-4">
                 @foreach($this->averageByDifficulty as $difficulty)
-                    <div class="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700/50">
-                        <flux:heading size="sm">
-                            @php($colors = ['Easy' => 'text-emerald-600 dark:text-emerald-400', 'Medium' => 'text-blue-600 dark:text-blue-400', 'Hard' => 'text-amber-600 dark:text-amber-400', 'Expert' => 'text-red-600 dark:text-red-400'])
-                            <span class="{{ $colors[$difficulty['label']] ?? 'text-fg' }}">{{ $difficulty['label'] }}</span>
-                        </flux:heading>
-                        <div class="mt-2 space-y-1">
-                            <div class="flex justify-between">
-                                <flux:text size="sm" class="text-zinc-600">{{ __('Solved') }}</flux:text>
-                                <span class="text-sm font-medium text-fg">{{ $difficulty['count'] }}</span>
+                    <div class="border-border rounded-sm border p-4">
+                        <div class="font-classical text-ink text-[19px] leading-tight font-semibold">{{ $difficulty['label'] }}</div>
+                        <dl class="divide-hairline mt-3 divide-y">
+                            <div class="flex items-center justify-between py-1.5">
+                                <dt class="meta-classical">{{ __('Solved') }}</dt>
+                                <dd class="font-classical text-ink tnum text-[15px] font-medium">{{ $difficulty['count'] }}</dd>
                             </div>
-                            <div class="flex justify-between">
-                                <flux:text size="sm" class="text-zinc-600">{{ __('Average') }}</flux:text>
-                                <span class="text-sm font-mono font-medium text-fg">{{ $this->formatTime($difficulty['average']) }}</span>
+                            <div class="flex items-center justify-between py-1.5">
+                                <dt class="meta-classical">{{ __('Average') }}</dt>
+                                <dd class="font-classical text-ink tnum text-[15px] font-medium">{{ $this->formatTime($difficulty['average']) }}</dd>
                             </div>
-                            <div class="flex justify-between">
-                                <flux:text size="sm" class="text-zinc-600">{{ __('Fastest') }}</flux:text>
-                                <span class="text-sm font-mono font-medium text-emerald-600 dark:text-emerald-400">{{ $this->formatTime($difficulty['fastest']) }}</span>
+                            <div class="flex items-center justify-between py-1.5">
+                                <dt class="meta-classical">{{ __('Fastest') }}</dt>
+                                <dd class="font-classical tnum text-[15px] font-medium text-amber-400">{{ $this->formatTime($difficulty['fastest']) }}</dd>
                             </div>
-                        </div>
+                        </dl>
                     </div>
                 @endforeach
             </div>
@@ -381,54 +364,73 @@ new #[Title('Solve Statistics')] class extends Component {
     @endif
 
     {{-- Solve History --}}
-    <div class="border-line rounded-xl border p-5">
-        <flux:heading size="lg" class="mb-4">{{ __('Solve History') }}</flux:heading>
+    <div class="border-border rounded-sm border p-[18px]">
+        <div class="border-hairline mb-2 border-b pb-3.5">
+            <h2 class="font-classical text-ink text-[22px] leading-tight font-medium">{{ __('Solve History') }}</h2>
+        </div>
 
         @if($this->paginatedAttempts->isEmpty())
-            <div class="border-line-strong flex flex-col items-center justify-center rounded-lg border border-dashed py-8">
-                <flux:icon name="clock" class="mb-2 size-8 text-zinc-500" />
-                <flux:text size="sm" class="text-zinc-500">{{ __('Complete puzzles to see your solve history here.') }}</flux:text>
+            <div class="border-border-strong mt-3 flex flex-col items-center justify-center rounded-sm border border-dashed px-6 py-10 text-center">
+                <flux:icon name="clock" class="text-ink-faint mb-3 size-8" />
+                <p class="text-ink-muted text-sm">{{ __('Complete puzzles to see your solve history here.') }}</p>
             </div>
         @else
-            <flux:table>
-                <flux:table.columns>
-                    <flux:table.column>{{ __('Puzzle') }}</flux:table.column>
-                    <flux:table.column>{{ __('Size') }}</flux:table.column>
-                    <flux:table.column sortable :sorted="$sortField === 'solve_time_seconds'" :direction="$sortDirection" wire:click="sortBy('solve_time_seconds')" align="end">{{ __('Solve Time') }}</flux:table.column>
-                    <flux:table.column align="end">{{ __('vs. Avg') }}</flux:table.column>
-                    <flux:table.column sortable :sorted="$sortField === 'completed_at'" :direction="$sortDirection" wire:click="sortBy('completed_at')" align="end">{{ __('Completed') }}</flux:table.column>
-                </flux:table.columns>
-
-                <flux:table.rows>
-                    @foreach($this->paginatedAttempts as $attempt)
-                        @php($communityAvg = $this->communityAverages[$attempt->crossword_id] ?? null)
-                        @php($diff = $communityAvg && $communityAvg['solver_count'] > 1 ? $attempt->solve_time_seconds - $communityAvg['avg_time'] : null)
-                        <flux:table.row :key="$attempt->id">
-                            <flux:table.cell variant="strong">
-                                <a href="{{ route('crosswords.solver', $attempt->crossword_id) }}" wire:navigate class="hover:text-blue-600 dark:hover:text-blue-400">
-                                    {{ $attempt->crossword->displayTitle() }}
-                                </a>
-                            </flux:table.cell>
-                            <flux:table.cell>{{ $attempt->crossword->width }}&times;{{ $attempt->crossword->height }}</flux:table.cell>
-                            <flux:table.cell align="end" class="font-mono">{{ $this->formatTime($attempt->solve_time_seconds) }}</flux:table.cell>
-                            <flux:table.cell align="end" class="font-mono text-sm">
-                                @if($diff !== null)
-                                    @if($diff < 0)
-                                        <span class="text-emerald-600 dark:text-emerald-400">{{ $this->formatTime(abs($diff)) }} {{ __('faster') }}</span>
-                                    @elseif($diff > 0)
-                                        <span class="text-zinc-500">{{ $this->formatTime($diff) }} {{ __('slower') }}</span>
-                                    @else
-                                        <span class="text-zinc-500">{{ __('same') }}</span>
+            <div class="overflow-x-auto">
+                <table class="w-full border-collapse text-sm">
+                    <thead>
+                        <tr class="border-hairline border-b">
+                            <th scope="col" class="meta-classical px-3 py-3 text-left font-normal">{{ __('Puzzle') }}</th>
+                            <th scope="col" class="meta-classical px-3 py-3 text-left font-normal">{{ __('Size') }}</th>
+                            <th scope="col" class="px-3 py-3 text-right font-normal">
+                                <button type="button" wire:click="sortBy('solve_time_seconds')" class="meta-classical hover:text-ink inline-flex items-center gap-1 transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">
+                                    {{ __('Solve Time') }}
+                                    @if($sortField === 'solve_time_seconds')
+                                        <flux:icon :name="$sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'" class="size-3 text-amber-400" />
                                     @endif
-                                @else
-                                    <span class="text-zinc-400 dark:text-zinc-600">—</span>
-                                @endif
-                            </flux:table.cell>
-                            <flux:table.cell align="end">{{ $attempt->completed_at?->diffForHumans() ?? '—' }}</flux:table.cell>
-                        </flux:table.row>
-                    @endforeach
-                </flux:table.rows>
-            </flux:table>
+                                </button>
+                            </th>
+                            <th scope="col" class="meta-classical px-3 py-3 text-right font-normal">{{ __('vs. Avg') }}</th>
+                            <th scope="col" class="px-3 py-3 text-right font-normal">
+                                <button type="button" wire:click="sortBy('completed_at')" class="meta-classical hover:text-ink inline-flex items-center gap-1 transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">
+                                    {{ __('Completed') }}
+                                    @if($sortField === 'completed_at')
+                                        <flux:icon :name="$sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'" class="size-3 text-amber-400" />
+                                    @endif
+                                </button>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-hairline divide-y">
+                        @foreach($this->paginatedAttempts as $attempt)
+                            @php($communityAvg = $this->communityAverages[$attempt->crossword_id] ?? null)
+                            @php($diff = $communityAvg && $communityAvg['solver_count'] > 1 ? $attempt->solve_time_seconds - $communityAvg['avg_time'] : null)
+                            <tr wire:key="attempt-{{ $attempt->id }}" class="align-middle">
+                                <td class="px-3 py-3">
+                                    <a href="{{ route('crosswords.solver', $attempt->crossword_id) }}" wire:navigate class="font-classical text-ink hover:text-amber-300 text-[17px] leading-tight font-semibold transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">
+                                        {{ $attempt->crossword->displayTitle() }}
+                                    </a>
+                                </td>
+                                <td class="meta-classical tnum px-3 py-3 whitespace-nowrap">{{ $attempt->crossword->width }}&times;{{ $attempt->crossword->height }}</td>
+                                <td class="font-classical text-ink tnum px-3 py-3 text-right text-[16px] font-medium whitespace-nowrap">{{ $this->formatTime($attempt->solve_time_seconds) }}</td>
+                                <td class="tnum px-3 py-3 text-right whitespace-nowrap">
+                                    @if($diff !== null)
+                                        @if($diff < 0)
+                                            <span class="text-amber-400">{{ $this->formatTime(abs($diff)) }} {{ __('faster') }}</span>
+                                        @elseif($diff > 0)
+                                            <span class="text-ink-muted">{{ $this->formatTime($diff) }} {{ __('slower') }}</span>
+                                        @else
+                                            <span class="text-ink-muted">{{ __('same') }}</span>
+                                        @endif
+                                    @else
+                                        <span class="text-ink-faint">&mdash;</span>
+                                    @endif
+                                </td>
+                                <td class="text-ink-muted px-3 py-3 text-right whitespace-nowrap">{{ $attempt->completed_at?->diffForHumans() ?? '—' }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
 
             <div class="mt-4">
                 {{ $this->paginatedAttempts->links() }}

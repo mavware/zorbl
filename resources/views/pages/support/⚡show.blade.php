@@ -52,45 +52,17 @@ new #[Title('Ticket Detail')] class extends Component {
 
     {{-- Status badges --}}
     <div class="flex flex-wrap items-center gap-2">
-        <flux:badge size="sm" color="zinc">#{{ $ticket->id }}</flux:badge>
-        <flux:badge
-            size="sm"
-            :color="match($ticket->status) {
-                'open' => 'zinc',
-                'in_progress' => 'amber',
-                'resolved' => 'emerald',
-                'closed' => 'zinc',
-                default => 'zinc',
-            }"
-        >
+        <span class="chip-classical border-ink-faint text-ink-faint tnum">#{{ $ticket->id }}</span>
+        <span class="chip-classical {{ match($ticket->status) { 'in_progress', 'resolved' => 'border-amber-400 text-amber-400', default => 'border-ink-faint text-ink-faint' } }}">
             {{ match($ticket->status) {
                 'in_progress' => __('In Progress'),
                 default => __(ucfirst($ticket->status)),
             } }}
-        </flux:badge>
-        <flux:badge
-            size="sm"
-            :color="match($ticket->priority) {
-                'low' => 'zinc',
-                'normal' => 'blue',
-                'high' => 'amber',
-                'urgent' => 'red',
-                default => 'zinc',
-            }"
-        >
+        </span>
+        <span class="chip-classical {{ match($ticket->priority) { 'high', 'urgent' => 'border-amber-400 text-amber-400', default => 'border-ink-faint text-ink-faint' } }}">
             {{ __(ucfirst($ticket->priority)) }} {{ __('Priority') }}
-        </flux:badge>
-        <flux:badge
-            size="sm"
-            :color="match($ticket->category) {
-                'bug_report' => 'red',
-                'feature_request' => 'blue',
-                'account_issue' => 'amber',
-                'puzzle_issue' => 'violet',
-                'copyright' => 'pink',
-                default => 'zinc',
-            }"
-        >
+        </span>
+        <span class="chip-classical border-ink-faint text-ink-faint">
             {{ match($ticket->category) {
                 'bug_report' => __('Bug Report'),
                 'feature_request' => __('Feature Request'),
@@ -99,44 +71,44 @@ new #[Title('Ticket Detail')] class extends Component {
                 'copyright' => __('Copyright (DMCA)'),
                 default => __('General'),
             } }}
-        </flux:badge>
-        <flux:text size="sm">&middot; {{ $ticket->created_at->diffForHumans() }}</flux:text>
+        </span>
+        <span class="meta-classical">&middot; {{ $ticket->created_at->diffForHumans() }}</span>
     </div>
 
     {{-- Description --}}
-    <div class="border-line rounded-xl border p-4">
-        <flux:text size="sm" class="mb-2 font-medium text-zinc-600">{{ __('Description') }}</flux:text>
-        <flux:text class="whitespace-pre-wrap">{{ $ticket->description }}</flux:text>
+    <div class="border-border rounded-sm border p-[18px]">
+        <div class="meta-classical mb-2">{{ __('Description') }}</div>
+        <p class="text-ink text-sm leading-[1.65] whitespace-pre-wrap">{{ $ticket->description }}</p>
     </div>
 
     @if($ticket->assignee)
-        <flux:text size="sm">
-            {{ __('Assigned to:') }} <span class="font-medium">{{ $ticket->assignee->name }}</span>
-        </flux:text>
+        <p class="meta-classical">
+            {{ __('Assigned to:') }} <span class="text-ink">{{ $ticket->assignee->name }}</span>
+        </p>
     @endif
 
     {{-- Responses --}}
     <div class="space-y-4">
-        <div class="flex items-center gap-2">
-            <flux:heading size="lg">{{ __('Responses') }}</flux:heading>
-            <flux:badge size="sm" color="zinc">{{ $this->responses->count() }}</flux:badge>
+        <div class="border-hairline flex items-center gap-2.5 border-b pb-3.5">
+            <h2 class="font-classical text-ink text-[26px] leading-tight font-medium">{{ __('Responses') }}</h2>
+            <span class="chip-classical border-ink-faint text-ink-faint tnum">{{ $this->responses->count() }}</span>
         </div>
 
         @if($this->responses->isEmpty())
-            <flux:text class="text-zinc-500">{{ __('No responses yet. Our team will review your ticket soon.') }}</flux:text>
+            <p class="text-ink-muted text-sm">{{ __('No responses yet. Our team will review your ticket soon.') }}</p>
         @else
             <div class="space-y-3">
                 @foreach($this->responses as $response)
-                    <div class="rounded-xl border p-4 {{ $response->is_admin_response ? 'border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30' : 'border-line' }}">
-                        <div class="mb-2 flex items-center gap-2">
-                            <flux:text size="sm" class="font-medium">{{ $response->user->name }}</flux:text>
+                    <div class="rounded-sm border p-[18px] {{ $response->is_admin_response ? 'border-amber-400/60' : 'border-border' }}">
+                        <div class="mb-2 flex flex-wrap items-center gap-2">
+                            <span class="font-classical text-ink text-[16px] leading-none font-semibold">{{ $response->user->name }}</span>
                             <x-supporter-badge :user="$response->user" />
                             @if($response->is_admin_response)
-                                <flux:badge size="sm" color="blue" variant="pill">{{ __('Staff') }}</flux:badge>
+                                <span class="chip-classical border-amber-400 text-amber-400">{{ __('Staff') }}</span>
                             @endif
-                            <flux:text size="sm" class="text-zinc-500">&middot; {{ $response->created_at->diffForHumans() }}</flux:text>
+                            <span class="meta-classical">&middot; {{ $response->created_at->diffForHumans() }}</span>
                         </div>
-                        <flux:text class="whitespace-pre-wrap">{{ $response->body }}</flux:text>
+                        <p class="text-ink text-sm leading-[1.65] whitespace-pre-wrap">{{ $response->body }}</p>
                     </div>
                 @endforeach
             </div>
@@ -145,19 +117,20 @@ new #[Title('Ticket Detail')] class extends Component {
 
     {{-- Add response form --}}
     @if($ticket->status !== 'closed')
-        <div class="border-line space-y-4 rounded-xl border p-4">
-            <flux:heading size="sm">{{ __('Add a Response') }}</flux:heading>
-            <flux:field>
-                <flux:textarea wire:model="responseBody" rows="3" placeholder="{{ __('Type your response...') }}" />
-                <flux:error name="responseBody" />
-            </flux:field>
+        <div class="border-border space-y-4 rounded-sm border p-[18px]">
+            <h3 class="font-classical text-ink text-[19px] leading-tight font-semibold">{{ __('Add a Response') }}</h3>
+            <label class="block">
+                <span class="sr-only">{{ __('Add a Response') }}</span>
+                <textarea wire:model="responseBody" rows="3" placeholder="{{ __('Type your response...') }}" class="field-classical h-auto w-full px-3.5 py-2.5 leading-[1.65]"></textarea>
+                @error('responseBody') <p class="mt-1.5 text-xs text-amber-400">{{ $message }}</p> @enderror
+            </label>
             <div class="flex justify-end">
-                <flux:button variant="primary" wire:click="addResponse">{{ __('Send Response') }}</flux:button>
+                <button type="button" class="btn-classical btn-amber-outline" wire:click="addResponse">{{ __('Send Response') }}</button>
             </div>
         </div>
     @else
-        <div class="border-line rounded-xl border p-4 text-center">
-            <flux:text class="text-zinc-500">{{ __('This ticket has been closed.') }}</flux:text>
+        <div class="border-border rounded-sm border p-[18px] text-center">
+            <p class="text-ink-muted text-sm">{{ __('This ticket has been closed.') }}</p>
         </div>
     @endif
 </div>
