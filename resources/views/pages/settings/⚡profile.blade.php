@@ -152,7 +152,7 @@ new #[Title('Profile settings')] class extends Component {
             </label>
 
             <div class="flex items-center gap-4">
-                <button type="submit" class="btn-classical btn-amber-outline" data-test="update-profile-button">
+                <button type="submit" class="btn-classical btn-amber-outline btn-classical-primary" data-test="update-profile-button">
                     {{ __('Save') }}
                 </button>
 

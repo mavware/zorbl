@@ -94,17 +94,20 @@
 
    Filled (accent): header buttons and the standalone amber CTAs (welcome
    nav, sidebar sign-up, guest banner). In-page buttons that pair
-   btn-amber-outline with the btn-classical chassis (card actions, form
-   submits) take the secondary surface so a grid of cards stays quiet. */
+   btn-amber-outline with the btn-classical chassis (card actions) take the
+   secondary surface so a grid of cards stays quiet; a form's primary submit
+   opts back into the fill with btn-classical-primary. */
 :root[data-theme="modern"] .btn-header-primary,
-:root[data-theme="modern"] .btn-amber-outline:not(.btn-classical) {
+:root[data-theme="modern"] .btn-amber-outline:not(.btn-classical),
+:root[data-theme="modern"] .btn-classical-primary {
     background-color: var(--color-accent);
     border-color: transparent;
     color: var(--color-accent-foreground);
 }
 
 :root[data-theme="modern"] .btn-header-primary:hover,
-:root[data-theme="modern"] .btn-amber-outline:not(.btn-classical):hover {
+:root[data-theme="modern"] .btn-amber-outline:not(.btn-classical):hover,
+:root[data-theme="modern"] .btn-classical-primary:hover {
     background-color: color-mix(in oklab, var(--color-accent), transparent 10%);
     border-color: transparent;
     color: var(--color-accent-foreground);
@@ -112,7 +115,7 @@
 
 :root[data-theme="modern"] .btn-header-secondary,
 :root[data-theme="modern"] .btn-classical-muted,
-:root[data-theme="modern"] .btn-classical.btn-amber-outline {
+:root[data-theme="modern"] .btn-classical.btn-amber-outline:not(.btn-classical-primary) {
     background-color: var(--color-elevated);
     border-color: var(--color-line-strong);
     color: var(--color-fg);
@@ -120,7 +123,7 @@
 
 :root[data-theme="modern"] .btn-header-secondary:hover,
 :root[data-theme="modern"] .btn-classical-muted:hover,
-:root[data-theme="modern"] .btn-classical.btn-amber-outline:hover {
+:root[data-theme="modern"] .btn-classical.btn-amber-outline:not(.btn-classical-primary):hover {
     background-color: var(--color-muted);
     border-color: var(--color-line-strong);
     color: var(--color-fg);
