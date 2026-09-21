@@ -14,34 +14,88 @@ use Illuminate\Support\Facades\Cache;
 
 class SitemapController extends Controller
 {
+    public const CACHE_KEY_INDEX = 'sitemap.index';
+
+    public const CACHE_KEY_PAGES = 'sitemap.pages';
+
+    public const CACHE_KEY_PUZZLES = 'sitemap.puzzles';
+
+    public const CACHE_KEY_CONSTRUCTORS = 'sitemap.constructors';
+
+    public const CACHE_KEY_WORDS = 'sitemap.words';
+
+    /** @deprecated Use the section-specific cache keys instead. */
     public const CACHE_KEY = 'sitemap.xml';
 
-    /**
-     * Serve sitemap.xml for crawler discovery. We list every public URL and
-     * every published puzzle. Cached for an hour to avoid touching the DB on
-     * every Googlebot fetch; the cache is also invalidated immediately when
-     * a puzzle is published, updated, or deleted (see CrosswordObserver), a
-     * help article changes (HelpArticleObserver), or a clue is approved or
-     * removed (ClueEntryObserver).
-     */
+    /** @var array<string, string> */
+    public const SECTIONS = [
+        'pages' => self::CACHE_KEY_PAGES,
+        'puzzles' => self::CACHE_KEY_PUZZLES,
+        'constructors' => self::CACHE_KEY_CONSTRUCTORS,
+        'words' => self::CACHE_KEY_WORDS,
+    ];
+
     public function index(): Response
     {
-        $xml = Cache::remember(self::CACHE_KEY, now()->addHour(), function (): string {
-            return $this->build();
+        $xml = Cache::remember(self::CACHE_KEY_INDEX, now()->addHour(), function (): string {
+            return $this->buildIndex();
         });
 
-        return response($xml, 200, [
-            'Content-Type' => 'application/xml; charset=UTF-8',
-            'Cache-Control' => 'public, max-age=3600',
-        ]);
+        return $this->xmlResponse($xml);
     }
 
-    private function build(): string
+    public function section(string $section): Response
+    {
+        $cacheKey = self::SECTIONS[$section] ?? null;
+
+        if ($cacheKey === null) {
+            abort(404);
+        }
+
+        $xml = Cache::remember($cacheKey, now()->addHour(), function () use ($section): string {
+            return match ($section) {
+                'pages' => $this->buildPages(),
+                'puzzles' => $this->buildPuzzles(),
+                'constructors' => $this->buildConstructors(),
+                'words' => $this->buildWords(),
+            };
+        });
+
+        return $this->xmlResponse($xml);
+    }
+
+    /**
+     * @param  array<int, string>  $keys
+     */
+    public static function invalidate(array $keys): void
+    {
+        Cache::forget(self::CACHE_KEY_INDEX);
+
+        foreach ($keys as $key) {
+            Cache::forget($key);
+        }
+    }
+
+    private function buildIndex(): string
+    {
+        $sitemaps = '';
+
+        foreach (array_keys(self::SECTIONS) as $section) {
+            $sitemaps .= '<sitemap>'
+                .'<loc>'.htmlspecialchars(route('sitemap.section', $section), ENT_XML1).'</loc>'
+                .'</sitemap>'.PHP_EOL;
+        }
+
+        return '<?xml version="1.0" encoding="UTF-8"?>'.PHP_EOL
+            .'<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'.PHP_EOL
+            .$sitemaps
+            .'</sitemapindex>'.PHP_EOL;
+    }
+
+    private function buildPages(): string
     {
         $urls = [];
 
-        // Top-level public pages. `priority` and `changefreq` are hints; Google
-        // mostly ignores them, but the structure is required by the protocol.
         $urls[] = $this->urlEntry(route('home'), now(), 'daily', '1.0');
         $urls[] = $this->urlEntry(route('puzzles.index'), now(), 'hourly', '0.9');
         $urls[] = $this->urlEntry(route('puzzles.daily-history'), now(), 'daily', '0.8');
@@ -64,6 +118,13 @@ class SitemapController extends Controller
             );
         }
 
+        return $this->wrapUrlset($urls);
+    }
+
+    private function buildPuzzles(): string
+    {
+        $urls = [];
+
         Crossword::query()
             ->where('is_published', true)
             ->where('contains_profanity', false)
@@ -80,8 +141,13 @@ class SitemapController extends Controller
                 }
             });
 
-        // Public constructor profiles: real accounts with at least one publicly
-        // visible published puzzle.
+        return $this->wrapUrlset($urls);
+    }
+
+    private function buildConstructors(): string
+    {
+        $urls = [];
+
         User::query()
             ->where('is_anonymous', false)
             ->whereHas('crosswords', fn ($q) => $q->where('is_published', true)->where('contains_profanity', false))
@@ -98,10 +164,13 @@ class SitemapController extends Controller
                 }
             });
 
-        // Word catalog pages. The catalog holds 200k+ dictionary entries, so we
-        // only list words that have at least one approved clue: those are the
-        // content-rich pages the word page itself marks indexable, while
-        // clue-less words render with noindex and would just be sitemap noise.
+        return $this->wrapUrlset($urls);
+    }
+
+    private function buildWords(): string
+    {
+        $urls = [];
+
         Word::query()
             ->whereHas('clueEntries', fn (Builder $q) => $q->where('status', ClueEntry::STATUS_APPROVED))
             ->select(['id', 'word'])
@@ -125,6 +194,14 @@ class SitemapController extends Controller
                 }
             });
 
+        return $this->wrapUrlset($urls);
+    }
+
+    /**
+     * @param  array<int, string>  $urls
+     */
+    private function wrapUrlset(array $urls): string
+    {
         return '<?xml version="1.0" encoding="UTF-8"?>'.PHP_EOL
             .'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'.PHP_EOL
             .implode('', $urls)
@@ -144,5 +221,13 @@ class SitemapController extends Controller
             .'<changefreq>'.$changefreq.'</changefreq>'
             .'<priority>'.$priority.'</priority>'
             .'</url>'.PHP_EOL;
+    }
+
+    private function xmlResponse(string $xml): Response
+    {
+        return response($xml, 200, [
+            'Content-Type' => 'application/xml; charset=UTF-8',
+            'Cache-Control' => 'public, max-age=3600',
+        ]);
     }
 }

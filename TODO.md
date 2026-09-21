@@ -20,7 +20,7 @@ scans this file for `- [ ]` items and flips them to `- [x]` when done.
 - [ ] use AI or a script to find new words or phrases and add them to the "words" table
 - [ ] Find out if I can use Claude dashboard tools to more effectively complete my AI features
 - [ ] have Claude create a Google Ads campaign for me to promote my site
-- [ ] Split sitemap.xml into a sitemap index with per-section child sitemaps once published puzzles + clued words approach the 50,000-URL / 50 MB protocol limit
+- [x] Split sitemap.xml into a sitemap index with per-section child sitemaps once published puzzles + clued words approach the 50,000-URL / 50 MB protocol limit
 
 
  

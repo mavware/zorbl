@@ -4,7 +4,6 @@ namespace App\Observers;
 
 use App\Http\Controllers\SitemapController;
 use App\Models\HelpArticle;
-use Illuminate\Support\Facades\Cache;
 
 class HelpArticleObserver
 {
@@ -24,7 +23,7 @@ class HelpArticleObserver
         $wasPublished = (bool) ($article->getOriginal('is_published') ?? false);
 
         if ($isPublished || $wasPublished) {
-            Cache::forget(SitemapController::CACHE_KEY);
+            SitemapController::invalidate([SitemapController::CACHE_KEY_PAGES]);
         }
     }
 }

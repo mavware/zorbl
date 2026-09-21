@@ -4,7 +4,6 @@ namespace App\Observers;
 
 use App\Http\Controllers\SitemapController;
 use App\Models\ClueEntry;
-use Illuminate\Support\Facades\Cache;
 
 class ClueEntryObserver
 {
@@ -30,7 +29,7 @@ class ClueEntryObserver
         $wasApproved = $clueEntry->getOriginal('status') === ClueEntry::STATUS_APPROVED;
 
         if ($isApproved || $wasApproved) {
-            Cache::forget(SitemapController::CACHE_KEY);
+            SitemapController::invalidate([SitemapController::CACHE_KEY_WORDS]);
         }
     }
 }
