@@ -6,8 +6,8 @@ use CrosswordBuilder\CrosswordIO\Exceptions\PdfImportException;
 use CrosswordBuilder\CrosswordIO\Exceptions\PuzImportException;
 use App\Enums\PuzzleType;
 use App\Models\Crossword;
+use App\Livewire\Concerns\ExportsCrossword;
 use App\Services\GridTemplateProvider;
-use App\Services\PdfExporter;
 use CrosswordBuilder\CrosswordIO\GridNumberer;
 use CrosswordBuilder\CrosswordIO\ImportDetector;
 use Flux\Flux;
@@ -17,9 +17,9 @@ use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithFileUploads;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 
 new #[Title('Build')] class extends Component {
+    use ExportsCrossword;
     use WithFileUploads;
 
     public bool $showNewModal = false;
@@ -32,14 +32,8 @@ new #[Title('Build')] class extends Component {
     public string $importError = '';
     public string $newPuzzleLimitMessage = '';
 
-    /** @var list<int> */
-    public array $selectedPuzzles = [];
-
-    public bool $showBatchPdfModal = false;
-
-    public string $batchPdfOrientation = 'portrait';
-
-    public string $batchPdfTitle = '';
+    /** The puzzle a PDF export was requested for from its card menu. */
+    public ?int $pdfExportPuzzleId = null;
 
     #[Url]
     public string $search = '';
@@ -328,86 +322,68 @@ new #[Title('Build')] class extends Component {
         $crossword->delete();
     }
 
-    public function togglePuzzleSelection(int $id): void
+    /**
+     * Open the PDF export settings for one puzzle, chosen from its card menu.
+     */
+    public function choosePdfExportFor(int $id): void
     {
-        if (in_array($id, $this->selectedPuzzles)) {
-            $this->selectedPuzzles = array_values(array_diff($this->selectedPuzzles, [$id]));
-        } else {
-            $this->selectedPuzzles[] = $id;
-        }
+        $this->pdfExportPuzzleId = $id;
+        $this->attemptExport('pdf');
     }
 
-    public function selectAllPuzzles(): void
+    #[Computed]
+    public function pdfExportCrossword(): ?Crossword
     {
-        $this->selectedPuzzles = $this->crosswords->pluck('id')->all();
+        return $this->pdfExportPuzzleId === null ? null : Crossword::find($this->pdfExportPuzzleId);
     }
 
-    public function clearSelection(): void
+    protected function getExportableCrossword(): Crossword
     {
-        $this->selectedPuzzles = [];
+        $crossword = Crossword::findOrFail($this->pdfExportPuzzleId);
+        $this->authorize('view', $crossword);
+
+        return $crossword;
     }
 
-    public function openBatchPdfExport(): void
+    protected function getPdfIncludeSolution(): bool
     {
-        if (empty($this->selectedPuzzles)) {
-            return;
-        }
-
-        $this->batchPdfOrientation = 'portrait';
-        $this->batchPdfTitle = '';
-        $this->showBatchPdfModal = true;
+        return true;
     }
 
-    public function exportBatchPdf(): StreamedResponse
+    protected function getExportPlanGates(): array
     {
-        $this->showBatchPdfModal = false;
-
-        $crosswords = Crossword::whereIn('id', $this->selectedPuzzles)
-            ->where('user_id', Auth::id())
-            ->get()
-            ->sortBy(fn (Crossword $c) => array_search($c->id, $this->selectedPuzzles));
-
-        $orientation = in_array($this->batchPdfOrientation, ['portrait', 'landscape']) ? $this->batchPdfOrientation : 'portrait';
-        $title = trim($this->batchPdfTitle) ?: null;
-
-        $exporter = app(PdfExporter::class);
-        $pdf = $exporter->exportBatch($crosswords, $orientation, $title);
-
-        $filename = str($title ?? 'puzzles-collection')->slug()->append('.pdf')->toString();
-
-        $this->selectedPuzzles = [];
-
-        return response()->streamDownload(function () use ($pdf) {
-            echo $pdf;
-        }, $filename, ['Content-Type' => 'application/pdf']);
+        return [
+            'puz' => null,
+            'jpz' => null,
+            'pdf' => 'canExportPdf',
+        ];
     }
 
-    public function cancelBatchPdfExport(): void
+    protected function onExportUpgradeRequired(string $format): void
     {
-        $this->showBatchPdfModal = false;
-        $this->batchPdfOrientation = 'portrait';
-        $this->batchPdfTitle = '';
+        $this->pdfExportPuzzleId = null;
+
+        Flux::toast(
+            text: __('Create a free account to export PDFs.'),
+            variant: 'warning',
+        );
     }
 }
 ?>
 
-<div class="space-y-6">
-        <div class="flex items-center justify-between">
-            <x-dashboard-switch active="build" />
-
-            <div class="flex gap-2">
-                <flux:button variant="primary" icon="plus" wire:click="$set('showNewModal', true)">
-                    {{ __('New Puzzle') }}
-                </flux:button>
-                <flux:button icon="arrow-up-tray" wire:click="$set('showImportModal', true)">
-                    {{ __('Import Puzzle') }}
-                </flux:button>
-            </div>
-        </div>
+<div class="space-y-6" data-full-bleed>
+        <x-page-header :kicker="__('Your workshop')" :title="__('Build puzzles')" :bleed="false">
+            <x-header-button icon="plus" wire:click="$set('showNewModal', true)">
+                {{ __('New Puzzle') }}
+            </x-header-button>
+            <x-header-button variant="secondary" icon="arrow-up-tray" wire:click="$set('showImportModal', true)">
+                {{ __('Import Puzzle') }}
+            </x-header-button>
+        </x-page-header>
 
         {{-- First-run welcome — only visible to brand-new accounts with zero activity. --}}
         @if($this->isNewUser)
-            <div class="relative overflow-hidden rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 p-6 dark:border-amber-800/50 dark:from-amber-950/30 dark:to-orange-950/20" data-test="dashboard-welcome-hero">
+            <div class="relative mx-6 overflow-hidden rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 p-6 lg:mx-8 dark:border-amber-800/50 dark:from-amber-950/30 dark:to-orange-950/20" data-test="dashboard-welcome-hero">
                 <div class="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
                     <div class="max-w-xl">
                         <flux:heading size="lg" class="!text-amber-700 dark:!text-amber-300">
@@ -442,112 +418,151 @@ new #[Title('Build')] class extends Component {
             </div>
         @endif
 
+        {{-- Builder Stats --}}
+        <div class="px-6 lg:px-8">
+            <livewire:constructor-stats key="constructor-stats" />
+        </div>
+
         {{-- Search & Filters --}}
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <div class="flex-1">
-                <flux:input
-                    icon="magnifying-glass"
+        <div class="flex flex-col gap-3 px-6 py-5 sm:flex-row sm:items-center lg:px-8">
+            <label class="relative flex-1">
+                <span class="sr-only">{{ __('Search puzzles...') }}</span>
+                <flux:icon name="magnifying-glass" class="text-ink-faint pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+                <input
+                    type="search"
                     placeholder="{{ __('Search puzzles...') }}"
                     wire:model.live.debounce.300ms="search"
+                    class="field-classical w-full pr-3 pl-9"
                 />
-            </div>
-            <div class="flex items-center gap-2">
-                <flux:radio.group wire:model.live="status" variant="segmented" size="sm">
-                    <flux:radio value="" label="{{ __('All') }}" />
-                    <flux:radio value="published" label="{{ __('Published') }}" />
-                    <flux:radio value="draft" label="{{ __('Drafts') }}" />
-                </flux:radio.group>
-                <flux:select wire:model.live="sortBy" size="sm" class="w-36">
-                    <flux:select.option value="newest">{{ __('Newest') }}</flux:select.option>
-                    <flux:select.option value="oldest">{{ __('Oldest') }}</flux:select.option>
-                    <flux:select.option value="alpha">{{ __('A–Z') }}</flux:select.option>
-                    <flux:select.option value="largest">{{ __('Largest') }}</flux:select.option>
-                    <flux:select.option value="smallest">{{ __('Smallest') }}</flux:select.option>
-                </flux:select>
+            </label>
+            <div class="flex items-center gap-3">
+                <div class="border-border-strong divide-hairline inline-flex h-10 divide-x overflow-hidden rounded-sm border" role="radiogroup" aria-label="{{ __('Status') }}">
+                    @foreach (['' => __('All'), 'published' => __('Published'), 'draft' => __('Drafts')] as $value => $label)
+                        <label class="cursor-pointer">
+                            <input type="radio" name="status" value="{{ $value }}" wire:model.live="status" class="peer sr-only" />
+                            <span class="font-classical text-ink-muted hover:text-ink peer-checked:bg-amber-400/10 peer-checked:text-amber-400 peer-focus-visible:outline-2 peer-focus-visible:-outline-offset-2 peer-focus-visible:outline-amber-400 flex h-full items-center px-3.5 text-[15px] font-medium transition-colors">
+                                {{ $label }}
+                            </span>
+                        </label>
+                    @endforeach
+                </div>
+                <label class="relative">
+                    <span class="sr-only">{{ __('Sort') }}</span>
+                    <select wire:model.live="sortBy" class="field-classical font-classical appearance-none pr-9 pl-3.5 text-[15px] font-medium">
+                        <option value="newest">{{ __('Sort') }}: {{ __('Newest') }}</option>
+                        <option value="oldest">{{ __('Sort') }}: {{ __('Oldest') }}</option>
+                        <option value="alpha">{{ __('Sort') }}: {{ __('A–Z') }}</option>
+                        <option value="largest">{{ __('Sort') }}: {{ __('Largest') }}</option>
+                        <option value="smallest">{{ __('Sort') }}: {{ __('Smallest') }}</option>
+                    </select>
+                    <flux:icon name="chevron-down" class="text-ink-faint pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2" />
+                </label>
             </div>
         </div>
 
-        @if(count($selectedPuzzles) > 0)
-            <div class="flex items-center justify-between rounded-lg bg-blue-50 px-4 py-2.5 dark:bg-blue-950/50">
-                <div class="flex items-center gap-3">
-                    <flux:text size="sm" class="font-medium text-blue-700 dark:text-blue-300">
-                        {{ trans_choice(':count puzzle selected|:count puzzles selected', count($selectedPuzzles)) }}
-                    </flux:text>
-                    <flux:button variant="ghost" size="sm" wire:click="selectAllPuzzles">
-                        {{ __('Select All') }}
-                    </flux:button>
-                    <flux:button variant="ghost" size="sm" wire:click="clearSelection">
-                        {{ __('Clear') }}
-                    </flux:button>
-                </div>
-                <flux:button size="sm" icon="document-arrow-down" wire:click="openBatchPdfExport">
-                    {{ __('Export PDF') }}
-                </flux:button>
-            </div>
-        @endif
-
         @if($this->crosswords->isEmpty())
-            <div class="border-line-strong flex flex-col items-center justify-center rounded-xl border border-dashed py-16">
-                <flux:icon name="puzzle-piece" class="mb-4 size-12 text-zinc-500" />
+            <div class="border-border-strong mx-6 flex flex-col items-center justify-center rounded-sm border border-dashed px-6 py-16 text-center lg:mx-8">
+                <flux:icon name="puzzle-piece" class="text-ink-faint mb-4 size-10" />
                 @if($search !== '' || $status !== '')
-                    <flux:heading size="lg" class="mb-2">{{ __('No matching puzzles') }}</flux:heading>
-                    <flux:text class="text-zinc-500">{{ __('Try adjusting your search or filters.') }}</flux:text>
+                    <h3 class="font-classical text-ink text-[26px] leading-tight font-medium">{{ __('No matching puzzles') }}</h3>
+                    <p class="text-ink-muted mt-2 text-sm">{{ __('Try adjusting your search or filters.') }}</p>
                 @else
-                    <flux:heading size="lg" class="mb-2">{{ __('No puzzles yet') }}</flux:heading>
-                    <flux:text class="mb-6">{{ __('Create a new crossword or import an existing puzzle file.') }}</flux:text>
-                    <div class="flex gap-2">
-                        <flux:button variant="primary" icon="plus" wire:click="$set('showNewModal', true)">
+                    <h3 class="font-classical text-ink text-[26px] leading-tight font-medium">{{ __('No puzzles yet') }}</h3>
+                    <p class="text-ink-muted mt-2 mb-6 text-sm">{{ __('Create a new crossword or import an existing puzzle file.') }}</p>
+                    <div class="flex flex-wrap justify-center gap-3">
+                        <button type="button" class="btn-classical btn-amber-outline" wire:click="$set('showNewModal', true)">
+                            <flux:icon name="plus" class="size-4" />
                             {{ __('New Puzzle') }}
-                        </flux:button>
-                        <flux:button icon="arrow-up-tray" wire:click="$set('showImportModal', true)">
+                        </button>
+                        <button type="button" class="btn-classical btn-classical-muted" wire:click="$set('showImportModal', true)">
+                            <flux:icon name="arrow-up-tray" class="size-4" />
                             {{ __('Import Puzzle') }}
-                        </flux:button>
+                        </button>
                     </div>
                 @endif
             </div>
         @else
-            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {{-- Results collapse to their first row until expanded. Alpine reads the
+                 grid's resolved column count so the row is exact at any width, and
+                 re-applies after Livewire re-renders the cards. --}}
+            <div
+                x-data="{
+                    expanded: false,
+                    columns: 0,
+                    total: 0,
+                    get hasMore() { return this.total > this.columns },
+                    get shown() { return this.expanded ? this.total : Math.min(this.columns, this.total) },
+                    measure() {
+                        this.columns = getComputedStyle(this.$refs.grid).gridTemplateColumns.split(' ').length;
+                        this.apply();
+                    },
+                    apply() {
+                        const cards = Array.from(this.$refs.grid.children);
+                        this.total = cards.length;
+                        cards.forEach((card, index) => {
+                            const hide = ! this.expanded && index >= this.columns;
+                            if (card.hidden !== hide) { card.hidden = hide; }
+                        });
+                    },
+                }"
+                x-init="
+                    measure();
+                    new ResizeObserver(() => measure()).observe($refs.grid);
+                    new MutationObserver(() => apply()).observe($refs.grid, { childList: true, attributes: true, attributeFilter: ['hidden'] });
+                "
+                x-effect="expanded; apply()"
+                data-test="puzzle-results"
+            >
+                <div x-ref="grid" class="grid gap-[22px] px-6 [grid-template-columns:repeat(auto-fill,minmax(268px,1fr))] lg:px-8">
                 @foreach($this->crosswords as $crossword)
-                    <div
+                    <article
                         wire:key="crossword-{{ $crossword->id }}"
-                        @class([
-                            'border-line group relative rounded-xl border p-4 transition-colors hover:border-zinc-400 dark:hover:border-zinc-500',
-                            'border-blue-400 bg-blue-50/50 dark:border-blue-500 dark:bg-blue-950/30' => in_array($crossword->id, $selectedPuzzles),
-                        ])
+                        class="border-border hover:border-border-strong flex flex-col gap-3.5 rounded-sm border p-[18px] transition-colors"
                     >
-                        <div class="absolute top-2 left-2 z-10">
-                            <flux:checkbox
-                                :checked="in_array($crossword->id, $selectedPuzzles)"
-                                wire:click="togglePuzzleSelection({{ $crossword->id }})"
-                            />
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="min-w-0">
+                                <h3 class="font-classical text-ink truncate text-[21px] leading-[1.15] font-semibold">
+                                    <a href="{{ route('crosswords.editor', $crossword) }}" wire:navigate class="hover:text-amber-300 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">
+                                        {{ $crossword->displayTitle() }}
+                                    </a>
+                                </h3>
+                                <x-puzzle-details :crossword="$crossword" />
+                            </div>
+                            @if($crossword->is_published)
+                                <span class="badge-classical border-amber-400 text-amber-400">{{ __('Published') }}</span>
+                            @else
+                                <span class="badge-classical border-ink-faint text-ink-faint">{{ __('Draft') }}</span>
+                            @endif
                         </div>
-                        <a href="{{ route('crosswords.editor', $crossword) }}" wire:navigate class="block">
-                            <div class="mb-3 flex justify-center">
-                                <x-grid-thumbnail :grid="$crossword->grid" :width="$crossword->width" :height="$crossword->height" />
-                            </div>
 
-                            <div class="flex items-center gap-2">
-                                <flux:heading size="sm" class="truncate">
-                                    {{ $crossword->displayTitle() }}
-                                </flux:heading>
-                                @if($crossword->is_published)
-                                    <flux:badge size="sm" color="green">{{ __('Published') }}</flux:badge>
-                                @else
-                                    <flux:badge size="sm" color="zinc">{{ __('Draft') }}</flux:badge>
-                                @endif
-                            </div>
-
-                            <x-puzzle-details :crossword="$crossword" />
-
-                            <x-puzzle-completeness-bar :crossword="$crossword" />
+                        <a href="{{ route('crosswords.editor', $crossword) }}" wire:navigate class="block focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">
+                            <x-grid-thumbnail
+                                :grid="$crossword->grid"
+                                :width="$crossword->width"
+                                :height="$crossword->height"
+                                :fluid="true"
+                                frame-class="border-hairline bg-hairline rounded-sm border"
+                                open-class="bg-panel"
+                                block-class="bg-zinc-300"
+                            />
                         </a>
 
-                        <div class="absolute top-2 right-2 opacity-0 transition-opacity group-hover:opacity-100">
+                        <x-puzzle-completeness-bar :crossword="$crossword" />
+
+                        <div class="flex gap-[10px] pt-1">
+                            <a href="{{ route('crosswords.editor', $crossword) }}" wire:navigate class="btn-classical btn-classical-compact btn-amber-outline flex-1">
+                                {{ __('Open editor') }}
+                            </a>
                             <flux:dropdown position="bottom" align="end">
-                                <flux:button variant="ghost" size="sm" icon="ellipsis-vertical" />
+                                <button type="button" class="btn-classical btn-classical-compact btn-classical-muted" aria-label="{{ __('More actions') }}">
+                                    <flux:icon name="ellipsis-vertical" class="size-4" />
+                                </button>
                                 <flux:menu>
                                     <flux:menu.item icon="document-duplicate" wire:click="duplicatePuzzle({{ $crossword->id }})">
                                         {{ __('Duplicate') }}
+                                    </flux:menu.item>
+                                    <flux:menu.item icon="document-arrow-down" wire:click="choosePdfExportFor({{ $crossword->id }})">
+                                        {{ __('Export PDF') }}
                                     </flux:menu.item>
                                     <flux:menu.item icon="trash" variant="danger" wire:click="deletePuzzle({{ $crossword->id }})" wire:confirm="{{ __('Are you sure you want to delete this puzzle?') }}">
                                         {{ __('Delete') }}
@@ -555,13 +570,30 @@ new #[Title('Build')] class extends Component {
                                 </flux:menu>
                             </flux:dropdown>
                         </div>
-                    </div>
+                    </article>
                 @endforeach
+                </div>
+
+                <div x-show="hasMore" x-cloak class="mt-5 flex flex-wrap items-center justify-between gap-3 px-6 lg:px-8">
+                    <span class="meta-classical tnum" x-text="expanded ? '{{ __('Showing all :total puzzles') }}'.replace(':total', total) : '{{ __('Showing :shown of :total puzzles') }}'.replace(':shown', shown).replace(':total', total)"></span>
+                    <button
+                        type="button"
+                        class="btn-classical btn-classical-compact btn-classical-muted"
+                        @click="expanded = ! expanded"
+                        :aria-expanded="expanded"
+                        x-text="expanded ? '{{ __('Show fewer') }}' : '{{ __('Show all puzzles') }}'"
+                        data-test="toggle-all-puzzles-button"
+                    ></button>
+                </div>
             </div>
         @endif
 
+        <hr class="border-hairline" />
+
         {{-- Constructor Analytics --}}
-        <livewire:constructor-analytics />
+        <div class="px-6 lg:px-8">
+            <livewire:constructor-analytics key="constructor-analytics" />
+        </div>
 
         {{-- New Puzzle Modal --}}
     <flux:modal wire:model="showNewModal" class="w-full max-w-lg">
@@ -577,7 +609,7 @@ new #[Title('Build')] class extends Component {
                             type="button"
                             wire:click="$set('puzzleType', @js($type->value))"
                             @class([
-                                'flex flex-col items-center gap-2 rounded-lg border-2 p-3 text-center transition-colors',
+                                'flex flex-col items-center gap-2 rounded-lg border p-3 text-center transition-colors',
                                 'border-blue-500 bg-blue-50 ring-1 ring-blue-500 dark:border-blue-400 dark:bg-blue-950/40 dark:ring-blue-400' => $puzzleType === $type->value,
                                 'border-zinc-200 hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:border-zinc-500 dark:hover:bg-zinc-800' => $puzzleType !== $type->value,
                             ])
@@ -654,7 +686,7 @@ new #[Title('Build')] class extends Component {
                             <button
                                 type="button"
                                 wire:click="$set('selectedTemplate', null)"
-                                class="border-line flex shrink-0 flex-col items-center gap-1.5 rounded-lg border-2 p-2 transition-colors {{ $selectedTemplate === null ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' : ' hover:border-zinc-400 dark:hover:border-zinc-500' }}"
+                                class="border-line flex shrink-0 flex-col items-center gap-1.5 rounded-lg border p-2 transition-colors {{ $selectedTemplate === null ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' : ' hover:border-zinc-400 dark:hover:border-zinc-500' }}"
                             >
                                 <x-grid-thumbnail :grid="Crossword::emptyGrid($newWidth, $newHeight)" :width="$newWidth" :height="$newHeight" :cell-size="6" :max-width="80" />
                                 <span class="whitespace-nowrap text-xs text-zinc-700 dark:text-zinc-400">{{ __('Blank') }}</span>
@@ -664,7 +696,7 @@ new #[Title('Build')] class extends Component {
                                 <button
                                     type="button"
                                     wire:click="$set('selectedTemplate', {{ $index }})"
-                                    class="border-line flex shrink-0 flex-col items-center gap-1.5 rounded-lg border-2 p-2 transition-colors {{ $selectedTemplate === $index ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' : ' hover:border-zinc-400 dark:hover:border-zinc-500' }}"
+                                    class="border-line flex shrink-0 flex-col items-center gap-1.5 rounded-lg border p-2 transition-colors {{ $selectedTemplate === $index ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' : ' hover:border-zinc-400 dark:hover:border-zinc-500' }}"
                                 >
                                     <x-grid-thumbnail :grid="$template['grid']" :styles="$template['styles'] ?? null" :width="$newWidth" :height="$newHeight" :cell-size="6" :max-width="80" />
                                     <span class="whitespace-nowrap text-xs text-zinc-700 dark:text-zinc-400">{{ $template['name'] }}</span>
@@ -692,32 +724,37 @@ new #[Title('Build')] class extends Component {
         </div>
     </flux:modal>
 
-    {{-- Batch PDF Export Modal --}}
-    <flux:modal wire:model="showBatchPdfModal">
+    {{-- PDF Export Settings Modal --}}
+    <flux:modal wire:model="showPdfExportModal">
         <div class="space-y-6">
-            <flux:heading size="lg">{{ __('Export as PDF') }}</flux:heading>
+            <flux:heading size="lg">{{ __('PDF Export Settings') }}</flux:heading>
+            <flux:text>{{ __('Configure the page orientation, add an image, and optional narrative text for your PDF export.') }}</flux:text>
 
-            <flux:text size="sm" class="text-zinc-500">
-                {{ trans_choice(':count puzzle will be combined into a single PDF.|:count puzzles will be combined into a single PDF.', count($selectedPuzzles)) }}
-            </flux:text>
+            <flux:radio.group wire:model="pdfOrientation" label="{{ __('Orientation') }}">
+                <flux:radio value="portrait" label="{{ __('Portrait') }}" description="{{ __('Standard vertical layout (8.5 × 11 in)') }}" />
+                <flux:radio value="landscape" label="{{ __('Landscape') }}" description="{{ __('Horizontal layout (11 × 8.5 in) — better for wide puzzles') }}" />
+            </flux:radio.group>
 
-            <flux:field>
-                <flux:label>{{ __('Collection Title') }} <span class="text-xs font-normal text-zinc-500"> {{ __('(optional)') }}</span></flux:label>
-                <flux:input wire:model="batchPdfTitle" placeholder="{{ __('e.g. Weekly Puzzle Pack') }}" />
-                <flux:description>{{ __('Adds a cover page with this title.') }}</flux:description>
-            </flux:field>
+            <div>
+                <flux:input type="file" wire:model="pdfImage" label="{{ __('Header Image') }}" accept="image/png,image/jpeg,image/gif,image/webp" />
+                <flux:text class="mt-1">{{ __('Optional image displayed above the puzzle grid (max 2 MB).') }}</flux:text>
+                @if ($this->pdfExportCrossword?->pdf_image && !$pdfRemoveImage)
+                    <div class="mt-2 flex items-center gap-2">
+                        <flux:text class="text-sm text-green-600 dark:text-green-400">{{ __('Current image saved.') }}</flux:text>
+                        <flux:button size="xs" variant="danger" wire:click="$set('pdfRemoveImage', true)">{{ __('Remove') }}</flux:button>
+                    </div>
+                @elseif ($pdfRemoveImage)
+                    <div class="mt-2">
+                        <flux:text class="text-sm text-amber-600 dark:text-amber-400">{{ __('Image will be removed on export.') }}</flux:text>
+                    </div>
+                @endif
+            </div>
 
-            <flux:field>
-                <flux:label>{{ __('Orientation') }}</flux:label>
-                <flux:radio.group wire:model="batchPdfOrientation" variant="segmented">
-                    <flux:radio value="portrait" label="{{ __('Portrait') }}" />
-                    <flux:radio value="landscape" label="{{ __('Landscape') }}" />
-                </flux:radio.group>
-            </flux:field>
+            <flux:textarea wire:model="pdfNarrative" label="{{ __('Narrative Text') }}" placeholder="{{ __('Add introductory text, theme explanation, or instructions that will appear above the puzzle grid...') }}" rows="4" />
 
             <div class="flex justify-end gap-2">
-                <flux:button wire:click="cancelBatchPdfExport">{{ __('Cancel') }}</flux:button>
-                <flux:button variant="primary" icon="document-arrow-down" wire:click="exportBatchPdf">{{ __('Export') }}</flux:button>
+                <flux:button wire:click="cancelPdfExport">{{ __('Cancel') }}</flux:button>
+                <flux:button variant="primary" wire:click="confirmPdfExport">{{ __('Export PDF') }}</flux:button>
             </div>
         </div>
     </flux:modal>

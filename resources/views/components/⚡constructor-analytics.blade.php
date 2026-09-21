@@ -51,45 +51,6 @@ new class extends Component {
     }
 
     #[Computed]
-    public function publishedCount(): int
-    {
-        return Auth::user()->crosswords()->where('is_published', true)->count();
-    }
-
-    #[Computed]
-    public function draftCount(): int
-    {
-        return Auth::user()->crosswords()->where('is_published', false)->count();
-    }
-
-    #[Computed]
-    public function totalSolves(): int
-    {
-        return (int) Auth::user()->crosswords()
-            ->where('is_published', true)
-            ->sum('cached_attempts_count');
-    }
-
-    #[Computed]
-    public function totalCompletions(): int
-    {
-        return (int) Auth::user()->crosswords()
-            ->where('is_published', true)
-            ->sum('cached_completed_count');
-    }
-
-    #[Computed]
-    public function totalLikes(): int
-    {
-        return DB::table('crossword_likes')
-            ->whereIn(
-                'crossword_id',
-                Auth::user()->crosswords()->where('is_published', true)->select('id')
-            )
-            ->count();
-    }
-
-    #[Computed]
     public function totalReviews(): int
     {
         return PuzzleComment::whereIn(
@@ -127,63 +88,6 @@ new class extends Component {
             ->sortKeys()
             ->values()
             ->all();
-    }
-
-    #[Computed]
-    public function cellDifficulty(): array
-    {
-        // For each published puzzle, compute which cells solvers get wrong most often
-        // Returns top 3 hardest puzzles with their difficulty data
-        $puzzles = Auth::user()
-            ->crosswords()
-            ->where('is_published', true)
-            ->whereHas('attempts', fn ($q) => $q->where('is_completed', true))
-            ->with([
-                'attempts' => fn ($q) => $q->where('is_completed', true)->whereNotNull('solve_time_seconds'),
-            ])
-            ->limit(3)
-            ->get();
-
-        $results = [];
-
-        foreach ($puzzles as $puzzle) {
-            if ($puzzle->attempts->isEmpty()) {
-                continue;
-            }
-
-            $cellErrors = [];
-            $solution = $puzzle->solution;
-
-            foreach ($puzzle->attempts as $attempt) {
-                $progress = $attempt->progress ?? [];
-
-                for ($row = 0; $row < $puzzle->height; $row++) {
-                    for ($col = 0; $col < $puzzle->width; $col++) {
-                        $expected = $solution[$row][$col] ?? '';
-                        if ($expected === '#' || $expected === null || $expected === '') {
-                            continue;
-                        }
-                        $key = "{$row},{$col}";
-                        $cellErrors[$key] = $cellErrors[$key] ?? ['errors' => 0, 'total' => 0];
-                        $cellErrors[$key]['total']++;
-                        // We can't see historical errors, so estimate: if solve time is above average, these cells were harder
-                    }
-                }
-            }
-
-            $results[] = [
-                'id' => $puzzle->id,
-                'title' => $puzzle->title,
-                'width' => $puzzle->width,
-                'height' => $puzzle->height,
-                'grid' => $puzzle->grid,
-                'solution' => $puzzle->solution,
-                'attempt_count' => $puzzle->attempts->count(),
-                'avg_time' => (int) round($puzzle->attempts->avg('solve_time_seconds')),
-            ];
-        }
-
-        return $results;
     }
 
     /**
@@ -263,144 +167,96 @@ new class extends Component {
 }
 ?>
 
-<div class="space-y-6">
-    <flux:heading size="lg">{{ __('Constructor Analytics') }}</flux:heading>
-
-    {{-- Overview Cards --}}
-    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        <div class="border-line rounded-xl border p-5">
-            <div class="flex items-center gap-3">
-                <div class="flex size-10 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/30">
-                    <flux:icon name="puzzle-piece" class="size-5 text-amber-600 dark:text-amber-400" />
-                </div>
-                <div>
-                    <flux:text size="sm" class="text-zinc-600">{{ __('Published') }}</flux:text>
-                    <div class="text-2xl font-bold text-fg">{{ $this->publishedCount }}</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="border-line rounded-xl border p-5">
-            <div class="flex items-center gap-3">
-                <div class="flex size-10 items-center justify-center rounded-lg bg-zinc-200 dark:bg-zinc-700">
-                    <flux:icon name="pencil" class="size-5 text-zinc-700 dark:text-zinc-400" />
-                </div>
-                <div>
-                    <flux:text size="sm" class="text-zinc-600">{{ __('Drafts') }}</flux:text>
-                    <div class="text-2xl font-bold text-fg">{{ $this->draftCount }}</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="border-line rounded-xl border p-5">
-            <div class="flex items-center gap-3">
-                <div class="flex size-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/30">
-                    <flux:icon name="eye" class="size-5 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div>
-                    <flux:text size="sm" class="text-zinc-600">{{ __('Total Solves') }}</flux:text>
-                    <div class="text-2xl font-bold text-fg">{{ $this->totalSolves }}</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="border-line rounded-xl border p-5">
-            <div class="flex items-center gap-3">
-                <div class="flex size-10 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/30">
-                    <flux:icon name="check-circle" class="size-5 text-emerald-600 dark:text-emerald-400" />
-                </div>
-                <div>
-                    <flux:text size="sm" class="text-zinc-600">{{ __('Completions') }}</flux:text>
-                    <div class="text-2xl font-bold text-fg">{{ $this->totalCompletions }}</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="border-line rounded-xl border p-5">
-            <div class="flex items-center gap-3">
-                <div class="flex size-10 items-center justify-center rounded-lg bg-red-100 dark:bg-red-900/30">
-                    <flux:icon name="heart" class="size-5 text-red-500 dark:text-red-400" />
-                </div>
-                <div>
-                    <flux:text size="sm" class="text-zinc-600">{{ __('Total Likes') }}</flux:text>
-                    <div class="text-2xl font-bold text-fg">{{ $this->totalLikes }}</div>
-                </div>
-            </div>
-        </div>
-    </div>
-
+<div>
     {{-- Puzzle Performance Table --}}
-    <div class="border-line rounded-xl border p-5">
-        <flux:heading size="lg" class="mb-4">{{ __('Puzzle Performance') }}</flux:heading>
-
+    <div class="py-6">
         @if($this->publishedPuzzles->isEmpty())
-            <div class="border-line-strong flex flex-col items-center justify-center rounded-lg border border-dashed py-8">
-                <flux:icon name="chart-bar" class="mb-2 size-8 text-zinc-500" />
-                <flux:text size="sm" class="text-zinc-500">{{ __('Publish puzzles to see analytics here.') }}</flux:text>
+            <div class="border-border-strong flex flex-col items-center justify-center rounded-sm border border-dashed px-6 py-10 text-center">
+                <flux:icon name="chart-bar" class="text-ink-faint mb-3 size-8" />
+                <p class="text-ink-muted text-sm">{{ __('Publish puzzles to see analytics here.') }}</p>
             </div>
         @else
-            <flux:table>
-                <flux:table.columns>
-                    <flux:table.column sortable :sorted="$sortField === 'title'" :direction="$sortDirection" wire:click="sortBy('title')">{{ __('Puzzle') }}</flux:table.column>
-                    <flux:table.column sortable :sorted="$sortField === 'cached_attempts_count'" :direction="$sortDirection" wire:click="sortBy('cached_attempts_count')" align="center">{{ __('Attempts') }}</flux:table.column>
-                    <flux:table.column sortable :sorted="$sortField === 'cached_completed_count'" :direction="$sortDirection" wire:click="sortBy('cached_completed_count')" align="center">{{ __('Completed') }}</flux:table.column>
-                    <flux:table.column align="center">{{ __('Completion Rate') }}</flux:table.column>
-                    <flux:table.column sortable :sorted="$sortField === 'cached_avg_solve_time'" :direction="$sortDirection" wire:click="sortBy('cached_avg_solve_time')" align="center">{{ __('Avg Time') }}</flux:table.column>
-                    <flux:table.column sortable :sorted="$sortField === 'likes_count'" :direction="$sortDirection" wire:click="sortBy('likes_count')" align="center">{{ __('Likes') }}</flux:table.column>
-                    <flux:table.column sortable :sorted="$sortField === 'avg_rating'" :direction="$sortDirection" wire:click="sortBy('avg_rating')" align="center">{{ __('Rating') }}</flux:table.column>
-                </flux:table.columns>
-
-                <flux:table.rows>
-                    @foreach($this->publishedPuzzles as $puzzle)
-                        <flux:table.row :key="$puzzle->id">
-                            <flux:table.cell variant="strong">
-                                <a href="{{ route('crosswords.editor', $puzzle) }}" wire:navigate class="hover:text-blue-600 dark:hover:text-blue-400">
-                                    {{ $puzzle->displayTitle() }}
-                                </a>
-                                <div class="text-xs text-zinc-500">{{ $puzzle->width }}&times;{{ $puzzle->height }}</div>
-                            </flux:table.cell>
-                            <flux:table.cell align="center">{{ $puzzle->cached_attempts_count }}</flux:table.cell>
-                            <flux:table.cell align="center">{{ $puzzle->cached_completed_count }}</flux:table.cell>
-                            <flux:table.cell align="center">
-                                @php($rate = $puzzle->cached_attempts_count > 0 ? round(($puzzle->cached_completed_count / $puzzle->cached_attempts_count) * 100) : 0)
-                                <span class="{{ $rate >= 75 ? 'text-emerald-600 dark:text-emerald-400' : ($rate >= 40 ? 'text-amber-600 dark:text-amber-400' : 'text-zinc-600') }}">
-                                    {{ $rate }}%
-                                </span>
-                            </flux:table.cell>
-                            <flux:table.cell align="center" class="font-mono">
-                                {{ $this->formatTime($puzzle->cached_avg_solve_time) }}
-                            </flux:table.cell>
-                            <flux:table.cell align="center">
-                                <span class="inline-flex items-center gap-1">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="size-3.5 text-red-400" viewBox="0 0 24 24" fill="currentColor"><path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 01-.383-.218 25.18 25.18 0 01-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0112 5.052 5.5 5.5 0 0116.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 01-4.244 3.17 15.247 15.247 0 01-.383.219l-.022.012-.007.004-.003.001a.752.752 0 01-.704 0l-.003-.001z"/></svg>
-                                    {{ $puzzle->likes_count }}
-                                </span>
-                            </flux:table.cell>
-                            <flux:table.cell align="center">
-                                @if($puzzle->avg_rating)
-                                    <span class="inline-flex items-center gap-1">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="size-3.5 text-yellow-400" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.006 5.404.434c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.434 2.082-5.005Z" clip-rule="evenodd"/></svg>
-                                        {{ round($puzzle->avg_rating, 1) }}
-                                    </span>
-                                    @if($puzzle->reviews_count > 0)
-                                        <div class="text-xs text-zinc-500">({{ $puzzle->reviews_count }})</div>
+            @php
+                $columns = [
+                    ['label' => __('Puzzle'), 'field' => 'title', 'align' => 'text-left'],
+                    ['label' => __('Attempts'), 'field' => 'cached_attempts_count', 'align' => 'text-right'],
+                    ['label' => __('Completed'), 'field' => 'cached_completed_count', 'align' => 'text-right'],
+                    ['label' => __('Completion Rate'), 'field' => null, 'align' => 'text-right'],
+                    ['label' => __('Avg Time'), 'field' => 'cached_avg_solve_time', 'align' => 'text-right'],
+                    ['label' => __('Likes'), 'field' => 'likes_count', 'align' => 'text-right'],
+                    ['label' => __('Rating'), 'field' => 'avg_rating', 'align' => 'text-right'],
+                ];
+            @endphp
+            <div class="overflow-x-auto">
+                <table class="w-full border-collapse text-sm">
+                    <thead>
+                        <tr class="border-hairline border-b">
+                            @foreach($columns as $column)
+                                <th scope="col" class="px-3 py-3 font-normal {{ $column['align'] }}">
+                                    @if($column['field'])
+                                        <button type="button" wire:click="sortBy('{{ $column['field'] }}')" class="meta-classical hover:text-ink inline-flex items-center gap-1 transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">
+                                            {{ $column['label'] }}
+                                            @if($sortField === $column['field'])
+                                                <flux:icon :name="$sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'" class="size-3 text-amber-400" />
+                                            @endif
+                                        </button>
+                                    @else
+                                        <span class="meta-classical">{{ $column['label'] }}</span>
                                     @endif
-                                @else
-                                    <span class="text-zinc-400">—</span>
-                                @endif
-                            </flux:table.cell>
-                        </flux:table.row>
-                    @endforeach
-                </flux:table.rows>
-            </flux:table>
+                                </th>
+                            @endforeach
+                        </tr>
+                    </thead>
+                    <tbody class="divide-hairline divide-y">
+                        @foreach($this->publishedPuzzles as $puzzle)
+                            <tr wire:key="analytics-{{ $puzzle->id }}">
+                                <td class="px-3 py-3.5">
+                                    <a href="{{ route('crosswords.editor', $puzzle) }}" wire:navigate class="font-classical text-ink hover:text-amber-400 text-[17px] leading-tight font-medium transition-colors">
+                                        {{ $puzzle->displayTitle() }}
+                                    </a>
+                                    <div class="meta-classical mt-1">{{ $puzzle->width }}&times;{{ $puzzle->height }}</div>
+                                </td>
+                                <td class="font-classical text-ink tnum px-3 py-3.5 text-right text-[15px] font-medium">{{ $puzzle->cached_attempts_count }}</td>
+                                <td class="font-classical text-ink tnum px-3 py-3.5 text-right text-[15px] font-medium">{{ $puzzle->cached_completed_count }}</td>
+                                <td class="font-classical text-ink tnum px-3 py-3.5 text-right text-[15px] font-medium">
+                                    @php
+                                        $rate = $puzzle->cached_attempts_count > 0 ? round(($puzzle->cached_completed_count / $puzzle->cached_attempts_count) * 100) : 0;
+                                    @endphp
+                                    {{ $rate }}%
+                                </td>
+                                <td class="text-ink tnum px-3 py-3.5 text-right font-mono text-[13px]">{{ $this->formatTime($puzzle->cached_avg_solve_time) }}</td>
+                                <td class="px-3 py-3.5 text-right">
+                                    <span class="font-classical text-ink tnum inline-flex items-center gap-1.5 text-[15px] font-medium">
+                                        <flux:icon name="heart" variant="outline" class="text-ink-faint size-3.5" />
+                                        {{ $puzzle->likes_count }}
+                                    </span>
+                                </td>
+                                <td class="px-3 py-3.5 text-right">
+                                    @if($puzzle->avg_rating)
+                                        <span class="font-classical text-ink tnum inline-flex items-center gap-1.5 text-[15px] font-medium">
+                                            <flux:icon name="star" variant="outline" class="size-3.5 text-amber-400" />
+                                            {{ round($puzzle->avg_rating, 1) }}
+                                        </span>
+                                        @if($puzzle->reviews_count > 0)
+                                            <div class="meta-classical mt-1">({{ $puzzle->reviews_count }})</div>
+                                        @endif
+                                    @else
+                                        <span class="text-ink-faint">—</span>
+                                    @endif
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
         @endif
     </div>
 
     {{-- Rating Trend Chart --}}
     @if(count($this->ratingTrend) >= 2)
-        <div class="border-line rounded-xl border p-5">
-            <flux:heading size="lg" class="mb-1">{{ __('Rating Trend') }}</flux:heading>
-            <flux:text size="sm" class="mb-4 text-zinc-500">{{ __('Average rating received per month over the last 12 months.') }}</flux:text>
+        <div class="border-hairline -mx-6 border-t px-6 pt-6 lg:-mx-8 lg:px-8">
+            <h2 class="font-classical text-ink text-[22px] leading-tight font-medium">{{ __('Rating Trend') }}</h2>
+            <p class="text-ink-muted mt-1 mb-5 text-sm">{{ __('Average rating received per month over the last 12 months.') }}</p>
 
             <div
                 x-data="{
@@ -423,13 +279,6 @@ new class extends Component {
                         const bottom = this.padY + this.chartHeight;
                         return this.linePath + ` L${this.x(this.points.length - 1).toFixed(1)},${bottom} L${this.x(0).toFixed(1)},${bottom} Z`
                     },
-                    get gridLines() {
-                        const lines = [];
-                        for (let v = Math.ceil(this.minRating); v <= Math.floor(this.maxRating); v++) {
-                            lines.push({ y: this.y(v), label: v });
-                        }
-                        return lines;
-                    },
                     formatMonth(m) {
                         const [y, mo] = m.split('-');
                         const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -442,42 +291,48 @@ new class extends Component {
                     },
                     hideTooltip() { this.tooltip = null },
                 }"
+                x-init="
+                    const measure = () => { width = Math.max(400, Math.round($el.clientWidth)) };
+                    measure();
+                    new ResizeObserver(measure).observe($el);
+                "
                 class="w-full overflow-x-auto"
             >
-                <svg :viewBox="`0 0 ${width} ${height}`" class="h-52 w-full min-w-[400px]" preserveAspectRatio="xMidYMid meet">
+                @php
+                    $trendRatings = array_column($this->ratingTrend, 'avg_rating');
+                    $trendMin = max(0, floor(min($trendRatings) * 2) / 2 - 0.5);
+                    $trendMax = min(5, ceil(max($trendRatings) * 2) / 2 + 0.5);
+                @endphp
+                <svg :viewBox="`0 0 ${width} ${height}`" class="w-full min-w-[400px]" preserveAspectRatio="xMidYMid meet">
                     {{-- Grid lines --}}
-                    <template x-for="line in gridLines" :key="line.label">
-                        <g>
-                            <line :x1="padX" :y1="line.y" :x2="width - padX" :y2="line.y" class="stroke-zinc-200 dark:stroke-zinc-700" stroke-dasharray="4 4" />
-                            <text :x="padX - 8" :y="line.y + 4" text-anchor="end" class="fill-zinc-400 text-[11px]" x-text="line.label"></text>
-                        </g>
-                    </template>
+                    @for($value = (int) ceil($trendMin); $value <= (int) floor($trendMax); $value++)
+                        <line :x1="padX" :y1="y({{ $value }})" :x2="width - padX" :y2="y({{ $value }})" class="stroke-hairline" stroke-dasharray="3 5" />
+                        <text :x="padX - 8" :y="y({{ $value }}) + 4" text-anchor="end" class="fill-ink-faint text-[11px]">{{ $value }}</text>
+                    @endfor
 
                     {{-- Area fill --}}
-                    <path :d="areaPath" class="fill-yellow-100/60 dark:fill-yellow-900/20" />
+                    <path :d="areaPath" class="fill-amber-400/10" />
 
                     {{-- Line --}}
-                    <path :d="linePath" fill="none" class="stroke-yellow-500" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+                    <path :d="linePath" fill="none" class="stroke-amber-400" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
 
                     {{-- Data points --}}
-                    <template x-for="(p, i) in points" :key="p.month">
-                        <g>
-                            <circle :cx="x(i)" :cy="y(p.avg_rating)" r="4" class="fill-yellow-500 stroke-white dark:stroke-zinc-900" stroke-width="2" @mouseenter="showTooltip(i)" @mouseleave="hideTooltip()" style="cursor: pointer" />
-                        </g>
-                    </template>
+                    @foreach($this->ratingTrend as $point)
+                        <circle :cx="x({{ $loop->index }})" :cy="y({{ $point['avg_rating'] }})" r="4" class="fill-ground stroke-amber-400" stroke-width="1.5" @mouseenter="showTooltip({{ $loop->index }})" @mouseleave="hideTooltip()" style="cursor: pointer" />
+                    @endforeach
 
                     {{-- X-axis labels --}}
-                    <template x-for="(p, i) in points" :key="'label-' + p.month">
-                        <text :x="x(i)" :y="height - 4" text-anchor="middle" class="fill-zinc-400 text-[10px]" x-text="formatMonth(p.month)"></text>
-                    </template>
+                    @foreach($this->ratingTrend as $point)
+                        <text :x="x({{ $loop->index }})" :y="height - 4" text-anchor="middle" class="fill-ink-faint text-[10px] uppercase tracking-[0.1em]" x-text="formatMonth('{{ $point['month'] }}')"></text>
+                    @endforeach
 
                     {{-- Tooltip --}}
                     <g x-show="tooltip" x-cloak>
-                        <rect :x="(tooltip?.x ?? 0) - 36" :y="(tooltip?.y ?? 0) - 42" width="72" height="34" rx="6" class="fill-zinc-800 dark:fill-zinc-200" opacity="0.95" />
-                        <text :x="tooltip?.x ?? 0" :y="(tooltip?.y ?? 0) - 26" text-anchor="middle" class="fill-white dark:fill-zinc-900 text-[11px] font-semibold">
+                        <rect :x="(tooltip?.x ?? 0) - 40" :y="(tooltip?.y ?? 0) - 44" width="80" height="34" rx="4" class="fill-panel stroke-border-strong" stroke-width="1" />
+                        <text :x="tooltip?.x ?? 0" :y="(tooltip?.y ?? 0) - 28" text-anchor="middle" class="fill-ink text-[11px] font-semibold">
                             <tspan x-text="tooltip ? `★ ${tooltip.rating}` : ''"></tspan>
                         </text>
-                        <text :x="tooltip?.x ?? 0" :y="(tooltip?.y ?? 0) - 14" text-anchor="middle" class="fill-zinc-300 dark:fill-zinc-500 text-[10px]">
+                        <text :x="tooltip?.x ?? 0" :y="(tooltip?.y ?? 0) - 16" text-anchor="middle" class="fill-ink-muted text-[10px]">
                             <tspan x-text="tooltip ? `${tooltip.count} ${tooltip.count === 1 ? 'review' : 'reviews'}` : ''"></tspan>
                         </text>
                     </g>
@@ -486,32 +341,6 @@ new class extends Component {
         </div>
     @elseif($this->totalReviews > 0 && count($this->ratingTrend) < 2)
         {{-- Not enough data points for a chart --}}
-    @endif
-
-    {{-- Difficulty Heatmaps --}}
-    @if(count($this->cellDifficulty) > 0)
-        <div class="border-line rounded-xl border p-5">
-            <flux:heading size="lg" class="mb-1">{{ __('Puzzle Insights') }}</flux:heading>
-            <flux:text size="sm" class="mb-4 text-zinc-500">{{ __('Solve time breakdown for your most-solved puzzles.') }}</flux:text>
-
-            <div class="grid gap-6 lg:grid-cols-3">
-                @foreach($this->cellDifficulty as $puzzle)
-                    <div class="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700/50">
-                        <div class="mb-3 flex items-center justify-between">
-                            <flux:heading size="sm" class="truncate">{{ $puzzle['title'] ?: __('Untitled') }}</flux:heading>
-                            <flux:text size="sm" class="text-zinc-500">{{ $puzzle['attempt_count'] }} {{ __('solves') }}</flux:text>
-                        </div>
-                        <div class="mb-3 flex justify-center">
-                            <x-grid-thumbnail :grid="$puzzle['grid']" :width="$puzzle['width']" :height="$puzzle['height']" :cell-size="10" :max-width="150" />
-                        </div>
-                        <div class="flex justify-between text-xs text-zinc-600">
-                            <span>{{ __('Avg time:') }} {{ $this->formatTime($puzzle['avg_time']) }}</span>
-                            <span>{{ $puzzle['width'] }}&times;{{ $puzzle['height'] }}</span>
-                        </div>
-                    </div>
-                @endforeach
-            </div>
-        </div>
     @endif
 
     {{-- Meta Answer Responses --}}

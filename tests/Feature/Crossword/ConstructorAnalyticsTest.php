@@ -28,7 +28,7 @@ test('analytics page is accessible for authenticated users', function () {
     $this->actingAs($user)
         ->get(route('crosswords.index'))
         ->assertOk()
-        ->assertSee('Constructor Analytics');
+        ->assertSeeLivewire('constructor-analytics');
 });
 
 test('analytics page shows empty state without published puzzles', function () {
@@ -84,19 +84,20 @@ test('analytics counts solves and completions across all published puzzles', fun
     PuzzleAttempt::factory()->for($solver2)->for($puzzle1)->create();
     PuzzleAttempt::factory()->for($solver1)->for($puzzle2)->completed()->create();
 
-    $component = Livewire::actingAs($constructor)->test('constructor-analytics');
+    $component = Livewire::actingAs($constructor)->test('constructor-stats');
 
     expect($component->get('totalSolves'))->toBe(3)
         ->and($component->get('totalCompletions'))->toBe(2);
 });
 
-test('analytics link appears on my puzzles page', function () {
+test('analytics overview cards appear on the build page', function () {
     $user = User::factory()->create();
 
     $this->actingAs($user)
         ->get(route('crosswords.index'))
         ->assertOk()
-        ->assertSee('Analytics');
+        ->assertSee('Total Solves')
+        ->assertSee('Completions');
 });
 
 test('free users see full analytics dashboard', function () {
@@ -110,7 +111,7 @@ test('free users see full analytics dashboard', function () {
     Livewire::actingAs($constructor)
         ->test('constructor-analytics')
         ->assertDontSee('Upgrade to Pro')
-        ->assertSee('Puzzle Performance');
+        ->assertSee('Completion Rate');
 });
 
 test('total solves counts all attempts on published puzzles', function () {
@@ -130,7 +131,7 @@ test('total solves counts all attempts on published puzzles', function () {
     PuzzleAttempt::factory()->count(3)->for($published)->create();
     PuzzleAttempt::factory()->count(2)->for($draft)->create();
 
-    $component = Livewire::actingAs($constructor)->test('constructor-analytics');
+    $component = Livewire::actingAs($constructor)->test('constructor-stats');
 
     expect($component->get('totalSolves'))->toBe(3);
 });
@@ -147,7 +148,7 @@ test('total completions only counts completed attempts', function () {
     PuzzleAttempt::factory()->count(2)->completed()->for($puzzle)->create();
     PuzzleAttempt::factory()->count(3)->for($puzzle)->create();
 
-    $component = Livewire::actingAs($constructor)->test('constructor-analytics');
+    $component = Livewire::actingAs($constructor)->test('constructor-stats');
 
     expect($component->get('totalCompletions'))->toBe(2);
 });
@@ -170,7 +171,7 @@ test('total likes counts likes on published puzzles only', function () {
     CrosswordLike::create(['user_id' => $liker->id, 'crossword_id' => $published->id]);
     CrosswordLike::create(['user_id' => $liker->id, 'crossword_id' => $draft->id]);
 
-    $component = Livewire::actingAs($constructor)->test('constructor-analytics');
+    $component = Livewire::actingAs($constructor)->test('constructor-stats');
 
     expect($component->get('totalLikes'))->toBe(1);
 });
@@ -381,70 +382,6 @@ test('completion rate calculates correctly', function () {
         ->and($instance->completionRate(3, 1))->toBe('33%');
 });
 
-test('cell difficulty returns data for puzzles with completed attempts', function () {
-    $constructor = makeAnalyticsProUser();
-
-    $puzzle = Crossword::factory()->published()->for($constructor)->create([
-        'title' => 'Difficulty Puzzle',
-        'width' => 2,
-        'height' => 2,
-        'grid' => [[1, 2], [3, 0]],
-        'solution' => [['A', 'B'], ['C', 'D']],
-    ]);
-
-    PuzzleAttempt::factory()->completed()->for($puzzle)->create([
-        'progress' => [['A', 'B'], ['C', 'D']],
-        'solve_time_seconds' => 120,
-    ]);
-
-    $component = Livewire::actingAs($constructor)->test('constructor-analytics');
-    $difficulty = $component->get('cellDifficulty');
-
-    expect($difficulty)->toHaveCount(1)
-        ->and($difficulty[0]['title'])->toBe('Difficulty Puzzle')
-        ->and($difficulty[0]['width'])->toBe(2)
-        ->and($difficulty[0]['height'])->toBe(2)
-        ->and($difficulty[0]['attempt_count'])->toBe(1)
-        ->and($difficulty[0]['avg_time'])->toBe(120);
-});
-
-test('cell difficulty is empty when no puzzles have completed attempts', function () {
-    $constructor = makeAnalyticsProUser();
-
-    Crossword::factory()->published()->for($constructor)->create([
-        'width' => 2,
-        'height' => 2,
-        'grid' => [[1, 2], [3, 0]],
-        'solution' => [['A', 'B'], ['C', 'D']],
-    ]);
-
-    $component = Livewire::actingAs($constructor)->test('constructor-analytics');
-
-    expect($component->get('cellDifficulty'))->toHaveCount(0);
-});
-
-test('cell difficulty limits to 3 puzzles', function () {
-    $constructor = makeAnalyticsProUser();
-
-    for ($i = 0; $i < 5; $i++) {
-        $puzzle = Crossword::factory()->published()->for($constructor)->create([
-            'title' => "Puzzle {$i}",
-            'width' => 2,
-            'height' => 2,
-            'grid' => [[1, 2], [3, 0]],
-            'solution' => [['A', 'B'], ['C', 'D']],
-        ]);
-
-        PuzzleAttempt::factory()->completed()->for($puzzle)->create([
-            'solve_time_seconds' => 100 + $i * 10,
-        ]);
-    }
-
-    $component = Livewire::actingAs($constructor)->test('constructor-analytics');
-
-    expect($component->get('cellDifficulty'))->toHaveCount(3);
-});
-
 test('guests cannot access analytics page', function () {
     $this->get(route('crosswords.analytics'))
         ->assertRedirect(route('login'));
@@ -598,7 +535,7 @@ test('analytics overview shows published and draft counts', function () {
     Crossword::factory()->published()->for($constructor)->count(2)->create();
     Crossword::factory()->for($constructor)->create(['is_published' => false]);
 
-    $component = Livewire::actingAs($constructor)->test('constructor-analytics');
+    $component = Livewire::actingAs($constructor)->test('constructor-stats');
 
     expect($component->get('publishedCount'))->toBe(2)
         ->and($component->get('draftCount'))->toBe(1);

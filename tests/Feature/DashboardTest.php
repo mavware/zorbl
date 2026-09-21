@@ -19,20 +19,20 @@ test('the dashboard route redirects authenticated users to the build page', func
         ->assertRedirect(route('crosswords.index', absolute: false));
 });
 
-test('the build page titles itself with a switch to the solve page', function () {
+test('the build page has a heading and no inline build/solve switch', function () {
     $this->actingAs(User::factory()->create())
         ->get(route('crosswords.index'))
         ->assertOk()
-        ->assertSee('data-test="dashboard-switch"', false)
-        ->assertSeeHtml('href="'.route('crosswords.solving').'"');
+        ->assertSee('Build')
+        ->assertDontSee('data-test="dashboard-switch"', false);
 });
 
-test('the solve page titles itself with a switch to the build page', function () {
+test('the solve page has a heading and no inline build/solve switch', function () {
     $this->actingAs(User::factory()->create())
         ->get(route('crosswords.solving'))
         ->assertOk()
-        ->assertSee('data-test="dashboard-switch"', false)
-        ->assertSeeHtml('href="'.route('crosswords.index').'"');
+        ->assertSee('Solve')
+        ->assertDontSee('data-test="dashboard-switch"', false);
 });
 
 test('the sidebar lists build first and solve second instead of a dashboard item', function () {

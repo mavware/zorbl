@@ -309,111 +309,134 @@ new class extends Component {
 }
 ?>
 
-<div class="space-y-4">
+<div class="@container space-y-4">
 
-    <div class="mb-4 flex items-center justify-between gap-3">
-        <flux:heading size="lg">{{ __('Discover Puzzles') }}</flux:heading>
-        <flux:select wire:model.live="sortBy" size="sm" class="w-40">
-            <flux:select.option value="newest">{{ __('Sort: Newest') }}</flux:select.option>
-            <flux:select.option value="oldest">{{ __('Sort: Oldest') }}</flux:select.option>
-            <flux:select.option value="most_liked">{{ __('Sort: Most Liked') }}</flux:select.option>
-            <flux:select.option value="most_solved">{{ __('Sort: Most Solved') }}</flux:select.option>
-            <flux:select.option value="highest_rated">{{ __('Sort: Highest Rated') }}</flux:select.option>
-            <flux:select.option value="most_played">{{ __('Sort: Most Played') }}</flux:select.option>
-            <flux:select.option value="largest">{{ __('Sort: Largest') }}</flux:select.option>
-            <flux:select.option value="smallest">{{ __('Sort: Smallest') }}</flux:select.option>
-        </flux:select>
+    <div class="border-hairline mb-2 flex items-center justify-between gap-3 border-b pb-4">
+        <h2 class="font-classical text-ink text-[26px] leading-tight font-medium">{{ __('Discover Puzzles') }}</h2>
+        <label class="relative w-48 font-classical text-[15px] font-medium">
+            <select wire:model.live="sortBy" class="field-classical font-classical w-full text-[15px] font-medium appearance-none pr-9 pl-3.5">
+            <option value="newest">{{ __('Sort: Newest') }}</option>
+            <option value="oldest">{{ __('Sort: Oldest') }}</option>
+            <option value="most_liked">{{ __('Sort: Most Liked') }}</option>
+            <option value="most_solved">{{ __('Sort: Most Solved') }}</option>
+            <option value="highest_rated">{{ __('Sort: Highest Rated') }}</option>
+            <option value="most_played">{{ __('Sort: Most Played') }}</option>
+            <option value="largest">{{ __('Sort: Largest') }}</option>
+            <option value="smallest">{{ __('Sort: Smallest') }}</option>
+            </select>
+            <flux:icon name="chevron-down" class="text-ink-faint pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2" />
+        </label>
     </div>
 
     {{-- Search + Primary Filters (single row on desktop) --}}
     <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-        <div class="min-w-0 flex-1 sm:basis-64">
-            <flux:input
-                icon="magnifying-glass"
-                size="sm"
+        <label class="relative min-w-0 flex-1 sm:basis-64">
+            <span class="sr-only">{{ __('Search by title or constructor...') }}</span>
+            <flux:icon name="magnifying-glass" class="text-ink-faint pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+            <input
+                type="search"
                 placeholder="{{ __('Search by title or constructor...') }}"
                 wire:model.live.debounce.300ms="search"
+                class="field-classical w-full pr-3 pl-9"
             />
-        </div>
+        </label>
 
-        <flux:select wire:model.live="difficulty" size="sm" class="sm:w-36">
-            <flux:select.option value="">{{ __('Any Difficulty') }}</flux:select.option>
-            <flux:select.option value="Easy">{{ __('Easy') }}</flux:select.option>
-            <flux:select.option value="Medium">{{ __('Medium') }}</flux:select.option>
-            <flux:select.option value="Hard">{{ __('Hard') }}</flux:select.option>
-            <flux:select.option value="Expert">{{ __('Expert') }}</flux:select.option>
-        </flux:select>
+        <label class="relative sm:w-40">
+            <select wire:model.live="difficulty" class="field-classical w-full appearance-none pr-9 pl-3.5">
+            <option value="">{{ __('Any Difficulty') }}</option>
+            <option value="Easy">{{ __('Easy') }}</option>
+            <option value="Medium">{{ __('Medium') }}</option>
+            <option value="Hard">{{ __('Hard') }}</option>
+            <option value="Expert">{{ __('Expert') }}</option>
+            </select>
+            <flux:icon name="chevron-down" class="text-ink-faint pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2" />
+        </label>
 
-        <flux:select wire:model.live="gridSize" size="sm" class="sm:w-32">
-            <flux:select.option value="">{{ __('Any Size') }}</flux:select.option>
-            <flux:select.option value="small">{{ __('Small') }}</flux:select.option>
-            <flux:select.option value="medium">{{ __('Medium') }}</flux:select.option>
-            <flux:select.option value="large">{{ __('Large') }}</flux:select.option>
-        </flux:select>
+        <label class="relative sm:w-32">
+            <select wire:model.live="gridSize" class="field-classical w-full appearance-none pr-9 pl-3.5">
+            <option value="">{{ __('Any Size') }}</option>
+            <option value="small">{{ __('Small') }}</option>
+            <option value="medium">{{ __('Medium') }}</option>
+            <option value="large">{{ __('Large') }}</option>
+            </select>
+            <flux:icon name="chevron-down" class="text-ink-faint pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2" />
+        </label>
 
-        <flux:select wire:model.live="puzzleType" size="sm" class="sm:w-32">
-            <flux:select.option value="">{{ __('Any Type') }}</flux:select.option>
-            <flux:select.option value="standard">{{ __('Standard') }}</flux:select.option>
-            <flux:select.option value="diamond">{{ __('Diamond') }}</flux:select.option>
-            <flux:select.option value="freestyle">{{ __('Freestyle') }}</flux:select.option>
-        </flux:select>
+        <label class="relative sm:w-36">
+            <select wire:model.live="puzzleType" class="field-classical w-full appearance-none pr-9 pl-3.5">
+            <option value="">{{ __('Any Type') }}</option>
+            <option value="standard">{{ __('Standard') }}</option>
+            <option value="diamond">{{ __('Diamond') }}</option>
+            <option value="freestyle">{{ __('Freestyle') }}</option>
+            </select>
+            <flux:icon name="chevron-down" class="text-ink-faint pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2" />
+        </label>
 
         <div class="flex items-center gap-2 sm:ml-auto">
-            <flux:button
-                size="sm"
-                :variant="$showFilters ? 'primary' : 'ghost'"
-                icon="adjustments-horizontal"
+            <button
+                type="button"
+                class="btn-classical h-10 {{ $showFilters ? 'btn-amber-outline' : 'btn-classical-muted' }}"
                 wire:click="$toggle('showFilters')"
             >
+                <flux:icon name="adjustments-horizontal" class="size-4" />
                 {{ __('More') }}
-            </flux:button>
+            </button>
             @if($this->hasActiveFilters())
-                <flux:button size="sm" variant="ghost" wire:click="clearFilters">
+                <button type="button" class="btn-classical btn-classical-muted h-10" wire:click="clearFilters">
                     {{ __('Clear All') }}
-                </flux:button>
+                </button>
             @endif
         </div>
     </div>
 
     {{-- Secondary Filters (collapsible) --}}
     @if($showFilters)
-        <div class="border-line grid gap-3 rounded-xl border p-4 sm:grid-cols-2 lg:grid-cols-4">
-            <flux:field>
-                <flux:label>{{ __('Constructor') }}</flux:label>
-                <flux:input wire:model.live.debounce.300ms="constructor" size="sm" placeholder="{{ __('Name...') }}" />
-            </flux:field>
+        <div class="border-border grid gap-4 rounded-sm border p-[18px] sm:grid-cols-2 lg:grid-cols-4">
+            <label class="block">
+                <span class="meta-classical mb-1.5 block">{{ __('Constructor') }}</span>
+                <input type="text" wire:model.live.debounce.300ms="constructor" placeholder="{{ __('Name...') }}" class="field-classical w-full px-3.5" />
+            </label>
 
-            <flux:field>
-                <flux:label>{{ __('Published') }}</flux:label>
-                <flux:select wire:model.live="dateRange" size="sm">
-                    <flux:select.option value="">{{ __('Any Time') }}</flux:select.option>
-                    <flux:select.option value="today">{{ __('Today') }}</flux:select.option>
-                    <flux:select.option value="week">{{ __('This Week') }}</flux:select.option>
-                    <flux:select.option value="month">{{ __('This Month') }}</flux:select.option>
-                    <flux:select.option value="year">{{ __('This Year') }}</flux:select.option>
-                </flux:select>
-            </flux:field>
+            <label class="block">
+                <span class="meta-classical mb-1.5 block">{{ __('Published') }}</span>
+                <span class="relative block">
+                    <select wire:model.live="dateRange" class="field-classical w-full appearance-none pr-9 pl-3.5">
+                        <option value="">{{ __('Any Time') }}</option>
+                        <option value="today">{{ __('Today') }}</option>
+                        <option value="week">{{ __('This Week') }}</option>
+                        <option value="month">{{ __('This Month') }}</option>
+                        <option value="year">{{ __('This Year') }}</option>
+                    </select>
+                    <flux:icon name="chevron-down" class="text-ink-faint pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2" />
+                </span>
+            </label>
 
-            <flux:field>
-                <flux:label>{{ __('Tag') }}</flux:label>
-                <flux:select wire:model.live="tag" size="sm">
-                    <flux:select.option value="">{{ __('All Tags') }}</flux:select.option>
-                    @foreach($this->allTags as $t)
-                        <flux:select.option value="{{ $t->slug }}">{{ $t->name }}</flux:select.option>
-                    @endforeach
-                </flux:select>
-            </flux:field>
+            <label class="block">
+                <span class="meta-classical mb-1.5 block">{{ __('Tag') }}</span>
+                <span class="relative block">
+                    <select wire:model.live="tag" class="field-classical w-full appearance-none pr-9 pl-3.5">
+                        <option value="">{{ __('All Tags') }}</option>
+                        @foreach($this->allTags as $t)
+                            <option value="{{ $t->slug }}">{{ $t->name }}</option>
+                        @endforeach
+                    </select>
+                    <flux:icon name="chevron-down" class="text-ink-faint pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2" />
+                </span>
+            </label>
 
-            <flux:field>
-                <flux:label>{{ __('Minimum Rating') }}</flux:label>
-                <flux:select wire:model.live="minRating" size="sm">
-                    <flux:select.option value="">{{ __('Any Rating') }}</flux:select.option>
-                    <flux:select.option value="4">{{ __('4+ Stars') }}</flux:select.option>
-                    <flux:select.option value="3">{{ __('3+ Stars') }}</flux:select.option>
-                    <flux:select.option value="2">{{ __('2+ Stars') }}</flux:select.option>
-                    <flux:select.option value="1">{{ __('1+ Stars') }}</flux:select.option>
-                </flux:select>
-            </flux:field>
+            <label class="block">
+                <span class="meta-classical mb-1.5 block">{{ __('Minimum Rating') }}</span>
+                <span class="relative block">
+                    <select wire:model.live="minRating" class="field-classical w-full appearance-none pr-9 pl-3.5">
+                        <option value="">{{ __('Any Rating') }}</option>
+                        <option value="4">{{ __('4+ Stars') }}</option>
+                        <option value="3">{{ __('3+ Stars') }}</option>
+                        <option value="2">{{ __('2+ Stars') }}</option>
+                        <option value="1">{{ __('1+ Stars') }}</option>
+                    </select>
+                    <flux:icon name="chevron-down" class="text-ink-faint pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2" />
+                </span>
+            </label>
         </div>
     @endif
 
@@ -427,19 +450,19 @@ new class extends Component {
     @endphp
 
     @if(count($items) === 0 && ! $showPinned)
-        <div class="border-line-strong flex flex-col items-center justify-center rounded-xl border border-dashed py-12">
-            <flux:icon name="magnifying-glass" class="mb-4 size-12 text-zinc-500" />
-            <flux:heading size="lg" class="mb-2">{{ __('No puzzles found') }}</flux:heading>
-            <flux:text class="text-zinc-500">
+        <div class="border-border-strong flex flex-col items-center justify-center rounded-sm border border-dashed px-6 py-16 text-center">
+            <flux:icon name="magnifying-glass" class="text-ink-faint mb-4 size-10" />
+            <h3 class="font-classical text-ink text-[26px] leading-tight font-medium">{{ __('No puzzles found') }}</h3>
+            <p class="text-ink-muted mt-2 text-sm">
                 @if($this->hasActiveFilters())
                     {{ __('Try adjusting your filters or search terms.') }}
                 @else
                     {{ __('No published puzzles available right now.') }}
                 @endif
-            </flux:text>
+            </p>
         </div>
     @else
-        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div class="grid gap-[22px] [grid-template-columns:repeat(auto-fill,minmax(268px,1fr))]">
             @if($showPinned)
                 <livewire:puzzle-card
                     :crossword="$pinnedDaily"
