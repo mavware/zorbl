@@ -379,6 +379,11 @@ new #[Title('Build')] class extends Component {
             <x-header-button variant="secondary" icon="arrow-up-tray" wire:click="$set('showImportModal', true)">
                 {{ __('Import Puzzle') }}
             </x-header-button>
+
+            <x-slot:footer>
+                {{-- Builder Stats — flush under the header rule --}}
+                <livewire:constructor-stats key="constructor-stats" />
+            </x-slot:footer>
         </x-page-header>
 
         {{-- First-run welcome — only visible to brand-new accounts with zero activity. --}}
@@ -417,11 +422,6 @@ new #[Title('Build')] class extends Component {
                 </div>
             </div>
         @endif
-
-        {{-- Builder Stats --}}
-        <div class="px-6 lg:px-8">
-            <livewire:constructor-stats key="constructor-stats" />
-        </div>
 
         {{-- Search & Filters --}}
         <div class="flex flex-col gap-3 px-6 py-5 sm:flex-row sm:items-center lg:px-8">

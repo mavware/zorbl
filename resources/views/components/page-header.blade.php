@@ -9,6 +9,7 @@
     'leading' => null,
     'badges' => null,
     'meta' => null,
+    'footer' => null,
 ])
 
 @php
@@ -24,6 +25,9 @@
     $hasSlot = fn ($slot): bool => $slot instanceof \Illuminate\View\ComponentSlot ? $slot->isNotEmpty() : filled($slot);
 @endphp
 
+{{-- The group wraps the title row and the optional footer strip so a parent's
+     space-y treats them as one block and the strip sits flush under the rule. --}}
+<div data-page-header-group>
 <div {{ $attributes->class(['flex flex-wrap items-end justify-between gap-5', 'border-hairline border-b' => $rule, $wrapperClasses]) }} data-page-header>
     <div class="flex min-w-0 items-center gap-5">
         @if($hasSlot($leading))
@@ -56,4 +60,12 @@
             {{ $slot }}
         </div>
     @endif
+</div>
+
+@if($hasSlot($footer))
+    {{-- Full-width strip under the title row (e.g. a stats band). Bleeds with the header. --}}
+    <div @class(['-mx-6 lg:-mx-8' => $bleed]) data-page-header-footer>
+        {{ $footer }}
+    </div>
+@endif
 </div>
