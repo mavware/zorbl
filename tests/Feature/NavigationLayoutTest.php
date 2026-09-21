@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\Navigation;
+use App\Models\HelpArticle;
 use App\Models\User;
 use App\Services\AnonymousUserManager;
 use Laravel\Cashier\Subscription;
@@ -50,8 +51,71 @@ test('the top bar chrome is rendered when configured', function () {
         ->assertOk()
         ->assertSee('data-test="header-nav"', false)
         ->assertSee('data-test="header-menu-button"', false)
-        ->assertSee('data-test="header-help-menu"', false)
         ->assertDontSee('data-test="sidebar-menu-button"', false);
+});
+
+test('the top bar offers a registered user favorites, help, and support from the user menu', function () {
+    config(['crosswordbuilder.navigation' => 'header']);
+
+    $html = $this->actingAs(User::factory()->create())
+        ->get(route('crosswords.index'))
+        ->assertOk()
+        ->assertDontSee('data-test="header-help-menu"', false)
+        ->assertSeeInOrder([
+            'data-test="user-menu-links"',
+            'href="'.route('favorites.index').'"',
+            'href="'.route('help.index').'"',
+            'href="'.route('support.index').'"',
+            'href="'.route('profile.edit').'"',
+        ], false)
+        ->getContent();
+
+    preg_match('/data-test="header-nav".*?<\/nav>/s', $html, $headerNav);
+
+    expect($headerNav[0])
+        ->toContain('href="'.route('crosswords.index').'"')
+        ->not->toContain('href="'.route('favorites.index').'"')
+        ->not->toContain('href="'.route('help.index').'"')
+        ->not->toContain('href="'.route('support.index').'"');
+});
+
+test('the top bar offers an admin the admin link from the user menu', function () {
+    config(['crosswordbuilder.navigation' => 'header']);
+
+    Role::findOrCreate('Admin');
+    $admin = User::factory()->create();
+    $admin->assignRole('Admin');
+
+    $this->actingAs($admin)
+        ->get(route('crosswords.index'))
+        ->assertOk()
+        ->assertSeeInOrder([
+            'data-test="user-menu-links"',
+            'href="'.route('support.index').'"',
+            'href="'.route('filament.admin.home').'"',
+            'href="'.route('profile.edit').'"',
+        ], false);
+});
+
+test('the top bar keeps the help menu for guests, who have no user menu', function () {
+    config(['crosswordbuilder.navigation' => 'header']);
+
+    $anon = app(AnonymousUserManager::class)->create();
+
+    $this->actingAs($anon)
+        ->get(route('crosswords.index'))
+        ->assertOk()
+        ->assertSee('data-test="header-help-menu"', false)
+        ->assertDontSee('data-test="user-menu-links"', false);
+});
+
+test('the sidebar chrome does not repeat its links inside the user menu', function () {
+    config(['crosswordbuilder.navigation' => 'sidebar']);
+
+    $this->actingAs(User::factory()->create())
+        ->get(route('crosswords.index'))
+        ->assertOk()
+        ->assertDontSee('data-test="user-menu-links"', false);
 });
 
 test('an unknown navigation config falls back to the sidebar', function (mixed $configured) {
@@ -176,4 +240,73 @@ test('the admin link never uses wire:navigate in either chrome', function (strin
     foreach ($matches[0] as $anchor) {
         expect($anchor)->not->toContain('wire:navigate');
     }
+})->with(['sidebar', 'header']);
+
+test('both chromes render the help center for a signed-out visitor with log in and sign up links', function (string $navigation) {
+    config(['crosswordbuilder.navigation' => $navigation]);
+
+    $article = HelpArticle::factory()->create(['title' => 'Public help article']);
+
+    foreach ([route('help.index'), route('help.show', $article)] as $url) {
+        $response = $this->get($url)
+            ->assertOk()
+            ->assertSee('Public help article')
+            ->assertSee('href="'.route('login').'"', false)
+            ->assertSee('href="'.route('register').'"', false)
+            ->assertDontSee('data-test="logout-button"', false)
+            ->assertDontSee('data-test="user-menu-links"', false)
+            ->assertDontSee('Support our work', false);
+
+        foreach (expectedNavigationLinks(registered: false) as $href) {
+            $response->assertSee('href="'.$href.'"', false);
+        }
+    }
+})->with(['sidebar', 'header']);
+
+test('the sidebar chrome shows a registered user their user menu on the help center', function () {
+    config(['crosswordbuilder.navigation' => 'sidebar']);
+
+    $this->actingAs(User::factory()->create())
+        ->get(route('help.index'))
+        ->assertOk()
+        ->assertSee('data-test="sidebar-menu-button"', false)
+        ->assertDontSee('data-test="sidebar-log-in-button"', false)
+        ->assertDontSee('data-test="header-nav"', false);
+});
+
+test('the top bar chrome shows a registered user their user menu on the help center', function () {
+    config(['crosswordbuilder.navigation' => 'header']);
+
+    $this->actingAs(User::factory()->create())
+        ->get(route('help.index'))
+        ->assertOk()
+        ->assertSee('data-test="header-nav"', false)
+        ->assertSee('data-test="header-menu-button"', false)
+        ->assertDontSee('data-test="header-log-in-button"', false)
+        ->assertDontSee('data-test="header-help-menu"', false);
+});
+
+test('a guest builder sees sign up but not log in on the help center', function (string $navigation) {
+    config(['crosswordbuilder.navigation' => $navigation]);
+
+    $anon = app(AnonymousUserManager::class)->create();
+
+    $this->actingAs($anon)
+        ->get(route('help.index'))
+        ->assertOk()
+        ->assertSee('href="'.route('register').'"', false)
+        ->assertDontSee('data-test="sidebar-log-in-button"', false)
+        ->assertDontSee('data-test="header-log-in-button"', false)
+        ->assertDontSee('data-test="mobile-log-in-button"', false);
+})->with(['sidebar', 'header']);
+
+test('the help center marks itself current in the chrome', function (string $navigation) {
+    config(['crosswordbuilder.navigation' => $navigation]);
+
+    $html = $this->get(route('help.index'))->assertOk()->getContent();
+
+    preg_match_all('/<a[^>]*href="'.preg_quote(route('help.index'), '/').'"[^>]*>/', $html, $matches);
+
+    expect($matches[0])->not->toBeEmpty()
+        ->and(array_filter($matches[0], fn (string $anchor): bool => str_contains($anchor, 'data-current')))->not->toBeEmpty();
 })->with(['sidebar', 'header']);

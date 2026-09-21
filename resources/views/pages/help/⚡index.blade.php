@@ -3,14 +3,12 @@
 use App\Models\HelpArticle;
 use Illuminate\Database\Eloquent\Collection;
 use Livewire\Attributes\Computed;
-use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 
 new
 #[Title('Help Center')]
-#[Layout('layouts.public')]
 class extends Component {
     #[Url(as: 'q')]
     public string $search = '';
@@ -67,93 +65,86 @@ class extends Component {
         @endif
     @endpush
 
-    <div class="mx-auto max-w-3xl py-8">
-        <header class="text-center">
-            <h1 class="text-3xl font-bold tracking-tight sm:text-4xl">{{ __('Help Center') }}</h1>
-            <p class="mt-3 text-zinc-500">{{ __('Guides and answers for constructors and solvers.') }}</p>
-        </header>
+    <div class="space-y-6">
+        <x-page-header
+            :kicker="__('Help')"
+            :title="__('Help Center')"
+            :subtitle="__('Guides and answers for constructors and solvers.')"
+        />
 
-        <div class="mt-8">
+        <div class="mx-auto w-full max-w-3xl space-y-8">
             <flux:input
                 wire:model.live.debounce.300ms="search"
                 icon="magnifying-glass"
                 :placeholder="__('Search the help center…')"
                 clearable
             />
-        </div>
 
-        @php
-            $grouped = $this->articlesByCategory;
-            $categoryOrder = array_keys(\App\Models\HelpArticle::CATEGORIES);
-            $totalArticles = collect($grouped)->sum(fn ($c) => $c->count());
-        @endphp
+            @php
+                $grouped = $this->articlesByCategory;
+                $categoryOrder = array_keys(\App\Models\HelpArticle::CATEGORIES);
+                $totalArticles = collect($grouped)->sum(fn ($c) => $c->count());
+            @endphp
 
-        @if ($totalArticles === 0)
-            <div class="mt-12 rounded-xl border border-zinc-800 bg-zinc-900/40 p-10 text-center">
-                <p class="text-zinc-400">
-                    @if ($search !== '')
-                        {{ __('No articles match ":term".', ['term' => $search]) }}
-                    @else
-                        {{ __('No help articles have been published yet.') }}
-                    @endif
-                </p>
-            </div>
-        @else
-            <div class="mt-10 space-y-10">
-                @foreach ($categoryOrder as $key)
-                    @php $articles = $grouped[$key] ?? null; @endphp
-                    @if ($articles && $articles->isNotEmpty())
-                        <section>
-                            <h2 class="text-xs font-semibold uppercase tracking-wider text-amber-500">
-                                {{ \App\Models\HelpArticle::CATEGORIES[$key] }}
-                            </h2>
-                            <ul class="mt-3 divide-y divide-zinc-800 rounded-xl border border-zinc-800 bg-zinc-900/40">
-                                @foreach ($articles as $article)
-                                    <li>
-                                        <a
-                                            href="{{ route('help.show', $article) }}"
-                                            wire:navigate
-                                            class="group flex items-start justify-between gap-4 p-5 transition hover:bg-zinc-900"
-                                        >
-                                            <div>
-                                                <p class="font-medium text-zinc-100 group-hover:text-amber-400">{{ $article->title }}</p>
-                                                @if ($article->summary)
-                                                    <p class="mt-1 text-sm text-zinc-500">{{ $article->summary }}</p>
-                                                @endif
-                                            </div>
-                                            <svg class="mt-1 h-5 w-5 flex-shrink-0 text-zinc-600 transition group-hover:text-amber-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                                <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 0 1 .02-1.06L11.168 10 7.23 6.29a.75.75 0 1 1 1.04-1.08l4.5 4.25a.75.75 0 0 1 0 1.08l-4.5 4.25a.75.75 0 0 1-1.06-.02Z" clip-rule="evenodd" />
-                                            </svg>
-                                        </a>
-                                    </li>
-                                @endforeach
-                            </ul>
-                        </section>
-                    @endif
-                @endforeach
-            </div>
-        @endif
-
-        <div class="mt-16 rounded-xl border border-zinc-800 bg-zinc-900/40 p-6 text-center">
-            <p class="text-sm text-zinc-400">
-                {{ __("Can't find what you're looking for?") }}
-            </p>
-            @auth
-                <a
-                    href="{{ route('support.create') }}"
-                    wire:navigate
-                    class="mt-3 inline-flex items-center justify-center rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-zinc-950 hover:bg-amber-400 transition"
-                >
-                    {{ __('Open a support ticket') }}
-                </a>
+            @if ($totalArticles === 0)
+                <div class="border-border-strong flex flex-col items-center justify-center rounded-sm border border-dashed px-6 py-16 text-center">
+                    <flux:icon name="question-mark-circle" class="text-ink-faint mb-4 size-10" />
+                    <p class="text-ink-muted text-sm">
+                        @if ($search !== '')
+                            {{ __('No articles match ":term".', ['term' => $search]) }}
+                        @else
+                            {{ __('No help articles have been published yet.') }}
+                        @endif
+                    </p>
+                </div>
             @else
-                <a
-                    href="{{ route('login') }}"
-                    class="mt-3 inline-flex items-center justify-center rounded-lg border border-zinc-700 px-4 py-2 text-sm font-semibold text-zinc-100 hover:border-zinc-500 hover:bg-zinc-800 transition"
-                >
-                    {{ __('Log in to contact support') }}
-                </a>
-            @endauth
+                <div class="space-y-8">
+                    @foreach ($categoryOrder as $key)
+                        @php $articles = $grouped[$key] ?? null; @endphp
+                        @if ($articles && $articles->isNotEmpty())
+                            <section>
+                                <h2 class="label-classical font-classical text-[12px] font-semibold text-amber-400 [--label-tracking:0.14em]">
+                                    {{ \App\Models\HelpArticle::CATEGORIES[$key] }}
+                                </h2>
+                                <ul class="border-border divide-hairline mt-3 divide-y rounded-sm border">
+                                    @foreach ($articles as $article)
+                                        <li>
+                                            <a
+                                                href="{{ route('help.show', $article) }}"
+                                                wire:navigate
+                                                class="group flex items-start justify-between gap-4 px-[18px] py-3.5 transition-colors focus:outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-amber-400"
+                                            >
+                                                <div class="min-w-0">
+                                                    <p class="font-classical text-ink group-hover:text-amber-300 text-[18px] leading-tight font-semibold transition-colors">{{ $article->title }}</p>
+                                                    @if ($article->summary)
+                                                        <p class="text-ink-muted mt-1 text-sm">{{ $article->summary }}</p>
+                                                    @endif
+                                                </div>
+                                                <flux:icon name="chevron-right" class="text-ink-faint mt-1 size-5 shrink-0 transition-colors group-hover:text-amber-400" />
+                                            </a>
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            </section>
+                        @endif
+                    @endforeach
+                </div>
+            @endif
+
+            <div class="border-border rounded-sm border p-6 text-center">
+                <p class="text-ink-muted text-sm">
+                    {{ __("Can't find what you're looking for?") }}
+                </p>
+                @auth
+                    <a href="{{ route('support.create') }}" wire:navigate class="btn-classical btn-amber-outline mt-3">
+                        {{ __('Open a support ticket') }}
+                    </a>
+                @else
+                    <a href="{{ route('login') }}" class="btn-classical btn-classical-muted mt-3">
+                        {{ __('Log in to contact support') }}
+                    </a>
+                @endauth
+            </div>
         </div>
     </div>
 </div>

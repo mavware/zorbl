@@ -5,6 +5,8 @@
 </head>
 <body class="min-h-screen bg-page">
 @include('partials.impersonation-banner')
+@inject('navigation', 'App\Support\AppNavigation')
+
 <flux:sidebar sticky collapsible="mobile" class="bg-surface border-line border-e px-0! pt-0!">
     <flux:sidebar.header class="p-4 border-b border-line">
         <x-app-logo :sidebar="true" href="{{ route('crosswords.index') }}" wire:navigate/>
@@ -24,19 +26,32 @@
     </div>
 
     <div class="hidden px-4 lg:block">
-        @if (auth()->user()->isAnonymous())
-            <flux:button
-                :href="route('register')"
-                variant="ghost"
-                icon="user-plus"
-                class="btn-amber-outline w-full"
-                data-test="sidebar-sign-up-button"
-                wire:navigate
-            >
-                {{ __('Sign up') }}
-            </flux:button>
-        @else
+        @if ($navigation->hasAccount(auth()->user()))
             <x-user-menu variant="sidebar"/>
+        @else
+            <div class="grid gap-2">
+                @guest
+                    <flux:button
+                        :href="route('login')"
+                        variant="ghost"
+                        icon="arrow-right-end-on-rectangle"
+                        class="w-full"
+                        data-test="sidebar-log-in-button"
+                    >
+                        {{ __('Log in') }}
+                    </flux:button>
+                @endguest
+                <flux:button
+                    :href="route('register')"
+                    variant="ghost"
+                    icon="user-plus"
+                    class="btn-amber-outline w-full"
+                    data-test="sidebar-sign-up-button"
+                    wire:navigate
+                >
+                    {{ __('Sign up') }}
+                </flux:button>
+            </div>
         @endif
     </div>
 
@@ -49,7 +64,20 @@
 
     <flux:spacer/>
 
-    @if (auth()->user()->isAnonymous())
+    @if ($navigation->hasAccount(auth()->user()))
+    <x-user-menu variant="header"/>
+    @else
+    @guest
+    <flux:button
+        :href="route('login')"
+        variant="ghost"
+        size="sm"
+        class="me-1"
+        data-test="mobile-log-in-button"
+    >
+        {{ __('Log in') }}
+    </flux:button>
+    @endguest
     <flux:button
         :href="route('register')"
         variant="ghost"
@@ -61,8 +89,6 @@
     >
         {{ __('Sign up') }}
     </flux:button>
-    @else
-    <x-user-menu variant="header"/>
     @endif
 </flux:header>
 

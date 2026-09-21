@@ -51,20 +51,15 @@ new class extends Component {
     {{-- Overview Cards --}}
     <div class="border-hairline grid border-b sm:grid-cols-2 lg:grid-cols-5">
         @foreach ([
-            ['icon' => 'puzzle-piece', 'label' => __('Published'), 'value' => $this->publishedCount],
-            ['icon' => 'pencil', 'label' => __('Drafts'), 'value' => $this->draftCount],
-            ['icon' => 'eye', 'label' => __('Total Solves'), 'value' => $this->totalSolves],
-            ['icon' => 'check-circle', 'label' => __('Completions'), 'value' => $this->totalCompletions],
-            ['icon' => 'heart', 'label' => __('Total Likes'), 'value' => $this->totalLikes],
+            ['label' => __('PUBLISHED'), 'value' => $this->publishedCount],
+            ['label' => __('DRAFTS'), 'value' => $this->draftCount],
+            ['label' => __('TOTAL SOLVES'), 'value' => $this->totalSolves],
+            ['label' => __('COMPLETIONS'), 'value' => $this->totalCompletions],
+            ['label' => __('TOTAL LIKES'), 'value' => $this->totalLikes],
         ] as $stat)
-            <div class="border-hairline flex items-center gap-4 border-b px-6 py-[18px] last:border-b-0 sm:border-e sm:even:border-e-0 lg:border-b-0 lg:even:border-e lg:last:border-e-0 lg:px-8">
-                <div class="border-border-strong text-ink-faint flex size-10 shrink-0 items-center justify-center rounded-sm border">
-                    <flux:icon :name="$stat['icon']" variant="outline" class="size-5" />
-                </div>
-                <div>
-                    <div class="meta-classical">{{ $stat['label'] }}</div>
-                    <div class="font-classical text-ink tnum text-[30px] leading-none font-medium">{{ $stat['value'] }}</div>
-                </div>
+            <div class="border-hairline border-b px-6 py-[18px] last:border-b-0 sm:border-e sm:even:border-e-0 lg:border-b-0 lg:even:border-e lg:last:border-e-0 lg:px-8" data-test="constructor-stat">
+                <div class="font-classical tnum text-[30px] leading-none font-medium text-amber-700 dark:text-amber-400">{{ $stat['value'] }}</div>
+                <div class="meta-classical mt-1.5">{{ $stat['label'] }}</div>
             </div>
         @endforeach
     </div>

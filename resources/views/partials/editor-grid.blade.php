@@ -57,12 +57,14 @@
                                     <div class="absolute inset-0 bg-violet-200/40 dark:bg-violet-800/30"></div>
                                 </template>
 
-                                {{-- Letter --}}
+                                {{-- Letter (a previewed suggestion ghosts in muted blue until it is placed) --}}
                                 <span
                                     class="font-semibold uppercase"
-                                    :class="isPrefilled(rowIdx, colIdx) ? 'text-violet-700 dark:text-violet-300' : 'text-fg'"
-                                    :style="letterFontStyle(rowIdx, colIdx) + (defaultColors.letter && !isPrefilled(rowIdx, colIdx) ? '; color: ' + defaultColors.letter : '')"
-                                    x-text="isBlock(rowIdx, colIdx) ? '' : (solution[rowIdx]?.[colIdx] || '')"
+                                    :class="isPreviewCell(rowIdx, colIdx)
+                                        ? 'text-blue-500/70 dark:text-blue-300/70'
+                                        : (isPrefilled(rowIdx, colIdx) ? 'text-violet-700 dark:text-violet-300' : 'text-fg')"
+                                    :style="letterFontStyle(rowIdx, colIdx) + (defaultColors.letter && !isPrefilled(rowIdx, colIdx) && !isPreviewCell(rowIdx, colIdx) ? '; color: ' + defaultColors.letter : '')"
+                                    x-text="displayLetter(rowIdx, colIdx)"
                                 ></span>
                             </div>
                         </template>

@@ -1,4 +1,5 @@
-{{-- CluesRight: Across above Down in a single column on the right of the grid. --}}
+{{-- CluesRight: Across above Down in a single column on the right of the grid;
+     suggestions pane on the far right. --}}
 <div class="flex flex-1 gap-4 overflow-hidden max-lg:flex-col lg:max-h-[calc(100dvh-8rem)]">
     @include('partials.editor-grid')
 
@@ -10,6 +11,8 @@
             @include('partials.editor-clue-panel', ['direction' => 'down'])
         </div>
     </div>
+
+    @include('partials.editor-suggestions-pane')
 
     @include('partials.editor-mobile-clues')
 </div>

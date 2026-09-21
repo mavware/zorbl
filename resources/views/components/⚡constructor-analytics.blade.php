@@ -11,6 +11,12 @@ use Livewire\Attributes\Url;
 use Livewire\Component;
 
 new class extends Component {
+    /**
+     * The rating trend chart is hidden for now; flip this to bring it back.
+     * The ratingTrend data behind it is still computed and tested.
+     */
+    public const bool SHOWS_RATING_TREND = false;
+
     #[Url]
     public string $sortField = '';
 
@@ -255,8 +261,8 @@ new class extends Component {
         @endif
     </div>
 
-    {{-- Rating Trend Chart --}}
-    @if(count($this->ratingTrend) >= 2)
+    {{-- Rating Trend Chart (hidden for now, see SHOWS_RATING_TREND) --}}
+    @if(static::SHOWS_RATING_TREND && count($this->ratingTrend) >= 2)
         <div class="border-hairline -mx-6 border-t px-6 pt-6 lg:-mx-8 lg:px-8">
             <h2 class="font-classical text-ink text-[22px] leading-tight font-medium">{{ __('Rating Trend') }}</h2>
             <p class="text-ink-muted mt-1 mb-5 text-sm">{{ __('Average rating received per month over the last 12 months.') }}</p>
@@ -342,8 +348,6 @@ new class extends Component {
                 </svg>
             </div>
         </div>
-    @elseif($this->totalReviews > 0 && count($this->ratingTrend) < 2)
-        {{-- Not enough data points for a chart --}}
     @endif
 
     {{-- Meta Answer Responses --}}

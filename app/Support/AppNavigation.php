@@ -17,10 +17,13 @@ class AppNavigation
     /**
      * The main destinations, grouped: the user's own work first, then the
      * shared libraries. Groups are rendered with a separator between them.
+     * The top bar leaves Favorites out here and offers it from the user menu
+     * instead (see account()). Public pages (e.g. the help center) render the
+     * chrome for signed-out visitors too, so $user may be null.
      *
      * @return array<int, array<int, NavigationItem>>
      */
-    public function main(User $user): array
+    public function main(?User $user, bool $withFavorites = true): array
     {
         return [
             array_values(array_filter([
@@ -36,12 +39,7 @@ class AppNavigation
                     href: route('crosswords.solving'),
                     current: $this->request->routeIs('crosswords.solving', 'crosswords.solver', 'crosswords.stats'),
                 ),
-                $user->isAnonymous() ? null : new NavigationItem(
-                    label: __('Favorites'),
-                    icon: 'heart',
-                    href: route('favorites.index'),
-                    current: $this->request->routeIs('favorites.index'),
-                ),
+                $withFavorites ? $this->favorites($user) : null,
             ])),
             array_values(array_filter([
                 new NavigationItem(
@@ -73,11 +71,25 @@ class AppNavigation
     }
 
     /**
+     * The links the top bar's user menu offers a registered user: their
+     * favorites, then help, support, and (for admins) the admin panel.
+     *
+     * @return array<int, NavigationItem>
+     */
+    public function account(?User $user): array
+    {
+        return array_values(array_filter([
+            $this->favorites($user),
+            ...$this->secondary($user),
+        ]));
+    }
+
+    /**
      * Help, support, and (for admins) the admin panel.
      *
      * @return array<int, NavigationItem>
      */
-    public function secondary(User $user): array
+    public function secondary(?User $user): array
     {
         return array_values(array_filter([
             new NavigationItem(
@@ -92,13 +104,35 @@ class AppNavigation
                 href: route('support.index'),
                 current: $this->request->routeIs('support.*'),
             ),
-            $user->hasRole('Admin') ? new NavigationItem(
+            $user?->hasRole('Admin') ? new NavigationItem(
                 label: __('Admin'),
                 icon: 'shield-check',
                 href: route('filament.admin.home'),
                 navigate: false,
             ) : null,
         ]));
+    }
+
+    /**
+     * The user's favorites: registered users only.
+     */
+    private function favorites(?User $user): ?NavigationItem
+    {
+        return $this->hasAccount($user) ? new NavigationItem(
+            label: __('Favorites'),
+            icon: 'heart',
+            href: route('favorites.index'),
+            current: $this->request->routeIs('favorites.index'),
+        ) : null;
+    }
+
+    /**
+     * Whether the visitor has a registered account: signed-out visitors and
+     * anonymous guest builders get sign-up prompts instead of a user menu.
+     */
+    public function hasAccount(?User $user): bool
+    {
+        return $user !== null && ! $user->isAnonymous();
     }
 
     /**
@@ -119,8 +153,8 @@ class AppNavigation
     /**
      * Whether the "Support our work" callout is shown: free, registered users only.
      */
-    public function showsUpgradeCallout(User $user): bool
+    public function showsUpgradeCallout(?User $user): bool
     {
-        return ! $user->isPro() && ! $user->isAnonymous();
+        return $this->hasAccount($user) && ! $user->isPro();
     }
 }

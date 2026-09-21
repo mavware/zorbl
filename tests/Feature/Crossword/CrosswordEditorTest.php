@@ -718,3 +718,47 @@ test('saveMetadata validates default colors are hex values', function () {
         ->call('saveMetadata')
         ->assertHasErrors(['cellColor']);
 });
+
+test('every desktop layout renders the suggestions pane exactly once', function (CrosswordLayout $layout) {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create([
+        'width' => 15,
+        'height' => 15,
+        'layout' => $layout,
+    ]);
+
+    $this->actingAs($user);
+
+    $html = Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])->html();
+
+    expect(substr_count($html, 'data-suggestions-pane'))->toBe(1);
+    expect($html)
+        ->toContain('handleSuggestionsKeydown($event)')
+        ->toContain("setSuggestionsTab('words')")
+        ->toContain("setSuggestionsTab('clues')");
+})->with(array_combine(
+    array_map(fn (CrosswordLayout $case) => $case->name, CrosswordLayout::cases()),
+    array_map(fn (CrosswordLayout $case) => [$case], CrosswordLayout::cases()),
+));
+
+test('desktop clue rows no longer carry suggestion buttons or popovers', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create([
+        'width' => 15,
+        'height' => 15,
+    ]);
+
+    $this->actingAs($user);
+
+    $html = Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])->html();
+
+    // Only the mobile clue list (one Across row template, one Down) still
+    // toggles the inline popovers; the desktop clue rows defer to the pane.
+    expect(substr_count($html, 'toggleWordSuggestions()'))->toBe(2);
+    expect(substr_count($html, 'toggleSuggestions()'))->toBe(2);
+    expect($html)->not->toContain('showWordSuggestions && (wordSuggestions.length > 0');
+
+    // Bindings inside the pane's x-if can re-run once after the selection
+    // clears, so every dereference of the nullable slot must be null-safe.
+    expect($html)->not->toMatch('/suggestionsSlot\.[a-z]/');
+});

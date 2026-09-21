@@ -63,6 +63,14 @@ export function crosswordGrid({
         wordSuggestions: [],
         wordSuggestionsLoading: false,
         wordSuggestionsPattern: '',
+        // Persistent suggestions pane (desktop). It always tracks the selected
+        // slot; `showSuggestions` / `showWordSuggestions` only drive the mobile
+        // clue list's inline popovers.
+        suggestionsPaneMounted: false,
+        suggestionsPaneCollapsed: false,
+        suggestionsTab: 'words',
+        suggestionsIndex: -1,
+        previewLetters: {},
         showRebusInput: false,
         rebusInputValue: '',
         rebusCells: [],
@@ -83,6 +91,10 @@ export function crosswordGrid({
         _autosave: null,
         _longPressTimer: null,
         _wordSuggestTimer: null,
+        _wordSuggestSeq: 0,
+        _clueSuggestSeq: 0,
+        _paneMedia: null,
+        _onPaneMediaChange: null,
         _highlightTimer: null,
         _cellsFlashTimer: null,
         _cluesFlashTimer: null,
@@ -128,8 +140,8 @@ export function crosswordGrid({
             document.addEventListener('livewire:navigating', this._onLivewireNavigating);
 
             this.$watch('isDirty', (val) => { if (val) this._autosave.scheduleSave(); });
-            this.$watch('activeClueNumber', () => this.closeSuggestions());
-            this.$watch('direction', () => this.closeSuggestions());
+            this.$watch('activeClueNumber', () => this.onActiveSlotChanged());
+            this.$watch('direction', () => this.onActiveSlotChanged());
 
             // Flash the grid green when every playable cell is filled, and the
             // clue panels green when every clue text is filled. Re-arm whenever
@@ -172,6 +184,10 @@ export function crosswordGrid({
             this._onDocClick = this._onDocMousedown = this._onBeforeUnload = this._onLivewireNavigating = null;
 
             this._autosave?.destroy();
+            if (this._paneMedia && this._onPaneMediaChange) {
+                this._paneMedia.removeEventListener('change', this._onPaneMediaChange);
+            }
+            this._paneMedia = this._onPaneMediaChange = null;
             clearTimeout(this._longPressTimer);
             clearTimeout(this._wordSuggestTimer);
             clearTimeout(this._highlightTimer);
@@ -424,8 +440,11 @@ export function crosswordGrid({
             const grid = this.$refs.gridContainer;
             const across = this.$refs.acrossPanel;
             const down = this.$refs.downPanel;
+            const pane = this.$refs.suggestionsPane;
 
-            if (grid?.contains(target) || across?.contains(target) || down?.contains(target)) {
+            // The suggestions pane acts on the selection, so focusing it must
+            // not clear the very slot it is serving.
+            if (grid?.contains(target) || across?.contains(target) || down?.contains(target) || pane?.contains(target)) {
                 return;
             }
 
@@ -1279,49 +1298,52 @@ export function crosswordGrid({
                 this.closeSuggestions();
             } else {
                 this.showSuggestions = true;
-                this.clueSuggestionsWord = '';
-                this.fetchClueSuggestions();
+                this.fetchClueSuggestions({ force: true });
             }
         },
 
         closeSuggestions() {
+            this._clueSuggestSeq++; // drop any in-flight lookup
             this.showSuggestions = false;
             this.clueSuggestions = [];
             this.clueSuggestionsWord = '';
             this.clueSuggestionsLoading = false;
         },
 
-        async fetchClueSuggestions() {
+        async fetchClueSuggestions({ force = false } = {}) {
             const num = this.activeClueNumber;
-            if (num < 0) {
-                this.clueSuggestions = [];
-                this.clueSuggestionsWord = '';
-                return;
-            }
-
-            const word = this.getAnswerForSlot(this.direction, num);
+            const word = num < 0 ? null : this.getAnswerForSlot(this.direction, num);
             if (!word || word.length < 2) {
+                this._clueSuggestSeq++;
                 this.clueSuggestions = [];
                 this.clueSuggestionsWord = '';
+                this.clueSuggestionsLoading = false;
                 return;
             }
 
-            if (word === this.clueSuggestionsWord) return;
+            if (!force && word === this.clueSuggestionsWord) return;
 
+            const seq = ++this._clueSuggestSeq;
+            this.clueSuggestionsWord = word;
             this.clueSuggestionsLoading = true;
             try {
-                this.clueSuggestions = await this.$wire.lookupClues(word);
-                this.clueSuggestionsWord = word;
+                const results = await this.$wire.lookupClues(word);
+                if (seq !== this._clueSuggestSeq) return; // superseded
+                this.clueSuggestions = results;
             } catch (e) {
+                if (seq !== this._clueSuggestSeq) return;
                 this.clueSuggestions = [];
+                this.clueSuggestionsWord = '';
             }
+            this.suggestionsIndex = -1;
             this.clueSuggestionsLoading = false;
         },
 
         useClue(clue, text) {
             clue.clue = text;
-            this.closeSuggestions();
             this.markDirty();
+            // The mobile popover closes on use; the desktop pane keeps its list.
+            if (this.showSuggestions) this.closeSuggestions();
         },
 
         // --- Word suggestions (autofill) -------------------------------------
@@ -1345,47 +1367,64 @@ export function crosswordGrid({
             } else {
                 this.showWordSuggestions = true;
                 this.closeSuggestions();
-                this.wordSuggestionsPattern = '';
-                this.fetchWordSuggestions();
+                this.fetchWordSuggestions({ force: true });
             }
             this.$refs.gridContainer?.focus();
         },
 
         closeWordSuggestions() {
+            this._wordSuggestSeq++; // drop any in-flight lookup
             this.showWordSuggestions = false;
             this.wordSuggestions = [];
             this.wordSuggestionsPattern = '';
             this.wordSuggestionsLoading = false;
         },
 
+        // Letter edits funnel through here so a burst of keystrokes costs one
+        // request. Serves the mobile popover and the desktop pane alike.
         debouncedRefreshWordSuggestions() {
-            if (!this.showWordSuggestions) return;
+            if (!this.showWordSuggestions && !this.isSuggestionsPaneActive()) return;
             clearTimeout(this._wordSuggestTimer);
-            this._wordSuggestTimer = setTimeout(() => {
-                this.wordSuggestionsPattern = '';
-                this.fetchWordSuggestions();
-            }, WORD_SUGGEST_DEBOUNCE_MS);
+            this._wordSuggestTimer = setTimeout(() => this._runSuggestionLookups(), WORD_SUGGEST_DEBOUNCE_MS);
         },
 
-        async fetchWordSuggestions() {
-            const num = this.activeClueNumber;
-            if (num < 0) { this.wordSuggestions = []; return; }
+        _runSuggestionLookups() {
+            const paneActive = this.isSuggestionsPaneActive();
+            if (this.showWordSuggestions || (paneActive && this.suggestionsTab === 'words')) {
+                this.fetchWordSuggestions();
+            }
+            if (paneActive && this.suggestionsTab === 'clues') {
+                this.fetchClueSuggestions();
+            }
+        },
 
-            const pattern = this.getPatternForSlot(this.direction, num);
+        async fetchWordSuggestions({ force = false } = {}) {
+            const num = this.activeClueNumber;
+            const pattern = num < 0 ? null : this.getPatternForSlot(this.direction, num);
             if (!pattern || pattern.length < 2 || !pattern.includes('_')) {
+                this._wordSuggestSeq++;
                 this.wordSuggestions = [];
+                this.wordSuggestionsPattern = '';
+                this.wordSuggestionsLoading = false;
                 return;
             }
 
-            if (pattern === this.wordSuggestionsPattern) return;
+            if (!force && pattern === this.wordSuggestionsPattern) return;
 
+            const seq = ++this._wordSuggestSeq;
+            this.wordSuggestionsPattern = pattern;
             this.wordSuggestionsLoading = true;
             try {
-                this.wordSuggestions = await this.$wire.suggestWords(pattern, pattern.length);
-                this.wordSuggestionsPattern = pattern;
+                const results = await this.$wire.suggestWords(pattern, pattern.length);
+                if (seq !== this._wordSuggestSeq) return; // superseded
+                this.wordSuggestions = results;
             } catch (e) {
+                if (seq !== this._wordSuggestSeq) return;
                 this.wordSuggestions = [];
+                this.wordSuggestionsPattern = '';
             }
+            this.suggestionsIndex = -1;
+            this.clearSuggestionPreview();
             this.wordSuggestionsLoading = false;
         },
 
@@ -1395,14 +1434,198 @@ export function crosswordGrid({
             const slot = this.findSlot(dir, num);
             if (!slot) return;
 
+            this.clearSuggestionPreview();
             for (let i = 0; i < slot.length && i < word.length; i++) {
                 const r = dir === 'across' ? slot.row : slot.row + i;
                 const c = dir === 'across' ? slot.col + i : slot.col;
                 this.solution[r][c] = word[i];
             }
 
+            this.suggestionsIndex = -1;
             this.closeWordSuggestions();
             this.markDirty();
+            this.refreshSuggestionsPane();
+        },
+
+        // --- Suggestions pane ------------------------------------------------
+        // The pane partial calls this from x-init. Below the 2xl breakpoint the
+        // pane starts collapsed so it never squeezes the grid; the user can
+        // still expand it by hand.
+        mountSuggestionsPane() {
+            this.suggestionsPaneMounted = true;
+            if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+                this._paneMedia = window.matchMedia('(min-width: 96rem)');
+                this._onPaneMediaChange = (e) => { this.suggestionsPaneCollapsed = !e.matches; };
+                this.suggestionsPaneCollapsed = !this._paneMedia.matches;
+                this._paneMedia.addEventListener('change', this._onPaneMediaChange);
+            }
+            this.refreshSuggestionsPane();
+        },
+
+        // True when the pane is rendered, expanded and actually visible (the
+        // layout hides it below `lg`, where the mobile popovers take over).
+        isSuggestionsPaneActive() {
+            if (!this.suggestionsPaneMounted || this.suggestionsPaneCollapsed) return false;
+            const el = this.$refs?.suggestionsPane;
+            return !el || el.offsetParent !== null;
+        },
+
+        toggleSuggestionsPane() {
+            this.suggestionsPaneCollapsed = !this.suggestionsPaneCollapsed;
+            this.suggestionsIndex = -1;
+            this.clearSuggestionPreview();
+            if (!this.suggestionsPaneCollapsed) this.refreshSuggestionsPane();
+        },
+
+        setSuggestionsTab(tab) {
+            this.suggestionsTab = tab;
+            this.suggestionsIndex = -1;
+            this.clearSuggestionPreview();
+            this.refreshSuggestionsPane();
+        },
+
+        // Selection changes refetch right away (one request per slot); letter
+        // edits go through debouncedRefreshWordSuggestions().
+        refreshSuggestionsPane() {
+            if (!this.isSuggestionsPaneActive()) return;
+            clearTimeout(this._wordSuggestTimer);
+            this._runSuggestionLookups();
+        },
+
+        onActiveSlotChanged() {
+            this.closeSuggestions();
+            this.closeWordSuggestions();
+            this.suggestionsIndex = -1;
+            this.clearSuggestionPreview();
+            this.refreshSuggestionsPane();
+        },
+
+        // The slot the pane is serving: direction, number and the letter
+        // pattern with `?` for blanks (e.g. Across 17 · SAL??). Null when no
+        // cell is selected.
+        get suggestionsSlot() {
+            const number = this.activeClueNumber;
+            if (number < 0) return null;
+            const raw = this.getPatternForSlot(this.direction, number);
+            if (!raw) return null;
+            return {
+                direction: this.direction,
+                number,
+                pattern: raw.replaceAll('_', '?'),
+                length: raw.length,
+                filled: !raw.includes('_'),
+            };
+        },
+
+        get suggestionsList() {
+            return this.suggestionsTab === 'clues' ? this.clueSuggestions : this.wordSuggestions;
+        },
+
+        get activeClue() {
+            const clues = this.direction === 'across' ? this.cluesAcross : this.cluesDown;
+            return clues.find(c => c.number === this.activeClueNumber) ?? null;
+        },
+
+        suggestionScoreClass(score) {
+            if (score >= 70) return 'text-emerald-600 dark:text-emerald-400';
+            if (score >= 45) return 'text-amber-600 dark:text-amber-400';
+            return 'text-fg-subtle';
+        },
+
+        // Keyboard handling while the pane has focus: ↑/↓ highlight and preview
+        // a candidate, Enter places it, Esc hands focus back to the grid.
+        handleSuggestionsKeydown(e) {
+            const key = e.key;
+
+            if (key === 'Escape') {
+                e.preventDefault();
+                e.stopPropagation();
+                this.suggestionsIndex = -1;
+                this.clearSuggestionPreview();
+                this.$refs.gridContainer?.focus();
+                return;
+            }
+
+            if (key === 'ArrowDown' || key === 'ArrowUp') {
+                e.preventDefault();
+                const count = this.suggestionsList.length;
+                if (count === 0) return;
+                const delta = key === 'ArrowDown' ? 1 : -1;
+                const next = this.suggestionsIndex < 0
+                    ? (delta > 0 ? 0 : count - 1)
+                    : (this.suggestionsIndex + delta + count) % count;
+                this.highlightSuggestion(next);
+                return;
+            }
+
+            if (key === 'Enter') {
+                e.preventDefault();
+                this.commitHighlightedSuggestion();
+            }
+        },
+
+        highlightSuggestion(index) {
+            this.suggestionsIndex = index;
+            const item = this.suggestionsList[index];
+            if (this.suggestionsTab === 'words' && item) {
+                this.previewWord(item.word);
+            } else {
+                this.clearSuggestionPreview();
+            }
+            this.$nextTick(() => {
+                this.$refs?.suggestionsPane
+                    ?.querySelector?.('[data-suggestion-index="' + index + '"]')
+                    ?.scrollIntoView?.({ block: 'nearest' });
+            });
+        },
+
+        commitHighlightedSuggestion() {
+            const item = this.suggestionsList[this.suggestionsIndex];
+            if (!item) return;
+            if (this.suggestionsTab === 'words') {
+                this.applyWordSuggestion(item.word);
+            } else if (this.activeClue) {
+                this.useClue(this.activeClue, item.clue);
+            }
+            this.suggestionsIndex = -1;
+        },
+
+        // Ghost the candidate into the active slot's empty cells. Only
+        // previewLetters changes; `solution` is untouched until Enter/click.
+        previewWord(word) {
+            const num = this.activeClueNumber;
+            const slot = num < 0 ? null : this.findSlot(this.direction, num);
+            if (!slot) { this.clearSuggestionPreview(); return; }
+
+            const letters = {};
+            for (let i = 0; i < slot.length && i < word.length; i++) {
+                const r = this.direction === 'across' ? slot.row : slot.row + i;
+                const c = this.direction === 'across' ? slot.col + i : slot.col;
+                if (!this.solution[r]?.[c]) letters[cellKey(r, c)] = word[i];
+            }
+            this.previewLetters = letters;
+        },
+
+        clearSuggestionPreview() {
+            if (Object.keys(this.previewLetters).length > 0) this.previewLetters = {};
+        },
+
+        isPreviewCell(row, col) {
+            return this.previewLetters[cellKey(row, col)] !== undefined;
+        },
+
+        // What the grid cell shows: a previewed letter if one is ghosted in,
+        // otherwise the real solution letter.
+        displayLetter(row, col) {
+            if (this.isBlock(row, col)) return '';
+            return this.previewLetters[cellKey(row, col)] ?? (this.solution[row]?.[col] || '');
+        },
+
+        onSuggestionsPaneBlur(event) {
+            const pane = this.$refs?.suggestionsPane;
+            if (pane && event?.relatedTarget && pane.contains(event.relatedTarget)) return;
+            this.suggestionsIndex = -1;
+            this.clearSuggestionPreview();
         },
 
         // --- Fill progress indicators ----------------------------------------

@@ -13,7 +13,7 @@
     <x-app-logo href="{{ route('crosswords.index') }}" wire:navigate class="me-4"/>
 
     <flux:navbar class="-mb-px max-lg:hidden" data-test="header-nav">
-        @foreach ($navigation->main(auth()->user()) as $group)
+        @foreach ($navigation->main(auth()->user(), withFavorites: false) as $group)
             @unless ($loop->first)
                 <flux:separator vertical class="mx-1 my-2 bg-line"/>
             @endunless
@@ -50,27 +50,44 @@
             </flux:tooltip>
         @endif
 
-        @php
-            $secondary = $navigation->secondary(auth()->user());
-            $secondaryCurrent = collect($secondary)->contains(fn ($item) => $item->current);
-        @endphp
+        {{-- Guests and signed-out visitors have no user menu, so help and support
+             stay in the bar for them. Signed-in users find them in the user menu. --}}
+        @unless ($navigation->hasAccount(auth()->user()))
+            @php
+                $secondary = $navigation->secondary(auth()->user());
+                $secondaryCurrent = collect($secondary)->contains(fn ($item) => $item->current);
+            @endphp
 
-        <flux:dropdown position="bottom" align="end">
-            <flux:navbar.item icon="question-mark-circle" icon:trailing="chevron-down" :current="$secondaryCurrent" data-test="header-help-menu">
-                {{ __('Help') }}
-            </flux:navbar.item>
+            <flux:dropdown position="bottom" align="end">
+                <flux:navbar.item icon="question-mark-circle" icon:trailing="chevron-down" :current="$secondaryCurrent" data-test="header-help-menu">
+                    {{ __('Help') }}
+                </flux:navbar.item>
 
-            <flux:menu>
-                @foreach ($secondary as $item)
-                    <flux:menu.item :icon="$item->icon" :href="$item->href" :attributes="$item->attributes()">
-                        {{ $item->label }}
-                    </flux:menu.item>
-                @endforeach
-            </flux:menu>
-        </flux:dropdown>
+                <flux:menu>
+                    @foreach ($secondary as $item)
+                        <flux:menu.item :icon="$item->icon" :href="$item->href" :attributes="$item->attributes()">
+                            {{ $item->label }}
+                        </flux:menu.item>
+                    @endforeach
+                </flux:menu>
+            </flux:dropdown>
+        @endunless
     </div>
 
-    @if (auth()->user()->isAnonymous())
+    @if ($navigation->hasAccount(auth()->user()))
+        <x-user-menu variant="header" :links="$navigation->account(auth()->user())"/>
+    @else
+        @guest
+            <flux:button
+                :href="route('login')"
+                variant="ghost"
+                size="sm"
+                class="me-2"
+                data-test="header-log-in-button"
+            >
+                {{ __('Log in') }}
+            </flux:button>
+        @endguest
         <flux:button
             :href="route('register')"
             variant="ghost"
@@ -82,8 +99,6 @@
         >
             {{ __('Sign up') }}
         </flux:button>
-    @else
-        <x-user-menu variant="header"/>
     @endif
 </flux:header>
 

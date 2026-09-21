@@ -17,6 +17,7 @@
 <meta name="apple-mobile-web-app-title" content="{{ config('app.name') }}">
 
 <link rel="preconnect" href="https://fonts.bunny.net">
+@stack('head_meta')
 
 @vite(['resources/css/app.css', 'resources/js/app.js'])
 @fluxAppearance

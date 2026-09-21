@@ -1,5 +1,9 @@
+{{-- The signed-in user's dropdown. `links` is an optional list of
+     NavigationItems (e.g. AppNavigation::account()) shown above Settings;
+     the sidebar chrome leaves it empty because it lists those links itself. --}}
 @props([
     'variant' => 'sidebar',
+    'links' => [],
 ])
 
 <flux:dropdown position="bottom" :align="$variant === 'sidebar' ? 'start' : 'end'">
@@ -30,6 +34,16 @@
             </div>
         </div>
         <flux:menu.separator />
+        @if (count($links) > 0)
+            <flux:menu.radio.group data-test="user-menu-links">
+                @foreach ($links as $item)
+                    <flux:menu.item :icon="$item->icon" :href="$item->href" :attributes="$item->attributes()">
+                        {{ $item->label }}
+                    </flux:menu.item>
+                @endforeach
+            </flux:menu.radio.group>
+            <flux:menu.separator />
+        @endif
         <flux:menu.radio.group>
             <flux:menu.item :href="route('profile.edit')" icon="cog" wire:navigate>
                 {{ __('Settings') }}

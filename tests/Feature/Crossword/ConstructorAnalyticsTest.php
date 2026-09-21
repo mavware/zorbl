@@ -117,6 +117,22 @@ test('analytics overview cards appear on the build page', function () {
         ->assertSee('Completions');
 });
 
+test('build page stat cards show an amber number above the label with no icon', function () {
+    $user = User::factory()->create();
+    Crossword::factory()->count(2)->for($user)->create();
+
+    $html = $this->actingAs($user)
+        ->get(route('crosswords.index'))
+        ->assertOk()
+        ->getContent();
+
+    preg_match('/<div[^>]*data-test="constructor-stat"[^>]*>\s*<div[^>]*>2<\/div>\s*<div[^>]*>Drafts<\/div>\s*<\/div>/s', $html, $card);
+
+    expect($card)->not->toBeEmpty()
+        ->and($card[0])->toContain('text-amber-700')
+        ->not->toContain('<svg');
+});
+
 test('free users see full analytics dashboard', function () {
     $constructor = User::factory()->create();
     Crossword::factory()->published()->for($constructor)->create([
@@ -648,7 +664,7 @@ test('rating trend excludes draft puzzle reviews', function () {
     expect($component->get('ratingTrend'))->toHaveCount(0);
 });
 
-test('rating trend chart renders when 2+ months of data exist', function () {
+test('rating trend chart stays hidden even when 2+ months of data exist', function () {
     $constructor = makeAnalyticsProUser();
     $solver1 = User::factory()->create();
     $solver2 = User::factory()->create();
@@ -673,8 +689,8 @@ test('rating trend chart renders when 2+ months of data exist', function () {
     $this->actingAs($constructor)
         ->get(route('crosswords.index'))
         ->assertOk()
-        ->assertSee('Rating Trend')
-        ->assertSee('Average rating received per month');
+        ->assertDontSee('Rating Trend')
+        ->assertDontSee('Average rating received per month');
 });
 
 test('rating trend chart is hidden with fewer than 2 data points', function () {

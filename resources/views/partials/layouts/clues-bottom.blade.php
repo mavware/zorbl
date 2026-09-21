@@ -1,6 +1,10 @@
-{{-- Clues-below-grid layout: grid on top, Across and Down side-by-side beneath it. --}}
+{{-- Clues-below-grid layout: grid on top (suggestions pane beside it), Across
+     and Down side-by-side beneath. --}}
 <div class="flex flex-1 flex-col gap-4 overflow-hidden lg:max-h-[calc(100dvh-8rem)]">
-    @include('partials.editor-grid')
+    <div class="flex min-h-0 flex-1 gap-4 overflow-hidden">
+        @include('partials.editor-grid')
+        @include('partials.editor-suggestions-pane')
+    </div>
 
     <div class="hidden min-h-0 flex-1 gap-4 overflow-hidden lg:flex">
         <div class="flex min-h-0 flex-1 flex-col overflow-hidden">

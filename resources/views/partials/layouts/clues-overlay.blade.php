@@ -1,4 +1,5 @@
-{{-- CluesOverlay: grid fills, clues appear as a toggleable floating panel. --}}
+{{-- CluesOverlay: grid fills, clues appear as a toggleable floating panel with
+     the suggestions pane as its third column. --}}
 <div
     class="relative flex flex-1 flex-col overflow-hidden lg:max-h-[calc(100dvh-8rem)]"
     x-data="{ cluesOverlayOpen: true }"
@@ -25,6 +26,7 @@
         <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
             @include('partials.editor-clue-panel', ['direction' => 'down'])
         </div>
+        @include('partials.editor-suggestions-pane')
     </div>
 
     @include('partials.editor-mobile-clues')

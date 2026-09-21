@@ -1,7 +1,11 @@
-{{-- SplitGridTopAcrossBottomDown: grid on top; bottom row split into
-     Across (bottom-left) and Down (bottom-right), each in its own panel. --}}
+{{-- SplitGridTopAcrossBottomDown: grid on top (suggestions pane beside it);
+     bottom row split into Across (bottom-left) and Down (bottom-right), each
+     in its own panel. --}}
 <div class="flex flex-1 flex-col gap-4 overflow-hidden lg:max-h-[calc(100dvh-8rem)]">
-    @include('partials.editor-grid')
+    <div class="flex min-h-0 flex-1 gap-4 overflow-hidden">
+        @include('partials.editor-grid')
+        @include('partials.editor-suggestions-pane')
+    </div>
 
     <div class="hidden min-h-0 flex-1 gap-4 overflow-hidden lg:flex">
         <div class="border-line flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border p-2">
