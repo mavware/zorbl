@@ -2,9 +2,9 @@
 
 namespace CrosswordBuilder\CrosswordIO\Importers;
 
-use Spatie\PdfToText\Pdf;
 use CrosswordBuilder\CrosswordIO\Exceptions\PdfImportException;
 use CrosswordBuilder\CrosswordIO\GridNumberer;
+use Spatie\PdfToText\Pdf;
 
 class PdfImporter
 {

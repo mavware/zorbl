@@ -2,12 +2,12 @@
 
 namespace CrosswordBuilder\CrosswordIO\Exporters;
 
-use DOMDocument;
-use DOMElement;
 use CrosswordBuilder\CrosswordIO\Crossword;
 use CrosswordBuilder\CrosswordIO\Exceptions\ExportValidationException;
 use CrosswordBuilder\CrosswordIO\Exceptions\UnsupportedFeature;
 use CrosswordBuilder\CrosswordIO\GridNumberer;
+use DOMDocument;
+use DOMElement;
 
 class JpzExporter
 {

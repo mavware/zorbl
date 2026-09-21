@@ -6,9 +6,9 @@ use App\Models\Word;
 use App\Services\AiClueGenerator;
 use App\Services\AiGridFiller;
 use App\Services\GridFiller;
+use CrosswordBuilder\CrosswordIO\GridNumberer;
 use Illuminate\Support\Facades\Http;
 use Laravel\Cashier\Subscription;
-use CrosswordBuilder\CrosswordIO\GridNumberer;
 
 function seedExtraThreeLetterWords(): void
 {

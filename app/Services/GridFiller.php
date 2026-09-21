@@ -3,9 +3,9 @@
 namespace App\Services;
 
 use App\Models\Word;
+use CrosswordBuilder\CrosswordIO\GridNumberer;
 use Random\Engine\Mt19937;
 use Random\Randomizer;
-use CrosswordBuilder\CrosswordIO\GridNumberer;
 
 class GridFiller
 {

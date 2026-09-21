@@ -2,9 +2,9 @@
 
 namespace CrosswordBuilder\CrosswordIO\Importers;
 
-use SimpleXMLElement;
 use CrosswordBuilder\CrosswordIO\Exceptions\JpzImportException;
 use CrosswordBuilder\CrosswordIO\GridNumberer;
+use SimpleXMLElement;
 
 class JpzImporter
 {

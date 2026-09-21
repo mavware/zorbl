@@ -1,9 +1,9 @@
 <?php
 
 use App\Enums\PuzzleType;
+use CrosswordBuilder\CrosswordIO\GridNumberer;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
-use CrosswordBuilder\CrosswordIO\GridNumberer;
 
 return new class extends Migration
 {

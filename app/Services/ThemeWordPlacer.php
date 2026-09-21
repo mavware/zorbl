@@ -4,8 +4,8 @@ namespace App\Services;
 
 use App\Models\Crossword;
 use App\Models\Template;
-use Illuminate\Database\Eloquent\Collection;
 use CrosswordBuilder\CrosswordIO\GridNumberer;
+use Illuminate\Database\Eloquent\Collection;
 
 /**
  * Finds a 15x15 grid template from the database whose across/down slots can

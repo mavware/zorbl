@@ -3,11 +3,11 @@
 namespace Database\Seeders\Activity;
 
 use App\Models\User;
+use CrosswordBuilder\CrosswordIO\GridNumberer;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 use ZipArchive;
-use CrosswordBuilder\CrosswordIO\GridNumberer;
 
 abstract class BaseActivitySeeder extends Seeder
 {
