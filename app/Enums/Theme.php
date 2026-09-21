@@ -9,13 +9,13 @@ enum Theme: string
 
     /**
      * The theme the application is configured to render, falling back to
-     * Classical when APP_THEME is unset or names a theme that does not exist.
+     * Modern when APP_THEME is unset or names a theme that does not exist.
      */
     public static function current(): self
     {
         $configured = config('app.theme');
 
-        return is_string($configured) ? (self::tryFrom($configured) ?? self::Classical) : self::Classical;
+        return is_string($configured) ? (self::tryFrom($configured) ?? self::Modern) : self::Modern;
     }
 
     public function label(): string

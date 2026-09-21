@@ -23,7 +23,7 @@ test('site.webmanifest exists in public root with all PWA fields', function () {
     $sizes = collect($manifest['icons'])->pluck('sizes');
     expect($sizes)->toContain('192x192')->toContain('512x512');
 
-    $svgIcon = collect($manifest['icons'])->firstWhere('src', '/logo.svg');
+    $svgIcon = collect($manifest['icons'])->firstWhere('src', '/logo-modern.svg');
     expect($svgIcon)->not->toBeNull()
         ->and($svgIcon['type'])->toBe('image/svg+xml');
 
