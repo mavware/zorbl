@@ -7,18 +7,17 @@ use Laravel\Cashier\Subscription;
 /**
  * Progress towards the monthly funding goal shown on the billing page.
  *
- * Revenue is estimated as a flat amount per active supporter plus a constant
- * that stands in for income earned outside the subscription model.
+ * Revenue is estimated as a flat amount per contributor, where contributors
+ * are the site's active subscribers plus the people who support the project
+ * outside the subscription flow (configured via
+ * `crosswordbuilder.external_contributors`). The goal itself comes from
+ * `crosswordbuilder.funding_goal_dollars`.
  */
 class SupporterGoal
 {
-    public const GOAL_DOLLARS = 500;
-
-    private ?int $supporterCount = null;
-
     public const DOLLARS_PER_SUPPORTER = 5;
 
-    public const NON_SUBSCRIPTION_DOLLARS = 215;
+    private ?int $supporterCount = null;
 
     /**
      * Distinct users with an active (or grace-period) default subscription.
@@ -32,14 +31,35 @@ class SupporterGoal
             ->count('user_id');
     }
 
-    public function currentDollars(): int
+    /**
+     * Supporters who contribute outside the site's subscription flow.
+     */
+    public function externalContributorCount(): int
     {
-        return ($this->supporterCount() * self::DOLLARS_PER_SUPPORTER) + self::NON_SUBSCRIPTION_DOLLARS;
+        return max(0, (int) config('crosswordbuilder.external_contributors', 0));
     }
 
+    /**
+     * Everyone helping to fund the site: subscribers plus external contributors.
+     */
+    public function contributorCount(): int
+    {
+        return $this->supporterCount() + $this->externalContributorCount();
+    }
+
+    public function currentDollars(): int
+    {
+        return $this->contributorCount() * self::DOLLARS_PER_SUPPORTER;
+    }
+
+    /**
+     * The monthly funding target, configured via
+     * `crosswordbuilder.funding_goal_dollars`. Never below one dollar so the
+     * percentage calculation stays well defined.
+     */
     public function goalDollars(): int
     {
-        return self::GOAL_DOLLARS;
+        return max(1, (int) config('crosswordbuilder.funding_goal_dollars', 500));
     }
 
     /**
@@ -47,11 +67,11 @@ class SupporterGoal
      */
     public function percent(): int
     {
-        return (int) min(100, floor($this->currentDollars() / self::GOAL_DOLLARS * 100));
+        return (int) min(100, floor($this->currentDollars() / $this->goalDollars() * 100));
     }
 
     public function isReached(): bool
     {
-        return $this->currentDollars() >= self::GOAL_DOLLARS;
+        return $this->currentDollars() >= $this->goalDollars();
     }
 }

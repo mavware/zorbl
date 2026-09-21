@@ -162,9 +162,9 @@ new #[Title('Billing')] class extends Component {
 
                 <p class="text-ink-muted mt-3 text-sm leading-[1.65]">
                     @if ($this->goal->isReached())
-                        {{ __('Goal reached! Thanks to :count supporter(s), Crossword Builder is fully funded this month.', ['count' => number_format($this->goal->supporterCount())]) }}
+                        {{ __('Goal reached! Thanks to :count supporter(s), Crossword Builder is fully funded this month.', ['count' => number_format($this->goal->contributorCount())]) }}
                     @else
-                        {{ __(':percent% of the way there, with help from :count supporter(s). Every subscription brings us $5 closer to covering hosting and AI costs so the site stays free for everyone.', ['percent' => $this->goal->percent(), 'count' => number_format($this->goal->supporterCount())]) }}
+                        {{ __(':percent% of the way there, with help from :count supporter(s). Every subscription brings us $5 closer to covering hosting and AI costs so the site stays free for everyone.', ['percent' => $this->goal->percent(), 'count' => number_format($this->goal->contributorCount())]) }}
                     @endif
                 </p>
             </div>

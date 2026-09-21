@@ -75,7 +75,8 @@ it('does not thank admins who have Pro access without subscribing', function () 
         ->assertDontSeeHtml('data-supporter-badge');
 });
 
-it('shows the funding goal progress from the non-subscription baseline', function () {
+it('shows the funding goal progress from the external contributors', function () {
+    config(['crosswordbuilder.external_contributors' => 43, 'crosswordbuilder.funding_goal_dollars' => 500]);
     $user = User::factory()->create();
 
     Livewire::actingAs($user)
@@ -83,10 +84,12 @@ it('shows the funding goal progress from the non-subscription baseline', functio
         ->assertSee('Our monthly goal')
         ->assertSee('$215 of $500')
         ->assertSee('43% of the way there')
+        ->assertSee('43 supporter(s)')
         ->assertSeeHtml('style="width: 43%"');
 });
 
 it('adds five dollars to the goal progress per active subscriber', function () {
+    config(['crosswordbuilder.external_contributors' => 43, 'crosswordbuilder.funding_goal_dollars' => 500]);
     makeBillingProUser();
     makeBillingProUser();
 
@@ -97,7 +100,7 @@ it('adds five dollars to the goal progress per active subscriber', function () {
     Livewire::actingAs(User::factory()->create())
         ->test('pages::settings.billing')
         ->assertSee('$225 of $500')
-        ->assertSee('2 supporter(s)');
+        ->assertSee('45 supporter(s)');
 });
 
 it('does not show AI usage on the billing page', function () {

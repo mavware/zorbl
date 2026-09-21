@@ -40,6 +40,31 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | External Contributors
+    |--------------------------------------------------------------------------
+    |
+    | People who support Crossword Builder outside the site's own subscription
+    | flow. They are added to the supporter count and funding progress shown
+    | in the "Support our work" section of the billing page.
+    |
+    */
+
+    'external_contributors' => (int) env('CROSSWORDBUILDER_EXTERNAL_CONTRIBUTORS', 0),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Monthly Funding Goal
+    |--------------------------------------------------------------------------
+    |
+    | The monthly funding target, in whole dollars, shown as the goal in the
+    | "Support our work" section of the billing page.
+    |
+    */
+
+    'funding_goal_dollars' => (int) env('CROSSWORDBUILDER_FUNDING_GOAL_DOLLARS', 500),
+
+    /*
+    |--------------------------------------------------------------------------
     | Feature Flags
     |--------------------------------------------------------------------------
     |
