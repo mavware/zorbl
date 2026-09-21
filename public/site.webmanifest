@@ -3,7 +3,7 @@
     "short_name": "Crossword Builder",
     "icons": [
         {
-            "src": "/logo.svg",
+            "src": "/logo-modern.svg",
             "sizes": "any",
             "type": "image/svg+xml"
         },
