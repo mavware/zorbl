@@ -1,5 +1,9 @@
 @import 'tailwindcss';
 @import '../../vendor/livewire/flux/dist/flux.css';
+@import url('https://fonts.bunny.net/css?family=lora:400,400i,500,500i,600,600i,700|cormorant-garamond:400,400i,500,500i,600,600i');
+@import url('https://fonts.bunny.net/css?family=instrument-sans:400,500,600');
+@import './themes/classical.css';
+@import './themes/modern.css';
 
 @source '../views';
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
@@ -8,64 +12,6 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 @custom-variant pointer-coarse (@media (pointer: coarse));
-
-@theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
-
-    --color-zinc-50: #fafafa;
-    --color-zinc-100: #f5f5f5;
-    --color-zinc-200: #e5e5e5;
-    --color-zinc-300: #d4d4d4;
-    --color-zinc-400: #a3a3a3;
-    --color-zinc-500: #737373;
-    --color-zinc-600: #525252;
-    --color-zinc-700: #404040;
-    --color-zinc-800: #262626;
-    --color-zinc-900: #171717;
-    --color-zinc-950: #0a0a0a;
-
-    --color-accent: var(--color-neutral-800);
-    --color-accent-content: var(--color-neutral-800);
-    --color-accent-foreground: var(--color-white);
-
-    /* Semantic surface tokens — change these to adjust the whole app */
-    --color-page:           var(--color-zinc-100);
-    --color-surface:        #ffffff;
-    --color-elevated:       #ffffff;
-    --color-muted:          var(--color-zinc-100);
-
-    /* Semantic text tokens */
-    --color-fg:             var(--color-zinc-900);
-    --color-fg-muted:       var(--color-zinc-600);
-    --color-fg-subtle:      var(--color-zinc-500);
-
-    /* Semantic border tokens */
-    --color-line:           var(--color-zinc-300);
-    --color-line-soft:      var(--color-zinc-200);
-    --color-line-strong:    var(--color-zinc-400);
-}
-
-@layer theme {
-    .dark {
-        --color-accent: var(--color-white);
-        --color-accent-content: var(--color-white);
-        --color-accent-foreground: var(--color-neutral-800);
-
-        /* Semantic tokens — dark mode overrides */
-        --color-page:        var(--color-zinc-800);
-        --color-surface:     var(--color-zinc-900);
-        --color-elevated:    var(--color-zinc-800);
-        --color-muted:       var(--color-zinc-700);
-
-        --color-fg:          var(--color-zinc-100);
-        --color-fg-muted:    var(--color-zinc-400);
-        --color-fg-subtle:   var(--color-zinc-500);
-
-        --color-line:        var(--color-zinc-700);
-        --color-line-soft:   var(--color-zinc-800);
-        --color-line-strong: var(--color-zinc-600);
-    }
-}
 
 @layer base {
 
@@ -76,6 +22,25 @@
     ::file-selector-button {
         border-color: var(--color-gray-200, currentColor);
     }
+
+    body {
+        font-family: var(--font-sans);
+        letter-spacing: var(--tracking-body);
+    }
+
+    h1, h2, h3, h4, h5, h6,
+    [data-flux-heading] {
+        font-family: var(--font-display);
+        font-weight: var(--weight-heading);
+        line-height: var(--leading-heading);
+        letter-spacing: var(--tracking-heading);
+    }
+
+    /* Display sizes set lighter — the bigger the text, the lighter the cut */
+    h1 { font-weight: var(--weight-display); }
+
+    /* Figures that stand as figures: stats, clue numbers, grid numbers, tables */
+    .tnum, th, td, time { font-variant-numeric: tabular-nums; }
 }
 
 [data-flux-field]:not(ui-radio, ui-checkbox) {
@@ -96,6 +61,132 @@ select:focus[data-flux-control] {
     @apply size-4;
 } */
 
+/* Sidebar — the current item, and any hovered item, get amber text (icon
+   inherits) and a soft amber wash; only the current item also gets the amber
+   left bar. Un-layered so it beats Flux's data-current and hover utilities.
+   Items rendered inside a collapsed group's dropdown keep Flux's styling. */
+[data-flux-sidebar-item]:not([data-flux-sidebar-group-dropdown] *):is([data-current], :hover) {
+    @apply rounded-sm border-transparent bg-amber-500/10 text-amber-700
+        dark:bg-amber-400/10 dark:text-amber-400;
+}
+
+[data-flux-sidebar-item][data-current]:not([data-flux-sidebar-group-dropdown] *) {
+    @apply border-l-2 border-l-amber-500 dark:border-l-amber-400;
+}
+
+/* Sidebar — bump item labels up from Flux's text-sm (14px) to 15px. */
+[data-flux-sidebar-item] [data-content] {
+    @apply text-[1rem];
+}
+
+/* Sidebar — the app name in the brand header, up from Flux's text-sm. */
+[data-flux-sidebar-brand] > div:last-child {
+    @apply text-[1.1rem] tracking-wide;
+}
+
+[data-flux-sidebar-item]:not([data-flux-sidebar-group-dropdown] *) {
+    @apply py-4;
+}
+
+[data-flux-main] {
+    @apply px-0 pt-0;
+}
+
+/* Main is edge-to-edge, so each page root insets itself. A page that manages
+   its own gutters (so it can run separators full-width) opts out with
+   `data-full-bleed` on its root. */
+[data-flux-main] > :not([data-full-bleed]) {
+    @apply px-6 lg:px-8;
+}
+
+/* Main has no top padding so a banner can sit flush. When nothing is rendered
+   above the page root, the root supplies the top gutter itself — unless the
+   page opens with an <x-page-header>, which carries its own 34px top padding. */
+[data-flux-main] > :first-child:not([data-banner]):not(:has([data-page-header])) {
+    @apply pt-6 lg:pt-8;
+}
+
+/* Amber outline button — transparent ground, amber border and text, soft amber
+   wash on hover. Pair with `variant="ghost"` on a Flux button so Flux doesn't
+   paint its own background. Un-layered so it beats Flux's variant utilities. */
+.btn-amber-outline {
+    @apply border border-amber-500 bg-transparent text-amber-700 hover:bg-amber-500/10
+        dark:border-amber-400 dark:text-amber-400 dark:hover:border-amber-300 dark:hover:bg-amber-400/10 dark:hover:text-amber-300;
+}
+
+/* Classical primitives — shared by the migrated Build page blocks. */
+
+/* Button chassis: Cormorant label, 1px outline on transparent, 4px radius,
+   amber focus ring instead of the browser blue. Colour comes from a modifier
+   (`btn-amber-outline` or `btn-classical-muted`). */
+.btn-classical {
+    @apply font-classical inline-flex h-9 items-center justify-center gap-2 rounded-sm border px-3.5 text-[15px] font-medium leading-none whitespace-nowrap transition-colors;
+    @apply focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400;
+}
+
+.btn-classical-muted {
+    @apply border-border-strong text-ink-muted hover:border-ink-muted hover:text-ink;
+}
+
+/* Compact modifier for card action rows: Cormorant 14/600, 9px 14px padding. */
+.btn-classical-compact {
+    @apply h-auto px-3.5 py-[9px] text-[14px] font-semibold;
+}
+
+/* Header buttons (<x-header-button>): outline only, never filled. Cormorant
+   15/600, 11px 20px padding, 4px radius. Primary is amber, secondary is ink on
+   a border-strong stroke; both lift on hover and take the amber focus ring. */
+.btn-header {
+    @apply font-classical inline-flex items-center justify-center gap-2 rounded-sm border px-5 py-[11px] text-[15px] leading-none font-semibold whitespace-nowrap transition-colors;
+    @apply focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400;
+}
+
+.btn-header-primary {
+    @apply border-amber-400 text-amber-400 hover:border-amber-300 hover:text-amber-300;
+}
+
+.btn-header-secondary {
+    @apply border-border-strong text-ink hover:border-border-hover;
+}
+
+/* Meta line: small caps in ink faint. */
+.meta-classical {
+    @apply text-[11px] uppercase tracking-[0.1em] text-ink-faint;
+}
+
+/* Status chip: uppercase outline, no fill. Colour set by the caller. */
+.chip-classical {
+    @apply inline-flex h-6 shrink-0 items-center rounded-sm border px-2 text-[11px] uppercase tracking-[0.1em] leading-none;
+}
+
+/* Card badge: the tighter chip used on puzzle cards. 2px radius, 10px, never
+   squeezed by a long title. Colour set by the caller. */
+.badge-classical {
+    @apply inline-flex shrink-0 items-center rounded-[2px] border px-[7px] py-[3px] text-[10px] uppercase tracking-[0.12em] leading-none;
+}
+
+/* Form fields on the Classical filter bar. */
+.field-classical {
+    @apply border-border-strong text-ink placeholder:text-ink-faint h-10 rounded-sm border bg-transparent text-sm;
+    @apply focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400;
+}
+
+/* Checkbox: outline square that fills with a soft amber wash and an amber check. */
+.check-classical {
+    @apply border-border-strong size-4 shrink-0 cursor-pointer appearance-none rounded-sm border bg-transparent transition-colors;
+    @apply checked:border-amber-400 checked:bg-amber-400/15 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400;
+}
+
+.check-classical:checked {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23e1ad66' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.5 8.5l3 3 6-7'/%3E%3C/svg%3E");
+    background-size: 100% 100%;
+}
+
+/* Multi-line fields grow with their `rows` instead of taking the fixed height. */
+textarea.field-classical {
+    @apply h-auto py-2.5 leading-[1.65];
+}
+
 /* ───────────────────────────────────────────────────────────────────────────
  * Editor completion flash — celebratory pulse to green when the grid (every
  * playable cell filled) or the clue panels (every clue text written) reach
@@ -114,7 +205,7 @@ select:focus[data-flux-control] {
 
 .editor-complete-flash {
     animation: editor-complete-flash 0.8s ease-in-out;
-    border-radius: 0.5rem;
+    border-radius: var(--radius-sm);
 }
 
 /* Register --bar-color as an interpolatable color so the @keyframes below

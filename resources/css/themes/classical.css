@@ -1,0 +1,109 @@
+/* Classical theme — the default token set. Every value declared in @theme
+   here is what the app renders when <html data-theme="classical"> (or no
+   recognised theme) is present. Other themes override these variables under
+   their own [data-theme] selector; see modern.css. */
+
+@theme {
+    /* Tighter corners everywhere: every named radius above `sm` collapses to
+       the `sm` value, so rounded-md/lg/xl/2xl/3xl all render at 0.25rem.
+       `rounded-full` and `rounded-xs` are untouched. */
+    --radius-md:  0.25rem;
+    --radius-lg:  0.25rem;
+    --radius-xl:  0.25rem;
+    --radius-2xl: 0.25rem;
+    --radius-3xl: 0.25rem;
+
+    --default-font-family: 'Lora', Georgia, 'Times New Roman', serif;
+    --font-sans:    'Lora', Georgia, 'Times New Roman', serif;
+    --font-display: 'Lora', Georgia, serif;
+    --font-classical: 'Cormorant Garamond', Georgia, serif;
+
+    /* Typography rhythm consumed by the base layer in app.css. Tracking is
+       opened a touch on body copy; headings are set at 600, with display
+       (h1) sizes lighter — the bigger the text, the lighter the cut. */
+    --tracking-body:    0.012em;
+    --tracking-heading: -0.02em;
+    --leading-heading:  1.12;
+    --weight-heading:   600;
+    --weight-display:   400;
+
+    /* Classical system (dark ground) — headings, buttons and numerals set in
+       Cormorant; body in Lora. Colour is stroke, never fill. */
+    --color-ground:        var(--color-zinc-950);   /* #171615 */
+    --color-panel:         #201f1d;
+    --color-ink:           #f3f2f2;
+    --color-ink-muted:     var(--color-zinc-400);   /* #bab6b6 */
+    --color-ink-faint:     var(--color-zinc-500);   /* #9b9797 */
+    --color-hairline:      rgb(243 242 242 / 0.14);
+    --color-border:        rgb(243 242 242 / 0.18);
+    --color-border-strong: rgb(243 242 242 / 0.25);
+    --color-border-hover:  rgb(243 242 242 / 0.4);
+
+    /* Warm ink — replaces the cool zinc ramp */
+    --color-zinc-50:  #faf8f8;
+    --color-zinc-100: #f8f4f4;
+    --color-zinc-200: #eae7e7;
+    --color-zinc-300: #d7d3d3;
+    --color-zinc-400: #bab6b6;
+    --color-zinc-500: #9b9797;
+    --color-zinc-600: #7d7979;
+    --color-zinc-700: #605d5d;
+    --color-zinc-800: #444141;
+    --color-zinc-900: #2d2b2b;
+    --color-zinc-950: #171615;  /* the 1a page ground */
+
+    /* Classical gold — replaces amber */
+    --color-amber-50:  #fffaf2;
+    --color-amber-100: #fff3e4;
+    --color-amber-200: #ffe3bf;
+    --color-amber-300: #facb8d;
+    --color-amber-400: #e1ad66;  /* accent on dark ground */
+    --color-amber-500: #c28d41;
+    --color-amber-600: #a06f24;
+    --color-amber-700: #7d5411;  /* accent text on light ground */
+    --color-amber-800: #5a3b0a;
+    --color-amber-900: #3a270d;
+    --color-amber-950: #241806;
+
+    --color-accent: var(--color-neutral-800);
+    --color-accent-content: var(--color-neutral-800);
+    --color-accent-foreground: var(--color-white);
+
+    /* Semantic surface tokens — change these to adjust the whole app */
+    --color-page:           var(--color-zinc-100);
+    --color-surface:        var(--color-zinc-100);
+    --color-elevated:       #ffffff;
+    --color-muted:          var(--color-zinc-100);
+
+    /* Semantic text tokens */
+    --color-fg:             var(--color-zinc-900);
+    --color-fg-muted:       var(--color-zinc-600);
+    --color-fg-subtle:      var(--color-zinc-500);
+
+    /* Semantic border tokens */
+    --color-line:           color-mix(in oklab, var(--color-zinc-300) 50%, var(--color-zinc-400));
+    --color-line-soft:      var(--color-zinc-200);
+    --color-line-strong:    var(--color-zinc-400);
+}
+
+@layer theme {
+    .dark {
+        --color-accent: var(--color-white);
+        --color-accent-content: var(--color-white);
+        --color-accent-foreground: var(--color-neutral-800);
+
+        /* Semantic tokens — dark mode overrides */
+        --color-page:        var(--color-zinc-950);
+        --color-surface:     var(--color-zinc-950);
+        --color-elevated:    var(--color-zinc-800);
+        --color-muted:       var(--color-zinc-700);
+
+        --color-fg:          var(--color-zinc-100);
+        --color-fg-muted:    var(--color-zinc-400);
+        --color-fg-subtle:   var(--color-zinc-500);
+
+        --color-line:        color-mix(in oklab, var(--color-zinc-700) 50%, var(--color-zinc-800));
+        --color-line-soft:   var(--color-zinc-800);
+        --color-line-strong: var(--color-zinc-600);
+    }
+}
