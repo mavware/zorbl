@@ -33,7 +33,7 @@ new #[Title('Submit a Ticket')] class extends Component {
 ?>
 
 <div class="space-y-6">
-    <x-page-header :title="__('Submit a Support Ticket')">
+    <x-page-header :kicker="__('Help')" :title="__('Submit a Support Ticket')">
         <x-header-button variant="secondary" icon="arrow-left" :href="route('support.index')" wire:navigate aria-label="{{ __('Support Tickets') }}" />
     </x-page-header>
 

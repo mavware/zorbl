@@ -102,7 +102,7 @@ class extends Component {
         <script type="application/ld+json">{!! json_encode($dailyJsonLd, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
     @endpush
 
-    <x-page-header :title="__('Daily Puzzle History')" :subtitle="__('Catch up on puzzles you may have missed.')">
+    <x-page-header :kicker="__('Puzzle of the day')" :title="__('Daily Puzzle History')" :subtitle="__('Catch up on puzzles you may have missed.')">
         <x-header-button variant="secondary" icon="arrow-left" :href="route('puzzles.index')" wire:navigate>
             {{ __('Browse Puzzles') }}
         </x-header-button>

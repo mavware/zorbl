@@ -113,7 +113,7 @@ new #[Title('Constructors')] class extends Component {
         <script type="application/ld+json">{!! json_encode($constructorsJsonLd, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
     @endpush
 
-    <x-page-header :title="__('Constructors')" />
+    <x-page-header :kicker="__('Community')" :title="__('Constructors')" />
 
     {{-- Search & Sort --}}
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center">

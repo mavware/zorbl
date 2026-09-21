@@ -95,7 +95,7 @@ new #[Title('Contest')] class extends Component {
 
 <div class="mx-auto max-w-4xl space-y-8">
     {{-- Contest Header --}}
-    <x-page-header :title="$contest->title">
+    <x-page-header :kicker="__('Contest')" :title="$contest->title">
         <x-slot:badges>
             @if($contest->isActive())
                 <span class="chip-classical border-amber-400 text-amber-400">{{ __('Active') }}</span>

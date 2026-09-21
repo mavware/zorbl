@@ -160,7 +160,7 @@ new #[Title('Roadmap')] class extends Component {
 ?>
 
 <div class="space-y-6">
-    <x-page-header :title="__('Roadmap')" :subtitle="__('Upcoming features, fixes, and improvements.')">
+    <x-page-header :kicker="__('What\'s next')" :title="__('Roadmap')" :subtitle="__('Upcoming features, fixes, and improvements.')">
         @if($this->canManage)
             <x-header-button icon="plus" wire:click="$set('showAddModal', true)">
                 {{ __('Add Item') }}

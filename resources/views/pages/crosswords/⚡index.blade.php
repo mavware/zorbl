@@ -418,8 +418,13 @@ new #[Title('Build')] class extends Component {
             </div>
         @endif
 
+        {{-- Builder Stats --}}
+        <div class="px-6 lg:px-8">
+            <livewire:constructor-stats />
+        </div>
+
         {{-- Search & Filters --}}
-        <div class="border-hairline flex flex-col gap-3 border-b px-6 py-5 sm:flex-row sm:items-center lg:px-8">
+        <div class="flex flex-col gap-3 px-6 py-5 sm:flex-row sm:items-center lg:px-8">
             <label class="relative flex-1">
                 <span class="sr-only">{{ __('Search puzzles...') }}</span>
                 <flux:icon name="magnifying-glass" class="text-ink-faint pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
@@ -485,7 +490,7 @@ new #[Title('Build')] class extends Component {
                     >
                         <div class="flex items-start justify-between gap-3">
                             <div class="min-w-0">
-                                <h3 class="font-classical text-ink truncate text-[21px] leading-tight font-semibold">
+                                <h3 class="font-classical text-ink truncate text-[21px] leading-[1.15] font-semibold">
                                     <a href="{{ route('crosswords.editor', $crossword) }}" wire:navigate class="hover:text-amber-300 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">
                                         {{ $crossword->displayTitle() }}
                                     </a>
@@ -493,17 +498,18 @@ new #[Title('Build')] class extends Component {
                                 <x-puzzle-details :crossword="$crossword" />
                             </div>
                             @if($crossword->is_published)
-                                <span class="chip-classical border-amber-400 text-amber-400">{{ __('Published') }}</span>
+                                <span class="badge-classical border-amber-400 text-amber-400">{{ __('Published') }}</span>
                             @else
-                                <span class="chip-classical border-ink-faint text-ink-faint">{{ __('Draft') }}</span>
+                                <span class="badge-classical border-ink-faint text-ink-faint">{{ __('Draft') }}</span>
                             @endif
                         </div>
 
-                        <a href="{{ route('crosswords.editor', $crossword) }}" wire:navigate class="flex justify-center py-1 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">
+                        <a href="{{ route('crosswords.editor', $crossword) }}" wire:navigate class="block focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">
                             <x-grid-thumbnail
                                 :grid="$crossword->grid"
                                 :width="$crossword->width"
                                 :height="$crossword->height"
+                                :fluid="true"
                                 frame-class="border-hairline bg-hairline rounded-sm border"
                                 open-class="bg-panel"
                                 block-class="bg-zinc-300"
@@ -512,12 +518,12 @@ new #[Title('Build')] class extends Component {
 
                         <x-puzzle-completeness-bar :crossword="$crossword" />
 
-                        <div class="flex items-center justify-between gap-2 pt-1">
-                            <a href="{{ route('crosswords.editor', $crossword) }}" wire:navigate class="btn-classical btn-amber-outline">
+                        <div class="flex gap-[10px] pt-1">
+                            <a href="{{ route('crosswords.editor', $crossword) }}" wire:navigate class="btn-classical btn-classical-compact btn-amber-outline flex-1">
                                 {{ __('Open editor') }}
                             </a>
                             <flux:dropdown position="bottom" align="end">
-                                <button type="button" class="btn-classical btn-classical-muted w-9 px-0" aria-label="{{ __('More actions') }}">
+                                <button type="button" class="btn-classical btn-classical-compact btn-classical-muted" aria-label="{{ __('More actions') }}">
                                     <flux:icon name="ellipsis-vertical" class="size-4" />
                                 </button>
                                 <flux:menu>
@@ -538,7 +544,7 @@ new #[Title('Build')] class extends Component {
             </div>
         @endif
 
-        <flux:separator class="bg-line" />
+        <hr class="border-hairline" />
 
         {{-- Constructor Analytics --}}
         <div class="px-6 lg:px-8">

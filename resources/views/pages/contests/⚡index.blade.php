@@ -39,7 +39,7 @@ new #[Title('Contests')] class extends Component {
 <div class="space-y-10">
     {{-- Active Contests --}}
     <div class="space-y-4">
-        <x-page-header :title="__('Active Contests')" />
+        <x-page-header :kicker="__('Compete')" :title="__('Active Contests')" />
 
         @if($this->activeContests->isEmpty())
             <div class="border-border-strong flex flex-col items-center justify-center rounded-sm border border-dashed px-6 py-16 text-center">

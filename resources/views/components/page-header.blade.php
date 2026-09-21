@@ -5,6 +5,7 @@
     'level' => 1,
     'size' => 'lg',
     'bleed' => true,
+    'rule' => true,
     'leading' => null,
     'badges' => null,
     'meta' => null,
@@ -23,7 +24,7 @@
     $hasSlot = fn ($slot): bool => $slot instanceof \Illuminate\View\ComponentSlot ? $slot->isNotEmpty() : filled($slot);
 @endphp
 
-<div {{ $attributes->class(['border-hairline flex flex-wrap items-end justify-between gap-5 border-b', $wrapperClasses]) }} data-page-header>
+<div {{ $attributes->class(['flex flex-wrap items-end justify-between gap-5', 'border-hairline border-b' => $rule, $wrapperClasses]) }} data-page-header>
     <div class="flex min-w-0 items-center gap-5">
         @if($hasSlot($leading))
             <div class="shrink-0">{{ $leading }}</div>

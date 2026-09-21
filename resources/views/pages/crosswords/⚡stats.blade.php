@@ -215,7 +215,7 @@ new #[Title('Solve Statistics')] class extends Component {
 ?>
 
 <div class="space-y-6">
-    <x-page-header :title="__('Solve Statistics')">
+    <x-page-header :kicker="__('Your progress')" :title="__('Solve Statistics')">
         <x-header-button variant="secondary" icon="arrow-left" :href="route('crosswords.solving')" wire:navigate>
             {{ __('Back to Solving') }}
         </x-header-button>

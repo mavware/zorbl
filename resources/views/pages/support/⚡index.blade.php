@@ -34,7 +34,7 @@ new #[Title('Support Tickets')] class extends Component {
 ?>
 
 <div class="space-y-6">
-    <x-page-header :title="__('Support Tickets')">
+    <x-page-header :kicker="__('Help')" :title="__('Support Tickets')">
         <x-header-button icon="plus" :href="route('support.create')" wire:navigate>
             {{ __('New Ticket') }}
         </x-header-button>

@@ -222,6 +222,11 @@ select:focus[data-flux-control] {
     @apply border-border-strong text-ink-muted hover:border-ink-muted hover:text-ink;
 }
 
+/* Compact modifier for card action rows: Cormorant 14/600, 9px 14px padding. */
+.btn-classical-compact {
+    @apply h-auto px-3.5 py-[9px] text-[14px] font-semibold;
+}
+
 /* Header buttons (<x-header-button>): outline only, never filled. Cormorant
    15/600, 11px 20px padding, 4px radius. Primary is amber, secondary is ink on
    a border-strong stroke; both lift on hover and take the amber focus ring. */
@@ -246,6 +251,12 @@ select:focus[data-flux-control] {
 /* Status chip: uppercase outline, no fill. Colour set by the caller. */
 .chip-classical {
     @apply inline-flex h-6 shrink-0 items-center rounded-sm border px-2 text-[11px] uppercase tracking-[0.1em] leading-none;
+}
+
+/* Card badge: the tighter chip used on puzzle cards. 2px radius, 10px, never
+   squeezed by a long title. Colour set by the caller. */
+.badge-classical {
+    @apply inline-flex shrink-0 items-center rounded-[2px] border px-[7px] py-[3px] text-[10px] uppercase tracking-[0.12em] leading-none;
 }
 
 /* Form fields on the Classical filter bar. */

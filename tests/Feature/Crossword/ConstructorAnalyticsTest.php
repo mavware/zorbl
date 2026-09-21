@@ -84,7 +84,7 @@ test('analytics counts solves and completions across all published puzzles', fun
     PuzzleAttempt::factory()->for($solver2)->for($puzzle1)->create();
     PuzzleAttempt::factory()->for($solver1)->for($puzzle2)->completed()->create();
 
-    $component = Livewire::actingAs($constructor)->test('constructor-analytics');
+    $component = Livewire::actingAs($constructor)->test('constructor-stats');
 
     expect($component->get('totalSolves'))->toBe(3)
         ->and($component->get('totalCompletions'))->toBe(2);
@@ -131,7 +131,7 @@ test('total solves counts all attempts on published puzzles', function () {
     PuzzleAttempt::factory()->count(3)->for($published)->create();
     PuzzleAttempt::factory()->count(2)->for($draft)->create();
 
-    $component = Livewire::actingAs($constructor)->test('constructor-analytics');
+    $component = Livewire::actingAs($constructor)->test('constructor-stats');
 
     expect($component->get('totalSolves'))->toBe(3);
 });
@@ -148,7 +148,7 @@ test('total completions only counts completed attempts', function () {
     PuzzleAttempt::factory()->count(2)->completed()->for($puzzle)->create();
     PuzzleAttempt::factory()->count(3)->for($puzzle)->create();
 
-    $component = Livewire::actingAs($constructor)->test('constructor-analytics');
+    $component = Livewire::actingAs($constructor)->test('constructor-stats');
 
     expect($component->get('totalCompletions'))->toBe(2);
 });
@@ -171,7 +171,7 @@ test('total likes counts likes on published puzzles only', function () {
     CrosswordLike::create(['user_id' => $liker->id, 'crossword_id' => $published->id]);
     CrosswordLike::create(['user_id' => $liker->id, 'crossword_id' => $draft->id]);
 
-    $component = Livewire::actingAs($constructor)->test('constructor-analytics');
+    $component = Livewire::actingAs($constructor)->test('constructor-stats');
 
     expect($component->get('totalLikes'))->toBe(1);
 });
@@ -535,7 +535,7 @@ test('analytics overview shows published and draft counts', function () {
     Crossword::factory()->published()->for($constructor)->count(2)->create();
     Crossword::factory()->for($constructor)->create(['is_published' => false]);
 
-    $component = Livewire::actingAs($constructor)->test('constructor-analytics');
+    $component = Livewire::actingAs($constructor)->test('constructor-stats');
 
     expect($component->get('publishedCount'))->toBe(2)
         ->and($component->get('draftCount'))->toBe(1);

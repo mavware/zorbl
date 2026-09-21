@@ -257,7 +257,7 @@ new #[Title('Leaderboard')] class extends Component {
 ?>
 
 <div class="mx-auto max-w-4xl space-y-6">
-    <x-page-header :title="__('Leaderboard')" :subtitle="__('See how the community ranks across different categories.')" />
+    <x-page-header :kicker="__('Community')" :title="__('Leaderboard')" :subtitle="__('See how the community ranks across different categories.')" />
 
     {{-- Tab Navigation --}}
     <div class="border-border-strong divide-hairline inline-flex h-10 max-w-full divide-x overflow-x-auto rounded-sm border" role="radiogroup" aria-label="{{ __('Leaderboard') }}">

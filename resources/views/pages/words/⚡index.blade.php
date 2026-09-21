@@ -155,6 +155,7 @@ new class extends Component {
     @endpush
 
     <x-page-header
+        :kicker="__('Reference')"
         :title="__('Word Catalog')"
         :subtitle="__('Browse :count crossword answers. Search by pattern — use ? for any single letter and * for any run of letters.', ['count' => number_format($this->totalWords)])"
     />

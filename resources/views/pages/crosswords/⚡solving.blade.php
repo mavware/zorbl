@@ -288,7 +288,7 @@ new #[Title('Solving')] class extends Component {
 <div class="space-y-8">
     {{-- My Attempts --}}
     <div class="space-y-4">
-        <x-page-header :title="__('Solve')">
+        <x-page-header :kicker="__('Your solving')" :title="__('Solve')">
             <x-header-button variant="secondary" icon="sparkles" wire:click="surpriseMe" data-test="surprise-me-button">
                 {{ __('Surprise Me') }}
             </x-header-button>

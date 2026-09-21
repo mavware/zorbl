@@ -105,7 +105,7 @@ class extends Component
         <script type="application/ld+json">{!! json_encode($browseJsonLd, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
     @endpush
 
-    <x-page-header :title="__('Browse Puzzles')">
+    <x-page-header :kicker="__('Discover')" :title="__('Browse Puzzles')">
         <x-header-button variant="secondary" icon="sparkles" wire:click="surpriseMe" data-test="surprise-me-button">
             {{ __('Surprise Me') }}
         </x-header-button>

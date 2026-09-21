@@ -331,7 +331,7 @@ new class extends Component {
         <script type="application/ld+json">{!! json_encode($cluesJsonLd, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
     @endpush
 
-    <x-page-header :title="__('Clue Library')">
+    <x-page-header :kicker="__('Reference')" :title="__('Clue Library')">
         @auth
             <x-header-button icon="plus" wire:click="$set('showAddModal', true)">
                 {{ __('Add Clue') }}

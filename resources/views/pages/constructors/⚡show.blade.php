@@ -219,7 +219,7 @@ new #[Title('Constructor Profile')] class extends Component {
     @endpush
 
     {{-- Profile Header --}}
-    <x-page-header :subtitle="$this->constructor->bio">
+    <x-page-header :kicker="__('Constructor')" :subtitle="$this->constructor->bio">
         <x-slot:leading>
             <div class="border-border-strong font-classical text-ink flex size-16 items-center justify-center rounded-full border text-[22px] font-medium tracking-[0.06em]">
                 {{ $this->constructor->initials() }}

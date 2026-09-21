@@ -200,32 +200,45 @@ new #[Title('Favorites')] class extends Component {
 ?>
 
 <div class="space-y-6">
-    <x-page-header :title="__('Favorites')">
+    <x-page-header :kicker="__('Your collection')" :title="__('Favorites')" :rule="false">
         <x-header-button icon="plus" wire:click="$set('showNewListModal', true)">
             {{ __('New List') }}
         </x-header-button>
     </x-page-header>
 
     {{-- List Tabs --}}
-    <div class="flex flex-wrap gap-2">
-        <flux:button
-            size="sm"
-            :variant="$list === 'liked' ? 'primary' : 'ghost'"
-            icon="heart"
+    <div class="flex flex-wrap gap-2" role="tablist" aria-label="{{ __('Favorites') }}">
+        <button
+            type="button"
+            role="tab"
             wire:click="$set('list', 'liked')"
+            aria-selected="{{ $list === 'liked' ? 'true' : 'false' }}"
+            @class([
+                'font-classical inline-flex h-8 items-center gap-1.5 rounded-sm border px-3 text-[15px] font-medium transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400',
+                'border-amber-400 bg-amber-400/10 text-amber-400' => $list === 'liked',
+                'border-border-strong text-ink-muted hover:border-border-hover hover:text-ink' => $list !== 'liked',
+            ])
         >
+            <flux:icon name="heart" variant="outline" class="size-4" />
             {{ __('Liked') }} ({{ $this->likedCrosswords->count() }})
-        </flux:button>
+        </button>
 
         @foreach($this->lists as $favoriteList)
-            <flux:button
-                size="sm"
-                :variant="$list === (string) $favoriteList->id ? 'primary' : 'ghost'"
-                icon="folder"
+            <button
+                type="button"
+                role="tab"
+                wire:key="favorite-list-tab-{{ $favoriteList->id }}"
                 wire:click="$set('list', '{{ $favoriteList->id }}')"
+                aria-selected="{{ $list === (string) $favoriteList->id ? 'true' : 'false' }}"
+                @class([
+                    'font-classical inline-flex h-8 items-center gap-1.5 rounded-sm border px-3 text-[15px] font-medium transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400',
+                    'border-amber-400 bg-amber-400/10 text-amber-400' => $list === (string) $favoriteList->id,
+                    'border-border-strong text-ink-muted hover:border-border-hover hover:text-ink' => $list !== (string) $favoriteList->id,
+                ])
             >
+                <flux:icon name="folder" variant="outline" class="size-4" />
                 {{ $favoriteList->name }} ({{ $favoriteList->crosswords_count }})
-            </flux:button>
+            </button>
         @endforeach
     </div>
 
