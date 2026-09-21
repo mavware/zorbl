@@ -166,3 +166,15 @@ test('empty state changes when filters are active', function () {
         ->set('search', 'nonexistent')
         ->assertSee('No matching puzzles');
 });
+
+test('results grid renders the collapse toggle with the puzzle count', function () {
+    $user = User::factory()->create();
+    Crossword::factory()->for($user)->count(3)->create();
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::crosswords.index')
+        ->assertSee('data-test="toggle-all-puzzles-button"', false)
+        ->assertSee('Show all puzzles')
+        ->assertSee('Show fewer');
+});

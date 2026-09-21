@@ -420,7 +420,7 @@ new #[Title('Build')] class extends Component {
 
         {{-- Builder Stats --}}
         <div class="px-6 lg:px-8">
-            <livewire:constructor-stats />
+            <livewire:constructor-stats key="constructor-stats" />
         </div>
 
         {{-- Search & Filters --}}
@@ -482,7 +482,38 @@ new #[Title('Build')] class extends Component {
                 @endif
             </div>
         @else
-            <div class="grid gap-[22px] px-6 [grid-template-columns:repeat(auto-fill,minmax(268px,1fr))] lg:px-8">
+            {{-- Results collapse to their first row until expanded. Alpine reads the
+                 grid's resolved column count so the row is exact at any width, and
+                 re-applies after Livewire re-renders the cards. --}}
+            <div
+                x-data="{
+                    expanded: false,
+                    columns: 0,
+                    total: 0,
+                    get hasMore() { return this.total > this.columns },
+                    get shown() { return this.expanded ? this.total : Math.min(this.columns, this.total) },
+                    measure() {
+                        this.columns = getComputedStyle(this.$refs.grid).gridTemplateColumns.split(' ').length;
+                        this.apply();
+                    },
+                    apply() {
+                        const cards = Array.from(this.$refs.grid.children);
+                        this.total = cards.length;
+                        cards.forEach((card, index) => {
+                            const hide = ! this.expanded && index >= this.columns;
+                            if (card.hidden !== hide) { card.hidden = hide; }
+                        });
+                    },
+                }"
+                x-init="
+                    measure();
+                    new ResizeObserver(() => measure()).observe($refs.grid);
+                    new MutationObserver(() => apply()).observe($refs.grid, { childList: true, attributes: true, attributeFilter: ['hidden'] });
+                "
+                x-effect="expanded; apply()"
+                data-test="puzzle-results"
+            >
+                <div x-ref="grid" class="grid gap-[22px] px-6 [grid-template-columns:repeat(auto-fill,minmax(268px,1fr))] lg:px-8">
                 @foreach($this->crosswords as $crossword)
                     <article
                         wire:key="crossword-{{ $crossword->id }}"
@@ -541,6 +572,19 @@ new #[Title('Build')] class extends Component {
                         </div>
                     </article>
                 @endforeach
+                </div>
+
+                <div x-show="hasMore" x-cloak class="mt-5 flex flex-wrap items-center justify-between gap-3 px-6 lg:px-8">
+                    <span class="meta-classical tnum" x-text="expanded ? '{{ __('Showing all :total puzzles') }}'.replace(':total', total) : '{{ __('Showing :shown of :total puzzles') }}'.replace(':shown', shown).replace(':total', total)"></span>
+                    <button
+                        type="button"
+                        class="btn-classical btn-classical-compact btn-classical-muted"
+                        @click="expanded = ! expanded"
+                        :aria-expanded="expanded"
+                        x-text="expanded ? '{{ __('Show fewer') }}' : '{{ __('Show all puzzles') }}'"
+                        data-test="toggle-all-puzzles-button"
+                    ></button>
+                </div>
             </div>
         @endif
 
@@ -548,7 +592,7 @@ new #[Title('Build')] class extends Component {
 
         {{-- Constructor Analytics --}}
         <div class="px-6 lg:px-8">
-            <livewire:constructor-analytics />
+            <livewire:constructor-analytics key="constructor-analytics" />
         </div>
 
         {{-- New Puzzle Modal --}}
