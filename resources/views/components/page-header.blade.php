@@ -9,6 +9,7 @@
     'leading' => null,
     'badges' => null,
     'meta' => null,
+    'body' => null,
     'footer' => null,
 ])
 
@@ -20,15 +21,19 @@
         default => 'font-classical text-ink m-0 text-[34px] leading-none font-(--weight-display) sm:text-[46px]',
     };
 
-    $wrapperClasses = ($size === 'md' ? 'pb-5' : 'pt-[34px] pb-6').($bleed ? ' -mx-6 px-6 lg:-mx-8 lg:px-8' : ' px-6 lg:px-8');
+    $rowClasses = $size === 'md' ? 'pb-5' : 'pt-[34px] pb-6';
+    $wrapperClasses = $bleed ? '-mx-6 px-6 lg:-mx-8 lg:px-8' : 'px-6 lg:px-8';
 
     $hasSlot = fn ($slot): bool => $slot instanceof \Illuminate\View\ComponentSlot ? $slot->isNotEmpty() : filled($slot);
 @endphp
 
-{{-- The group wraps the title row and the optional footer strip so a parent's
-     space-y treats them as one block and the strip sits flush under the rule. --}}
+{{-- The group wraps the ruled header and the optional footer strip so a parent's
+     space-y treats them as one block and the strip sits flush under the rule.
+     Inside the ruled header, the title row is followed by the optional body
+     (e.g. a welcome callout), which therefore lands above the rule. --}}
 <div data-page-header-group>
-<div {{ $attributes->class(['flex flex-wrap items-end justify-between gap-5', 'border-hairline border-b' => $rule, $wrapperClasses]) }} data-page-header>
+<div {{ $attributes->class(['border-hairline border-b' => $rule, $wrapperClasses]) }} data-page-header>
+<div class="flex flex-wrap items-end justify-between gap-5 {{ $rowClasses }}">
     <div class="flex min-w-0 items-center gap-5">
         @if($hasSlot($leading))
             <div class="shrink-0">{{ $leading }}</div>
@@ -60,6 +65,13 @@
             {{ $slot }}
         </div>
     @endif
+</div>
+
+@if($hasSlot($body))
+    <div class="pb-6" data-page-header-body>
+        {{ $body }}
+    </div>
+@endif
 </div>
 
 @if($hasSlot($footer))
