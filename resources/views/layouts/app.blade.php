@@ -1,7 +1,7 @@
-<x-layouts::app.sidebar :title="$title ?? null">
+<x-dynamic-component :component="\App\Enums\Navigation::current()->layoutComponent()" :title="$title ?? null">
     <flux:main>
         @include('partials.guest-banner')
 
         {{ $slot }}
     </flux:main>
-</x-layouts::app.sidebar>
+</x-dynamic-component>

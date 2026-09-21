@@ -11,93 +11,13 @@
         <flux:sidebar.collapse class="lg:hidden"/>
     </flux:sidebar.header>
 
-    <flux:sidebar.nav>
-        <flux:sidebar.group class="grid mb-2 px-4">
-            <flux:sidebar.item icon="wrench-screwdriver" :href="route('crosswords.index')"
-                               :current="request()->routeIs('crosswords.index') || request()->routeIs('crosswords.editor')"
-                               wire:navigate>
-                {{ __('Build') }}
-            </flux:sidebar.item>
-            <flux:sidebar.item icon="play" :href="route('crosswords.solving')"
-                               :current="request()->routeIs('crosswords.solving') || request()->routeIs('crosswords.solver') || request()->routeIs('crosswords.stats')"
-                               wire:navigate>
-                {{ __('Solve') }}
-            </flux:sidebar.item>
-            @unless (auth()->user()->isAnonymous())
-                <flux:sidebar.item icon="heart" :href="route('favorites.index')"
-                                   :current="request()->routeIs('favorites.index')"
-                                   wire:navigate>
-                    {{ __('Favorites') }}
-                </flux:sidebar.item>
-            @endunless
-        </flux:sidebar.group>
-
-        <div class="px-7 pb-2">
-            <flux:separator class="bg-line" />
-        </div>
-
-        <flux:sidebar.group class="grid mb-2 px-4">
-            <flux:sidebar.item icon="book-open" :href="route('clues.index')"
-                               :current="request()->routeIs('clues.index')"
-                               wire:navigate>
-                {{ __('Clue Library') }}
-            </flux:sidebar.item>
-            <flux:sidebar.item icon="language" :href="route('words.index')" :current="request()->routeIs('words.*')"
-                               wire:navigate>
-                {{ __('Word Catalog') }}
-            </flux:sidebar.item>
-            <flux:sidebar.item icon="users" :href="route('constructors.index')"
-                               :current="request()->routeIs('constructors.*')"
-                               wire:navigate>
-                {{ __('Constructors') }}
-            </flux:sidebar.item>
-            @if (config('crosswordbuilder.features.contests'))
-                <flux:sidebar.item icon="trophy" :href="route('contests.index')" :current="request()->routeIs('contests.*')"
-                                   wire:navigate>
-                    {{ __('Contests') }}
-                </flux:sidebar.item>
-            @endif
-        </flux:sidebar.group>
-
-
-    </flux:sidebar.nav>
+    @include('partials.navigation.sidebar-nav')
 
     <flux:spacer/>
 
-    @unless (auth()->user()->isPro() || auth()->user()->isAnonymous())
-        <a
-            href="{{ route('billing.index') }}"
-            wire:navigate
-            class="mx-7 mb-2 block rounded-lg border border-amber-500/30 bg-gradient-to-br from-amber-500/10 to-amber-500/5 p-3 transition hover:border-amber-500/50 hover:from-amber-500/15 hover:to-amber-500/10"
-        >
-            <div class="flex items-center gap-2">
-                <flux:icon.sparkles class="size-4 text-amber-500"/>
-                <span class="text-sm font-semibold text-zinc-100 dark:text-zinc-100">{{ __('Support our work') }}</span>
-            </div>
-            <p class="mt-1 text-xs text-zinc-700 dark:text-zinc-400">
-                {{ __('Help keep Crossword Builder free, and unlock AI grid fills and clue suggestions.') }}
-            </p>
-        </a>
-    @endunless
+    @include('partials.navigation.upgrade-callout')
 
-    <flux:sidebar.nav class="border-t border-line px-4">
-        <flux:sidebar.item icon="question-mark-circle" :href="route('help.index')"
-                           :current="request()->routeIs('help.*')" wire:navigate>
-            {{ __('Help Center') }}
-        </flux:sidebar.item>
-
-        <flux:sidebar.item icon="chat-bubble-left-right" :href="route('support.index')"
-                           :current="request()->routeIs('support.*')" wire:navigate>
-            {{ __('Support') }}
-        </flux:sidebar.item>
-
-        @if (auth()->user()->hasRole('Admin'))
-            <flux:sidebar.item icon="shield-check" :href="route('filament.admin.home')">
-                {{ __('Admin') }}
-            </flux:sidebar.item>
-        @endif
-
-    </flux:sidebar.nav>
+    @include('partials.navigation.sidebar-secondary')
 
     <div class="hidden px-7 lg:block">
         <flux:separator class="bg-line" />
@@ -116,20 +36,11 @@
                 {{ __('Sign up') }}
             </flux:button>
         @else
-            <x-desktop-user-menu :name="auth()->user()->name"/>
+            <x-user-menu variant="sidebar"/>
         @endif
     </div>
 
-    <div class="mx-7 mb-3 mt-2 hidden flex-wrap gap-x-3 gap-y-1 text-xs text-zinc-500 lg:flex dark:text-zinc-600">
-        <a href="{{ route('legal.terms') }}" wire:navigate
-           class="hover:text-zinc-700 dark:hover:text-zinc-400">{{ __('Terms') }}</a>
-        <a href="{{ route('legal.privacy') }}" wire:navigate
-           class="hover:text-zinc-700 dark:hover:text-zinc-400">{{ __('Privacy') }}</a>
-        <a href="{{ route('legal.cookies') }}" wire:navigate
-           class="hover:text-zinc-700 dark:hover:text-zinc-400">{{ __('Cookies') }}</a>
-        <a href="{{ route('legal.dmca') }}" wire:navigate
-           class="hover:text-zinc-700 dark:hover:text-zinc-400">{{ __('DMCA') }}</a>
-    </div>
+    @include('partials.navigation.legal-links', ['class' => 'mx-7 mb-3 mt-2 hidden lg:flex'])
 </flux:sidebar>
 
 <!-- Mobile User Menu -->
@@ -151,53 +62,7 @@
         {{ __('Sign up') }}
     </flux:button>
     @else
-    <flux:dropdown position="top" align="end">
-        <flux:profile
-            :initials="auth()->user()->initials()"
-            icon-trailing="chevron-down"
-        />
-
-        <flux:menu>
-            <flux:menu.radio.group>
-                <div class="p-0 text-sm font-normal">
-                    <div class="flex items-center gap-2 px-1 py-1.5 text-start text-sm">
-                        <flux:avatar
-                            :name="auth()->user()->name"
-                            :initials="auth()->user()->initials()"
-                        />
-
-                        <div class="grid flex-1 text-start text-sm leading-tight">
-                            <flux:heading class="truncate">{{ auth()->user()->name }} <x-supporter-badge :user="auth()->user()" /></flux:heading>
-                            <flux:text class="truncate">{{ auth()->user()->email }}</flux:text>
-                        </div>
-                    </div>
-                </div>
-            </flux:menu.radio.group>
-
-            <flux:menu.separator/>
-
-            <flux:menu.radio.group>
-                <flux:menu.item :href="route('profile.edit')" icon="cog" wire:navigate>
-                    {{ __('Settings') }}
-                </flux:menu.item>
-            </flux:menu.radio.group>
-
-            <flux:menu.separator/>
-
-            <form method="POST" action="{{ route('logout') }}" class="w-full">
-                @csrf
-                <flux:menu.item
-                    as="button"
-                    type="submit"
-                    icon="arrow-right-start-on-rectangle"
-                    class="w-full cursor-pointer"
-                    data-test="logout-button"
-                >
-                    {{ __('Log out') }}
-                </flux:menu.item>
-            </form>
-        </flux:menu>
-    </flux:dropdown>
+    <x-user-menu variant="header"/>
     @endif
 </flux:header>
 

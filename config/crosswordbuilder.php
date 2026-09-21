@@ -65,6 +65,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Navigation
+    |--------------------------------------------------------------------------
+    |
+    | The chrome the app layout renders around every signed-in page. Both
+    | options offer the same links; they differ only in placement.
+    | Supported: "sidebar", "header".
+    |
+    */
+
+    'navigation' => env('CROSSWORDBUILDER_NAVIGATION', 'sidebar'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Feature Flags
     |--------------------------------------------------------------------------
     |
