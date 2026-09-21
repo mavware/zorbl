@@ -20,9 +20,9 @@ enum PuzzleType: string
     public function description(): string
     {
         return match ($this) {
-            self::Standard => 'Classic crossword with rotational symmetry. Any dimensions.',
-            self::Diamond => 'Diamond-shaped grid with the corners removed. Odd-sized square grid.',
-            self::Freestyle => 'No symmetry or shape constraints. Any dimensions.',
+            self::Standard => 'Classic rectangular grid.',
+            self::Diamond => 'Diamond-shaped grid.',
+            self::Freestyle => 'No shape constraints.',
         };
     }
 

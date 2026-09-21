@@ -87,3 +87,25 @@ test('standard puzzle with block cells returns Standard', function () {
 
     expect($crossword->puzzleTypeLabel())->toBe('Standard');
 });
+
+test('a missing puzzle type is treated as Standard', function () {
+    $crossword = new Crossword(['puzzle_type' => null, 'grid' => [[1, 2], [3, 0]]]);
+
+    expect($crossword->puzzleTypeLabel())->toBe('Standard');
+});
+
+test('displayTitle works on a model loaded without the puzzle_type column', function () {
+    $created = Crossword::factory()->create(['title' => null, 'width' => 15, 'height' => 15]);
+
+    $partial = Crossword::query()->select(['id', 'title', 'width', 'height'])->findOrFail($created->id);
+
+    expect($partial->displayTitle())->toBe('15×15 Standard Crossword');
+});
+
+test('displayTitle does not throw on a model loaded with only id and title', function () {
+    $created = Crossword::factory()->create(['title' => null]);
+
+    $bare = Crossword::query()->select(['id', 'title'])->findOrFail($created->id);
+
+    expect($bare->displayTitle())->toContain('Standard Crossword');
+});

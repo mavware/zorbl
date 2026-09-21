@@ -13,7 +13,7 @@ class PlanLimits
     public function maxPuzzles(): int
     {
         if ($this->isAnonymous) {
-            return 1;
+            return (int) config('crosswordbuilder.guest_puzzle_limit', 1);
         }
 
         return PHP_INT_MAX;

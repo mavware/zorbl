@@ -178,12 +178,20 @@ test('constructors query excludes anonymous users', function () {
     expect($constructors->pluck('id'))->not->toContain($anon->id);
 });
 
-test('anonymous user planLimits caps puzzles at one', function () {
+test('anonymous user planLimits caps puzzles at one by default', function () {
     $anon = app(AnonymousUserManager::class)->create();
 
     expect($anon->planLimits()->maxPuzzles())->toBe(1);
     expect($anon->planLimits()->canExportPdf())->toBeFalse();
     expect($anon->planLimits()->monthlyAiFills())->toBe(0);
+});
+
+test('anonymous user puzzle cap follows the guest_puzzle_limit config', function () {
+    config()->set('crosswordbuilder.guest_puzzle_limit', 3);
+
+    $anon = app(AnonymousUserManager::class)->create();
+
+    expect($anon->planLimits()->maxPuzzles())->toBe(3);
 });
 
 test('register page is reachable by an anonymous user', function () {

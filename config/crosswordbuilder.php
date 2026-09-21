@@ -17,6 +17,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Guest Puzzle Limit
+    |--------------------------------------------------------------------------
+    |
+    | The number of puzzles a guest builder (anonymous account) may create
+    | before being prompted to sign up. Registered users are unlimited.
+    |
+    */
+
+    'guest_puzzle_limit' => (int) env('CROSSWORDBUILDER_GUEST_PUZZLE_LIMIT', 1),
+
+    /*
+    |--------------------------------------------------------------------------
     | Max Guesses
     |--------------------------------------------------------------------------
     |
