@@ -87,12 +87,17 @@ test('puzzles sitemap lists published puzzles and excludes drafts', function () 
 
 // --- Words sitemap ---
 
-test('words sitemap lists word pages with approved clues and excludes the rest', function () {
+test('words sitemap lists word pages with enough approved clues and excludes the rest', function () {
+    $threshold = SitemapController::MIN_APPROVED_CLUES_FOR_WORDS;
+
     $clued = Word::factory()->word('APPLE')->create();
-    ClueEntry::factory()->standalone()->create(['answer' => 'APPLE', 'status' => ClueEntry::STATUS_APPROVED]);
+    ClueEntry::factory()->standalone()->count($threshold)->create(['answer' => 'APPLE', 'status' => ClueEntry::STATUS_APPROVED]);
+
+    $thin = Word::factory()->word('FIG')->create();
+    ClueEntry::factory()->standalone()->count($threshold - 1)->create(['answer' => 'FIG', 'status' => ClueEntry::STATUS_APPROVED]);
 
     $pendingOnly = Word::factory()->word('PEAR')->create();
-    ClueEntry::factory()->standalone()->create(['answer' => 'PEAR', 'status' => ClueEntry::STATUS_PENDING]);
+    ClueEntry::factory()->standalone()->count($threshold)->create(['answer' => 'PEAR', 'status' => ClueEntry::STATUS_PENDING]);
 
     $bare = Word::factory()->word('PLUM')->create();
 
@@ -100,15 +105,27 @@ test('words sitemap lists word pages with approved clues and excludes the rest',
 
     expect($xml)
         ->toContain(route('words.show', $clued))
+        ->not->toContain(route('words.show', $thin))
         ->not->toContain(route('words.show', $pendingOnly))
         ->not->toContain(route('words.show', $bare));
+});
+
+test('a thin word page stays indexable even though the sitemap does not promote it', function () {
+    $word = Word::factory()->word('FIG')->create();
+    ClueEntry::factory()->standalone()->create(['answer' => 'FIG', 'status' => ClueEntry::STATUS_APPROVED]);
+
+    expect($this->get('/sitemaps/words.xml')->getContent())->not->toContain(route('words.show', $word));
+
+    $this->get(route('words.show', $word))
+        ->assertOk()
+        ->assertDontSee('name="robots" content="noindex', false);
 });
 
 test('words sitemap entries use the latest approved clue as lastmod', function () {
     Word::factory()->word('APPLE')->create();
 
     $this->travelTo('2026-01-05 12:00:00');
-    ClueEntry::factory()->standalone()->create(['answer' => 'APPLE', 'status' => ClueEntry::STATUS_APPROVED]);
+    ClueEntry::factory()->standalone()->count(SitemapController::MIN_APPROVED_CLUES_FOR_WORDS - 1)->create(['answer' => 'APPLE', 'status' => ClueEntry::STATUS_APPROVED]);
 
     $this->travelTo('2026-03-20 12:00:00');
     ClueEntry::factory()->standalone()->create(['answer' => 'APPLE', 'status' => ClueEntry::STATUS_APPROVED]);
@@ -127,6 +144,7 @@ test('words sitemap entries use the latest approved clue as lastmod', function (
 
 test('approving a clue invalidates the words sitemap cache', function () {
     $word = Word::factory()->word('APPLE')->create();
+    ClueEntry::factory()->standalone()->count(SitemapController::MIN_APPROVED_CLUES_FOR_WORDS - 1)->create(['answer' => 'APPLE', 'status' => ClueEntry::STATUS_APPROVED]);
     $clue = ClueEntry::factory()->standalone()->create(['answer' => 'APPLE', 'status' => ClueEntry::STATUS_PENDING]);
 
     $without = $this->get('/sitemaps/words.xml')->getContent();
@@ -143,9 +161,9 @@ test('approving a clue invalidates the words sitemap cache', function () {
     expect($this->get('/sitemaps/words.xml')->getContent())->toContain(route('words.show', $word));
 });
 
-test('deleting the last approved clue invalidates the words sitemap cache', function () {
+test('deleting an approved clue invalidates the words sitemap cache', function () {
     $word = Word::factory()->word('APPLE')->create();
-    $clue = ClueEntry::factory()->standalone()->create(['answer' => 'APPLE', 'status' => ClueEntry::STATUS_APPROVED]);
+    $clue = ClueEntry::factory()->standalone()->count(SitemapController::MIN_APPROVED_CLUES_FOR_WORDS)->create(['answer' => 'APPLE', 'status' => ClueEntry::STATUS_APPROVED])->first();
 
     expect($this->get('/sitemaps/words.xml')->getContent())->toContain(route('words.show', $word));
 

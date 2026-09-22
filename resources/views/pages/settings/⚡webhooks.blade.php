@@ -8,8 +8,10 @@ use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
+use Illuminate\Database\Eloquent\Collection;
 
-new #[Title('Webhook settings')] class extends Component {
+new #[Title('Webhook settings')]
+class extends Component {
     public bool $showCreateModal = false;
     public bool $showDeliveriesModal = false;
 
@@ -30,11 +32,11 @@ new #[Title('Webhook settings')] class extends Component {
         $this->validate();
 
         Auth::user()->webhookEndpoints()->create([
-            'url' => $this->url,
+            'url'         => $this->url,
             'description' => $this->description ?: null,
-            'secret' => Str::random(32),
-            'events' => $this->events,
-            'is_active' => true,
+            'secret'      => Str::random(32),
+            'events'      => $this->events,
+            'is_active'   => true,
         ]);
 
         $this->reset('url', 'description', 'events', 'showCreateModal');
@@ -43,7 +45,7 @@ new #[Title('Webhook settings')] class extends Component {
     public function toggleEndpoint(int $endpointId): void
     {
         $endpoint = Auth::user()->webhookEndpoints()->findOrFail($endpointId);
-        $endpoint->update(['is_active' => ! $endpoint->is_active]);
+        $endpoint->update(['is_active' => !$endpoint->is_active]);
     }
 
     public function deleteEndpoint(int $endpointId): void
@@ -69,10 +71,10 @@ new #[Title('Webhook settings')] class extends Component {
     }
 
     #[Computed]
-    public function recentDeliveries()
+    public function recentDeliveries(): Collection
     {
-        if (! $this->viewingEndpointId) {
-            return collect();
+        if (!$this->viewingEndpointId) {
+            return new WebhookEndpoint()->newCollection();
         }
 
         return WebhookEndpoint::query()
@@ -94,18 +96,21 @@ new #[Title('Webhook settings')] class extends Component {
 <section class="w-full">
     @include('partials.settings-heading')
 
-    <x-pages::settings.layout :heading="__('Webhooks')" :subheading="__('Receive HTTP callbacks when events happen on your puzzles')">
+    <x-pages::settings.layout :heading="__('Webhooks')"
+                              :subheading="__('Receive HTTP callbacks when events happen on your puzzles')">
         <div class="my-6 space-y-6">
             <div class="flex items-center justify-between gap-3">
                 <p class="text-ink text-sm">{{ __('Your webhook endpoints') }}</p>
-                <button type="button" class="btn-classical btn-amber-outline" wire:click="$set('showCreateModal', true)">
-                    <flux:icon name="plus" class="size-4" />
+                <button type="button" class="btn-classical btn-amber-outline"
+                        wire:click="$set('showCreateModal', true)">
+                    <flux:icon name="plus" class="size-4"/>
                     {{ __('Add endpoint') }}
                 </button>
             </div>
 
             @if ($this->endpoints->isEmpty())
-                <div class="border-border-strong flex flex-col items-center justify-center rounded-sm border border-dashed px-6 py-10 text-center">
+                <div
+                    class="border-border-strong flex flex-col items-center justify-center rounded-sm border border-dashed px-6 py-10 text-center">
                     <h3 class="font-classical text-ink text-[22px] leading-tight font-medium">{{ __('No webhooks configured') }}</h3>
                     <p class="text-ink-muted mt-2 text-sm">{{ __('Add a webhook endpoint to receive notifications when events happen on your puzzles.') }}</p>
                 </div>
@@ -118,9 +123,11 @@ new #[Title('Webhook settings')] class extends Component {
                                     <div class="flex flex-wrap items-center gap-2">
                                         <span class="text-ink truncate font-mono text-sm">{{ $endpoint->url }}</span>
                                         @if ($endpoint->is_active)
-                                            <span class="chip-classical border-amber-400 text-amber-400">{{ __('Active') }}</span>
+                                            <span
+                                                class="chip-classical border-amber-400 text-amber-400">{{ __('Active') }}</span>
                                         @else
-                                            <span class="chip-classical border-ink-faint text-ink-faint">{{ __('Inactive') }}</span>
+                                            <span
+                                                class="chip-classical border-ink-faint text-ink-faint">{{ __('Inactive') }}</span>
                                         @endif
                                     </div>
                                     @if ($endpoint->description)
@@ -128,7 +135,8 @@ new #[Title('Webhook settings')] class extends Component {
                                     @endif
                                     <div class="mt-2 flex flex-wrap gap-1.5">
                                         @foreach ($endpoint->events as $event)
-                                            <span class="chip-classical border-ink-faint text-ink-faint">{{ App\Enums\WebhookEvent::tryFrom($event)?->label() ?? $event }}</span>
+                                            <span
+                                                class="chip-classical border-ink-faint text-ink-faint">{{ App\Enums\WebhookEvent::tryFrom($event)?->label() ?? $event }}</span>
                                         @endforeach
                                     </div>
                                     @if ($endpoint->last_triggered_at)
@@ -138,14 +146,21 @@ new #[Title('Webhook settings')] class extends Component {
                                     @endif
                                 </div>
                                 <div class="flex shrink-0 items-center gap-1.5">
-                                    <button type="button" class="btn-classical btn-classical-muted h-8 w-8 px-0" wire:click="viewDeliveries({{ $endpoint->id }})" aria-label="{{ __('Recent deliveries') }}">
-                                        <flux:icon name="eye" class="size-4" />
+                                    <button type="button" class="btn-classical btn-classical-muted h-8 w-8 px-0"
+                                            wire:click="viewDeliveries({{ $endpoint->id }})"
+                                            aria-label="{{ __('Recent deliveries') }}">
+                                        <flux:icon name="eye" class="size-4"/>
                                     </button>
-                                    <button type="button" class="btn-classical btn-classical-muted h-8 w-8 px-0" wire:click="toggleEndpoint({{ $endpoint->id }})" aria-label="{{ $endpoint->is_active ? __('Pause') : __('Resume') }}">
-                                        <flux:icon :name="$endpoint->is_active ? 'pause' : 'play'" class="size-4" />
+                                    <button type="button" class="btn-classical btn-classical-muted h-8 w-8 px-0"
+                                            wire:click="toggleEndpoint({{ $endpoint->id }})"
+                                            aria-label="{{ $endpoint->is_active ? __('Pause') : __('Resume') }}">
+                                        <flux:icon :name="$endpoint->is_active ? 'pause' : 'play'" class="size-4"/>
                                     </button>
-                                    <button type="button" class="btn-classical btn-classical-muted h-8 w-8 px-0" wire:click="deleteEndpoint({{ $endpoint->id }})" wire:confirm="{{ __('Are you sure you want to delete this webhook endpoint?') }}" aria-label="{{ __('Delete') }}">
-                                        <flux:icon name="trash" class="size-4" />
+                                    <button type="button" class="btn-classical btn-classical-muted h-8 w-8 px-0"
+                                            wire:click="deleteEndpoint({{ $endpoint->id }})"
+                                            wire:confirm="{{ __('Are you sure you want to delete this webhook endpoint?') }}"
+                                            aria-label="{{ __('Delete') }}">
+                                        <flux:icon name="trash" class="size-4"/>
                                     </button>
                                 </div>
                             </div>
@@ -162,28 +177,29 @@ new #[Title('Webhook settings')] class extends Component {
 
                 <flux:field>
                     <flux:label>{{ __('URL') }}</flux:label>
-                    <flux:input wire:model="url" type="url" placeholder="https://example.com/webhook" required />
-                    <flux:error name="url" />
+                    <flux:input wire:model="url" type="url" placeholder="https://example.com/webhook" required/>
+                    <flux:error name="url"/>
                 </flux:field>
 
                 <flux:field>
                     <flux:label>{{ __('Description') }}</flux:label>
-                    <flux:input wire:model="description" type="text" :placeholder="__('Optional description')" />
-                    <flux:error name="description" />
+                    <flux:input wire:model="description" type="text" :placeholder="__('Optional description')"/>
+                    <flux:error name="description"/>
                 </flux:field>
 
                 <flux:field>
                     <flux:label>{{ __('Events') }}</flux:label>
                     <div class="space-y-2">
                         @foreach ($this->availableEvents as $value => $label)
-                            <flux:checkbox wire:model="events" :value="$value" :label="$label" />
+                            <flux:checkbox wire:model="events" :value="$value" :label="$label"/>
                         @endforeach
                     </div>
-                    <flux:error name="events" />
+                    <flux:error name="events"/>
                 </flux:field>
 
                 <div class="flex justify-end gap-2">
-                    <flux:button variant="ghost" wire:click="$set('showCreateModal', false)">{{ __('Cancel') }}</flux:button>
+                    <flux:button variant="ghost"
+                                 wire:click="$set('showCreateModal', false)">{{ __('Cancel') }}</flux:button>
                     <flux:button variant="primary" type="submit">{{ __('Create') }}</flux:button>
                 </div>
             </form>
@@ -205,10 +221,12 @@ new #[Title('Webhook settings')] class extends Component {
                                     @if ($delivery->success)
                                         <flux:badge color="green" size="sm">{{ $delivery->response_code }}</flux:badge>
                                     @else
-                                        <flux:badge color="red" size="sm">{{ $delivery->response_code ?? __('Failed') }}</flux:badge>
+                                        <flux:badge color="red"
+                                                    size="sm">{{ $delivery->response_code ?? __('Failed') }}</flux:badge>
                                     @endif
                                 </div>
-                                <flux:text class="text-xs text-zinc-400">{{ $delivery->created_at->diffForHumans() }}</flux:text>
+                                <flux:text
+                                    class="text-xs text-zinc-400">{{ $delivery->created_at->diffForHumans() }}</flux:text>
                             </div>
                         </div>
                     @endforeach
@@ -216,7 +234,8 @@ new #[Title('Webhook settings')] class extends Component {
             @endif
 
             <div class="mt-4 flex justify-end">
-                <flux:button variant="ghost" wire:click="$set('showDeliveriesModal', false)">{{ __('Close') }}</flux:button>
+                <flux:button variant="ghost"
+                             wire:click="$set('showDeliveriesModal', false)">{{ __('Close') }}</flux:button>
             </div>
         </flux:modal>
     </x-pages::settings.layout>

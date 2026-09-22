@@ -142,7 +142,7 @@ new class extends Component {
                 'description' => __('A searchable catalog of crossword answers with clue counts and fill scores.'),
                 'mainEntity' => [
                     '@type' => 'ItemList',
-                    'itemListElement' => collect($this->words->items())->map(fn ($w, $i) => [
+                    'itemListElement' => collect($this->words->items())->filter(fn ($w) => $w->clue_count > 0)->values()->map(fn ($w, $i) => [
                         '@type' => 'ListItem',
                         'position' => $i + 1,
                         'name' => $w->word,
@@ -238,10 +238,20 @@ new class extends Component {
                     </tr>
                 </thead>
                 <tbody class="divide-hairline divide-y">
+                    {{-- Clue-less word pages are noindex and thin, so guests (and
+                         crawlers) get them as plain text: there is nothing there
+                         to visit yet, and linking hundreds of thousands of them
+                         floods search engines with URLs they will never index.
+                         Signed-in users keep the link so they can add a clue. --}}
                     @foreach($this->words as $word)
-                        <tr wire:key="word-{{ $word->id }}" x-on:click="window.location.href = '{{ route('words.show', $word) }}'" class="group cursor-pointer">
+                        @php $isLinked = $word->clue_count > 0 || auth()->check(); @endphp
+                        <tr wire:key="word-{{ $word->id }}" @if($isLinked) x-on:click="window.location.href = '{{ route('words.show', $word) }}'" @endif class="group {{ $isLinked ? 'cursor-pointer' : '' }}">
                             <td class="px-3 py-3.5 whitespace-nowrap">
-                                <a href="{{ route('words.show', $word) }}" wire:navigate class="font-classical text-ink group-hover:text-amber-300 text-[18px] leading-none font-semibold tracking-[0.06em] transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">{{ $word->word }}</a>
+                                @if($isLinked)
+                                    <a href="{{ route('words.show', $word) }}" wire:navigate class="font-classical text-ink group-hover:text-amber-300 text-[18px] leading-none font-semibold tracking-[0.06em] transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">{{ $word->word }}</a>
+                                @else
+                                    <span class="font-classical text-ink text-[18px] leading-none font-semibold tracking-[0.06em]">{{ $word->word }}</span>
+                                @endif
                             </td>
                             <td class="font-classical text-ink tnum px-3 py-3.5 text-[15px] font-medium">{{ $word->length }}</td>
                             <td class="font-classical text-ink tnum px-3 py-3.5 text-[15px] font-medium">{{ number_format($word->score, 1) }}</td>

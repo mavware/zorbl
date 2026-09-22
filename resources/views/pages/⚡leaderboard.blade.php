@@ -156,7 +156,7 @@ new #[Title('Leaderboard')] class extends Component {
 
         $avgTime = (int) $userStats->avg_time;
 
-        $rank = (int) DB::table(
+        $rank = DB::table(
             DB::raw('(SELECT user_id, round(avg(solve_time_seconds)) as avg_time, count(*) as solved_count FROM puzzle_attempts WHERE is_completed = 1 AND solve_time_seconds IS NOT NULL GROUP BY user_id HAVING count(*) >= 5) as rankings')
         )
             ->join('users', 'users.id', '=', 'rankings.user_id')
@@ -175,7 +175,7 @@ new #[Title('Leaderboard')] class extends Component {
     {
         $userId = Auth::id();
 
-        $publishedCount = (int) DB::table('crosswords')
+        $publishedCount = DB::table('crosswords')
             ->where('user_id', $userId)
             ->where('is_published', true)
             ->count();
@@ -184,7 +184,7 @@ new #[Title('Leaderboard')] class extends Component {
             return null;
         }
 
-        $totalSolves = (int) DB::table('crosswords')
+        $totalSolves = DB::table('crosswords')
             ->join('puzzle_attempts', function ($join) {
                 $join->on('crosswords.id', '=', 'puzzle_attempts.crossword_id')
                     ->where('puzzle_attempts.is_completed', true);
@@ -223,7 +223,7 @@ new #[Title('Leaderboard')] class extends Component {
             return null;
         }
 
-        $rank = (int) User::where('is_anonymous', false)
+        $rank = User::where('is_anonymous', false)
             ->where(function ($q) use ($user) {
                 $q->where('longest_streak', '>', $user->longest_streak)
                     ->orWhere(function ($q2) use ($user) {

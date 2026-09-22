@@ -136,7 +136,9 @@ test('welcome page graph includes Organization and site navigation for key secti
 });
 
 test('word catalog carries a canonical, description and CollectionPage ItemList', function () {
+    $user = User::factory()->create();
     Word::factory()->word('OCEAN')->create();
+    ClueEntry::create(['answer' => 'OCEAN', 'clue' => 'Large body of water', 'user_id' => $user->id, 'status' => ClueEntry::STATUS_APPROVED]);
 
     $html = $this->get(route('words.index'))->getContent();
 
@@ -150,6 +152,53 @@ test('word catalog carries a canonical, description and CollectionPage ItemList'
         ->and($collection['name'])->toBe('Word Catalog');
     expect(collect($collection['mainEntity']['itemListElement'])->pluck('name'))->toContain('OCEAN');
 });
+
+test('word catalog only links and lists words that have approved clues for guests', function () {
+    $user = User::factory()->create();
+    $clued = Word::factory()->word('OCEAN')->create();
+    $bare = Word::factory()->word('QOPHS')->create();
+    ClueEntry::create(['answer' => 'OCEAN', 'clue' => 'Large body of water', 'user_id' => $user->id, 'status' => ClueEntry::STATUS_APPROVED]);
+
+    $html = $this->get(route('words.index'))->getContent();
+
+    expect($html)
+        ->toContain('href="'.route('words.show', $clued).'"')
+        ->toContain('QOPHS')
+        ->not->toContain('href="'.route('words.show', $bare).'"')
+        ->not->toContain(route('words.show', $bare));
+
+    $collection = collect(jsonLdBlocks($html))->firstWhere('@type', 'CollectionPage');
+    expect(collect($collection['mainEntity']['itemListElement'])->pluck('name'))
+        ->toContain('OCEAN')
+        ->not->toContain('QOPHS');
+});
+
+test('signed-in users can still open clue-less words from the catalog', function () {
+    $bare = Word::factory()->word('QOPHS')->create();
+
+    $html = $this->actingAs(User::factory()->create())->get(route('words.index'))->getContent();
+
+    expect($html)->toContain('href="'.route('words.show', $bare).'"');
+});
+
+test('query-string variants of catalog pages are noindex without a cross canonical', function (string $routeName, array $query) {
+    $clean = $this->get(route($routeName))->getContent();
+    $variant = $this->get(route($routeName, $query))->getContent();
+
+    expect($clean)
+        ->not->toContain('name="robots" content="noindex')
+        ->toContain('<link rel="canonical" href="'.route($routeName).'"');
+
+    expect($variant)
+        ->toContain('<meta name="robots" content="noindex, follow">')
+        ->not->toContain('<link rel="canonical"');
+})->with([
+    'paginated word catalog' => ['words.index', ['page' => 2]],
+    'sorted word catalog' => ['words.index', ['sortField' => 'length', 'sortDirection' => 'desc']],
+    'filtered clue library' => ['clues.index', ['filter' => 'mine']],
+    'searched constructors' => ['constructors.index', ['search' => 'ann']],
+    'paginated puzzles' => ['puzzles.index', ['page' => 2]],
+]);
 
 test('clue library carries a canonical, description and CollectionPage schema', function () {
     $html = $this->get(route('clues.index'))->getContent();

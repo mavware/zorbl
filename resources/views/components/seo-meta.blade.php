@@ -7,6 +7,13 @@
 ])
 
 @php
+    // Query-string variants (pagination, sort, filter, tracking params) are
+    // duplicates of the clean URL. Keep them out of the index but let their
+    // links be followed. They deliberately carry no canonical: pairing noindex
+    // with a canonical that points elsewhere sends Google conflicting signals
+    // and can leak the noindex onto the clean URL.
+    $isQueryVariant = (string) request()->getQueryString() !== '';
+    $noindex = $noindex || $isQueryVariant;
     $canonicalUrl = $canonical ?? url()->current();
     $ogTitle = ($title ? $title.' — ' : '').config('app.name');
     $ogImage = $image ?? asset('og-default.png');
@@ -16,7 +23,9 @@
     @if ($noindex)
         <meta name="robots" content="noindex, follow">
     @endif
-    <link rel="canonical" href="{{ $canonicalUrl }}">
+    @unless ($isQueryVariant)
+        <link rel="canonical" href="{{ $canonicalUrl }}">
+    @endunless
     @if ($description !== '')
         <meta name="description" content="{{ $description }}">
     @endif

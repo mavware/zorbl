@@ -27,6 +27,14 @@ class SitemapController extends Controller
     /** @deprecated Use the section-specific cache keys instead. */
     public const CACHE_KEY = 'sitemap.xml';
 
+    /**
+     * A word page needs this many approved clues before the sitemap promotes
+     * it. Pages with one or two clues stay indexable (and reachable from the
+     * clue library) but are too thin to spend Google's crawl budget on; the
+     * sitemap should advertise the strongest pages, not the whole dictionary.
+     */
+    public const MIN_APPROVED_CLUES_FOR_WORDS = 3;
+
     /** @var array<string, string> */
     public const SECTIONS = [
         'pages' => self::CACHE_KEY_PAGES,
@@ -172,7 +180,12 @@ class SitemapController extends Controller
         $urls = [];
 
         Word::query()
-            ->whereHas('clueEntries', fn (Builder $q) => $q->where('status', ClueEntry::STATUS_APPROVED))
+            ->whereHas(
+                'clueEntries',
+                fn (Builder $q) => $q->where('status', ClueEntry::STATUS_APPROVED),
+                '>=',
+                self::MIN_APPROVED_CLUES_FOR_WORDS,
+            )
             ->select(['id', 'word'])
             ->addSelect([
                 'last_clue_at' => ClueEntry::query()
