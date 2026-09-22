@@ -118,6 +118,7 @@
             ],
         ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
 
+        @include('partials.google-tag')
         @vite(['resources/css/app.css', 'resources/js/app.js'])
         @fluxAppearance
     </head>

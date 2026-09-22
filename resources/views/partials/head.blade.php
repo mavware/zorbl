@@ -18,6 +18,7 @@
 
 <link rel="preconnect" href="https://fonts.bunny.net">
 @stack('head_meta')
+@include('partials.google-tag')
 
 @vite(['resources/css/app.css', 'resources/js/app.js'])
 @fluxAppearance
