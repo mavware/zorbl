@@ -22,7 +22,10 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
 use Laravel\Cashier\Billable;
 use Laravel\Cashier\Subscription;
+use Laravel\Fortify\Contracts\PasskeyUser;
+use Laravel\Fortify\PasskeyAuthenticatable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
+use Laravel\Passkeys\Passkey;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -78,6 +81,8 @@ use Spatie\Permission\Traits\HasRoles;
  * @property-read int|null $support_tickets_count
  * @property-read Collection<int, SupportTicket> $assignedTickets
  * @property-read int|null $assigned_tickets_count
+ * @property-read Collection<int, Passkey> $passkeys
+ * @property-read int|null $passkeys_count
  * @property-read Collection<int, Tag> $blockedTags
  * @property-read int|null $blocked_tags_count
  * @property-read Collection<int, WebhookEndpoint> $webhookEndpoints
@@ -89,10 +94,10 @@ use Spatie\Permission\Traits\HasRoles;
  */
 #[Fillable(['name', 'email', 'password', 'copyright_name', 'bio', 'google_id', 'current_streak', 'longest_streak', 'last_solve_date', 'notification_preferences', 'safe_search_enabled', 'grandfathered_at', 'manual_pro_started_at', 'manual_pro_ended_at', 'is_anonymous', 'anonymous_token', 'anonymous_created_at', 'converted_at'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
-class User extends Authenticatable implements FilamentUser
+class User extends Authenticatable implements FilamentUser, PasskeyUser
 {
     /** @use HasFactory<UserFactory> */
-    use Billable, HasApiTokens, HasFactory, HasRoles, Notifiable, TwoFactorAuthenticatable;
+    use Billable, HasApiTokens, HasFactory, HasRoles, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
 
     /**
      * Get the attributes that should be cast.
