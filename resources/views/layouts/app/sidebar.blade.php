@@ -89,17 +89,6 @@
         {{ __('Sign up') }}
     </flux:button>
     @endguest
-    <flux:button
-        :href="route('register')"
-        variant="ghost"
-        size="sm"
-        icon="user-plus"
-        class="btn-amber-outline"
-        data-test="mobile-sign-up-button"
-        wire:navigate
-    >
-        {{ __('Sign up') }}
-    </flux:button>
     @endif
 </flux:header>
 

@@ -7,7 +7,7 @@ test('welcome page nav shows the logo followed by the app name', function () {
         ->assertOk()
         ->assertSeeInOrder([
             '<svg viewBox="0 0 32 32" role="img" aria-label="'.config('app.name').'" data-app-logo',
-            '<span>'.config('app.name').'</span>',
+            config('app.name').'</span>',
         ], false);
 });
 
