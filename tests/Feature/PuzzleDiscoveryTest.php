@@ -312,6 +312,88 @@ test('discovery sorts by most liked', function () {
         ->assertSeeHtmlInOrder([cardKey($moreLiked), cardKey($lessLiked)]);
 });
 
+test('discovery sorts by trending by default', function () {
+    $user = User::factory()->create();
+    $creator = User::factory()->create();
+
+    $quietNew = Crossword::factory()->published()->for($creator)->create(['title' => 'Quiet New', 'created_at' => now()->subDay()]);
+    $hotOld = Crossword::factory()->published()->for($creator)->create(['title' => 'Hot Old', 'created_at' => now()->subDays(20)]);
+
+    PuzzleAttempt::factory()->count(2)->for($hotOld)->create();
+
+    Livewire::actingAs($user)
+        ->test('puzzle-discovery', ['excludeAttempted' => true])
+        ->assertSet('sortBy', 'trending')
+        ->assertSeeHtmlInOrder([cardKey($hotOld), cardKey($quietNew)]);
+});
+
+test('discovery trending sort ranks recent activity first and then newest', function () {
+    $user = User::factory()->create();
+    $creator = User::factory()->create();
+
+    $quietOld = Crossword::factory()->published()->for($creator)->create(['title' => 'Quiet Old', 'created_at' => now()->subDays(30)]);
+    $hotOld = Crossword::factory()->published()->for($creator)->create(['title' => 'Hot Old', 'created_at' => now()->subDays(20)]);
+    $warmOld = Crossword::factory()->published()->for($creator)->create(['title' => 'Warm Old', 'created_at' => now()->subDays(10)]);
+    $quietNew = Crossword::factory()->published()->for($creator)->create(['title' => 'Quiet New', 'created_at' => now()->subDay()]);
+
+    PuzzleAttempt::factory()->count(3)->for($hotOld)->create();
+    CrosswordLike::factory()->count(2)->create(['crossword_id' => $hotOld->id]);
+    PuzzleAttempt::factory()->count(2)->for($warmOld)->create();
+
+    Livewire::actingAs($user)
+        ->test('puzzle-discovery', ['excludeAttempted' => true])
+        ->set('sortBy', 'trending')
+        ->assertSeeHtmlInOrder([cardKey($hotOld), cardKey($warmOld), cardKey($quietNew), cardKey($quietOld)]);
+});
+
+test('discovery trending sort ignores activity older than a week', function () {
+    $user = User::factory()->create();
+    $creator = User::factory()->create();
+
+    $staleHit = Crossword::factory()->published()->for($creator)->create(['title' => 'Stale Hit', 'created_at' => now()->subDays(30)]);
+    $recentlyPlayed = Crossword::factory()->published()->for($creator)->create(['title' => 'Recently Played', 'created_at' => now()->subDays(20)]);
+    $brandNew = Crossword::factory()->published()->for($creator)->create(['title' => 'Brand New', 'created_at' => now()->subDay()]);
+
+    PuzzleAttempt::factory()->count(10)->for($staleHit)->create(['created_at' => now()->subDays(8)]);
+    CrosswordLike::factory()->count(10)->create(['crossword_id' => $staleHit->id, 'created_at' => now()->subDays(8)]);
+    PuzzleAttempt::factory()->count(1)->for($recentlyPlayed)->create();
+
+    Livewire::actingAs($user)
+        ->test('puzzle-discovery', ['excludeAttempted' => true])
+        ->set('sortBy', 'trending')
+        ->assertSeeHtmlInOrder([cardKey($recentlyPlayed), cardKey($brandNew), cardKey($staleHit)]);
+});
+
+test('discovery toolbar shows search then sort then the more button with no heading', function () {
+    $user = User::factory()->create();
+    Crossword::factory()->published()->create();
+
+    Livewire::actingAs($user)
+        ->test('puzzle-discovery', ['excludeAttempted' => true])
+        ->assertDontSee('Discover Puzzles')
+        ->assertSeeHtmlInOrder([
+            'wire:model.live.debounce.300ms="search"',
+            'wire:model.live="sortBy"',
+            'wire:click="$toggle(\'showFilters\')"',
+        ]);
+});
+
+test('difficulty size and type filters live inside the collapsible more group', function () {
+    $user = User::factory()->create();
+    Crossword::factory()->published()->create();
+
+    Livewire::actingAs($user)
+        ->test('puzzle-discovery', ['excludeAttempted' => true])
+        ->assertDontSeeHtml('wire:model.live="difficulty"')
+        ->assertDontSeeHtml('wire:model.live="gridSize"')
+        ->assertDontSeeHtml('wire:model.live="puzzleType"')
+        ->set('showFilters', true)
+        ->assertSeeHtml('wire:model.live="difficulty"')
+        ->assertSeeHtml('wire:model.live="gridSize"')
+        ->assertSeeHtml('wire:model.live="puzzleType"')
+        ->assertSeeHtml('wire:model.live.debounce.300ms="constructor"');
+});
+
 test('discovery clear filters resets all filters', function () {
     $user = User::factory()->create();
     $creator = User::factory()->create();
@@ -333,7 +415,7 @@ test('discovery clear filters resets all filters', function () {
         ->assertSet('constructor', '')
         ->assertSet('dateRange', '')
         ->assertSet('minRating', '')
-        ->assertSet('sortBy', 'newest');
+        ->assertSet('sortBy', 'trending');
 });
 
 test('discovery respects limit parameter', function () {
@@ -915,13 +997,13 @@ test('discovery clear filters resets new sort options', function () {
         ->test('puzzle-discovery', ['excludeAttempted' => true])
         ->set('sortBy', 'highest_rated')
         ->call('clearFilters')
-        ->assertSet('sortBy', 'newest');
+        ->assertSet('sortBy', 'trending');
 
     Livewire::actingAs($user)
         ->test('puzzle-discovery', ['excludeAttempted' => true])
         ->set('sortBy', 'most_played')
         ->call('clearFilters')
-        ->assertSet('sortBy', 'newest');
+        ->assertSet('sortBy', 'trending');
 });
 
 // --- Minimum Rating Filter ---

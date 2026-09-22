@@ -105,8 +105,8 @@
                     'itemListElement' => collect([
                         ['name' => 'Build a Crossword', 'description' => 'Create your own crossword with a free visual editor.', 'url' => route('register')],
                         ['name' => 'Puzzle of the Day', 'description' => 'Solve today\'s featured crossword and browse past dailies.', 'url' => route('puzzles.daily-history')],
-                        ['name' => 'Newest Puzzles', 'description' => 'The latest crosswords published by the community.', 'url' => route('puzzles.index')],
-                        ['name' => 'Trending Puzzles', 'description' => 'The most-played crosswords right now.', 'url' => route('puzzles.index', ['sortBy' => 'most_played'])],
+                        ['name' => 'Newest Puzzles', 'description' => 'The latest crosswords published by the community.', 'url' => route('puzzles.index', ['sortBy' => 'newest'])],
+                        ['name' => 'Trending Puzzles', 'description' => 'The crosswords people are playing right now.', 'url' => route('puzzles.index')],
                         ['name' => 'Word Catalog', 'description' => 'Search crossword answers by length and letter pattern.', 'url' => route('words.index')],
                         ['name' => 'Clue Library', 'description' => 'Browse how constructors have clued any answer.', 'url' => route('clues.index')],
                     ])->map(fn ($item, $i) => [
@@ -489,8 +489,8 @@
                 <div class="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
                     <a href="{{ route('register') }}" class="text-zinc-500 hover:text-zinc-300">Build a Crossword</a>
                     <a href="{{ route('puzzles.daily-history') }}" class="text-zinc-500 hover:text-zinc-300">Puzzle of the Day</a>
-                    <a href="{{ route('puzzles.index') }}" class="text-zinc-500 hover:text-zinc-300">Newest Puzzles</a>
-                    <a href="{{ route('puzzles.index', ['sortBy' => 'most_played']) }}" class="text-zinc-500 hover:text-zinc-300">Trending Puzzles</a>
+                    <a href="{{ route('puzzles.index', ['sortBy' => 'newest']) }}" class="text-zinc-500 hover:text-zinc-300">Newest Puzzles</a>
+                    <a href="{{ route('puzzles.index') }}" class="text-zinc-500 hover:text-zinc-300">Trending Puzzles</a>
                     <a href="{{ route('words.index') }}" class="text-zinc-500 hover:text-zinc-300">Word Catalog</a>
                     <a href="{{ route('clues.index') }}" class="text-zinc-500 hover:text-zinc-300">Clue Library</a>
                     <a href="{{ route('help.index') }}" class="text-zinc-500 hover:text-zinc-300">Help</a>

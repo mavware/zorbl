@@ -27,7 +27,7 @@ new class extends Component {
 
     public string $minRating = '';
 
-    public string $sortBy = 'newest';
+    public string $sortBy = 'trending';
 
     /**
      * Only sync filter properties to the URL when used as a standalone component (limit=0).
@@ -51,7 +51,7 @@ new class extends Component {
             'difficulty' => ['except' => ''],
             'tag' => ['except' => ''],
             'minRating' => ['except' => ''],
-            'sortBy' => ['except' => 'newest'],
+            'sortBy' => ['except' => 'trending'],
         ];
     }
 
@@ -183,6 +183,7 @@ new class extends Component {
         }
 
         match ($this->sortBy) {
+            'trending' => $this->orderByTrending($query),
             'oldest' => $query->oldest(),
             'most_liked' => $query->orderByDesc('likes_count'),
             'most_solved' => $query->orderByDesc('cached_completed_count'),
@@ -198,6 +199,28 @@ new class extends Component {
         }
 
         return $query->paginate(18);
+    }
+
+    /**
+     * Rank puzzles by solves started and likes received in the past week, so
+     * the ones people are playing right now come first. Everything with no
+     * recent activity ties at zero and falls back to newest-first, which is
+     * what makes the list read as "trending, then new".
+     *
+     * Correlated subqueries (rather than withCount aliases) keep the ORDER BY
+     * portable across SQLite, MySQL and Postgres.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder<Crossword>  $query
+     */
+    protected function orderByTrending($query): void
+    {
+        $since = now()->subWeek();
+
+        $query->orderByRaw(
+            '((SELECT COUNT(*) FROM puzzle_attempts WHERE puzzle_attempts.crossword_id = crosswords.id AND puzzle_attempts.created_at >= ?)'
+            .' + (SELECT COUNT(*) FROM crossword_likes WHERE crossword_likes.crossword_id = crosswords.id AND crossword_likes.created_at >= ?)) DESC',
+            [$since, $since]
+        )->latest();
     }
 
     /** @return array<int, bool> */
@@ -241,7 +264,7 @@ new class extends Component {
     public function clearFilters(): void
     {
         $this->reset('search', 'gridSize', 'puzzleType', 'constructor', 'dateRange', 'difficulty', 'tag', 'minRating', 'sortBy');
-        $this->sortBy = 'newest';
+        $this->sortBy = 'trending';
         $this->resetPage();
         unset($this->puzzles);
     }
@@ -303,7 +326,7 @@ new class extends Component {
             || $this->difficulty !== ''
             || $this->tag !== ''
             || $this->minRating !== ''
-            || $this->sortBy !== 'newest';
+            || $this->sortBy !== 'trending';
     }
 
 }
@@ -311,24 +334,7 @@ new class extends Component {
 
 <div class="@container space-y-4">
 
-    <div class="border-hairline mb-2 flex items-center justify-between gap-3 border-b pb-4">
-        <h2 class="font-classical text-ink text-[26px] leading-tight font-medium">{{ __('Discover Puzzles') }}</h2>
-        <label class="relative w-48 font-classical text-[15px] font-medium">
-            <select wire:model.live="sortBy" class="field-classical font-classical w-full text-[15px] font-medium appearance-none pr-9 pl-3.5">
-            <option value="newest">{{ __('Sort: Newest') }}</option>
-            <option value="oldest">{{ __('Sort: Oldest') }}</option>
-            <option value="most_liked">{{ __('Sort: Most Liked') }}</option>
-            <option value="most_solved">{{ __('Sort: Most Solved') }}</option>
-            <option value="highest_rated">{{ __('Sort: Highest Rated') }}</option>
-            <option value="most_played">{{ __('Sort: Most Played') }}</option>
-            <option value="largest">{{ __('Sort: Largest') }}</option>
-            <option value="smallest">{{ __('Sort: Smallest') }}</option>
-            </select>
-            <flux:icon name="chevron-down" class="text-ink-faint pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2" />
-        </label>
-    </div>
-
-    {{-- Search + Primary Filters (single row on desktop) --}}
+    {{-- Search + sort + filter toggles (single row on desktop) --}}
     <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
         <label class="relative min-w-0 flex-1 sm:basis-64">
             <span class="sr-only">{{ __('Search by title or constructor...') }}</span>
@@ -341,33 +347,18 @@ new class extends Component {
             />
         </label>
 
-        <label class="relative sm:w-40">
-            <select wire:model.live="difficulty" class="field-classical w-full appearance-none pr-9 pl-3.5">
-            <option value="">{{ __('Any Difficulty') }}</option>
-            <option value="Easy">{{ __('Easy') }}</option>
-            <option value="Medium">{{ __('Medium') }}</option>
-            <option value="Hard">{{ __('Hard') }}</option>
-            <option value="Expert">{{ __('Expert') }}</option>
-            </select>
-            <flux:icon name="chevron-down" class="text-ink-faint pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2" />
-        </label>
-
-        <label class="relative sm:w-32">
-            <select wire:model.live="gridSize" class="field-classical w-full appearance-none pr-9 pl-3.5">
-            <option value="">{{ __('Any Size') }}</option>
-            <option value="small">{{ __('Small') }}</option>
-            <option value="medium">{{ __('Medium') }}</option>
-            <option value="large">{{ __('Large') }}</option>
-            </select>
-            <flux:icon name="chevron-down" class="text-ink-faint pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2" />
-        </label>
-
-        <label class="relative sm:w-36">
-            <select wire:model.live="puzzleType" class="field-classical w-full appearance-none pr-9 pl-3.5">
-            <option value="">{{ __('Any Type') }}</option>
-            <option value="standard">{{ __('Standard') }}</option>
-            <option value="diamond">{{ __('Diamond') }}</option>
-            <option value="freestyle">{{ __('Freestyle') }}</option>
+        <label class="relative sm:w-44">
+            <span class="sr-only">{{ __('Sort by') }}</span>
+            <select wire:model.live="sortBy" class="field-classical w-full appearance-none pr-9 pl-3.5">
+                <option value="trending">{{ __('Sort: Trending') }}</option>
+                <option value="newest">{{ __('Sort: Newest') }}</option>
+                <option value="oldest">{{ __('Sort: Oldest') }}</option>
+                <option value="most_liked">{{ __('Sort: Most Liked') }}</option>
+                <option value="most_solved">{{ __('Sort: Most Solved') }}</option>
+                <option value="highest_rated">{{ __('Sort: Highest Rated') }}</option>
+                <option value="most_played">{{ __('Sort: Most Played') }}</option>
+                <option value="largest">{{ __('Sort: Largest') }}</option>
+                <option value="smallest">{{ __('Sort: Smallest') }}</option>
             </select>
             <flux:icon name="chevron-down" class="text-ink-faint pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2" />
         </label>
@@ -392,6 +383,46 @@ new class extends Component {
     {{-- Secondary Filters (collapsible) --}}
     @if($showFilters)
         <div class="border-border grid gap-4 rounded-sm border p-[18px] sm:grid-cols-2 lg:grid-cols-4">
+            <label class="block">
+                <span class="meta-classical mb-1.5 block">{{ __('Difficulty') }}</span>
+                <span class="relative block">
+                    <select wire:model.live="difficulty" class="field-classical w-full appearance-none pr-9 pl-3.5">
+                        <option value="">{{ __('Any Difficulty') }}</option>
+                        <option value="Easy">{{ __('Easy') }}</option>
+                        <option value="Medium">{{ __('Medium') }}</option>
+                        <option value="Hard">{{ __('Hard') }}</option>
+                        <option value="Expert">{{ __('Expert') }}</option>
+                    </select>
+                    <flux:icon name="chevron-down" class="text-ink-faint pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2" />
+                </span>
+            </label>
+
+            <label class="block">
+                <span class="meta-classical mb-1.5 block">{{ __('Size') }}</span>
+                <span class="relative block">
+                    <select wire:model.live="gridSize" class="field-classical w-full appearance-none pr-9 pl-3.5">
+                        <option value="">{{ __('Any Size') }}</option>
+                        <option value="small">{{ __('Small') }}</option>
+                        <option value="medium">{{ __('Medium') }}</option>
+                        <option value="large">{{ __('Large') }}</option>
+                    </select>
+                    <flux:icon name="chevron-down" class="text-ink-faint pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2" />
+                </span>
+            </label>
+
+            <label class="block">
+                <span class="meta-classical mb-1.5 block">{{ __('Type') }}</span>
+                <span class="relative block">
+                    <select wire:model.live="puzzleType" class="field-classical w-full appearance-none pr-9 pl-3.5">
+                        <option value="">{{ __('Any Type') }}</option>
+                        <option value="standard">{{ __('Standard') }}</option>
+                        <option value="diamond">{{ __('Diamond') }}</option>
+                        <option value="freestyle">{{ __('Freestyle') }}</option>
+                    </select>
+                    <flux:icon name="chevron-down" class="text-ink-faint pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2" />
+                </span>
+            </label>
+
             <label class="block">
                 <span class="meta-classical mb-1.5 block">{{ __('Constructor') }}</span>
                 <input type="text" wire:model.live.debounce.300ms="constructor" placeholder="{{ __('Name...') }}" class="field-classical w-full px-3.5" />
