@@ -46,6 +46,31 @@ test('the guest banner shows on every panel page via the app layout', function (
         ->assertSee('building as a guest');
 });
 
+test('anonymous user can open the solve home without the stats link', function () {
+    $anon = app(AnonymousUserManager::class)->create();
+
+    $this->actingAs($anon)
+        ->get(route('crosswords.solving'))
+        ->assertOk()
+        ->assertSee('building as a guest')
+        ->assertDontSee('data-test="solving-stats-button"', false);
+});
+
+test('registered user sees the stats link on the solve home', function () {
+    $this->actingAs(User::factory()->create())
+        ->get(route('crosswords.solving'))
+        ->assertOk()
+        ->assertSee('data-test="solving-stats-button"', false);
+});
+
+test('anonymous user is still sent to register from solving stats', function () {
+    $anon = app(AnonymousUserManager::class)->create();
+
+    $this->actingAs($anon)
+        ->get(route('crosswords.stats'))
+        ->assertRedirect(route('register'));
+});
+
 test('anonymous user is sent to the build home from the dashboard', function () {
     $anon = app(AnonymousUserManager::class)->create();
 
@@ -63,15 +88,16 @@ test('anonymous user can reach the build home and sees the guest banner', functi
         ->assertSee('building as a guest');
 });
 
-test('anonymous user sees a sign up button in place of the user menu', function () {
+test('anonymous user gets the guest banner sign up link and no chrome sign up buttons', function () {
     $anon = app(AnonymousUserManager::class)->create();
 
     $this->actingAs($anon)
         ->get(route('crosswords.index'))
         ->assertOk()
-        ->assertSee('data-test="sidebar-sign-up-button"', false)
-        ->assertSee('data-test="mobile-sign-up-button"', false)
         ->assertSee(route('register'))
+        ->assertDontSee('data-test="sidebar-sign-up-button"', false)
+        ->assertDontSee('data-test="mobile-sign-up-button"', false)
+        ->assertDontSee('data-test="header-sign-up-button"', false)
         ->assertDontSee('data-test="sidebar-menu-button"', false)
         ->assertDontSee('data-test="logout-button"', false);
 });

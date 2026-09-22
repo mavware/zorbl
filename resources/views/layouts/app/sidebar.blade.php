@@ -40,17 +40,17 @@
                     >
                         {{ __('Log in') }}
                     </flux:button>
+                    <flux:button
+                        :href="route('register')"
+                        variant="ghost"
+                        icon="user-plus"
+                        class="btn-amber-outline w-full"
+                        data-test="sidebar-sign-up-button"
+                        wire:navigate
+                    >
+                        {{ __('Sign up') }}
+                    </flux:button>
                 @endguest
-                <flux:button
-                    :href="route('register')"
-                    variant="ghost"
-                    icon="user-plus"
-                    class="btn-amber-outline w-full"
-                    data-test="sidebar-sign-up-button"
-                    wire:navigate
-                >
-                    {{ __('Sign up') }}
-                </flux:button>
             </div>
         @endif
     </div>
@@ -76,6 +76,17 @@
         data-test="mobile-log-in-button"
     >
         {{ __('Log in') }}
+    </flux:button>
+    <flux:button
+        :href="route('register')"
+        variant="ghost"
+        size="sm"
+        icon="user-plus"
+        class="btn-amber-outline"
+        data-test="mobile-sign-up-button"
+        wire:navigate
+    >
+        {{ __('Sign up') }}
     </flux:button>
     @endguest
     <flux:button

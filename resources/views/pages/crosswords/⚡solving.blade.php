@@ -292,9 +292,11 @@ new #[Title('Solving')] class extends Component {
             <x-header-button variant="secondary" icon="sparkles" wire:click="surpriseMe" data-test="surprise-me-button">
                 {{ __('Surprise Me') }}
             </x-header-button>
-            <x-header-button variant="secondary" icon="chart-bar" :href="route('crosswords.stats')" wire:navigate>
-                {{ __('Stats') }}
-            </x-header-button>
+            @unless (auth()->user()->isAnonymous())
+                <x-header-button variant="secondary" icon="chart-bar" :href="route('crosswords.stats')" wire:navigate data-test="solving-stats-button">
+                    {{ __('Stats') }}
+                </x-header-button>
+            @endunless
         </x-page-header>
 
         {{-- Puzzle of the Day --}}

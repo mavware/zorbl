@@ -108,10 +108,13 @@ Route::middleware(['auth'])->group(function () {
     Route::livewire('crosswords', 'pages::crosswords.index')->name('crosswords.index');
     Route::livewire('crosswords/{crossword}', 'pages::crosswords.editor')->name('crosswords.editor');
     Route::livewire('crosswords/{crossword}/solve', 'pages::crosswords.solver')->name('crosswords.solver');
+
+    // The Solve home lists the visitor's own attempts, so guest builders can
+    // use it too; stats stay behind a registered account.
+    Route::livewire('solving', 'pages::crosswords.solving')->name('crosswords.solving');
 });
 
 Route::middleware(['auth', 'verified', 'not-anonymous'])->group(function () {
-    Route::livewire('solving', 'pages::crosswords.solving')->name('crosswords.solving');
     Route::livewire('solving/stats', 'pages::crosswords.stats')->name('crosswords.stats');
 
     Route::livewire('favorites', 'pages::favorites.index')->name('favorites.index');

@@ -128,14 +128,14 @@
             <div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
                 <a href="/" class="flex items-center gap-3 text-xl tracking-tight text-white">
                     <x-app-logo-icon class="h-8 w-auto" />
-                    <span>{{ $appName }}</span>
+                    <span class="hidden md:flex">{{ $appName }}</span>
                 </a>
                 <div class="flex items-center gap-4">
 {{--                    <a href="{{ route('puzzles.index') }}" class="text-sm text-zinc-500 hover:text-zinc-100 transition">Browse Puzzles</a>--}}
                     @auth
                         <a href="{{ route('crosswords.index') }}" class="btn-amber-outline rounded-lg border px-4 py-2 text-sm font-semibold transition">Dashboard</a>
                     @else
-                        <a href="{{ route('login') }}" class="text-sm text-zinc-500 hover:text-zinc-100 transition">Log in</a>
+                        <a href="{{ route('login') }}" class="rounded-lg border border-zinc-500 px-4 py-2 text-sm font-semibold text-zinc-500 hover:border-zinc-100 hover:text-zinc-100 transition">Log in</a>
                         <a href="{{ route('register') }}" class="btn-amber-outline rounded-lg border px-4 py-2 text-sm font-semibold transition">Sign up</a>
                     @endauth
                 </div>
@@ -152,7 +152,7 @@
                 {{-- Hero copy — sits beside the builder panel --}}
                 <div class="flex min-w-0 flex-col text-left">
                     <div class="hidden md:flex label-classical font-display mb-5 text-[13px] font-semibold tabular-nums text-amber-400 [--label-tracking:0.14em]">
-                        {{ __('Free forever') }} &middot; {{ $stats['constructors'] }} {{ __('constructors') }}
+                        {{ __('Free forever') }} &middot; {{ __("Every tool you'll ever need") }}
                     </div>
 
                     <h1 class="font-display md:mb-6 text-4xl leading-[1.02] tracking-tight text-zinc-100 sm:text-5xl lg:text-6xl">
@@ -240,7 +240,7 @@
                                     <a href="{{ route('register') }}" class="btn-amber-outline rounded-xl border px-6 py-2.5 text-sm font-semibold transition">
                                         {{ __('Create Free Account') }}
                                     </a>
-                                    <a href="{{ route('login') }}" class="rounded-xl border border-zinc-700 px-6 py-2.5 text-sm font-semibold text-zinc-300 hover:bg-zinc-800 transition">
+                                    <a href="{{ route('login') }}" class="rounded-xl border border-zinc-300 px-6 py-2.5 text-sm font-semibold text-zinc-300 hover:bg-zinc-800 transition">
                                         {{ __('Log In') }}
                                     </a>
                                 </div>
