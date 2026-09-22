@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Auth;
 
 class ImpersonationController extends Controller
 {
-    public const SESSION_KEY = 'impersonator_id';
+    public const string SESSION_KEY = 'impersonator_id';
 
     public function start(Request $request, User $user): RedirectResponse
     {

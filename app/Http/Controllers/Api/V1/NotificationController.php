@@ -17,7 +17,7 @@ class NotificationController extends Controller
     {
         $notifications = $request->user()
             ->notifications()
-            ->paginate(15);
+            ->paginate();
 
         return NotificationResource::collection($notifications);
     }

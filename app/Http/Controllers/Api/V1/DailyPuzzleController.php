@@ -19,12 +19,12 @@ class DailyPuzzleController extends Controller
         $crossword = DailyPuzzle::todayOrAuto();
 
         if (! $crossword) {
-            return response()->json(['data' => null], 200);
+            return response()->json(['data' => null]);
         }
 
         $crossword->loadCount(['likes', 'comments']);
 
-        return (new CrosswordResource($crossword))
+        return new CrosswordResource($crossword)
             ->additional(['meta' => ['date' => today()->toDateString()]]);
     }
 

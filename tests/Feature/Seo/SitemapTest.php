@@ -37,6 +37,21 @@ test('sitemap index is well-formed xml', function () {
     expect($document)->not->toBeFalse();
 });
 
+test('sitemap index and every child sitemap declare the exact sitemaps.org namespace', function () {
+    // Search Console rejects any other value (including the https:// form)
+    // with "Incorrect namespace": XML namespaces are opaque identifiers, not
+    // links, so this must stay byte-for-byte as the protocol specifies.
+    $namespace = 'http://www.sitemaps.org/schemas/sitemap/0.9';
+
+    expect($this->get('/sitemap.xml')->getContent())
+        ->toContain('<sitemapindex xmlns="'.$namespace.'">');
+
+    foreach (array_keys(SitemapController::SECTIONS) as $section) {
+        expect($this->get("/sitemaps/{$section}.xml")->getContent())
+            ->toContain('<urlset xmlns="'.$namespace.'">');
+    }
+});
+
 // --- Pages sitemap ---
 
 test('pages sitemap lists core public pages', function () {

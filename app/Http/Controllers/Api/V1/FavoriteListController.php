@@ -30,12 +30,12 @@ class FavoriteListController extends Controller
     {
         $list = $request->user()->favoriteLists()->create($request->validated());
 
-        return (new FavoriteListResource($list))
+        return new FavoriteListResource($list)
             ->response()
             ->setStatusCode(201);
     }
 
-    public function destroy(Request $request, FavoriteList $favoriteList): JsonResponse
+    public function destroy(FavoriteList $favoriteList): JsonResponse
     {
         $this->authorize('delete', $favoriteList);
 
@@ -52,10 +52,10 @@ class FavoriteListController extends Controller
 
         $favoriteList->crosswords()->syncWithoutDetaching([$request->input('crossword')]);
 
-        return response()->json(null, 200);
+        return response()->json(null);
     }
 
-    public function removeCrossword(Request $request, FavoriteList $favoriteList, Crossword $crossword): JsonResponse
+    public function removeCrossword(FavoriteList $favoriteList, Crossword $crossword): JsonResponse
     {
         $this->authorize('update', $favoriteList);
 

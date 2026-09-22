@@ -23,7 +23,7 @@ class ContestEntryController extends Controller
             'registered_at' => now(),
         ]);
 
-        return (new ContestEntryResource($entry))
+        return new ContestEntryResource($entry)
             ->response()
             ->setStatusCode(201);
     }

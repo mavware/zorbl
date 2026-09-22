@@ -8,24 +8,22 @@ use App\Models\HelpArticle;
 use App\Models\User;
 use App\Models\Word;
 use Carbon\CarbonImmutable;
+use DateTimeInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Cache;
 
 class SitemapController extends Controller
 {
-    public const CACHE_KEY_INDEX = 'sitemap.index';
+    public const string CACHE_KEY_INDEX = 'sitemap.index';
 
-    public const CACHE_KEY_PAGES = 'sitemap.pages';
+    public const string CACHE_KEY_PAGES = 'sitemap.pages';
 
-    public const CACHE_KEY_PUZZLES = 'sitemap.puzzles';
+    public const string CACHE_KEY_PUZZLES = 'sitemap.puzzles';
 
-    public const CACHE_KEY_CONSTRUCTORS = 'sitemap.constructors';
+    public const string CACHE_KEY_CONSTRUCTORS = 'sitemap.constructors';
 
-    public const CACHE_KEY_WORDS = 'sitemap.words';
-
-    /** @deprecated Use the section-specific cache keys instead. */
-    public const CACHE_KEY = 'sitemap.xml';
+    public const string CACHE_KEY_WORDS = 'sitemap.words';
 
     /**
      * A word page needs this many approved clues before the sitemap promotes
@@ -33,10 +31,10 @@ class SitemapController extends Controller
      * clue library) but are too thin to spend Google's crawl budget on; the
      * sitemap should advertise the strongest pages, not the whole dictionary.
      */
-    public const MIN_APPROVED_CLUES_FOR_WORDS = 3;
+    public const int MIN_APPROVED_CLUES_FOR_WORDS = 3;
 
     /** @var array<string, string> */
-    public const SECTIONS = [
+    public const array SECTIONS = [
         'pages' => self::CACHE_KEY_PAGES,
         'puzzles' => self::CACHE_KEY_PUZZLES,
         'constructors' => self::CACHE_KEY_CONSTRUCTORS,
@@ -221,7 +219,7 @@ class SitemapController extends Controller
             .'</urlset>'.PHP_EOL;
     }
 
-    private function urlEntry(string $loc, ?\DateTimeInterface $lastmod, string $changefreq, string $priority): string
+    private function urlEntry(string $loc, ?DateTimeInterface $lastmod, string $changefreq, string $priority): string
     {
         $entry = '<url>'
             .'<loc>'.htmlspecialchars($loc, ENT_XML1).'</loc>';

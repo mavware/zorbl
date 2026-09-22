@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\Api\V1\ContestEntryResource;
 use App\Http\Resources\Api\V1\ContestResource;
 use App\Models\Contest;
-use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Spatie\QueryBuilder\QueryBuilder;
 
@@ -15,7 +14,7 @@ use Spatie\QueryBuilder\QueryBuilder;
  */
 class ContestController extends Controller
 {
-    public function index(Request $request): AnonymousResourceCollection
+    public function index(): AnonymousResourceCollection
     {
         $contests = QueryBuilder::for(Contest::published())
             ->allowedFilters('status', 'is_featured')

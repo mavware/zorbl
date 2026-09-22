@@ -12,7 +12,6 @@ use App\Models\Crossword;
 use App\Models\PuzzleComment;
 use App\Notifications\NewPuzzleComment;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 /**
@@ -25,7 +24,7 @@ class PuzzleCommentController extends Controller
         $comments = $crossword->comments()
             ->with('user:id,name')
             ->orderByDesc('created_at')
-            ->paginate(15);
+            ->paginate();
 
         return PuzzleCommentResource::collection($comments);
     }
@@ -51,7 +50,7 @@ class PuzzleCommentController extends Controller
             'comment_body' => $comment->body,
         ]);
 
-        return (new PuzzleCommentResource($comment->load('user:id,name')))
+        return new PuzzleCommentResource($comment->load('user:id,name'))
             ->response()
             ->setStatusCode(201);
     }
@@ -63,7 +62,7 @@ class PuzzleCommentController extends Controller
         return new PuzzleCommentResource($comment->load('user:id,name'));
     }
 
-    public function destroy(Request $request, PuzzleComment $comment): JsonResponse
+    public function destroy(PuzzleComment $comment): JsonResponse
     {
         $this->authorize('delete', $comment);
 

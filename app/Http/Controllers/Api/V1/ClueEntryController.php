@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Api\V1\ClueEntryResource;
 use App\Models\ClueEntry;
-use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
@@ -15,7 +14,7 @@ use Spatie\QueryBuilder\QueryBuilder;
  */
 class ClueEntryController extends Controller
 {
-    public function index(Request $request): AnonymousResourceCollection
+    public function index(): AnonymousResourceCollection
     {
         $clueEntries = QueryBuilder::for(ClueEntry::approved())
             ->allowedFilters(
