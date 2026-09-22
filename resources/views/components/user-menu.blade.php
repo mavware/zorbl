@@ -34,17 +34,16 @@
             </div>
         </div>
         <flux:menu.separator />
-        @if (count($links) > 0)
-            <flux:menu.radio.group data-test="user-menu-links">
-                @foreach ($links as $item)
-                    <flux:menu.item :icon="$item->icon" :href="$item->href" :attributes="$item->attributes()">
-                        {{ $item->label }}
-                    </flux:menu.item>
-                @endforeach
-            </flux:menu.radio.group>
-            <flux:menu.separator />
-        @endif
         <flux:menu.radio.group>
+            @if (count($links) > 0)
+                <div data-test="user-menu-links">
+                    @foreach ($links as $item)
+                        <flux:menu.item :icon="$item->icon" :href="$item->href" :attributes="$item->attributes()">
+                            {{ $item->label }}
+                        </flux:menu.item>
+                    @endforeach
+                </div>
+            @endif
             <flux:menu.item :href="route('profile.edit')" icon="cog" wire:navigate>
                 {{ __('Settings') }}
             </flux:menu.item>

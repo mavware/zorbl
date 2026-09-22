@@ -132,6 +132,11 @@ test('the sidebar chrome offers a registered user favorites from the user menu o
             ->not->toContain('href="'.route('support.index').'"');
     }
 
+    preg_match_all('/data-test="user-menu-links".*?href="'.preg_quote(route('profile.edit'), '/').'"/s', $html, $favoritesToSettings);
+
+    expect($favoritesToSettings[0])->toHaveCount(2)
+        ->each->not->toContain('data-flux-separator');
+
     preg_match_all('/<nav[^>]*>.*?<\/nav>/s', $html, $navs);
 
     foreach ($navs[0] as $nav) {
