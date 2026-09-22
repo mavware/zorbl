@@ -22,6 +22,28 @@ test('users can view their own puzzle editor', function () {
         ->assertSee('Test Puzzle');
 });
 
+test('the editor toolbar shows a labeled publish button', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create();
+
+    $this->actingAs($user);
+
+    $this->get(route('crosswords.editor', $crossword))
+        ->assertOk()
+        ->assertSeeInOrder(['Cells', 'Clues', 'Publish']);
+});
+
+test('the editor toolbar shows an unpublish label once the puzzle is live', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create(['is_published' => true]);
+
+    $this->actingAs($user);
+
+    $this->get(route('crosswords.editor', $crossword))
+        ->assertOk()
+        ->assertSee('Unpublish');
+});
+
 test('users cannot view other users puzzle editor', function () {
     $user = User::factory()->create();
     $other = User::factory()->create();

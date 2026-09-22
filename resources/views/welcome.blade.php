@@ -151,16 +151,16 @@
             >
                 {{-- Hero copy — sits beside the builder panel --}}
                 <div class="flex min-w-0 flex-col text-left">
-                    <div class="label-classical font-display mb-5 text-[13px] font-semibold tabular-nums text-amber-400 [--label-tracking:0.14em]">
+                    <div class="hidden md:flex label-classical font-display mb-5 text-[13px] font-semibold tabular-nums text-amber-400 [--label-tracking:0.14em]">
                         {{ __('Free forever') }} &middot; {{ $stats['constructors'] }} {{ __('constructors') }}
                     </div>
 
-                    <h1 class="font-display mb-6 text-5xl leading-[1.02] tracking-tight text-zinc-100 sm:text-5xl lg:text-6xl">
+                    <h1 class="font-display md:mb-6 text-4xl leading-[1.02] tracking-tight text-zinc-100 sm:text-5xl lg:text-6xl">
                         {{ __('Build a crossword') }}<br class="hidden sm:block">
                         {{ __('in ten minutes.') }}
                     </h1>
 
-                    <p class="mb-8 max-w-[46ch] text-[17px] leading-relaxed text-zinc-300">
+                    <p class="hidden md:flex mb-8 max-w-[46ch] text-[17px] leading-relaxed text-zinc-300">
                         {{ __('A visual editor that handles symmetry, numbering and the boring bookkeeping — so you can spend the afternoon on the fill and the wordplay.') }}
                     </p>
                 </div>
@@ -197,13 +197,13 @@
 
 
 
-                        <div x-show="tab === 'solve'" class="font-display flex text-3xl font-medium text-white">
-    Browse tons of puzzles.
-</div>
+                        <div x-show="tab === 'solve'" class="font-display hidden md:flex text-3xl font-medium text-white">
+                            Browse tons of puzzles.
+                        </div>
 
-<div x-show="tab === 'build'" class="font-display flex text-3xl font-medium text-white">
-    Start with a shape.
-</div>
+                        <div x-show="tab === 'build'" class="font-display hidden md:flex text-3xl font-medium text-white">
+                            Start with a shape.
+                        </div>
 
                     </div>
                     {{-- Solve panel — the default tab. No x-cloak: it must render
@@ -502,7 +502,7 @@
             </div>
         </footer>
 
-        @include('partials.install-prompt')
+{{--        @include('partials.install-prompt')--}}
 
         @fluxScripts
     </body>

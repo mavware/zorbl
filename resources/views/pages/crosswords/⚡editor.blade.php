@@ -875,7 +875,7 @@ class extends Component {
     {{-- Toolbar --}}
     <div class="mb-4 flex flex-wrap items-center gap-2">
         {{-- Title --}}
-        <div class="flex flex-1 items-center gap-2">
+        <div class="flex shrink-0 items-center gap-2">
             <flux:input
                 size="sm"
                 placeholder="{{ __('Puzzle title') }}"
@@ -885,7 +885,8 @@ class extends Component {
             />
         </div>
 
-        <div class="flex items-center gap-2">
+        {{-- Tools --}}
+        <div class="flex flex-1 flex-wrap items-center justify-center gap-2">
             {{-- Save status --}}
             <div class="flex items-center gap-1 pr-2 text-sm text-zinc-500">
                 <template x-if="saving">
@@ -900,22 +901,6 @@ class extends Component {
                             {{ __('Saved') }}
                         </span>
                 </template>
-            </div>
-
-            {{-- Fill progress indicators --}}
-            <div class="flex items-center gap-3">
-                <flux:tooltip content="{{ __('Cells with a letter / total playable cells') }}">
-                    <div class="flex flex-col items-center leading-tight">
-                        <span class="text-[10px] uppercase tracking-wide text-zinc-400">{{ __('Cells') }}</span>
-                        <span class="font-mono text-xs tabular-nums" :class="cellsFillColorClass" x-text="cellsFilled + '/' + cellsTotal"></span>
-                    </div>
-                </flux:tooltip>
-                <flux:tooltip content="{{ __('Clues with text / total clue slots') }}">
-                    <div class="flex flex-col items-center leading-tight">
-                        <span class="text-[10px] uppercase tracking-wide text-zinc-400">{{ __('Clues') }}</span>
-                        <span class="font-mono text-xs tabular-nums" :class="cluesFillColorClass" x-text="cluesFilled + '/' + cluesTotal"></span>
-                    </div>
-                </flux:tooltip>
             </div>
 
             {{-- Mode toggle --}}
@@ -1024,6 +1009,30 @@ class extends Component {
                 @endif
             @endif
 
+            {{-- Settings --}}
+            <flux:tooltip content="{{ __('Puzzle settings') }}">
+                <flux:button variant="ghost" size="sm" icon="cog-6-tooth" wire:click="$set('showSettingsModal', true)"/>
+            </flux:tooltip>
+        </div>
+
+        {{-- Progress + Publish --}}
+        <div class="ml-auto flex shrink-0 items-center gap-3">
+            {{-- Fill progress indicators --}}
+            <div class="flex items-center gap-3">
+                <flux:tooltip content="{{ __('Cells with a letter / total playable cells') }}">
+                    <div class="flex flex-col items-center leading-tight">
+                        <span class="text-[10px] uppercase tracking-wide text-zinc-400">{{ __('Cells') }}</span>
+                        <span class="font-mono text-xs tabular-nums" :class="cellsFillColorClass" x-text="cellsFilled + '/' + cellsTotal"></span>
+                    </div>
+                </flux:tooltip>
+                <flux:tooltip content="{{ __('Clues with text / total clue slots') }}">
+                    <div class="flex flex-col items-center leading-tight">
+                        <span class="text-[10px] uppercase tracking-wide text-zinc-400">{{ __('Clues') }}</span>
+                        <span class="font-mono text-xs tabular-nums" :class="cluesFillColorClass" x-text="cluesFilled + '/' + cluesTotal"></span>
+                    </div>
+                </flux:tooltip>
+            </div>
+
             {{-- Publish toggle --}}
             @if(auth()->user()?->isAnonymous())
                 <flux:tooltip content="{{ __('Sign up to publish') }}">
@@ -1031,25 +1040,22 @@ class extends Component {
                         variant="ghost"
                         size="sm"
                         icon="eye-slash"
+                        class="btn-amber-outline"
                         :href="route('register')"
                         wire:navigate.hover
-                    />
+                    >{{ __('Publish') }}</flux:button>
                 </flux:tooltip>
             @else
                 <flux:tooltip content="{{ $isPublished ? __('Unpublish puzzle') : __('Publish for others to solve') }}">
                     <flux:button
-                        variant="{{ $isPublished ? 'primary' : 'ghost' }}"
+                        variant="ghost"
                         size="sm"
                         icon="{{ $isPublished ? 'eye' : 'eye-slash' }}"
+                        class="btn-amber-outline"
                         wire:click="attemptPublish"
-                    />
+                    >{{ $isPublished ? __('Unpublish') : __('Publish') }}</flux:button>
                 </flux:tooltip>
             @endif
-
-            {{-- Settings --}}
-            <flux:tooltip content="{{ __('Puzzle settings') }}">
-                <flux:button variant="ghost" size="sm" icon="cog-6-tooth" wire:click="$set('showSettingsModal', true)"/>
-            </flux:tooltip>
         </div>
     </div>
 
