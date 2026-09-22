@@ -288,7 +288,7 @@ new #[Title('Solving')] class extends Component {
 <div class="space-y-8">
     {{-- My Attempts --}}
     <div class="space-y-4">
-        <x-page-header :kicker="__('Your solving')" :title="__('Solve')">
+        <x-page-header :kicker="__('Puzzles you\'re solving')" :title="__('Solve')">
             <x-header-button variant="secondary" icon="sparkles" wire:click="surpriseMe" data-test="surprise-me-button">
                 {{ __('Surprise Me') }}
             </x-header-button>
@@ -300,63 +300,9 @@ new #[Title('Solving')] class extends Component {
         </x-page-header>
 
         {{-- Puzzle of the Day --}}
-        @if($dailyPuzzle = $this->dailyPuzzle)
-            @php($dailySolved = $this->dailyPuzzleSolved)
-            <div @class([
-                'rounded-sm border p-[18px] transition-colors',
-                'border-border' => $dailySolved,
-                'border-amber-400/60' => ! $dailySolved,
-            ])>
-                <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div class="flex items-center gap-4">
-                        <div @class([
-                            'flex size-12 shrink-0 items-center justify-center rounded-sm border',
-                            'border-border-strong text-ink-faint' => $dailySolved,
-                            'border-amber-400 text-amber-400' => ! $dailySolved,
-                        ])>
-                            <flux:icon :name="$dailySolved ? 'check-circle' : 'star'" class="size-6" />
-                        </div>
-                        <div class="min-w-0">
-                            <div class="flex flex-wrap items-center gap-2">
-                                <h2 class="font-classical text-ink text-[22px] leading-tight font-medium">{{ __('Puzzle of the Day') }}</h2>
-                                <span class="chip-classical border-ink-faint text-ink-faint">{{ today()->format('M j') }}</span>
-                                @if($dailySolved)
-                                    <span class="chip-classical border-amber-400 text-amber-400 gap-1">
-                                        <flux:icon name="check-circle" class="size-3" />
-                                        {{ __('Solved') }}
-                                    </span>
-                                @endif
-                            </div>
-                            <div class="meta-classical mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                                <span class="font-classical text-ink text-[17px] font-semibold normal-case tracking-normal">{{ $dailyPuzzle->displayTitle() }}</span>
-                                <span aria-hidden="true">&middot;</span>
-                                <span class="flex items-center gap-1">
-                                    {{ __('by :author', ['author' => $dailyPuzzle->user->name ?? __('Unknown')]) }} <x-supporter-badge :user="$dailyPuzzle->user" />
-                                </span>
-                                <span aria-hidden="true">&middot;</span>
-                                <span class="tnum whitespace-nowrap">{{ $dailyPuzzle->width }}&times;{{ $dailyPuzzle->height }}</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="flex shrink-0 flex-col items-start gap-2 sm:items-end">
-                        @if($dailySolved)
-                            <a href="{{ route('crosswords.solver', $dailyPuzzle) }}" wire:navigate.hover class="btn-classical btn-classical-muted">
-                                <flux:icon name="eye" class="size-4" />
-                                {{ __('View Solution') }}
-                            </a>
-                        @else
-                            <a href="{{ route('crosswords.solver', $dailyPuzzle) }}" wire:navigate.hover class="btn-classical btn-amber-outline">
-                                <flux:icon name="play" class="size-4" />
-                                {{ __('Solve Today\'s Puzzle') }}
-                            </a>
-                        @endif
-                        <a href="{{ route('puzzles.daily-history') }}" wire:navigate class="meta-classical hover:text-amber-300 transition-colors">
-                            {{ __('View past puzzles') }} &rarr;
-                        </a>
-                    </div>
-                </div>
-            </div>
-        @endif
+{{--        @if($dailyPuzzle = $this->dailyPuzzle)--}}
+{{--            <x-daily-puzzle-banner :crossword="$dailyPuzzle" :solved="$this->dailyPuzzleSolved" />--}}
+{{--        @endif--}}
 
         {{-- Filters --}}
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -635,114 +581,117 @@ new #[Title('Solving')] class extends Component {
         </div>
     @endif
 
-    {{-- Trending & Newest --}}
-    <div class="grid gap-6 lg:grid-cols-2">
-        {{-- Trending --}}
-        <div class="border-border rounded-sm border p-[18px]">
-            <div class="border-hairline mb-2 flex items-center justify-between gap-3 border-b pb-3.5">
-                <h2 class="font-classical text-ink text-[22px] leading-tight font-medium">{{ __('Trending') }}</h2>
-                <a href="{{ route('puzzles.index') }}" wire:navigate class="btn-classical btn-classical-muted h-8 px-3 text-[14px]">
-                    {{ __('Browse All') }}
-                </a>
-            </div>
+{{--    --}}{{-- Trending & Newest --}}
+{{--    <div class="grid gap-6 lg:grid-cols-2">--}}
+{{--        --}}{{-- Trending --}}
+{{--        <div class="border-border rounded-sm border p-[18px]">--}}
+{{--            <div class="border-hairline mb-2 flex items-center justify-between gap-3 border-b pb-3.5">--}}
+{{--                <h2 class="font-classical text-ink text-[22px] leading-tight font-medium">{{ __('Trending') }}</h2>--}}
+{{--                <a href="{{ route('puzzles.index') }}" wire:navigate class="btn-classical btn-classical-muted h-8 px-3 text-[14px]">--}}
+{{--                    {{ __('Browse All') }}--}}
+{{--                </a>--}}
+{{--            </div>--}}
 
-            @if($this->trendingPuzzles->isEmpty())
-                <div class="border-border-strong mt-3 flex flex-col items-center justify-center rounded-sm border border-dashed px-6 py-10 text-center">
-                    <flux:icon name="fire" class="text-ink-faint mb-3 size-8" />
-                    <p class="text-ink-muted text-sm">{{ __('No trending puzzles this week') }}</p>
-                </div>
-            @else
-                <div class="divide-hairline divide-y">
-                    @foreach($this->trendingPuzzles as $crossword)
-                        <a
-                            href="{{ route('crosswords.solver', $crossword) }}"
-                            wire:navigate
-                            class="group flex items-center gap-3.5 py-3 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
-                        >
-                            <x-grid-thumbnail
-                                class="shrink-0"
-                                :grid="$crossword->grid"
-                                :width="$crossword->width"
-                                :height="$crossword->height"
-                                :cell-size="5"
-                                :max-width="48"
-                                frame-class="border-hairline bg-hairline rounded-sm border"
-                                open-class="bg-panel"
-                                block-class="bg-zinc-300"
-                            />
-                            <div class="min-w-0 flex-1">
-                                <div class="font-classical text-ink group-hover:text-amber-300 truncate text-[17px] leading-tight font-semibold transition-colors">{{ $crossword->displayTitle() }}</div>
-                                <div class="meta-classical mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                                    <span class="flex items-center gap-1">
-                                        {{ __('by :author', ['author' => $crossword->user->name ?? __('Unknown')]) }} <x-supporter-badge :user="$crossword->user" />
-                                    </span>
-                                    <span aria-hidden="true">&middot;</span>
-                                    <span class="flex items-center gap-1 whitespace-nowrap">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="inline size-3" viewBox="0 0 24 24" fill="currentColor"><path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" /></svg>
-                                        <span class="font-classical text-ink tnum text-[14px] font-medium tracking-normal">{{ $crossword->likes_count }}</span>
-                                    </span>
-                                </div>
-                            </div>
-                            <flux:icon name="chevron-right" class="text-ink-faint group-hover:text-amber-300 size-4 shrink-0 transition-colors" />
-                        </a>
-                    @endforeach
-                </div>
-            @endif
-        </div>
+{{--            @if($this->trendingPuzzles->isEmpty())--}}
+{{--                <div class="border-border-strong mt-3 flex flex-col items-center justify-center rounded-sm border border-dashed px-6 py-10 text-center">--}}
+{{--                    <flux:icon name="fire" class="text-ink-faint mb-3 size-8" />--}}
+{{--                    <p class="text-ink-muted text-sm">{{ __('No trending puzzles this week') }}</p>--}}
+{{--                </div>--}}
+{{--            @else--}}
+{{--                <div class="divide-hairline divide-y">--}}
+{{--                    @foreach($this->trendingPuzzles as $crossword)--}}
+{{--                        <a--}}
+{{--                            href="{{ route('crosswords.solver', $crossword) }}"--}}
+{{--                            wire:navigate--}}
+{{--                            class="group flex items-center gap-3.5 py-3 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"--}}
+{{--                        >--}}
+{{--                            <x-grid-thumbnail--}}
+{{--                                class="shrink-0"--}}
+{{--                                :grid="$crossword->grid"--}}
+{{--                                :width="$crossword->width"--}}
+{{--                                :height="$crossword->height"--}}
+{{--                                :cell-size="5"--}}
+{{--                                :max-width="48"--}}
+{{--                                frame-class="border-hairline bg-hairline rounded-sm border"--}}
+{{--                                open-class="bg-panel"--}}
+{{--                                block-class="bg-zinc-300"--}}
+{{--                            />--}}
+{{--                            <div class="min-w-0 flex-1">--}}
+{{--                                <div class="font-classical text-ink group-hover:text-amber-300 truncate text-[17px] leading-tight font-semibold transition-colors">{{ $crossword->displayTitle() }}</div>--}}
+{{--                                <div class="meta-classical mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5">--}}
+{{--                                    <span class="flex items-center gap-1">--}}
+{{--                                        {{ __('by :author', ['author' => $crossword->user->name ?? __('Unknown')]) }} <x-supporter-badge :user="$crossword->user" />--}}
+{{--                                    </span>--}}
+{{--                                    <span aria-hidden="true">&middot;</span>--}}
+{{--                                    <span class="flex items-center gap-1 whitespace-nowrap">--}}
+{{--                                        <svg xmlns="http://www.w3.org/2000/svg" class="inline size-3" viewBox="0 0 24 24" fill="currentColor"><path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" /></svg>--}}
+{{--                                        <span class="font-classical text-ink tnum text-[14px] font-medium tracking-normal">{{ $crossword->likes_count }}</span>--}}
+{{--                                    </span>--}}
+{{--                                </div>--}}
+{{--                            </div>--}}
+{{--                            <flux:icon name="chevron-right" class="text-ink-faint group-hover:text-amber-300 size-4 shrink-0 transition-colors" />--}}
+{{--                        </a>--}}
+{{--                    @endforeach--}}
+{{--                </div>--}}
+{{--            @endif--}}
+{{--        </div>--}}
 
-        {{-- Newest --}}
-        <div class="border-border rounded-sm border p-[18px]">
-            <div class="border-hairline mb-2 flex items-center justify-between gap-3 border-b pb-3.5">
-                <h2 class="font-classical text-ink text-[22px] leading-tight font-medium">{{ __('Newest') }}</h2>
-                <a href="{{ route('puzzles.index') }}" wire:navigate class="btn-classical btn-classical-muted h-8 px-3 text-[14px]">
-                    {{ __('Browse All') }}
-                </a>
-            </div>
+{{--        --}}{{-- Newest --}}
+{{--        <div class="border-border rounded-sm border p-[18px]">--}}
+{{--            <div class="border-hairline mb-2 flex items-center justify-between gap-3 border-b pb-3.5">--}}
+{{--                <h2 class="font-classical text-ink text-[22px] leading-tight font-medium">{{ __('Newest') }}</h2>--}}
+{{--                <a href="{{ route('puzzles.index') }}" wire:navigate class="btn-classical btn-classical-muted h-8 px-3 text-[14px]">--}}
+{{--                    {{ __('Browse All') }}--}}
+{{--                </a>--}}
+{{--            </div>--}}
 
-            @if($this->newestPuzzles->isEmpty())
-                <div class="border-border-strong mt-3 flex flex-col items-center justify-center rounded-sm border border-dashed px-6 py-10 text-center">
-                    <flux:icon name="sparkles" class="text-ink-faint mb-3 size-8" />
-                    <p class="text-ink-muted text-sm">{{ __('No published puzzles yet') }}</p>
-                </div>
-            @else
-                <div class="divide-hairline divide-y">
-                    @foreach($this->newestPuzzles as $crossword)
-                        <a
-                            href="{{ route('crosswords.solver', $crossword) }}"
-                            wire:navigate
-                            class="group flex items-center gap-3.5 py-3 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
-                        >
-                            <x-grid-thumbnail
-                                class="shrink-0"
-                                :grid="$crossword->grid"
-                                :width="$crossword->width"
-                                :height="$crossword->height"
-                                :cell-size="5"
-                                :max-width="48"
-                                frame-class="border-hairline bg-hairline rounded-sm border"
-                                open-class="bg-panel"
-                                block-class="bg-zinc-300"
-                            />
-                            <div class="min-w-0 flex-1">
-                                <div class="font-classical text-ink group-hover:text-amber-300 truncate text-[17px] leading-tight font-semibold transition-colors">{{ $crossword->displayTitle() }}</div>
-                                <div class="meta-classical mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                                    <span class="flex items-center gap-1">
-                                        {{ __('by :author', ['author' => $crossword->user->name ?? __('Unknown')]) }} <x-supporter-badge :user="$crossword->user" />
-                                    </span>
-                                    <span aria-hidden="true">&middot;</span>
-                                    <span class="whitespace-nowrap">{{ $crossword->created_at->diffForHumans() }}</span>
-                                </div>
-                            </div>
-                            <flux:icon name="chevron-right" class="text-ink-faint group-hover:text-amber-300 size-4 shrink-0 transition-colors" />
-                        </a>
-                    @endforeach
-                </div>
-            @endif
-        </div>
-    </div>
+{{--            @if($this->newestPuzzles->isEmpty())--}}
+{{--                <div class="border-border-strong mt-3 flex flex-col items-center justify-center rounded-sm border border-dashed px-6 py-10 text-center">--}}
+{{--                    <flux:icon name="sparkles" class="text-ink-faint mb-3 size-8" />--}}
+{{--                    <p class="text-ink-muted text-sm">{{ __('No published puzzles yet') }}</p>--}}
+{{--                </div>--}}
+{{--            @else--}}
+{{--                <div class="divide-hairline divide-y">--}}
+{{--                    @foreach($this->newestPuzzles as $crossword)--}}
+{{--                        <a--}}
+{{--                            href="{{ route('crosswords.solver', $crossword) }}"--}}
+{{--                            wire:navigate--}}
+{{--                            class="group flex items-center gap-3.5 py-3 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"--}}
+{{--                        >--}}
+{{--                            <x-grid-thumbnail--}}
+{{--                                class="shrink-0"--}}
+{{--                                :grid="$crossword->grid"--}}
+{{--                                :width="$crossword->width"--}}
+{{--                                :height="$crossword->height"--}}
+{{--                                :cell-size="5"--}}
+{{--                                :max-width="48"--}}
+{{--                                frame-class="border-hairline bg-hairline rounded-sm border"--}}
+{{--                                open-class="bg-panel"--}}
+{{--                                block-class="bg-zinc-300"--}}
+{{--                            />--}}
+{{--                            <div class="min-w-0 flex-1">--}}
+{{--                                <div class="font-classical text-ink group-hover:text-amber-300 truncate text-[17px] leading-tight font-semibold transition-colors">{{ $crossword->displayTitle() }}</div>--}}
+{{--                                <div class="meta-classical mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5">--}}
+{{--                                    <span class="flex items-center gap-1">--}}
+{{--                                        {{ __('by :author', ['author' => $crossword->user->name ?? __('Unknown')]) }} <x-supporter-badge :user="$crossword->user" />--}}
+{{--                                    </span>--}}
+{{--                                    <span aria-hidden="true">&middot;</span>--}}
+{{--                                    <span class="whitespace-nowrap">{{ $crossword->created_at->diffForHumans() }}</span>--}}
+{{--                                </div>--}}
+{{--                            </div>--}}
+{{--                            <flux:icon name="chevron-right" class="text-ink-faint group-hover:text-amber-300 size-4 shrink-0 transition-colors" />--}}
+{{--                        </a>--}}
+{{--                    @endforeach--}}
+{{--                </div>--}}
+{{--            @endif--}}
+{{--        </div>--}}
+{{--    </div>--}}
 
-    {{-- Browse Published Puzzles --}}
-    <div class="space-y-4">
+    {{-- Browse Published Puzzles: full-bleed hairline rule (same negative margins
+         as x-page-header so it meets the sidebar), section title, then the list --}}
+    <div class="space-y-4" data-test="discover-puzzles-section">
+        <div class="border-hairline -mx-6 border-t lg:-mx-8" aria-hidden="true" data-test="discover-puzzles-rule"></div>
+        <h2 class="font-classical text-ink pt-4 text-[22px] leading-tight font-medium">{{ __('Discover Puzzles') }}</h2>
         <livewire:puzzle-discovery :exclude-attempted="true" />
     </div>
 

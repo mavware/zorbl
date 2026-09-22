@@ -2,6 +2,7 @@
 
 use App\Models\Crossword;
 use App\Models\CrosswordLike;
+use App\Models\DailyPuzzle;
 use App\Models\PuzzleAttempt;
 use App\Models\PuzzleComment;
 use App\Models\Tag;
@@ -394,6 +395,57 @@ test('difficulty size and type filters live inside the collapsible more group', 
         ->assertSeeHtml('wire:model.live.debounce.300ms="constructor"');
 });
 
+test('clear all sits at the end of the filter section and ignores the sort', function () {
+    $user = User::factory()->create();
+    Crossword::factory()->published()->create();
+
+    Livewire::actingAs($user)
+        ->test('puzzle-discovery', ['excludeAttempted' => true])
+        ->set('difficulty', 'Easy')
+        ->assertDontSeeHtml('data-test="clear-filters-button"')
+        ->set('showFilters', true)
+        ->assertSeeHtmlInOrder(['wire:model.live="minRating"', 'data-test="clear-filters-button"'])
+        ->set('difficulty', '')
+        ->assertDontSeeHtml('data-test="clear-filters-button"')
+        ->set('sortBy', 'oldest')
+        ->assertDontSeeHtml('data-test="clear-filters-button"');
+});
+
+test('changing the sort still unpins the daily puzzle', function () {
+    $user = User::factory()->create();
+    $creator = User::factory()->create();
+    $daily = Crossword::factory()->published()->for($creator)->create(['title' => 'Daily Pick']);
+    Crossword::factory()->published()->for($creator)->create(['title' => 'Other']);
+    DailyPuzzle::factory()->create(['crossword_id' => $daily->id, 'date' => today()]);
+
+    Livewire::actingAs($user)
+        ->test('puzzle-discovery')
+        ->assertSeeHtml('wire:key="card-daily-'.$daily->id.'"')
+        ->set('sortBy', 'oldest')
+        ->assertDontSeeHtml('wire:key="card-daily-'.$daily->id.'"');
+});
+
+test('the filters button shows a count badge for active collapsible filters', function () {
+    $user = User::factory()->create();
+    Crossword::factory()->published()->create();
+    Tag::factory()->create(['name' => 'Music', 'slug' => 'music']);
+
+    Livewire::actingAs($user)
+        ->test('puzzle-discovery', ['excludeAttempted' => true])
+        ->assertDontSeeHtml('data-test="filters-count-badge"')
+        ->set('search', 'alpha')
+        ->assertDontSeeHtml('data-test="filters-count-badge"')
+        ->set('sortBy', 'oldest')
+        ->assertDontSeeHtml('data-test="filters-count-badge"')
+        ->set('difficulty', 'Easy')
+        ->assertSeeHtml('data-test="filters-count-badge">1<')
+        ->set('tag', 'music')
+        ->set('minRating', '3')
+        ->assertSeeHtml('data-test="filters-count-badge">3<')
+        ->call('clearFilters')
+        ->assertDontSeeHtml('data-test="filters-count-badge"');
+});
+
 test('discovery clear filters resets all filters', function () {
     $user = User::factory()->create();
     $creator = User::factory()->create();
@@ -415,7 +467,7 @@ test('discovery clear filters resets all filters', function () {
         ->assertSet('constructor', '')
         ->assertSet('dateRange', '')
         ->assertSet('minRating', '')
-        ->assertSet('sortBy', 'trending');
+        ->assertSet('sortBy', 'oldest');
 });
 
 test('discovery respects limit parameter', function () {
@@ -597,9 +649,10 @@ test('discovery shows filter indicator when difficulty is active', function () {
 
     Livewire::actingAs($user)
         ->test('puzzle-discovery')
-        ->assertDontSee('Clear')
+        ->set('showFilters', true)
+        ->assertDontSee('Clear All')
         ->set('difficulty', 'Hard')
-        ->assertSee('Clear');
+        ->assertSee('Clear All');
 });
 
 test('discovery shows filter indicator when filters are active', function () {
@@ -609,10 +662,11 @@ test('discovery shows filter indicator when filters are active', function () {
 
     $component = Livewire::actingAs($user)
         ->test('puzzle-discovery')
-        ->assertDontSee('Clear');
+        ->set('showFilters', true)
+        ->assertDontSee('Clear All');
 
     $component->set('search', 'test')
-        ->assertSee('Clear');
+        ->assertSee('Clear All');
 });
 
 // --- Tag Filtering ---
@@ -671,9 +725,10 @@ test('discovery shows tag filter indicator when tag is active', function () {
 
     Livewire::actingAs($user)
         ->test('puzzle-discovery')
-        ->assertDontSee('Clear')
+        ->set('showFilters', true)
+        ->assertDontSee('Clear All')
         ->set('tag', 'music')
-        ->assertSee('Clear');
+        ->assertSee('Clear All');
 });
 
 test('discovery displays tags on puzzle cards', function () {
@@ -988,7 +1043,7 @@ test('discovery cards show completion rate tooltip', function () {
         ->assertSeeHtml('50% of solvers completed this puzzle');
 });
 
-test('discovery clear filters resets new sort options', function () {
+test('discovery clear filters leaves the chosen sort alone', function () {
     $user = User::factory()->create();
     $creator = User::factory()->create();
     Crossword::factory()->published()->for($creator)->create();
@@ -996,14 +1051,16 @@ test('discovery clear filters resets new sort options', function () {
     Livewire::actingAs($user)
         ->test('puzzle-discovery', ['excludeAttempted' => true])
         ->set('sortBy', 'highest_rated')
+        ->set('difficulty', 'Easy')
         ->call('clearFilters')
-        ->assertSet('sortBy', 'trending');
+        ->assertSet('difficulty', '')
+        ->assertSet('sortBy', 'highest_rated');
 
     Livewire::actingAs($user)
         ->test('puzzle-discovery', ['excludeAttempted' => true])
         ->set('sortBy', 'most_played')
         ->call('clearFilters')
-        ->assertSet('sortBy', 'trending');
+        ->assertSet('sortBy', 'most_played');
 });
 
 // --- Minimum Rating Filter ---
@@ -1078,7 +1135,8 @@ test('discovery shows filter indicator when minimum rating is active', function 
 
     Livewire::actingAs($user)
         ->test('puzzle-discovery')
-        ->assertDontSee('Clear')
+        ->set('showFilters', true)
+        ->assertDontSee('Clear All')
         ->set('minRating', '3')
-        ->assertSee('Clear');
+        ->assertSee('Clear All');
 });

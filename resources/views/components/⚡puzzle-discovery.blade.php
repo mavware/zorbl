@@ -79,10 +79,15 @@ new class extends Component {
         return DailyPuzzle::todayOrAuto();
     }
 
+    /**
+     * The daily puzzle is pinned above the list only in the default view:
+     * any narrowing filter or a non-default sort would make a fixed first
+     * slot misleading.
+     */
     #[Computed]
     public function pinnedDailyPuzzle(): ?Crossword
     {
-        if ($this->hasActiveFilters()) {
+        if ($this->hasActiveFilters() || $this->sortBy !== 'trending') {
             return null;
         }
 
@@ -261,10 +266,13 @@ new class extends Component {
         $this->resetPage();
     }
 
+    /**
+     * Reset every narrowing filter. The sort is left as-is: it is not a
+     * filter (see hasActiveFilters) and the user chose it independently.
+     */
     public function clearFilters(): void
     {
-        $this->reset('search', 'gridSize', 'puzzleType', 'constructor', 'dateRange', 'difficulty', 'tag', 'minRating', 'sortBy');
-        $this->sortBy = 'trending';
+        $this->reset('search', 'gridSize', 'puzzleType', 'constructor', 'dateRange', 'difficulty', 'tag', 'minRating');
         $this->resetPage();
         unset($this->puzzles);
     }
@@ -316,17 +324,32 @@ new class extends Component {
         return Tag::orderBy('name')->get(['id', 'name', 'slug']);
     }
 
+    /**
+     * Whether any narrowing filter is set. Sorting is deliberately excluded:
+     * it reorders results without hiding any, so it should not surface the
+     * Clear All button or the "adjust your filters" empty state.
+     */
     public function hasActiveFilters(): bool
     {
-        return $this->search !== ''
-            || $this->gridSize !== ''
-            || $this->puzzleType !== ''
-            || $this->constructor !== ''
-            || $this->dateRange !== ''
-            || $this->difficulty !== ''
-            || $this->tag !== ''
-            || $this->minRating !== ''
-            || $this->sortBy !== 'trending';
+        return $this->search !== '' || $this->activeFilterCount() > 0;
+    }
+
+    /**
+     * How many of the collapsible filters are set. Search is excluded because
+     * it is always visible in the toolbar; this count is what the badge on
+     * the Filters button shows so hidden filters are never a surprise.
+     */
+    public function activeFilterCount(): int
+    {
+        return count(array_filter([
+            $this->difficulty,
+            $this->gridSize,
+            $this->puzzleType,
+            $this->constructor,
+            $this->dateRange,
+            $this->tag,
+            $this->minRating,
+        ], fn (string $value): bool => $value !== ''));
     }
 
 }
@@ -334,49 +357,46 @@ new class extends Component {
 
 <div class="@container space-y-4">
 
-    {{-- Search + sort + filter toggles (single row on desktop) --}}
-    <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-        <label class="relative min-w-0 flex-1 sm:basis-64">
+    {{-- Search + sort + filter toggles: stacked on phones, wrapping row on tablets, one line on desktop --}}
+    <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center lg:flex-nowrap">
+        <label class="relative min-w-2/5 sm:flex-1 sm:basis-64">
             <span class="sr-only">{{ __('Search by title or constructor...') }}</span>
             <flux:icon name="magnifying-glass" class="text-ink-faint pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
             <input
                 type="search"
-                placeholder="{{ __('Search by title or constructor...') }}"
+                placeholder="{{ __('Search title or constructor...') }}"
                 wire:model.live.debounce.300ms="search"
                 class="field-classical w-full pr-3 pl-9"
             />
         </label>
 
-        <label class="relative sm:w-44">
-            <span class="sr-only">{{ __('Sort by') }}</span>
-            <select wire:model.live="sortBy" class="field-classical w-full appearance-none pr-9 pl-3.5">
-                <option value="trending">{{ __('Sort: Trending') }}</option>
-                <option value="newest">{{ __('Sort: Newest') }}</option>
-                <option value="oldest">{{ __('Sort: Oldest') }}</option>
-                <option value="most_liked">{{ __('Sort: Most Liked') }}</option>
-                <option value="most_solved">{{ __('Sort: Most Solved') }}</option>
-                <option value="highest_rated">{{ __('Sort: Highest Rated') }}</option>
-                <option value="most_played">{{ __('Sort: Most Played') }}</option>
-                <option value="largest">{{ __('Sort: Largest') }}</option>
-                <option value="smallest">{{ __('Sort: Smallest') }}</option>
-            </select>
-            <flux:icon name="chevron-down" class="text-ink-faint pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2" />
-        </label>
+        <flux:input.group class="group-classical sm:max-w-52">
+            <flux:input.group.prefix>{{ __('Sort by') }}</flux:input.group.prefix>
+            <flux:select wire:model.live="sortBy" aria-label="{{ __('Sort by') }}">
+                <flux:select.option value="trending">{{ __('Trending') }}</flux:select.option>
+                <flux:select.option value="newest">{{ __('Newest') }}</flux:select.option>
+                <flux:select.option value="oldest">{{ __('Oldest') }}</flux:select.option>
+                <flux:select.option value="most_liked">{{ __('Most Liked') }}</flux:select.option>
+                <flux:select.option value="most_solved">{{ __('Most Solved') }}</flux:select.option>
+                <flux:select.option value="highest_rated">{{ __('Highest Rated') }}</flux:select.option>
+                <flux:select.option value="most_played">{{ __('Most Played') }}</flux:select.option>
+                <flux:select.option value="largest">{{ __('Largest') }}</flux:select.option>
+                <flux:select.option value="smallest">{{ __('Smallest') }}</flux:select.option>
+            </flux:select>
+        </flux:input.group>
 
-        <div class="flex items-center gap-2 sm:ml-auto">
+        <div class="flex items-center gap-2 sm:ml-auto sm:shrink-0">
             <button
                 type="button"
                 class="btn-classical h-10 {{ $showFilters ? 'btn-amber-outline' : 'btn-classical-muted' }}"
                 wire:click="$toggle('showFilters')"
             >
                 <flux:icon name="adjustments-horizontal" class="size-4" />
-                {{ __('More') }}
+                {{ __('Filters') }}
+                @if(($activeFilterCount = $this->activeFilterCount()) > 0)
+                    <span class="font-classical tnum inline-flex size-5 items-center justify-center rounded-full bg-amber-400 text-[11px] font-semibold text-zinc-900" data-test="filters-count-badge">{{ $activeFilterCount }}</span>
+                @endif
             </button>
-            @if($this->hasActiveFilters())
-                <button type="button" class="btn-classical btn-classical-muted h-10" wire:click="clearFilters">
-                    {{ __('Clear All') }}
-                </button>
-            @endif
         </div>
     </div>
 
@@ -468,6 +488,14 @@ new class extends Component {
                     <flux:icon name="chevron-down" class="text-ink-faint pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2" />
                 </span>
             </label>
+
+            @if($this->hasActiveFilters())
+                <div class="flex items-end">
+                    <button type="button" class="btn-classical btn-classical-muted h-10 py-4.75 w-full" wire:click="clearFilters" data-test="clear-filters-button">
+                        {{ __('Clear All') }}
+                    </button>
+                </div>
+            @endif
         </div>
     @endif
 

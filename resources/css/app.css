@@ -192,6 +192,27 @@ select:focus[data-flux-control] {
     @apply focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400;
 }
 
+/* A Flux input group (prefix + native select) dressed as one field-classical
+   control: Flux's zinc fill, shadow and 8px radius are stripped, the prefix
+   and select share a border-strong outline with a single divider between
+   them, and focus takes the amber outline instead of Flux's ring. Un-layered
+   and attribute-qualified so it beats Flux's utilities. */
+[data-flux-input-group].group-classical > [data-flux-input-group-prefix] {
+    @apply border-border-strong text-ink-muted h-10 rounded-s-sm border-y border-s border-e bg-transparent px-3.5 text-sm shadow-none;
+}
+
+[data-flux-input-group].group-classical > select[data-flux-control] {
+    @apply border-border-strong text-ink h-10 rounded-e-sm rounded-s-none border-y border-e border-s-0 bg-transparent ps-3 pe-9 text-sm shadow-none;
+}
+
+[data-flux-input-group].group-classical > select[data-flux-control]:focus {
+    @apply outline-none ring-0 ring-offset-0;
+}
+
+[data-flux-input-group].group-classical > select[data-flux-control]:focus-visible {
+    @apply outline-2 outline-offset-2 outline-amber-400;
+}
+
 /* Checkbox: outline square that fills with a soft amber wash and an amber check. */
 .check-classical {
     @apply border-border-strong size-4 shrink-0 cursor-pointer appearance-none rounded-sm border bg-transparent transition-colors;

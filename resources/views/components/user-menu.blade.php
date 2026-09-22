@@ -1,6 +1,6 @@
 {{-- The signed-in user's dropdown. `links` is an optional list of
-     NavigationItems (e.g. AppNavigation::account()) shown above Settings;
-     the sidebar chrome leaves it empty because it lists those links itself. --}}
+     NavigationItems shown above Settings: AppNavigation::account() for the
+     top bar, AppNavigation::sidebarAccount() for the sidebar chrome. --}}
 @props([
     'variant' => 'sidebar',
     'links' => [],

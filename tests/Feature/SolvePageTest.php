@@ -8,6 +8,14 @@ use App\Models\PuzzleAttempt;
 use App\Models\User;
 use Livewire\Livewire;
 
+test('the solve page introduces the discovery list with a rule and a Discover Puzzles title', function () {
+    $this->actingAs(User::factory()->create())
+        ->get(route('crosswords.solving'))
+        ->assertOk()
+        ->assertSeeInOrder(['data-test="discover-puzzles-section"', 'data-test="discover-puzzles-rule"', 'Discover Puzzles', 'wire:name="puzzle-discovery"'], false)
+        ->assertSee('class="border-hairline -mx-6 border-t lg:-mx-8"', false);
+});
+
 test('authenticated users can visit the solve page', function () {
     $this->actingAs(User::factory()->create())
         ->get(route('crosswords.solving'))

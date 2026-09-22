@@ -54,12 +54,13 @@ test('the sidebar separates its nav groups and the user menu with inset separato
         ->get(route('crosswords.index'))
         ->assertOk()
         ->assertSeeInOrder([
-            route('favorites.index'),
+            route('crosswords.solving'),
             'data-flux-separator',
             route('clues.index'),
             route('support.index'),
             'data-flux-separator',
             'data-test="sidebar-menu-button"',
+            route('favorites.index'),
         ], false);
 });
 

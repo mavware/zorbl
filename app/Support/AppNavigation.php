@@ -17,16 +17,16 @@ class AppNavigation
     /**
      * The main destinations, grouped: the user's own work first, then the
      * shared libraries. Groups are rendered with a separator between them.
-     * The top bar leaves Favorites out here and offers it from the user menu
-     * instead (see account()). Public pages (e.g. the help center) render the
-     * chrome for signed-out visitors too, so $user may be null.
+     * Favorites is offered from the user menu instead (see account() and
+     * sidebarAccount()). Public pages (e.g. the help center) render the chrome
+     * for signed-out visitors too, so $user may be null.
      *
      * @return array<int, array<int, NavigationItem>>
      */
-    public function main(?User $user, bool $withFavorites = true): array
+    public function main(?User $user): array
     {
         return [
-            array_values(array_filter([
+            [
                 new NavigationItem(
                     label: __('Build'),
                     icon: 'wrench-screwdriver',
@@ -39,8 +39,7 @@ class AppNavigation
                     href: route('crosswords.solving'),
                     current: $this->request->routeIs('crosswords.solving', 'crosswords.solver', 'crosswords.stats'),
                 ),
-                $withFavorites ? $this->favorites($user) : null,
-            ])),
+            ],
             array_values(array_filter([
                 new NavigationItem(
                     label: __('Clue Library'),
@@ -82,6 +81,17 @@ class AppNavigation
             $this->favorites($user),
             ...$this->secondary($user),
         ]));
+    }
+
+    /**
+     * The links the sidebar's user menu offers a registered user: just their
+     * favorites, since the sidebar lists help, support, and admin itself.
+     *
+     * @return array<int, NavigationItem>
+     */
+    public function sidebarAccount(?User $user): array
+    {
+        return array_values(array_filter([$this->favorites($user)]));
     }
 
     /**

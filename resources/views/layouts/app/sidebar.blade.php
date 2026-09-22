@@ -27,7 +27,7 @@
 
     <div class="hidden px-4 lg:block">
         @if ($navigation->hasAccount(auth()->user()))
-            <x-user-menu variant="sidebar"/>
+            <x-user-menu variant="sidebar" :links="$navigation->sidebarAccount(auth()->user())"/>
         @else
             <div class="grid gap-2">
                 @guest
@@ -65,7 +65,7 @@
     <flux:spacer/>
 
     @if ($navigation->hasAccount(auth()->user()))
-    <x-user-menu variant="header"/>
+    <x-user-menu variant="header" :links="$navigation->sidebarAccount(auth()->user())"/>
     @else
     @guest
     <flux:button

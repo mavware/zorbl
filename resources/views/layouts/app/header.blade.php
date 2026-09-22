@@ -13,7 +13,7 @@
     <x-app-logo href="{{ route('crosswords.index') }}" wire:navigate class="me-4"/>
 
     <flux:navbar class="-mb-px max-lg:hidden" data-test="header-nav">
-        @foreach ($navigation->main(auth()->user(), withFavorites: false) as $group)
+        @foreach ($navigation->main(auth()->user()) as $group)
             @unless ($loop->first)
                 <flux:separator vertical class="mx-1 my-2 bg-line"/>
             @endunless

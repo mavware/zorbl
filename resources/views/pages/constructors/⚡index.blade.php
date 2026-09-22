@@ -179,16 +179,18 @@ new #[Title('Constructors')] class extends Component {
                         </div>
                     </div>
 
-                    <div class="border-hairline divide-hairline grid grid-cols-3 divide-x border-t pt-3.5 text-center">
-                        <div>
+                    {{-- The row bleeds through the card's padding so its top border and dividers
+                         touch the card border; the cells carry the padding instead. --}}
+                    <div class="border-hairline divide-hairline -mx-[18px] -mb-[18px] mt-auto grid grid-cols-3 divide-x border-t text-center" data-test="constructor-card-stats">
+                        <div class="pt-3.5 pb-[18px]">
                             <div class="font-classical text-ink tnum text-[22px] leading-none font-medium">{{ $constructor->published_puzzles_count }}</div>
                             <div class="meta-classical mt-1.5">{{ __('Puzzles') }}</div>
                         </div>
-                        <div>
+                        <div class="pt-3.5 pb-[18px]">
                             <div class="font-classical text-ink tnum text-[22px] leading-none font-medium">{{ (int) $constructor->total_solves }}</div>
                             <div class="meta-classical mt-1.5">{{ __('Solves') }}</div>
                         </div>
-                        <div>
+                        <div class="pt-3.5 pb-[18px]">
                             <div class="font-classical text-ink tnum text-[22px] leading-none font-medium">{{ $constructor->followers_count }}</div>
                             <div class="meta-classical mt-1.5">{{ __('Followers') }}</div>
                         </div>

@@ -109,13 +109,34 @@ test('the top bar keeps the help menu for guests, who have no user menu', functi
         ->assertDontSee('data-test="user-menu-links"', false);
 });
 
-test('the sidebar chrome does not repeat its links inside the user menu', function () {
+test('the sidebar chrome offers a registered user favorites from the user menu only', function () {
     config(['crosswordbuilder.navigation' => 'sidebar']);
 
-    $this->actingAs(User::factory()->create())
+    $html = $this->actingAs(User::factory()->create())
         ->get(route('crosswords.index'))
         ->assertOk()
-        ->assertDontSee('data-test="user-menu-links"', false);
+        ->assertSeeInOrder([
+            'data-test="sidebar-menu-button"',
+            'data-test="user-menu-links"',
+            'href="'.route('favorites.index').'"',
+            'href="'.route('profile.edit').'"',
+        ], false)
+        ->getContent();
+
+    preg_match_all('/data-test="user-menu-links".*?<\/div>/s', $html, $userMenus);
+
+    foreach ($userMenus[0] as $userMenu) {
+        expect($userMenu)
+            ->toContain('href="'.route('favorites.index').'"')
+            ->not->toContain('href="'.route('help.index').'"')
+            ->not->toContain('href="'.route('support.index').'"');
+    }
+
+    preg_match_all('/<nav[^>]*>.*?<\/nav>/s', $html, $navs);
+
+    foreach ($navs[0] as $nav) {
+        expect($nav)->not->toContain('href="'.route('favorites.index').'"');
+    }
 });
 
 test('an unknown navigation config falls back to the sidebar', function (mixed $configured) {

@@ -204,3 +204,26 @@ test('sidebar shows constructors link', function () {
         ->get(route('crosswords.index'))
         ->assertSee('Constructors');
 });
+
+test('the constructor card stat dividers meet the top border and the card border with no gap', function () {
+    $constructor = User::factory()->create();
+    Crossword::factory()->published()->for($constructor)->create();
+
+    $html = $this->get(route('constructors.index'))
+        ->assertOk()
+        ->getContent();
+
+    preg_match('/<div class="([^"]*)" data-test="constructor-card-stats">(.*?)<\/a>/s', $html, $stats);
+
+    expect($stats[1])
+        ->toContain('divide-x')
+        ->toContain('border-t')
+        ->toContain('-mx-[18px]')
+        ->toContain('-mb-[18px]')
+        ->not->toContain('pt-');
+
+    preg_match_all('/<div class="([^"]*)">\s*<div class="font-classical/', $stats[2], $cells);
+
+    expect($cells[1])->toHaveCount(3)
+        ->each(fn ($cell) => $cell->toContain('pt-3.5')->toContain('pb-[18px]'));
+});
