@@ -63,7 +63,7 @@ class SecurityHeaders
             "style-src 'self' 'unsafe-inline' https://fonts.bunny.net".$viteScript,
             "font-src 'self' data: https://fonts.bunny.net",
             "img-src 'self' data: blob: https:",
-            "connect-src 'self' https://api.stripe.com https://*.ingest.sentry.io https://*.ingest.us.sentry.io".$viteConnect,
+            "connect-src 'self' https://api.stripe.com".$viteConnect,
             "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",
             'frame-ancestors '.($isEmbed ? '*' : "'self'"),
             "form-action 'self'",

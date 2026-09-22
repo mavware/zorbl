@@ -4,18 +4,15 @@ namespace App\Providers;
 
 use App\Models\User;
 use Carbon\CarbonImmutable;
-use Illuminate\Auth\Events\Login;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
-use Sentry\State\HubInterface;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -31,43 +28,12 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureDefaults();
         $this->configureRateLimiting();
-        $this->configureSentryUserScope();
         $this->configureGates();
     }
 
     protected function configureGates(): void
     {
         Gate::define('viewPulse', fn (User $user): bool => $user->hasRole('Admin'));
-    }
-
-    /**
-     * Tag every Sentry event captured while a user is authenticated with their
-     * id (and email if SENTRY_SEND_DEFAULT_PII is on). No-op when Sentry isn't
-     * configured.
-     */
-    protected function configureSentryUserScope(): void
-    {
-        if (! app()->bound(HubInterface::class)) {
-            return;
-        }
-
-        $apply = function ($user): void {
-            if ($user === null) {
-                return;
-            }
-            try {
-                app(HubInterface::class)->configureScope(function ($scope) use ($user): void {
-                    $scope->setUser(array_filter([
-                        'id' => (string) $user->getKey(),
-                        'email' => config('sentry.send_default_pii') ? $user->email : null,
-                    ]));
-                });
-            } catch (\Throwable) {
-                // Sentry isn't configured (e.g. local without DSN) — ignore.
-            }
-        };
-
-        Event::listen(Login::class, fn (Login $e) => $apply($e->user));
     }
 
     /**

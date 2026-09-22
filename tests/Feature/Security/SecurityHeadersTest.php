@@ -49,12 +49,12 @@ test('HSTS is not set on non-secure requests', function () {
     expect($response->headers->get('Strict-Transport-Security'))->toBeNull();
 });
 
-test('Content-Security-Policy includes Sentry and Stripe ingest hosts in connect-src', function () {
+test('Content-Security-Policy includes the Stripe API host in connect-src', function () {
     $csp = $this->get('/')->headers->get('Content-Security-Policy');
 
     expect($csp)
         ->toContain('https://api.stripe.com')
-        ->toContain('sentry.io');
+        ->not->toContain('sentry.io');
 });
 
 test('CSP allows fonts.bunny.net for fonts and styles', function () {
