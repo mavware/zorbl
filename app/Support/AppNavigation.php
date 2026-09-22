@@ -17,8 +17,8 @@ class AppNavigation
     /**
      * The main destinations, grouped: the user's own work first, then the
      * shared libraries. Groups are rendered with a separator between them.
-     * Favorites is offered from the user menu instead (see account() and
-     * sidebarAccount()). Public pages (e.g. the help center) render the chrome
+     * Favorites and Constructors are offered from the user menu instead (see
+     * account() and sidebarAccount()). Public pages (e.g. the help center) render the chrome
      * for signed-out visitors too, so $user may be null.
      *
      * @return array<int, array<int, NavigationItem>>
@@ -53,12 +53,6 @@ class AppNavigation
                     href: route('words.index'),
                     current: $this->request->routeIs('words.*'),
                 ),
-                new NavigationItem(
-                    label: __('Constructors'),
-                    icon: 'users',
-                    href: route('constructors.index'),
-                    current: $this->request->routeIs('constructors.*'),
-                ),
                 config('crosswordbuilder.features.contests') ? new NavigationItem(
                     label: __('Contests'),
                     icon: 'trophy',
@@ -71,27 +65,32 @@ class AppNavigation
 
     /**
      * The links the top bar's user menu offers a registered user: their
-     * favorites, then help, support, and (for admins) the admin panel.
+     * favorites and the constructors directory, then help, support, and (for
+     * admins) the admin panel.
      *
      * @return array<int, NavigationItem>
      */
     public function account(?User $user): array
     {
         return array_values(array_filter([
-            $this->favorites($user),
+            ...$this->sidebarAccount($user),
             ...$this->secondary($user),
         ]));
     }
 
     /**
-     * The links the sidebar's user menu offers a registered user: just their
-     * favorites, since the sidebar lists help, support, and admin itself.
+     * The links the sidebar's user menu offers a registered user: their
+     * favorites and the constructors directory, since the sidebar lists help,
+     * support, and admin itself.
      *
      * @return array<int, NavigationItem>
      */
     public function sidebarAccount(?User $user): array
     {
-        return array_values(array_filter([$this->favorites($user)]));
+        return array_values(array_filter([
+            $this->favorites($user),
+            $this->constructors($user),
+        ]));
     }
 
     /**
@@ -133,6 +132,19 @@ class AppNavigation
             icon: 'heart',
             href: route('favorites.index'),
             current: $this->request->routeIs('favorites.index'),
+        ) : null;
+    }
+
+    /**
+     * The constructors directory: registered users only, alongside favorites.
+     */
+    private function constructors(?User $user): ?NavigationItem
+    {
+        return $this->hasAccount($user) ? new NavigationItem(
+            label: __('Constructors'),
+            icon: 'users',
+            href: route('constructors.index'),
+            current: $this->request->routeIs('constructors.*'),
         ) : null;
     }
 

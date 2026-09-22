@@ -19,9 +19,9 @@ function expectedNavigationLinks(bool $registered, bool $admin = false): array
         route('crosswords.index'),
         route('crosswords.solving'),
         $registered ? route('favorites.index') : null,
+        $registered ? route('constructors.index') : null,
         route('clues.index'),
         route('words.index'),
-        route('constructors.index'),
         route('contests.index'),
         route('help.index'),
         route('support.index'),
@@ -54,7 +54,7 @@ test('the top bar chrome is rendered when configured', function () {
         ->assertDontSee('data-test="sidebar-menu-button"', false);
 });
 
-test('the top bar offers a registered user favorites, help, and support from the user menu', function () {
+test('the top bar offers a registered user favorites, constructors, help, and support from the user menu', function () {
     config(['crosswordbuilder.navigation' => 'header']);
 
     $html = $this->actingAs(User::factory()->create())
@@ -64,6 +64,7 @@ test('the top bar offers a registered user favorites, help, and support from the
         ->assertSeeInOrder([
             'data-test="user-menu-links"',
             'href="'.route('favorites.index').'"',
+            'href="'.route('constructors.index').'"',
             'href="'.route('help.index').'"',
             'href="'.route('support.index').'"',
             'href="'.route('profile.edit').'"',
@@ -75,6 +76,7 @@ test('the top bar offers a registered user favorites, help, and support from the
     expect($headerNav[0])
         ->toContain('href="'.route('crosswords.index').'"')
         ->not->toContain('href="'.route('favorites.index').'"')
+        ->not->toContain('href="'.route('constructors.index').'"')
         ->not->toContain('href="'.route('help.index').'"')
         ->not->toContain('href="'.route('support.index').'"');
 });
@@ -109,7 +111,7 @@ test('the top bar keeps the help menu for guests, who have no user menu', functi
         ->assertDontSee('data-test="user-menu-links"', false);
 });
 
-test('the sidebar chrome offers a registered user favorites from the user menu only', function () {
+test('the sidebar chrome offers a registered user favorites and constructors from the user menu only', function () {
     config(['crosswordbuilder.navigation' => 'sidebar']);
 
     $html = $this->actingAs(User::factory()->create())
@@ -119,6 +121,7 @@ test('the sidebar chrome offers a registered user favorites from the user menu o
             'data-test="sidebar-menu-button"',
             'data-test="user-menu-links"',
             'href="'.route('favorites.index').'"',
+            'href="'.route('constructors.index').'"',
             'href="'.route('profile.edit').'"',
         ], false)
         ->getContent();
@@ -128,6 +131,7 @@ test('the sidebar chrome offers a registered user favorites from the user menu o
     foreach ($userMenus[0] as $userMenu) {
         expect($userMenu)
             ->toContain('href="'.route('favorites.index').'"')
+            ->toContain('href="'.route('constructors.index').'"')
             ->not->toContain('href="'.route('help.index').'"')
             ->not->toContain('href="'.route('support.index').'"');
     }
@@ -140,7 +144,9 @@ test('the sidebar chrome offers a registered user favorites from the user menu o
     preg_match_all('/<nav[^>]*>.*?<\/nav>/s', $html, $navs);
 
     foreach ($navs[0] as $nav) {
-        expect($nav)->not->toContain('href="'.route('favorites.index').'"');
+        expect($nav)
+            ->not->toContain('href="'.route('favorites.index').'"')
+            ->not->toContain('href="'.route('constructors.index').'"');
     }
 });
 
@@ -335,4 +341,19 @@ test('the help center marks itself current in the chrome', function (string $nav
 
     expect($matches[0])->not->toBeEmpty()
         ->and(array_filter($matches[0], fn (string $anchor): bool => str_contains($anchor, 'data-current')))->not->toBeEmpty();
+})->with(['sidebar', 'header']);
+
+test('both chromes center the main area under a max width', function (string $navigation) {
+    config(['crosswordbuilder.navigation' => $navigation]);
+
+    $html = $this->actingAs(User::factory()->create())
+        ->get(route('crosswords.index'))
+        ->assertOk()
+        ->getContent();
+
+    preg_match('/<div[^>]*data-flux-main[^>]*>/', $html, $main);
+
+    expect($main[0])
+        ->toContain('mx-auto')
+        ->toContain('max-w-6xl');
 })->with(['sidebar', 'header']);

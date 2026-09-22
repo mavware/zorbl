@@ -49,7 +49,7 @@ new class extends Component {
 
 <div>
     {{-- Overview Cards --}}
-    <div class="border-hairline grid border-b sm:grid-cols-2 lg:grid-cols-5">
+    <div class="grid sm:grid-cols-2 lg:grid-cols-5">
         @foreach ([
             ['label' => __('Published'), 'value' => $this->publishedCount],
             ['label' => __('Drafts'), 'value' => $this->draftCount],
@@ -57,7 +57,7 @@ new class extends Component {
             ['label' => __('Completions'), 'value' => $this->totalCompletions],
             ['label' => __('Total Likes'), 'value' => $this->totalLikes],
         ] as $stat)
-            <div class="border-hairline border-b px-6 py-[18px] last:border-b-0 sm:border-e sm:even:border-e-0 lg:border-b-0 lg:even:border-e lg:last:border-e-0 lg:px-8" data-test="constructor-stat">
+            <div class="border-hairline border-t-0 border px-6 py-4.5 lg:px-8" data-test="constructor-stat">
                 <div class="font-classical tnum text-[30px] leading-none font-medium text-amber-700 dark:text-amber-400">{{ $stat['value'] }}</div>
                 <div class="meta-classical mt-1.5">{{ $stat['label'] }}</div>
             </div>

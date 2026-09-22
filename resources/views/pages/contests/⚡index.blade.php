@@ -54,7 +54,7 @@ new #[Title('Contests')] class extends Component {
                         href="{{ route('contests.show', $contest) }}"
                         wire:navigate
                         wire:key="active-{{ $contest->id }}"
-                        class="border-border hover:border-border-strong group flex flex-col gap-3 rounded-sm border p-[18px] transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
+                        class="border-border hover:border-border-strong group flex flex-col gap-3 rounded-sm border p-4.5 transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
                     >
                         <div class="flex flex-wrap items-center gap-1.5">
                             <span class="chip-classical border-amber-400 text-amber-400">{{ __('Active') }}</span>
@@ -90,7 +90,7 @@ new #[Title('Contests')] class extends Component {
                         href="{{ route('contests.show', $contest) }}"
                         wire:navigate
                         wire:key="upcoming-{{ $contest->id }}"
-                        class="border-border hover:border-border-strong group flex flex-col gap-3 rounded-sm border p-[18px] transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
+                        class="border-border hover:border-border-strong group flex flex-col gap-3 rounded-sm border p-4.5 transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
                     >
                         <div class="flex flex-wrap items-center gap-1.5">
                             <span class="chip-classical border-ink-faint text-ink-faint">{{ __('Upcoming') }}</span>
@@ -124,7 +124,7 @@ new #[Title('Contests')] class extends Component {
                         href="{{ route('contests.show', $contest) }}"
                         wire:navigate
                         wire:key="past-{{ $contest->id }}"
-                        class="border-border hover:border-border-strong group flex flex-col gap-3 rounded-sm border p-[18px] transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
+                        class="border-border hover:border-border-strong group flex flex-col gap-3 rounded-sm border p-4.5 transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
                     >
                         <div class="flex flex-wrap items-center gap-1.5">
                             <span class="chip-classical border-ink-faint text-ink-faint">{{ __('Ended') }}</span>

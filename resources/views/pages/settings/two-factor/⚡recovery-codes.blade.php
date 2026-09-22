@@ -46,7 +46,7 @@ new class extends Component {
 }; ?>
 
 <div
-    class="border-border space-y-5 rounded-sm border p-[18px]"
+    class="border-border space-y-5 rounded-sm border p-4.5"
     wire:cloak
     x-data="{ showRecoveryCodes: false }"
 >

@@ -281,7 +281,7 @@ new #[Title('Favorites')] class extends Component {
     @else
         <div class="grid gap-[22px] [grid-template-columns:repeat(auto-fill,minmax(268px,1fr))]">
             @foreach($this->activeListCrosswords as $crossword)
-                <article wire:key="fav-{{ $crossword->id }}" class="border-border hover:border-border-strong flex flex-col gap-3.5 rounded-sm border p-[18px] transition-colors">
+                <article wire:key="fav-{{ $crossword->id }}" class="border-border hover:border-border-strong flex flex-col gap-3.5 rounded-sm border p-4.5 transition-colors">
                     <div class="min-w-0">
                         <h3 class="font-classical text-ink truncate text-[21px] leading-tight font-semibold">
                             <a href="{{ route('crosswords.solver', $crossword) }}" wire:navigate class="hover:text-amber-300 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">

@@ -307,12 +307,12 @@ new #[Title('Constructor Profile')] class extends Component {
                 </h3>
             </div>
         @else
-            <div class="grid gap-[22px] [grid-template-columns:repeat(auto-fill,minmax(268px,1fr))]">
+            <div class="grid gap-5.5 grid-cols-[repeat(auto-fill,minmax(268px,1fr))]">
                 @foreach($this->publishedPuzzles as $puzzle)
                     <a
                         href="{{ Auth::check() ? route('crosswords.solver', $puzzle) : route('puzzles.solve', $puzzle) }}"
                         wire:navigate
-                        class="border-border hover:border-border-strong group flex flex-col gap-3.5 rounded-sm border p-[18px] transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
+                        class="border-border hover:border-border-strong group flex flex-col gap-3.5 rounded-sm border p-4.5 transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
                     >
                         <div class="flex items-start justify-between gap-3">
                             <div class="min-w-0">

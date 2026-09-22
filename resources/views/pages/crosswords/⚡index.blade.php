@@ -521,7 +521,7 @@ new #[Title('Build')] class extends Component {
                 @foreach($this->crosswords as $crossword)
                     <article
                         wire:key="crossword-{{ $crossword->id }}"
-                        class="border-border hover:border-border-strong flex flex-col gap-3.5 rounded-sm border p-[18px] transition-colors"
+                        class="border-border hover:border-border-strong flex flex-col gap-3.5 rounded-sm border p-4.5 transition-colors"
                     >
                         <div class="flex items-start justify-between gap-3">
                             <div class="min-w-0">

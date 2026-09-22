@@ -144,7 +144,7 @@ new class extends Component {
 <div
     wire:click="startSolving"
     @class([
-        'group relative flex cursor-pointer flex-col gap-3.5 rounded-sm border p-[18px] transition-colors',
+        'group relative flex cursor-pointer flex-col gap-3.5 rounded-sm border p-4.5 transition-colors',
         'border-amber-400/60 hover:border-amber-400' => $isDaily,
         'border-border hover:border-border-strong' => ! $isDaily,
     ])

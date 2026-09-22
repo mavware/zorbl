@@ -273,7 +273,7 @@ new #[Title('Leaderboard')] class extends Component {
 
     {{-- Top Solvers --}}
     @if($tab === 'solvers')
-        <div class="border-border rounded-sm border p-[18px]">
+        <div class="border-border rounded-sm border p-4.5">
             <div class="border-hairline mb-2 border-b pb-3.5">
                 <h2 class="font-classical text-ink text-[22px] leading-tight font-medium">{{ __('Top Solvers') }}</h2>
                 <p class="meta-classical mt-1.5">{{ __('Ranked by total puzzles completed.') }}</p>
@@ -309,7 +309,7 @@ new #[Title('Leaderboard')] class extends Component {
 
         @if($yourSolverRank = $this->yourSolverRank)
             @unless($this->topSolvers->contains('id', Auth::id()))
-                <div class="border-amber-400/60 flex flex-wrap items-center justify-between gap-3 rounded-sm border p-[18px]" data-test="your-solver-rank">
+                <div class="border-amber-400/60 flex flex-wrap items-center justify-between gap-3 rounded-sm border p-4.5" data-test="your-solver-rank">
                     <div class="flex items-center gap-3.5">
                         <div class="border-amber-400 font-classical text-amber-400 tnum flex size-10 shrink-0 items-center justify-center rounded-sm border text-[15px] font-semibold">#{{ $yourSolverRank['rank'] }}</div>
                         <div>
@@ -330,7 +330,7 @@ new #[Title('Leaderboard')] class extends Component {
 
     {{-- Speed Demons --}}
     @if($tab === 'speed')
-        <div class="border-border rounded-sm border p-[18px]">
+        <div class="border-border rounded-sm border p-4.5">
             <div class="border-hairline mb-2 border-b pb-3.5">
                 <h2 class="font-classical text-ink text-[22px] leading-tight font-medium">{{ __('Speed Demons') }}</h2>
                 <p class="meta-classical mt-1.5">{{ __('Ranked by average solve time (minimum 5 solves).') }}</p>
@@ -368,7 +368,7 @@ new #[Title('Leaderboard')] class extends Component {
 
         @if($yourSpeedRank = $this->yourSpeedRank)
             @unless($this->speedDemons->contains('id', Auth::id()))
-                <div class="border-amber-400/60 flex flex-wrap items-center justify-between gap-3 rounded-sm border p-[18px]" data-test="your-speed-rank">
+                <div class="border-amber-400/60 flex flex-wrap items-center justify-between gap-3 rounded-sm border p-4.5" data-test="your-speed-rank">
                     <div class="flex items-center gap-3.5">
                         <div class="border-amber-400 font-classical text-amber-400 tnum flex size-10 shrink-0 items-center justify-center rounded-sm border text-[15px] font-semibold">#{{ $yourSpeedRank['rank'] }}</div>
                         <div>
@@ -385,7 +385,7 @@ new #[Title('Leaderboard')] class extends Component {
 
     {{-- Top Constructors --}}
     @if($tab === 'constructors')
-        <div class="border-border rounded-sm border p-[18px]">
+        <div class="border-border rounded-sm border p-4.5">
             <div class="border-hairline mb-2 border-b pb-3.5">
                 <h2 class="font-classical text-ink text-[22px] leading-tight font-medium">{{ __('Top Constructors') }}</h2>
                 <p class="meta-classical mt-1.5">{{ __('Ranked by total solves across their published puzzles.') }}</p>
@@ -423,7 +423,7 @@ new #[Title('Leaderboard')] class extends Component {
 
         @if($yourConstructorRank = $this->yourConstructorRank)
             @unless($this->topConstructors->contains('id', Auth::id()))
-                <div class="border-amber-400/60 flex flex-wrap items-center justify-between gap-3 rounded-sm border p-[18px]" data-test="your-constructor-rank">
+                <div class="border-amber-400/60 flex flex-wrap items-center justify-between gap-3 rounded-sm border p-4.5" data-test="your-constructor-rank">
                     <div class="flex items-center gap-3.5">
                         <div class="border-amber-400 font-classical text-amber-400 tnum flex size-10 shrink-0 items-center justify-center rounded-sm border text-[15px] font-semibold">#{{ $yourConstructorRank['rank'] }}</div>
                         <div>
@@ -446,7 +446,7 @@ new #[Title('Leaderboard')] class extends Component {
 
     {{-- Streak Leaders --}}
     @if($tab === 'streaks')
-        <div class="border-border rounded-sm border p-[18px]">
+        <div class="border-border rounded-sm border p-4.5">
             <div class="border-hairline mb-2 border-b pb-3.5">
                 <h2 class="font-classical text-ink text-[22px] leading-tight font-medium">{{ __('Best Streaks') }}</h2>
                 <p class="meta-classical mt-1.5">{{ __('Ranked by longest daily solving streak.') }}</p>
@@ -490,7 +490,7 @@ new #[Title('Leaderboard')] class extends Component {
 
         @if($yourStreakRank = $this->yourStreakRank)
             @unless($this->streakLeaders->contains('id', Auth::id()))
-                <div class="border-amber-400/60 flex flex-wrap items-center justify-between gap-3 rounded-sm border p-[18px]" data-test="your-streak-rank">
+                <div class="border-amber-400/60 flex flex-wrap items-center justify-between gap-3 rounded-sm border p-4.5" data-test="your-streak-rank">
                     <div class="flex items-center gap-3.5">
                         <div class="border-amber-400 font-classical text-amber-400 tnum flex size-10 shrink-0 items-center justify-center rounded-sm border text-[15px] font-semibold">#{{ $yourStreakRank['rank'] }}</div>
                         <div>

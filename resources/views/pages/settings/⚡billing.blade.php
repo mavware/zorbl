@@ -69,7 +69,7 @@ new #[Title('Billing')] class extends Component {
     <x-pages::settings.layout :heading="__('Billing')" :subheading="__('Manage your subscription and billing')">
         <div class="my-6 w-full space-y-6">
             @if (request()->query('checkout') === 'success')
-                <div class="border-amber-400/60 flex items-start gap-3.5 rounded-sm border p-[18px]">
+                <div class="border-amber-400/60 flex items-start gap-3.5 rounded-sm border p-4.5">
                     <div class="border-amber-400 flex size-9 shrink-0 items-center justify-center rounded-sm border text-amber-400">
                         <flux:icon name="check-circle" class="size-4" />
                     </div>
@@ -82,7 +82,7 @@ new #[Title('Billing')] class extends Component {
 
             {{-- Subscribe (free users) --}}
             @unless ($this->isPro)
-                <div class="border-border rounded-sm border p-[18px]">
+                <div class="border-border rounded-sm border p-4.5">
                     <h3 class="font-classical text-ink mb-2 text-[19px] leading-tight font-semibold">{{ __('Support our work') }}</h3>
 
                     <p class="text-ink-muted mb-4 text-sm leading-[1.65]">
@@ -116,7 +116,7 @@ new #[Title('Billing')] class extends Component {
 
             {{-- Manage / unsubscribe (subscribers) --}}
             @if ($this->isPro)
-                <div class="border-border rounded-sm border p-[18px]">
+                <div class="border-border rounded-sm border p-4.5">
                     <div class="mb-2 flex flex-wrap items-center gap-2">
                         <h3 class="font-classical text-ink text-[19px] leading-tight font-semibold">
                             @if ($this->isSupporter)
@@ -148,7 +148,7 @@ new #[Title('Billing')] class extends Component {
             @endif
 
             {{-- Funding goal --}}
-            <div class="border-border rounded-sm border p-[18px]" data-supporter-goal>
+            <div class="border-border rounded-sm border p-4.5" data-supporter-goal>
                 <div class="mb-3 flex items-center justify-between gap-4">
                     <h3 class="font-classical text-ink text-[19px] leading-tight font-semibold">{{ __('Our monthly goal') }}</h3>
                     <span class="font-classical text-ink tnum text-[16px] font-medium">

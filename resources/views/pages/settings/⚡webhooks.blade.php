@@ -112,7 +112,7 @@ new #[Title('Webhook settings')] class extends Component {
             @else
                 <div class="space-y-3">
                     @foreach ($this->endpoints as $endpoint)
-                        <div class="border-border rounded-sm border p-[18px]">
+                        <div class="border-border rounded-sm border p-4.5">
                             <div class="flex items-start justify-between gap-3">
                                 <div class="min-w-0 flex-1">
                                     <div class="flex flex-wrap items-center gap-2">

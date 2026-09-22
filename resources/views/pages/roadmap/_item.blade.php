@@ -1,4 +1,4 @@
-<div class="border-border hover:border-border-strong flex items-start gap-4 rounded-sm border p-[18px] transition-colors">
+<div class="border-border hover:border-border-strong flex items-start gap-4 rounded-sm border p-4.5 transition-colors">
     <div class="{{ match($item->status) { 'in_progress' => 'border-amber-400 text-amber-400', default => 'border-border-strong text-ink-faint' } }} flex size-9 shrink-0 items-center justify-center rounded-sm border">
         <flux:icon :name="$this->statusIcon($item->status)" class="size-4" />
     </div>

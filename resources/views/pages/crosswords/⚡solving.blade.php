@@ -357,7 +357,7 @@ new #[Title('Solving')] class extends Component {
                 @foreach($this->attempts as $attempt)
                     <article
                         wire:key="attempt-{{ $attempt->id }}"
-                        class="border-border hover:border-border-strong flex flex-col gap-3.5 rounded-sm border p-[18px] transition-colors"
+                        class="border-border hover:border-border-strong flex flex-col gap-3.5 rounded-sm border p-4.5 transition-colors"
                     >
                         <div class="flex items-start justify-between gap-3">
                             <div class="min-w-0">
@@ -443,7 +443,7 @@ new #[Title('Solving')] class extends Component {
 
     {{-- Active & Upcoming Contests --}}
     @if($this->activeContests->isNotEmpty() || $this->upcomingContests->isNotEmpty())
-        <div class="border-border rounded-sm border p-[18px]">
+        <div class="border-border rounded-sm border p-4.5">
             <div class="border-hairline mb-5 flex items-center justify-between gap-3 border-b pb-3.5">
                 <h2 class="font-classical text-ink text-[22px] leading-tight font-medium">{{ __('Contests') }}</h2>
                 <a href="{{ route('contests.index') }}" wire:navigate class="btn-classical btn-classical-muted h-8 px-3 text-[14px]">
@@ -457,7 +457,7 @@ new #[Title('Solving')] class extends Component {
                         href="{{ route('contests.show', $contest) }}"
                         wire:navigate
                         wire:key="contest-active-{{ $contest->id }}"
-                        class="border-border hover:border-border-strong group flex flex-col gap-3 rounded-sm border p-[18px] transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
+                        class="border-border hover:border-border-strong group flex flex-col gap-3 rounded-sm border p-4.5 transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
                     >
                         <div class="flex flex-wrap items-center gap-1.5">
                             <span class="chip-classical border-amber-400 text-amber-400">{{ __('Active') }}</span>
@@ -486,7 +486,7 @@ new #[Title('Solving')] class extends Component {
                         href="{{ route('contests.show', $contest) }}"
                         wire:navigate
                         wire:key="contest-upcoming-{{ $contest->id }}"
-                        class="border-border hover:border-border-strong group flex flex-col gap-3 rounded-sm border p-[18px] transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
+                        class="border-border hover:border-border-strong group flex flex-col gap-3 rounded-sm border p-4.5 transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
                     >
                         <div class="flex flex-wrap items-center gap-1.5">
                             <span class="chip-classical border-ink-faint text-ink-faint">{{ __('Upcoming') }}</span>
@@ -535,7 +535,7 @@ new #[Title('Solving')] class extends Component {
                         <a
                             href="{{ route('crosswords.solver', $crossword) }}"
                             wire:navigate
-                            class="border-border hover:border-border-strong group flex flex-col gap-3.5 rounded-sm border p-[18px] transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
+                            class="border-border hover:border-border-strong group flex flex-col gap-3.5 rounded-sm border p-4.5 transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
                         >
                             <div class="min-w-0">
                                 <h3 class="font-classical text-ink group-hover:text-amber-300 truncate text-[21px] leading-tight font-semibold transition-colors">
@@ -584,7 +584,7 @@ new #[Title('Solving')] class extends Component {
 {{--    --}}{{-- Trending & Newest --}}
 {{--    <div class="grid gap-6 lg:grid-cols-2">--}}
 {{--        --}}{{-- Trending --}}
-{{--        <div class="border-border rounded-sm border p-[18px]">--}}
+{{--        <div class="border-border rounded-sm border p-4.5">--}}
 {{--            <div class="border-hairline mb-2 flex items-center justify-between gap-3 border-b pb-3.5">--}}
 {{--                <h2 class="font-classical text-ink text-[22px] leading-tight font-medium">{{ __('Trending') }}</h2>--}}
 {{--                <a href="{{ route('puzzles.index') }}" wire:navigate class="btn-classical btn-classical-muted h-8 px-3 text-[14px]">--}}
@@ -637,7 +637,7 @@ new #[Title('Solving')] class extends Component {
 {{--        </div>--}}
 
 {{--        --}}{{-- Newest --}}
-{{--        <div class="border-border rounded-sm border p-[18px]">--}}
+{{--        <div class="border-border rounded-sm border p-4.5">--}}
 {{--            <div class="border-hairline mb-2 flex items-center justify-between gap-3 border-b pb-3.5">--}}
 {{--                <h2 class="font-classical text-ink text-[22px] leading-tight font-medium">{{ __('Newest') }}</h2>--}}
 {{--                <a href="{{ route('puzzles.index') }}" wire:navigate class="btn-classical btn-classical-muted h-8 px-3 text-[14px]">--}}
@@ -698,7 +698,7 @@ new #[Title('Solving')] class extends Component {
     {{-- Solving Streak --}}
     @if($this->currentStreak > 0 || $this->longestStreak > 0)
         <div @class([
-            'rounded-sm border p-[18px] transition-colors',
+            'rounded-sm border p-4.5 transition-colors',
             'border-amber-400/60' => $this->streakIsActive,
             'border-border' => ! $this->streakIsActive,
         ]) data-test="dashboard-streak-card">
@@ -756,7 +756,7 @@ new #[Title('Solving')] class extends Component {
     {{-- Stats Cards --}}
     <div class="border-border grid rounded-sm border sm:grid-cols-2">
         {{-- Puzzles Solved --}}
-        <div class="border-hairline flex items-center gap-4 border-b p-[18px] sm:border-e sm:border-b-0">
+        <div class="border-hairline flex items-center gap-4 border-b p-4.5 sm:border-e sm:border-b-0">
             <div class="border-border-strong text-ink-faint flex size-10 shrink-0 items-center justify-center rounded-sm border">
                 <flux:icon name="check-circle" class="size-5" />
             </div>
@@ -767,7 +767,7 @@ new #[Title('Solving')] class extends Component {
         </div>
 
         {{-- Likes Given --}}
-        <div class="flex items-center gap-4 p-[18px]">
+        <div class="flex items-center gap-4 p-4.5">
             <div class="border-border-strong text-ink-faint flex size-10 shrink-0 items-center justify-center rounded-sm border">
                 <flux:icon name="heart" class="size-5" />
             </div>
@@ -779,7 +779,7 @@ new #[Title('Solving')] class extends Component {
     </div>
 
     {{-- Community Stats --}}
-    <div class="border-border rounded-sm border p-[18px]">
+    <div class="border-border rounded-sm border p-4.5">
         <div class="border-hairline mb-5 border-b pb-3.5">
             <h2 class="font-classical text-ink text-[22px] leading-tight font-medium">{{ __('Community') }}</h2>
         </div>

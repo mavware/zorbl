@@ -76,7 +76,7 @@ new #[Title('Ticket Detail')] class extends Component {
     </div>
 
     {{-- Description --}}
-    <div class="border-border rounded-sm border p-[18px]">
+    <div class="border-border rounded-sm border p-4.5">
         <div class="meta-classical mb-2">{{ __('Description') }}</div>
         <p class="text-ink text-sm leading-[1.65] whitespace-pre-wrap">{{ $ticket->description }}</p>
     </div>
@@ -99,7 +99,7 @@ new #[Title('Ticket Detail')] class extends Component {
         @else
             <div class="space-y-3">
                 @foreach($this->responses as $response)
-                    <div class="rounded-sm border p-[18px] {{ $response->is_admin_response ? 'border-amber-400/60' : 'border-border' }}">
+                    <div class="rounded-sm border p-4.5 {{ $response->is_admin_response ? 'border-amber-400/60' : 'border-border' }}">
                         <div class="mb-2 flex flex-wrap items-center gap-2">
                             <span class="font-classical text-ink text-[16px] leading-none font-semibold">{{ $response->user->name }}</span>
                             <x-supporter-badge :user="$response->user" />
@@ -117,7 +117,7 @@ new #[Title('Ticket Detail')] class extends Component {
 
     {{-- Add response form --}}
     @if($ticket->status !== 'closed')
-        <div class="border-border space-y-4 rounded-sm border p-[18px]">
+        <div class="border-border space-y-4 rounded-sm border p-4.5">
             <h3 class="font-classical text-ink text-[19px] leading-tight font-semibold">{{ __('Add a Response') }}</h3>
             <label class="block">
                 <span class="sr-only">{{ __('Add a Response') }}</span>
@@ -129,7 +129,7 @@ new #[Title('Ticket Detail')] class extends Component {
             </div>
         </div>
     @else
-        <div class="border-border rounded-sm border p-[18px] text-center">
+        <div class="border-border rounded-sm border p-4.5 text-center">
             <p class="text-ink-muted text-sm">{{ __('This ticket has been closed.') }}</p>
         </div>
     @endif

@@ -223,7 +223,7 @@ new #[Title('Solve Statistics')] class extends Component {
 
     {{-- Streak & Achievements --}}
     <div class="grid gap-[22px] sm:grid-cols-2">
-        <div class="border-amber-400/60 flex items-center gap-4 rounded-sm border p-[18px]">
+        <div class="border-amber-400/60 flex items-center gap-4 rounded-sm border p-4.5">
             <div class="border-amber-400 flex size-12 shrink-0 items-center justify-center rounded-sm border text-amber-400">
                 <flux:icon name="fire" class="size-6" />
             </div>
@@ -234,7 +234,7 @@ new #[Title('Solve Statistics')] class extends Component {
             </div>
         </div>
 
-        <div class="border-border rounded-sm border p-[18px]">
+        <div class="border-border rounded-sm border p-4.5">
             <h2 class="font-classical text-ink mb-3 text-[19px] leading-tight font-semibold">{{ __('Achievements') }}</h2>
             @php($achievements = Auth::user()->achievements()->orderBy('earned_at', 'desc')->get())
             @if($achievements->isEmpty())
@@ -256,7 +256,7 @@ new #[Title('Solve Statistics')] class extends Component {
 
     {{-- Summary Cards --}}
     <div class="border-border divide-hairline grid divide-y rounded-sm border sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-4">
-        <div class="flex items-center gap-4 p-[18px] sm:border-hairline sm:border-e sm:border-b lg:border-b-0">
+        <div class="flex items-center gap-4 p-4.5 sm:border-hairline sm:border-e sm:border-b lg:border-b-0">
             <div class="border-border-strong text-ink-faint flex size-10 shrink-0 items-center justify-center rounded-sm border">
                 <flux:icon name="check-circle" class="size-5" />
             </div>
@@ -266,7 +266,7 @@ new #[Title('Solve Statistics')] class extends Component {
             </div>
         </div>
 
-        <div class="flex items-center gap-4 p-[18px] sm:border-hairline sm:border-b lg:border-e lg:border-b-0">
+        <div class="flex items-center gap-4 p-4.5 sm:border-hairline sm:border-b lg:border-e lg:border-b-0">
             <div class="border-border-strong text-ink-faint flex size-10 shrink-0 items-center justify-center rounded-sm border">
                 <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             </div>
@@ -276,7 +276,7 @@ new #[Title('Solve Statistics')] class extends Component {
             </div>
         </div>
 
-        <div class="flex items-center gap-4 p-[18px] sm:border-hairline sm:border-e">
+        <div class="flex items-center gap-4 p-4.5 sm:border-hairline sm:border-e">
             <div class="border-border-strong text-ink-faint flex size-10 shrink-0 items-center justify-center rounded-sm border">
                 <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
             </div>
@@ -290,7 +290,7 @@ new #[Title('Solve Statistics')] class extends Component {
         </div>
 
         @if($this->communityComparison['total'] > 0)
-        <div class="flex items-center gap-4 p-[18px] ">
+        <div class="flex items-center gap-4 p-4.5 ">
             <div class="border-border-strong text-ink-faint flex size-10 shrink-0 items-center justify-center rounded-sm border">
                 <flux:icon name="arrow-trending-up" class="size-5" />
             </div>
@@ -305,11 +305,11 @@ new #[Title('Solve Statistics')] class extends Component {
 
     {{-- Average by Size --}}
     @if(count($this->averageBySize) > 0)
-        <div class="border-border rounded-sm border p-[18px]">
+        <div class="border-border rounded-sm border p-4.5">
             <div class="border-hairline mb-5 border-b pb-3.5">
                 <h2 class="font-classical text-ink text-[22px] leading-tight font-medium">{{ __('Times by Grid Size') }}</h2>
             </div>
-            <div class="grid gap-[22px] sm:grid-cols-3">
+            <div class="grid gap-5.5 sm:grid-cols-3">
                 @foreach($this->averageBySize as $size)
                     <div class="border-border rounded-sm border p-4">
                         <div class="font-classical text-ink text-[19px] leading-tight font-semibold">{{ $size['label'] }}</div>
@@ -335,11 +335,11 @@ new #[Title('Solve Statistics')] class extends Component {
 
     {{-- Average by Difficulty --}}
     @if(count($this->averageByDifficulty) > 0)
-        <div class="border-border rounded-sm border p-[18px]">
+        <div class="border-border rounded-sm border p-4.5">
             <div class="border-hairline mb-5 border-b pb-3.5">
                 <h2 class="font-classical text-ink text-[22px] leading-tight font-medium">{{ __('Times by Difficulty') }}</h2>
             </div>
-            <div class="grid gap-[22px] sm:grid-cols-2 lg:grid-cols-4">
+            <div class="grid gap-5.5 sm:grid-cols-2 lg:grid-cols-4">
                 @foreach($this->averageByDifficulty as $difficulty)
                     <div class="border-border rounded-sm border p-4">
                         <div class="font-classical text-ink text-[19px] leading-tight font-semibold">{{ $difficulty['label'] }}</div>
@@ -364,7 +364,7 @@ new #[Title('Solve Statistics')] class extends Component {
     @endif
 
     {{-- Solve History --}}
-    <div class="border-border rounded-sm border p-[18px]">
+    <div class="border-border rounded-sm border p-4.5">
         <div class="border-hairline mb-2 border-b pb-3.5">
             <h2 class="font-classical text-ink text-[22px] leading-tight font-medium">{{ __('Solve History') }}</h2>
         </div>

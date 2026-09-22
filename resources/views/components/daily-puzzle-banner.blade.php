@@ -5,7 +5,7 @@
 @props(['crossword', 'solved' => false])
 
 <div {{ $attributes->class([
-    'rounded-sm border p-[18px] transition-colors',
+    'rounded-sm border p-4.5 transition-colors',
     'border-border' => $solved,
     'border-amber-400/60' => ! $solved,
 ]) }} data-daily-puzzle-banner>

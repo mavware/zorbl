@@ -402,7 +402,7 @@ new class extends Component {
 
     {{-- Secondary Filters (collapsible) --}}
     @if($showFilters)
-        <div class="border-border grid gap-4 rounded-sm border p-[18px] sm:grid-cols-2 lg:grid-cols-4">
+        <div class="border-border grid gap-4 rounded-sm border p-4.5 sm:grid-cols-2 lg:grid-cols-4">
             <label class="block">
                 <span class="meta-classical mb-1.5 block">{{ __('Difficulty') }}</span>
                 <span class="relative block">
@@ -521,7 +521,7 @@ new class extends Component {
             </p>
         </div>
     @else
-        <div class="grid gap-[22px] [grid-template-columns:repeat(auto-fill,minmax(268px,1fr))]">
+        <div class="grid gap-5.5 grid-cols-[repeat(auto-fill,minmax(268px,1fr))]">
             @if($showPinned)
                 <livewire:puzzle-card
                     :crossword="$pinnedDaily"

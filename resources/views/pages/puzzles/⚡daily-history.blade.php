@@ -117,7 +117,7 @@ class extends Component {
             <p class="text-ink-muted mt-2 text-sm">{{ __('Check back soon for daily puzzles.') }}</p>
         </div>
     @else
-        <div class="grid gap-[22px] [grid-template-columns:repeat(auto-fill,minmax(268px,1fr))]">
+        <div class="grid gap-5.5 grid-cols-[repeat(auto-fill,minmax(268px,1fr))]">
             @foreach($results as $daily)
                 @php
                     $crossword = $daily->crossword;
@@ -127,7 +127,7 @@ class extends Component {
                 <article
                     wire:key="daily-{{ $daily->id }}"
                     @class([
-                        'flex flex-col gap-3.5 rounded-sm border p-[18px] transition-colors',
+                        'flex flex-col gap-3.5 rounded-sm border p-4.5 transition-colors',
                         'border-amber-400/60 hover:border-amber-400' => $isToday,
                         'border-border hover:border-border-strong' => ! $isToday,
                     ])

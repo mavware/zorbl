@@ -160,7 +160,7 @@ new #[Title('Constructors')] class extends Component {
                     href="{{ route('constructors.show', $constructor) }}"
                     wire:navigate
                     wire:key="constructor-{{ $constructor->id }}"
-                    class="border-border hover:border-border-strong group flex flex-col gap-4 rounded-sm border p-[18px] transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
+                    class="border-border hover:border-border-strong group flex flex-col gap-4 rounded-sm border p-4.5 transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
                 >
                     <div class="flex items-center gap-3.5">
                         <div class="border-border-strong font-classical text-ink flex size-12 shrink-0 items-center justify-center rounded-full border text-[17px] font-medium tracking-[0.06em]">

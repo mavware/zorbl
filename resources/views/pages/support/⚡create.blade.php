@@ -38,7 +38,7 @@ new #[Title('Submit a Ticket')] class extends Component {
     </x-page-header>
 
     <div class="mx-auto max-w-2xl space-y-6">
-        <div class="border-amber-400/60 flex items-start gap-3.5 rounded-sm border p-[18px]">
+        <div class="border-amber-400/60 flex items-start gap-3.5 rounded-sm border p-4.5">
             <div class="border-amber-400 flex size-9 shrink-0 items-center justify-center rounded-sm border text-amber-400">
                 <flux:icon name="question-mark-circle" class="size-4" />
             </div>
