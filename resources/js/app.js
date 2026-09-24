@@ -1,10 +1,14 @@
 import { crosswordGrid } from './crossword-grid.js';
 import { crosswordSolver } from './crossword-solver.js';
+import { passkeyConfirm, passkeyLogin, passkeyManager } from './passkeys.js';
 import './pwa.js';
 
 document.addEventListener('alpine:init', () => {
     Alpine.data('crosswordGrid', crosswordGrid);
     Alpine.data('crosswordSolver', crosswordSolver);
+    Alpine.data('passkeyLogin', passkeyLogin);
+    Alpine.data('passkeyConfirm', passkeyConfirm);
+    Alpine.data('passkeyManager', passkeyManager);
 });
 
 // Bridge Alpine `notify` events (dispatched by autofill, AI fill, and clue generation)

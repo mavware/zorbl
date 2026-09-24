@@ -118,6 +118,7 @@ return [
     'limiters' => [
         'login' => 'login',
         'two-factor' => 'two-factor',
+        'passkeys' => 'passkeys',
     ],
 
     /*
@@ -132,6 +133,25 @@ return [
     */
 
     'views' => true,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Passkeys
+    |--------------------------------------------------------------------------
+    |
+    | WebAuthn relying party settings. The relying party ID must match the
+    | host users see in the address bar; passkeys registered against one
+    | host will not verify on another. Origins list the full scheme + host
+    | combinations allowed to complete a ceremony.
+    |
+    */
+
+    'passkeys' => [
+        'relying_party_id' => env('PASSKEYS_RELYING_PARTY_ID', parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
+        'allowed_origins' => array_filter(array_map('trim', explode(',', (string) env('PASSKEYS_ALLOWED_ORIGINS', (string) env('APP_URL', 'http://localhost'))))),
+        'user_handle_secret' => env('PASSKEYS_USER_HANDLE_SECRET', env('APP_KEY')),
+        'timeout' => 60000,
+    ],
 
     /*
     |--------------------------------------------------------------------------
@@ -153,8 +173,9 @@ return [
             'confirmPassword' => true,
             // 'window' => 0
         ]),
-        // Features::passkeys() lives in Fortify v2.x — re-enable here after the
-        // package is bumped (it's on the TODO under "Ability to sign in with a passkey").
+        Features::passkeys([
+            'confirmPassword' => true,
+        ]),
     ],
 
 ];

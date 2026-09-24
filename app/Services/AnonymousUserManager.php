@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Crossword;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cookie;
@@ -82,5 +83,30 @@ class AnonymousUserManager
     public function forgetCookie(): void
     {
         Cookie::queue(Cookie::forget(self::COOKIE_NAME));
+    }
+
+    /**
+     * If the user signed in while a guest-builder cookie is still attached to
+     * the request, hand any puzzles owned by that anonymous user over to the
+     * real account they just signed into and remove the anonymous row.
+     */
+    public function mergeAnonymousPuzzlesIntoLoggedInUser(Request $request): void
+    {
+        $loggedIn = $request->user();
+        if (! $loggedIn instanceof User || $loggedIn->isAnonymous()) {
+            return;
+        }
+
+        $anon = $this->findForRequest($request);
+        if ($anon === null || $anon->id === $loggedIn->id) {
+            return;
+        }
+
+        Crossword::query()
+            ->where('user_id', $anon->id)
+            ->update(['user_id' => $loggedIn->id]);
+
+        $anon->delete();
+        $this->forgetCookie();
     }
 }

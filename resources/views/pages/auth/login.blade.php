@@ -1,12 +1,14 @@
+@php($passkeysEnabled = Laravel\Fortify\Features::enabled(Laravel\Fortify\Features::passkeys()))
 <x-layouts::auth :title="__('Log in')">
-    <div class="flex flex-col gap-6">
+    <div class="flex flex-col gap-6" @if($passkeysEnabled) x-data="passkeyLogin" @endif>
         <x-auth-header :title="__('Log in to your account')" :description="__('Enter your email and password below to log in')" />
 
         <!-- Session Status -->
         <x-auth-session-status class="text-center" :status="session('status')" />
 
-        @if(config('services.google.client_id'))
+        @if(config('services.google.client_id') || $passkeysEnabled)
             <div class="flex flex-col gap-3">
+                @if(config('services.google.client_id'))
                 <flux:button variant="ghost" :href="route('auth.google.redirect')" class="w-full">
                     <span class="flex items-center gap-2">
                         <svg class="size-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -18,9 +20,22 @@
                         {{ __('Continue with Google') }}
                     </span>
                 </flux:button>
+                @endif
+
+                @if($passkeysEnabled)
+                <template x-if="supported">
+                    <div class="flex flex-col gap-2">
+                        <flux:button variant="ghost" class="w-full" icon="finger-print" x-on:click="verify()" x-bind:disabled="loading" data-test="passkey-login-button">
+                            <span x-show="!loading">{{ __('Sign in with a passkey') }}</span>
+                            <span x-show="loading" x-cloak>{{ __('Waiting for your passkey…') }}</span>
+                        </flux:button>
+                        <p x-show="error" x-cloak x-text="error" class="text-center text-sm text-red-600 dark:text-red-400" role="alert"></p>
+                    </div>
+                </template>
+                @endif
             </div>
 
-            <div class="relative">
+            <div class="relative" @unless(config('services.google.client_id')) x-show="supported" x-cloak @endunless>
                 <div class="absolute inset-0 flex items-center">
                     <div class="border-line w-full border-t"></div>
                 </div>
@@ -41,7 +56,7 @@
                 type="email"
                 required
                 autofocus
-                autocomplete="email"
+                autocomplete="{{ $passkeysEnabled ? 'email webauthn' : 'email' }}"
                 placeholder="email@example.com"
             />
 

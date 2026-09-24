@@ -24,6 +24,8 @@ new #[Title('Security settings')] class extends Component {
 
     public bool $canManageTwoFactor;
 
+    public bool $canManagePasskeys;
+
     public bool $twoFactorEnabled;
 
     public bool $requiresConfirmation;
@@ -34,6 +36,7 @@ new #[Title('Security settings')] class extends Component {
     public function mount(DisableTwoFactorAuthentication $disableTwoFactorAuthentication): void
     {
         $this->canManageTwoFactor = Features::canManageTwoFactorAuthentication();
+        $this->canManagePasskeys = Features::canManagePasskeys();
 
         if ($this->canManageTwoFactor) {
             if (Fortify::confirmsTwoFactorAuthentication() && is_null(auth()->user()->two_factor_confirmed_at)) {
@@ -232,6 +235,10 @@ new #[Title('Security settings')] class extends Component {
                     @endif
                 </div>
             </section>
+        @endif
+
+        @if ($canManagePasskeys)
+            <livewire:pages::settings.passkeys />
         @endif
     </x-pages::settings.layout>
 </section>
