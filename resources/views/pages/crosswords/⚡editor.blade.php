@@ -1449,7 +1449,7 @@ class extends Component {
             <flux:field>
                 <flux:label>{{ __('Secret Theme') }}</flux:label>
                 <flux:textarea wire:model="secretTheme"
-                               placeholder="{{ __('A theme hint only used to guide AI Autofill (e.g. "80s movies", "things that fly"). Not shown to solvers.') }}"
+                               placeholder="{{ __('A theme hint only used to guide AI Autofill (e.g. 80s movies, things that fly). Not shown to solvers.') }}"
                                rows="2"/>
                 <flux:description>{{ __('Only used by AI Autofill to pick the best fill. Never shown to solvers.') }}</flux:description>
                 <flux:error name="secretTheme"/>
@@ -1467,7 +1467,7 @@ class extends Component {
                 <flux:field>
                     <flux:label>{{ __('Prompt') }}</flux:label>
                     <flux:input wire:model="metaAnswerPrompt"
-                                placeholder="{{ __('e.g. "What\'s the hidden theme?" or "Unscramble the circled letters"') }}"
+                                placeholder="{{ __('e.g. What is the hidden theme? or Unscramble the circled letters') }}"
                                 maxlength="500" />
                     <flux:error name="metaAnswerPrompt"/>
                 </flux:field>

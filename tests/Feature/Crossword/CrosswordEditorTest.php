@@ -170,6 +170,24 @@ test('settings modal shows the export menu at the top', function () {
     expect(substr_count($html, "attemptExport('ipuz')"))->toBe(1);
 });
 
+test('settings modal renders the secret theme and meta answer prompt as real inputs', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create();
+
+    $this->actingAs($user);
+
+    $html = Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->assertSeeInOrder(['Secret Theme', 'Meta Answer', 'Prompt', 'Accepted Answers'])
+        ->html();
+
+    // A double quote inside a component attribute stops Blade compiling the
+    // tag, which leaks a literal <flux:...> element to the browser and leaves
+    // the field label with no input beneath it.
+    expect($html)->not->toContain('<flux:');
+    expect($html)->toMatch('/<textarea[^>]*wire:model="secretTheme"/');
+    expect($html)->toMatch('/<input[^>]*wire:model="metaAnswerPrompt"/');
+});
+
 test('settings modal loads existing metadata on mount', function () {
     $user = User::factory()->create();
     $crossword = Crossword::factory()->for($user)->create([
