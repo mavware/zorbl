@@ -861,7 +861,8 @@ test('every desktop layout renders the suggestions pane exactly once', function 
     // The tabs and list are shared with the mobile sheet, so they render
     // twice: once in the pane, once in the sheet.
     expect(substr_count($html, 'x-ref="suggestionsSheet"'))->toBe(1);
-    expect(substr_count($html, 'role="tab"'))->toBe(4);
+    expect(substr_count($html, ':aria-selected="suggestionsTab === \'words\'"'))->toBe(2);
+    expect(substr_count($html, ':aria-selected="suggestionsTab === \'clues\'"'))->toBe(2);
     expect($html)
         ->toContain("setSuggestionsTab('words')")
         ->toContain("setSuggestionsTab('clues')");
@@ -929,4 +930,84 @@ test('the mobile suggestions sheet is not rendered while a freestyle grid is unl
         ->html();
 
     expect($html)->not->toContain('x-ref="suggestionsSheet"');
+});
+
+test('settings flyout groups its fields into details, grid and theme tabs', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create();
+
+    $this->actingAs($user);
+
+    $html = Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])->html();
+
+    preg_match('/<ui-modal[^>]*data-test="settings-flyout".*?<\/ui-modal>/s', $html, $flyout);
+    expect($flyout)->not->toBeEmpty();
+    $flyout = $flyout[0];
+
+    $tabsStart = strpos($flyout, 'role="tablist"');
+    $detailsStart = strpos($flyout, 'id="settings-panel-details"');
+    $tabs = substr($flyout, $tabsStart, $detailsStart - $tabsStart);
+
+    expect($tabs)->toContain('role="tablist"')
+        ->and(substr_count($tabs, 'role="tab"'))->toBe(3)
+        ->and($tabs)->toContain('x-on:click="settingsTab = \'details\'"')
+        ->and($tabs)->toContain('x-on:click="settingsTab = \'grid\'"')
+        ->and($tabs)->toContain('x-on:click="settingsTab = \'theme\'"')
+        ->and($tabs)->not->toContain('data-test="settings-tab-error-');
+
+    $gridStart = strpos($flyout, 'id="settings-panel-grid"');
+    $themeStart = strpos($flyout, 'id="settings-panel-theme"');
+    $footerStart = strpos($flyout, 'wire:click="saveMetadata"');
+
+    expect($detailsStart)->toBeLessThan($gridStart)
+        ->and($gridStart)->toBeLessThan($themeStart)
+        ->and($themeStart)->toBeLessThan($footerStart);
+
+    $details = substr($flyout, $detailsStart, $gridStart - $detailsStart);
+    $grid = substr($flyout, $gridStart, $themeStart - $gridStart);
+    $theme = substr($flyout, $themeStart, $footerStart - $themeStart);
+
+    // Export stays in the header above the tabs; Save/Cancel stay in the sticky footer.
+    expect(strpos($flyout, "attemptExport('ipuz')"))->toBeLessThan($detailsStart);
+
+    expect($details)->toContain('x-show="settingsTab === \'details\'"')
+        ->toContain('wire:model="title"')
+        ->toContain('wire:model="author"')
+        ->toContain('wire:model="copyright"')
+        ->toContain('wire:model="notes"')
+        ->toContain('wire:model.live="allowEmbed"')
+        ->toContain('wire:model.live.debounce.300ms="tagSearch"')
+        ->not->toContain('wire:model="minAnswerLength"')
+        ->not->toContain('wire:model="secretTheme"');
+
+    expect($grid)->toContain('x-show="settingsTab === \'grid\'"')
+        ->toContain('wire:model="minAnswerLength"')
+        ->toContain('data-test="symmetry-toggle"')
+        ->toContain('Layout')
+        ->toContain('Default Colors')
+        ->toContain('wire:click="resizeGrid"')
+        ->not->toContain('wire:model="title"');
+
+    expect($theme)->toContain('x-show="settingsTab === \'theme\'"')
+        ->toContain('wire:model="secretTheme"')
+        ->toContain('Meta Answer')
+        ->toContain('wire:model="metaAnswerPrompt"')
+        ->not->toContain('wire:click="resizeGrid"');
+});
+
+test('settings tabs flag the tab whose fields failed validation', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create();
+
+    $this->actingAs($user);
+
+    $html = Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->set('minAnswerLength', 0)
+        ->call('saveMetadata')
+        ->assertHasErrors(['minAnswerLength'])
+        ->html();
+
+    expect($html)->toContain('data-test="settings-tab-error-grid"')
+        ->not->toContain('data-test="settings-tab-error-details"')
+        ->not->toContain('data-test="settings-tab-error-theme"');
 });
