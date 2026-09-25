@@ -89,6 +89,8 @@ return [
 
     'features' => [
         'contests' => (bool) env('CROSSWORDBUILDER_CONTESTS_ENABLED', false),
+        // Hourly AI clue writing for catalog words with no clues (spends API credits).
+        'clue_backfill' => (bool) env('CROSSWORDBUILDER_CLUE_BACKFILL_ENABLED', false),
     ],
 
     /*
