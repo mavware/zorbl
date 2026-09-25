@@ -187,6 +187,23 @@ test('the settings button sits beside the puzzle title on its own row', function
         ->and(substr_count($html, 'data-test="editor-settings-button"'))->toBe(1);
 });
 
+test('the editor tools take their own row on mobile', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create();
+
+    $this->actingAs($user);
+
+    $html = Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->assertSeeInOrder(['Puzzle settings', 'Edit', 'Rotational symmetry', 'Auto-fill grid', 'Cells', 'Publish'])
+        ->html();
+
+    preg_match('/<div[^>]*data-test="editor-tools-row"[^>]*>/', $html, $row);
+
+    expect($row)->not->toBeEmpty()
+        ->and($row[0])->toContain('w-full')
+        ->and($row[0])->toContain('sm:w-auto');
+});
+
 test('settings open in a full-height flyout panel', function () {
     $user = User::factory()->create();
     $crossword = Crossword::factory()->for($user)->create();

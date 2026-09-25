@@ -890,10 +890,11 @@ class extends Component {
             </flux:tooltip>
         </div>
 
-        {{-- Tools --}}
-        <div class="flex flex-1 flex-wrap items-center justify-center gap-2">
-            {{-- Save status --}}
-            <div class="flex items-center gap-1 pr-2 text-sm text-zinc-500">
+        {{-- Tools. Below `sm` this cluster (mode toggle, symmetry, fill, clear)
+             takes its own row, leaving progress and publish to a third row. --}}
+        <div class="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-1 sm:justify-center" data-test="editor-tools-row">
+            {{-- Save status. Hidden while idle so its padding doesn't indent the row. --}}
+            <div class="flex items-center gap-1 pr-2 text-sm text-zinc-500" x-show="saving || showSaved">
                 <template x-if="saving">
                     <span>{{ __('Saving...') }}</span>
                 </template>
