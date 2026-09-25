@@ -440,10 +440,14 @@ export function crosswordGrid({
             const across = this.$refs.acrossPanel;
             const down = this.$refs.downPanel;
             const pane = this.$refs.suggestionsPane;
+            const sheet = this.$refs.suggestionsSheet;
 
-            // The suggestions pane acts on the selection, so focusing it must
-            // not clear the very slot it is serving.
-            if (grid?.contains(target) || across?.contains(target) || down?.contains(target) || pane?.contains(target)) {
+            // The suggestions pane and mobile sheet act on the selection, so
+            // tapping them must not clear the very slot they are serving.
+            if (
+                grid?.contains(target) || across?.contains(target) || down?.contains(target)
+                || pane?.contains(target) || sheet?.contains(target)
+            ) {
                 return;
             }
 

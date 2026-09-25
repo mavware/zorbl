@@ -197,3 +197,30 @@ describe('suggestions sheet choosing', () => {
         expect(g.previewLetters).toEqual({});
     });
 });
+
+describe('suggestions sheet focus', () => {
+    // The editor clears the selection on any document mousedown outside the
+    // grid and its panels. The sheet is fixed to the bottom of the screen and
+    // lives outside all of them, so it has to be exempt too, otherwise tapping
+    // its peek strip deselects the cell and the sheet vanishes.
+    it('tapping the sheet keeps the grid selection', () => {
+        const g = makeGrid();
+        const inSheet = {};
+        g.$refs.gridContainer = { focus: vi.fn(), contains: () => false };
+        g.$refs.suggestionsSheet = { ...sheetEl(true), contains: (el) => el === inSheet };
+        g.selectedRow = 1; g.selectedCol = 0;
+
+        g.handleClickOutside({ target: inSheet });
+        expect(g.selectedRow).toBe(1);
+        expect(g.suggestionsSlot).not.toBeNull();
+
+        // A genuine outside tap still deselects (the handler blurs via document).
+        vi.stubGlobal('document', { activeElement: null });
+        try {
+            g.handleClickOutside({ target: {} });
+        } finally {
+            vi.unstubAllGlobals();
+        }
+        expect(g.selectedRow).toBe(-1);
+    });
+});
