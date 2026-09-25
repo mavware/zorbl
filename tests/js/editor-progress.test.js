@@ -91,7 +91,7 @@ describe('fill-color classes', () => {
             ],
         });
         // 1/8 = 0.125, < 1/3
-        expect(g.cellsFillColorClass).toBe('text-red-300');
+        expect(g.cellsFillColorClass).toBe('text-red-500 dark:text-red-400');
     });
 
     it('returns yellow between one-third and two-thirds', () => {
@@ -103,7 +103,7 @@ describe('fill-color classes', () => {
             ],
         });
         // 4/8 = 0.5, in [1/3, 2/3)
-        expect(g.cellsFillColorClass).toBe('text-yellow-300');
+        expect(g.cellsFillColorClass).toBe('text-amber-500 dark:text-amber-400');
     });
 
     it('returns green at two-thirds or above', () => {
@@ -115,7 +115,7 @@ describe('fill-color classes', () => {
             ],
         });
         // 6/8 = 0.75, >= 2/3
-        expect(g.cellsFillColorClass).toBe('text-green-300');
+        expect(g.cellsFillColorClass).toBe('text-green-600 dark:text-green-400');
     });
 
     it('returns zinc when no playable cells exist', () => {
@@ -127,8 +127,57 @@ describe('fill-color classes', () => {
             cluesAcross: [],
             cluesDown: [],
         });
-        expect(g.cellsFillColorClass).toBe('text-zinc-500');
-        expect(g.cluesFillColorClass).toBe('text-zinc-500');
+        expect(g.cellsFillColorClass).toBe('text-zinc-400 dark:text-zinc-500');
+        expect(g.cluesFillColorClass).toBe('text-zinc-400 dark:text-zinc-500');
+    });
+});
+
+describe('fill percentages', () => {
+    it('rounds cells and clues to whole percentages', () => {
+        const g = makeGrid();
+        // 5/8 cells, 3/6 clues.
+        expect(g.cellsFillPercent).toBe(63);
+        expect(g.cluesFillPercent).toBe(50);
+    });
+
+    it('is zero when there is nothing to fill', () => {
+        const g = makeGrid({
+            width: 2,
+            height: 2,
+            grid: [['#', '#'], ['#', '#']],
+            solution: [['#', '#'], ['#', '#']],
+            cluesAcross: [],
+            cluesDown: [],
+        });
+        expect(g.cellsFillPercent).toBe(0);
+        expect(g.cluesFillPercent).toBe(0);
+    });
+});
+
+describe('publish readiness', () => {
+    it('is false while either cells or clues are incomplete', () => {
+        expect(makeGrid().isReadyToPublish).toBe(false);
+    });
+
+    it('is true once every cell has a letter and every clue has text', () => {
+        const g = makeGrid({
+            solution: [
+                ['A', 'B', '#'],
+                ['C', 'D', 'E'],
+                ['F', 'G', 'H'],
+            ],
+            cluesAcross: [
+                { number: 1, clue: 'First' },
+                { number: 3, clue: 'Second' },
+                { number: 5, clue: 'Third' },
+            ],
+            cluesDown: [
+                { number: 1, clue: 'Down 1' },
+                { number: 2, clue: 'Down 2' },
+                { number: 4, clue: 'Down 4' },
+            ],
+        });
+        expect(g.isReadyToPublish).toBe(true);
     });
 });
 

@@ -1792,6 +1792,29 @@ export function crosswordGrid({
             return this.cluesTotal > 0 && this.cluesFilled === this.cluesTotal;
         },
 
+        // Both halves must be complete before the toolbar offers a solid
+        // Publish button; until then it stays an outline so it reads as
+        // "not yet".
+        get isReadyToPublish() {
+            return this.isCellsComplete && this.isCluesComplete;
+        },
+
+        // Whole-number percentages drive the progress rings in the toolbar
+        // (an SVG circle with pathLength="100" takes the value directly as
+        // its dash offset).
+        get cellsFillPercent() {
+            return this._fillPercent(this.cellsFilled, this.cellsTotal);
+        },
+
+        get cluesFillPercent() {
+            return this._fillPercent(this.cluesFilled, this.cluesTotal);
+        },
+
+        _fillPercent(filled, total) {
+            if (total === 0) return 0;
+            return Math.round((filled / total) * 100);
+        },
+
         get cellsFillColorClass() {
             return this._fillColorClass(this.cellsFilled, this.cellsTotal);
         },
@@ -1800,12 +1823,14 @@ export function crosswordGrid({
             return this._fillColorClass(this.cluesFilled, this.cluesTotal);
         },
 
+        // Colour for the progress ring: darker shades on the light theme,
+        // lighter ones on dark so the ring keeps contrast against its track.
         _fillColorClass(filled, total) {
-            if (total === 0) return 'text-zinc-500';
+            if (total === 0) return 'text-zinc-400 dark:text-zinc-500';
             const ratio = filled / total;
-            if (ratio < 1 / 3) return 'text-red-300';
-            if (ratio < 2 / 3) return 'text-yellow-300';
-            return 'text-green-300';
+            if (ratio < 1 / 3) return 'text-red-500 dark:text-red-400';
+            if (ratio < 2 / 3) return 'text-amber-500 dark:text-amber-400';
+            return 'text-green-600 dark:text-green-400';
         },
 
         // Manhattan-distance based delay (ms) from the ripple origin to (row, col).

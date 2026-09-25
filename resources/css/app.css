@@ -121,6 +121,18 @@ select:focus[data-flux-control] {
         dark:border-amber-400 dark:text-amber-400 dark:hover:border-amber-300 dark:hover:bg-amber-400/10 dark:hover:text-amber-300;
 }
 
+/* Filled counterpart used when an action is ready to take (e.g. Publish once
+   every cell and clue is complete). */
+.btn-amber-solid {
+    @apply border border-amber-500 bg-amber-500 text-zinc-950 hover:border-amber-400 hover:bg-amber-400
+        dark:border-amber-400 dark:bg-amber-400 dark:hover:border-amber-300 dark:hover:bg-amber-300;
+}
+
+/* Quiet outline for a secondary toolbar action (e.g. Unpublish). */
+.btn-muted-outline {
+    @apply border border-line-strong bg-transparent text-fg-muted hover:bg-zinc-500/10 hover:text-fg;
+}
+
 /* Classical primitives — shared by the migrated Build page blocks. */
 
 /* Button chassis: Cormorant label, 1px outline on transparent, 4px radius,

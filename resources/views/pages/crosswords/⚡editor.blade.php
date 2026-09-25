@@ -871,7 +871,11 @@ class extends Component {
     x-on:grid-resized.window="onGridResized()"
     x-on:settings-updated.window="onSettingsUpdated()"
     x-on:highlight-incomplete.window="highlightIncomplete($event.detail.checks)"
-    class="flex h-full flex-col"
+    {{-- Full height only from `lg`, where the layouts cap themselves to the
+         viewport and scroll internally. Below that the page scrolls, and a
+         stretched root would push the stacked clue list away from the grid
+         by whatever viewport height a small grid leaves over. --}}
+    class="flex flex-col lg:h-full"
 >
     {{-- Toolbar --}}
     <div class="mb-4 flex flex-wrap items-center gap-2">
@@ -960,6 +964,19 @@ class extends Component {
                 </flux:tooltip>
             </div>
 
+                        {{-- Clear dropdown --}}
+            <flux:dropdown position="bottom" align="end">
+                <flux:tooltip content="{{ __('Clear Options') }}">
+                    <flux:button variant="ghost" size="sm">
+                        {{ __('Clear') }}
+                    </flux:button>
+                </flux:tooltip>
+                <flux:menu>
+                    <flux:menu.item x-on:click="clearLetters()">{{ __('Clear letters') }}</flux:menu.item>
+                    <flux:menu.item x-on:click="clearAll()"
+                                    class="text-red-600 dark:text-red-400">{{ __('Reset to blank grid') }}</flux:menu.item>
+                </flux:menu>
+            </flux:dropdown>
 
             {{-- Fill Grid dropdown --}}
             <flux:dropdown position="bottom" align="end">
@@ -1009,20 +1026,6 @@ class extends Component {
                 </flux:menu>
             </flux:dropdown>
 
-            {{-- Clear dropdown --}}
-            <flux:dropdown position="bottom" align="end">
-                <flux:tooltip content="{{ __('Clear Options') }}">
-                    <flux:button variant="ghost" size="sm">
-                        {{ __('Clear Grid') }}
-                    </flux:button>
-                </flux:tooltip>
-                <flux:menu>
-                    <flux:menu.item x-on:click="clearLetters()">{{ __('Clear letters') }}</flux:menu.item>
-                    <flux:menu.item x-on:click="clearAll()"
-                                    class="text-red-600 dark:text-red-400">{{ __('Reset to blank grid') }}</flux:menu.item>
-                </flux:menu>
-            </flux:dropdown>
-
             {{-- Freestyle: lock the grid (void empty cells) or unlock to keep editing --}}
             @if ($puzzleType === PuzzleType::Freestyle)
                 @if ($freestyleLocked)
@@ -1044,45 +1047,68 @@ class extends Component {
             @endif
         </div>
 
-        {{-- Progress + Publish --}}
-        <div class="ml-auto flex shrink-0 items-center gap-3">
-            {{-- Fill progress indicators --}}
-            <div class="flex items-center gap-3">
-                <flux:tooltip content="{{ __('Cells with a letter / total playable cells') }}">
-                    <div class="flex flex-col items-center leading-tight">
-                        <span class="text-[10px] uppercase tracking-wide text-zinc-400">{{ __('Cells') }}</span>
-                        <span class="font-mono text-xs tabular-nums" :class="cellsFillColorClass" x-text="cellsFilled + '/' + cellsTotal"></span>
-                    </div>
-                </flux:tooltip>
-                <flux:tooltip content="{{ __('Clues with text / total clue slots') }}">
-                    <div class="flex flex-col items-center leading-tight">
-                        <span class="text-[10px] uppercase tracking-wide text-zinc-400">{{ __('Clues') }}</span>
-                        <span class="font-mono text-xs tabular-nums" :class="cluesFillColorClass" x-text="cluesFilled + '/' + cluesTotal"></span>
-                    </div>
-                </flux:tooltip>
+        {{-- Progress + Publish. The two rings share one pill so the
+             cluster reads as a single status readout beside the action it
+             gates. Each ring is an SVG circle with pathLength="100", so the
+             fill percentage is its dash offset directly. --}}
+        <div class="ml-auto flex shrink-0 items-center gap-2">
+            <div class="flex h-8 items-center divide-x divide-line rounded-lg border border-line bg-elevated text-xs" data-test="editor-progress">
+                @foreach ([
+                    'cells' => ['label' => __('Cells'), 'tooltip' => __('Cells with a letter / total playable cells')],
+                    'clues' => ['label' => __('Clues'), 'tooltip' => __('Clues with text / total clue slots')],
+                ] as $metric => $meter)
+                    <flux:tooltip content="{{ $meter['tooltip'] }}">
+                        <div class="flex h-full items-center gap-1.5 px-2.5" data-test="editor-progress-{{ $metric }}">
+                            <svg class="size-4 shrink-0 -rotate-90" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                                <circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="2.5" class="text-line"/>
+                                <circle
+                                    cx="8" cy="8" r="6.5"
+                                    stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                                    pathLength="100" stroke-dasharray="100"
+                                    class="transition-[stroke-dashoffset] duration-300"
+                                    :class="{{ $metric }}FillColorClass"
+                                    :stroke-dashoffset="100 - {{ $metric }}FillPercent"
+                                    x-show="{{ $metric }}FillPercent > 0"
+                                />
+                            </svg>
+                            <span class="text-fg-muted max-sm:sr-only">{{ $meter['label'] }}</span>
+                            <span class="font-mono tabular-nums text-fg" x-text="{{ $metric }}Filled + '/' + {{ $metric }}Total"></span>
+                        </div>
+                    </flux:tooltip>
+                @endforeach
             </div>
 
-            {{-- Publish toggle --}}
+            {{-- Publish toggle. Outline until every cell and clue is filled,
+                 then solid amber so the finished puzzle invites publishing.
+                 A published puzzle shows a quiet Unpublish instead. --}}
             @if(auth()->user()?->isAnonymous())
                 <flux:tooltip content="{{ __('Sign up to publish') }}">
                     <flux:button
                         variant="ghost"
                         size="sm"
-                        icon="eye-slash"
                         class="btn-amber-outline"
                         :href="route('register')"
                         wire:navigate.hover
                     >{{ __('Publish') }}</flux:button>
                 </flux:tooltip>
-            @else
-                <flux:tooltip content="{{ $isPublished ? __('Unpublish puzzle') : __('Publish for others to solve') }}">
+            @elseif($isPublished)
+                <flux:tooltip content="{{ __('Unpublish puzzle') }}">
                     <flux:button
                         variant="ghost"
                         size="sm"
-                        icon="{{ $isPublished ? 'eye' : 'eye-slash' }}"
-                        class="btn-amber-outline"
+                        class="btn-muted-outline"
                         wire:click="attemptPublish"
-                    >{{ $isPublished ? __('Unpublish') : __('Publish') }}</flux:button>
+                    >{{ __('Unpublish') }}</flux:button>
+                </flux:tooltip>
+            @else
+                <flux:tooltip content="{{ __('Publish for others to solve') }}">
+                    <flux:button
+                        variant="ghost"
+                        size="sm"
+                        x-bind:class="isReadyToPublish ? 'btn-amber-solid' : 'btn-amber-outline'"
+                        wire:click="attemptPublish"
+                        data-test="editor-publish-button"
+                    >{{ __('Publish') }}</flux:button>
                 </flux:tooltip>
             @endif
         </div>

@@ -1011,3 +1011,43 @@ test('settings tabs flag the tab whose fields failed validation', function () {
         ->not->toContain('data-test="settings-tab-error-details"')
         ->not->toContain('data-test="settings-tab-error-theme"');
 });
+
+test('the toolbar shows cell and clue progress as rings beside the publish button', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create();
+
+    $this->actingAs($user);
+
+    $html = Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->assertSeeInOrder(['Cells', 'Clues', 'Publish'])
+        ->html();
+
+    preg_match('/<div[^>]*data-test="editor-progress".*?data-test="editor-publish-button"/s', $html, $cluster);
+
+    expect($cluster)->not->toBeEmpty()
+        ->and($cluster[0])->toContain('data-test="editor-progress-cells"')
+        ->toContain('data-test="editor-progress-clues"')
+        ->toContain(':stroke-dashoffset="100 - cellsFillPercent"')
+        ->toContain(':stroke-dashoffset="100 - cluesFillPercent"')
+        ->toContain(':class="cellsFillColorClass"')
+        ->toContain(':class="cluesFillColorClass"')
+        ->toContain('x-bind:class="isReadyToPublish ? \'btn-amber-solid\' : \'btn-amber-outline\'"')
+        ->toContain('max-sm:sr-only');
+});
+
+test('the editor root only stretches to full height on desktop', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create(['width' => 5, 'height' => 5]);
+
+    $this->actingAs($user);
+
+    $html = Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])->html();
+
+    preg_match('/<div[^>]*x-data="crosswordGrid\(.*?class="([^"]*)"/s', $html, $root);
+
+    // Below `lg` the page scrolls and the grid sits directly above the clue
+    // list; a full-height root would spread them apart on small grids.
+    expect($root)->not->toBeEmpty()
+        ->and($root[1])->toContain('lg:h-full')
+        ->and(preg_split('/\s+/', $root[1]))->not->toContain('h-full');
+});
