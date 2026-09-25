@@ -2,9 +2,7 @@
 
 namespace App\Providers\Filament;
 
-use App\Filament\Pages\LogViewer;
 use App\Filament\Pages\PulseDashboard;
-use Boquizo\FilamentLogViewer\FilamentLogViewerPlugin;
 use Filament\Actions\Action;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -22,6 +20,8 @@ use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Microcode\FilamentIntegrations\IntegrationsPlugin;
+use Microcode\FilamentLogHub\FilamentLogHubPlugin;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -35,7 +35,19 @@ class AdminPanelProvider extends PanelProvider
             ->colors([
                 'primary' => Color::Amber,
             ])
-            ->plugin(FilamentLogViewerPlugin::make()->listLogs(LogViewer::class))
+            // Integrations only exists to feed Log Hub's messenger alerts; keep
+            // its pages out of the sidebar until alerts are actually wanted.
+            ->plugin(
+                IntegrationsPlugin::make()
+                    ->canAccessSettings(false)
+                    ->canAccessMonitoring(false)
+            )
+            // Database-backed log viewer, ungrouped and directly above Pulse.
+            ->plugin(
+                FilamentLogHubPlugin::make()
+                    ->authorize(fn (): bool => auth()->user()?->hasRole('Admin') ?? false)
+                    ->navigationSort(0)
+            )
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->renderHook(
