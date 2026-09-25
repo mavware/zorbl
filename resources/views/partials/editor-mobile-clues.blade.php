@@ -46,7 +46,7 @@ isClueIncomplete('across') && !clue.clue?.trim() ? 'ring-2 ring-amber-400 dark:r
                                             <flux:tooltip content="{{ __('Clue library') }}" x-show="activeClueNumber === clue.number && direction === 'across'">
                                                 <button
                                                     type="button"
-                                                    x-on:click.stop="toggleSuggestions()"
+                                                    x-on:click.stop="openSuggestionsSheet('clues')"
                                                     class="inline-flex items-center rounded px-1 py-0.5 text-amber-500 transition-colors hover:bg-amber-50 hover:text-amber-600 dark:text-amber-400 dark:hover:bg-amber-900/20 dark:hover:text-amber-300 cursor-pointer"
                                                 >
                                                     <svg xmlns="http://www.w3.org/2000/svg" class="size-3.5"
@@ -59,7 +59,7 @@ isClueIncomplete('across') && !clue.clue?.trim() ? 'ring-2 ring-amber-400 dark:r
                                             <flux:tooltip content="{{ __('Suggest words') }}" x-show="activeClueNumber === clue.number && direction === 'across'">
                                                 <button
                                                     type="button"
-                                                    x-on:click.stop="toggleWordSuggestions()"
+                                                    x-on:click.stop="openSuggestionsSheet('words')"
                                                     class="inline-flex items-center rounded px-1 py-0.5 text-blue-500 transition-colors hover:bg-blue-50 hover:text-blue-600 dark:text-blue-400 dark:hover:bg-blue-900/20 dark:hover:text-blue-300 cursor-pointer"
                                                 >
                                                     <svg xmlns="http://www.w3.org/2000/svg" class="size-3.5"
@@ -71,42 +71,6 @@ isClueIncomplete('across') && !clue.clue?.trim() ? 'ring-2 ring-amber-400 dark:r
                                         </div>
                                     </div>
                                 </div>
-
-                                {{-- Clue suggestions (mobile) --}}
-                                <template
-                                    x-if="activeClueNumber === clue.number && direction === 'across' && showSuggestions && clueSuggestions.length > 0 && !clueSuggestionsLoading">
-                                    <div class="mt-1 ml-5 border-l-2 border-amber-300 pl-2 dark:border-amber-600">
-                                        <span
-                                            class="text-xs font-medium text-amber-600 dark:text-amber-400">{{ __('Clue library') }}</span>
-                                        <template x-for="(suggestion, idx) in clueSuggestions.slice(0, 5)"
-                                                  :key="'msa-' + idx">
-                                            <div
-                                                x-on:click.stop="useClue(clue, suggestion.clue)"
-                                                class="cursor-pointer rounded px-1 py-0.5 text-xs text-zinc-700 hover:bg-amber-50 dark:text-zinc-400 dark:hover:bg-amber-900/20"
-                                            >
-                                                <span x-text="suggestion.clue"></span>
-                                            </div>
-                                        </template>
-                                    </div>
-                                </template>
-
-                                {{-- Word suggestions (mobile) --}}
-                                <template
-                                    x-if="activeClueNumber === clue.number && direction === 'across' && showWordSuggestions && wordSuggestions.length > 0 && !wordSuggestionsLoading">
-                                    <div class="mt-1 ml-5 border-l-2 border-blue-300 pl-2 dark:border-blue-600">
-                                        <span class="text-xs font-medium text-blue-600 dark:text-blue-400">{{ __('Word suggestions') }}</span>
-                                        <template x-for="(suggestion, idx) in wordSuggestions.slice(0, 10)"
-                                                  :key="'mwa-' + idx">
-                                            <div
-                                                x-on:click.stop="applyWordSuggestion(suggestion.word)"
-                                                class="cursor-pointer rounded px-1 py-0.5 text-xs text-zinc-700 hover:bg-blue-50 dark:text-zinc-400 dark:hover:bg-blue-900/20"
-                                            >
-                                                <span x-text="suggestion.word"></span>
-                                                <span class="text-fg-subtle" x-text="'(' + suggestion.score + ')'"></span>
-                                            </div>
-                                        </template>
-                                    </div>
-                                </template>
                             </div>
                         </template>
                     </div>
@@ -140,7 +104,7 @@ isClueIncomplete('down') && !clue.clue?.trim() ? 'ring-2 ring-amber-400 dark:rin
                                             <flux:tooltip content="{{ __('Clue library') }}" x-show="activeClueNumber === clue.number && direction === 'down'">
                                                 <button
                                                     type="button"
-                                                    x-on:click.stop="toggleSuggestions()"
+                                                    x-on:click.stop="openSuggestionsSheet('clues')"
                                                     class="inline-flex items-center rounded px-1 py-0.5 text-amber-500 transition-colors hover:bg-amber-50 hover:text-amber-600 dark:text-amber-400 dark:hover:bg-amber-900/20 dark:hover:text-amber-300 cursor-pointer"
                                                 >
                                                     <svg xmlns="http://www.w3.org/2000/svg" class="size-3.5"
@@ -153,7 +117,7 @@ isClueIncomplete('down') && !clue.clue?.trim() ? 'ring-2 ring-amber-400 dark:rin
                                             <flux:tooltip content="{{ __('Suggest words') }}" x-show="activeClueNumber === clue.number && direction === 'down'">
                                                 <button
                                                     type="button"
-                                                    x-on:click.stop="toggleWordSuggestions()"
+                                                    x-on:click.stop="openSuggestionsSheet('words')"
                                                     class="inline-flex items-center rounded px-1 py-0.5 text-blue-500 transition-colors hover:bg-blue-50 hover:text-blue-600 dark:text-blue-400 dark:hover:bg-blue-900/20 dark:hover:text-blue-300 cursor-pointer"
                                                 >
                                                     <svg xmlns="http://www.w3.org/2000/svg" class="size-3.5"
@@ -165,42 +129,6 @@ isClueIncomplete('down') && !clue.clue?.trim() ? 'ring-2 ring-amber-400 dark:rin
                                         </div>
                                     </div>
                                 </div>
-
-                                {{-- Clue suggestions (mobile) --}}
-                                <template
-                                    x-if="activeClueNumber === clue.number && direction === 'down' && showSuggestions && clueSuggestions.length > 0 && !clueSuggestionsLoading">
-                                    <div class="mt-1 ml-5 border-l-2 border-amber-300 pl-2 dark:border-amber-600">
-                                        <span
-                                            class="text-xs font-medium text-amber-600 dark:text-amber-400">{{ __('Clue library') }}</span>
-                                        <template x-for="(suggestion, idx) in clueSuggestions.slice(0, 5)"
-                                                  :key="'msd-' + idx">
-                                            <div
-                                                x-on:click.stop="useClue(clue, suggestion.clue)"
-                                                class="cursor-pointer rounded px-1 py-0.5 text-xs text-zinc-700 hover:bg-amber-50 dark:text-zinc-400 dark:hover:bg-amber-900/20"
-                                            >
-                                                <span x-text="suggestion.clue"></span>
-                                            </div>
-                                        </template>
-                                    </div>
-                                </template>
-
-                                {{-- Word suggestions (mobile) --}}
-                                <template
-                                    x-if="activeClueNumber === clue.number && direction === 'down' && showWordSuggestions && wordSuggestions.length > 0 && !wordSuggestionsLoading">
-                                    <div class="mt-1 ml-5 border-l-2 border-blue-300 pl-2 dark:border-blue-600">
-                                        <span class="text-xs font-medium text-blue-600 dark:text-blue-400">{{ __('Word suggestions') }}</span>
-                                        <template x-for="(suggestion, idx) in wordSuggestions.slice(0, 10)"
-                                                  :key="'mwd-' + idx">
-                                            <div
-                                                x-on:click.stop="applyWordSuggestion(suggestion.word)"
-                                                class="cursor-pointer rounded px-1 py-0.5 text-xs text-zinc-700 hover:bg-blue-50 dark:text-zinc-400 dark:hover:bg-blue-900/20"
-                                            >
-                                                <span x-text="suggestion.word"></span>
-                                                <span class="text-fg-subtle" x-text="'(' + suggestion.score + ')'"></span>
-                                            </div>
-                                        </template>
-                                    </div>
-                                </template>
                             </div>
                         </template>
                     </div>

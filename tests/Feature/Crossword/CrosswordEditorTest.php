@@ -834,8 +834,13 @@ test('every desktop layout renders the suggestions pane exactly once', function 
     $html = Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])->html();
 
     expect(substr_count($html, 'data-suggestions-pane'))->toBe(1);
+    expect($html)->toContain('handleSuggestionsKeydown($event)');
+
+    // The tabs and list are shared with the mobile sheet, so they render
+    // twice: once in the pane, once in the sheet.
+    expect(substr_count($html, 'x-ref="suggestionsSheet"'))->toBe(1);
+    expect(substr_count($html, 'role="tab"'))->toBe(4);
     expect($html)
-        ->toContain('handleSuggestionsKeydown($event)')
         ->toContain("setSuggestionsTab('words')")
         ->toContain("setSuggestionsTab('clues')");
 })->with(array_combine(
@@ -843,7 +848,7 @@ test('every desktop layout renders the suggestions pane exactly once', function 
     array_map(fn (CrosswordLayout $case) => [$case], CrosswordLayout::cases()),
 ));
 
-test('desktop clue rows no longer carry suggestion buttons or popovers', function () {
+test('clue rows open the mobile sheet instead of inline popovers', function () {
     $user = User::factory()->create();
     $crossword = Crossword::factory()->for($user)->create([
         'width' => 15,
@@ -854,13 +859,52 @@ test('desktop clue rows no longer carry suggestion buttons or popovers', functio
 
     $html = Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])->html();
 
-    // Only the mobile clue list (one Across row template, one Down) still
-    // toggles the inline popovers; the desktop clue rows defer to the pane.
-    expect(substr_count($html, 'toggleWordSuggestions()'))->toBe(2);
-    expect(substr_count($html, 'toggleSuggestions()'))->toBe(2);
-    expect($html)->not->toContain('showWordSuggestions && (wordSuggestions.length > 0');
+    // Only the mobile clue list (one Across row template, one Down) carries
+    // the shortcut buttons, and they open the sheet on the matching tab.
+    // The desktop clue rows defer to the pane. No inline popovers remain.
+    expect(substr_count($html, "openSuggestionsSheet('words')"))->toBe(2);
+    expect(substr_count($html, "openSuggestionsSheet('clues')"))->toBe(2);
+    expect($html)
+        ->not->toContain('toggleWordSuggestions()')
+        ->not->toContain('showWordSuggestions')
+        ->not->toContain('showSuggestions &&');
 
     // Bindings inside the pane's x-if can re-run once after the selection
     // clears, so every dereference of the nullable slot must be null-safe.
     expect($html)->not->toMatch('/suggestionsSlot\.[a-z]/');
+});
+
+test('the mobile suggestions sheet renders once with a peek strip that toggles it', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create();
+
+    $this->actingAs($user);
+
+    $html = Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])->html();
+
+    preg_match('/<div[^>]*x-ref="suggestionsSheet"[^>]*>/', $html, $sheet);
+
+    expect($sheet)->not->toBeEmpty()
+        ->and($sheet[0])->toContain('data-suggestions-sheet')
+        ->and($sheet[0])->toContain('lg:hidden')
+        ->and($sheet[0])->toContain('fixed')
+        ->and($sheet[0])->toContain('x-show="suggestionsSlot"')
+        ->and(substr_count($html, 'data-test="suggestions-sheet-toggle"'))->toBe(1)
+        ->and($html)->toContain('toggleSuggestionsSheet()');
+
+    // Bindings inside the sheet must be null-safe once the selection clears.
+    expect($html)->not->toMatch('/suggestionsSlot\.[a-z]/');
+});
+
+test('the mobile suggestions sheet is not rendered while a freestyle grid is unlocked', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->freestyle()->create();
+
+    $this->actingAs($user);
+
+    $html = Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->assertSet('freestyleLocked', false)
+        ->html();
+
+    expect($html)->not->toContain('x-ref="suggestionsSheet"');
 });

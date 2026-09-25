@@ -1065,6 +1065,9 @@ class extends Component {
          the current grid width. --}}
     @include(($this->layout ?? CrosswordLayout::auto($this->width))->partial())
 
+    {{-- Mobile suggestions bottom sheet (hidden at lg and above). --}}
+    @include('partials.editor-suggestions-sheet')
+
     {{-- Publish Warning Modal --}}
     <flux:modal wire:model="showPublishWarning">
         <div class="space-y-6">

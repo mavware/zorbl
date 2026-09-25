@@ -58,16 +58,15 @@ export function crosswordGrid({
         clueSuggestions: [],
         clueSuggestionsLoading: false,
         clueSuggestionsWord: '',
-        showSuggestions: false,
-        showWordSuggestions: false,
         wordSuggestions: [],
         wordSuggestionsLoading: false,
         wordSuggestionsPattern: '',
-        // Persistent suggestions pane (desktop). It always tracks the selected
-        // slot; `showSuggestions` / `showWordSuggestions` only drive the mobile
-        // clue list's inline popovers.
+        // Suggestions always track the selected slot. Desktop renders them in
+        // a persistent pane beside the grid; below `lg` a bottom sheet with a
+        // peek strip takes over. Both share the lists, tab and lookups below.
         suggestionsPaneMounted: false,
         suggestionsPaneCollapsed: false,
+        suggestionsSheetOpen: false,
         suggestionsTab: 'words',
         suggestionsIndex: -1,
         previewLetters: {},
@@ -1293,18 +1292,8 @@ export function crosswordGrid({
             return word.toUpperCase();
         },
 
-        toggleSuggestions() {
-            if (this.showSuggestions) {
-                this.closeSuggestions();
-            } else {
-                this.showSuggestions = true;
-                this.fetchClueSuggestions({ force: true });
-            }
-        },
-
         closeSuggestions() {
             this._clueSuggestSeq++; // drop any in-flight lookup
-            this.showSuggestions = false;
             this.clueSuggestions = [];
             this.clueSuggestionsWord = '';
             this.clueSuggestionsLoading = false;
@@ -1342,8 +1331,8 @@ export function crosswordGrid({
         useClue(clue, text) {
             clue.clue = text;
             this.markDirty();
-            // The mobile popover closes on use; the desktop pane keeps its list.
-            if (this.showSuggestions) this.closeSuggestions();
+            // The mobile sheet collapses on use; the desktop pane keeps its list.
+            if (this.suggestionsSheetOpen) this.closeSuggestionsSheet();
         },
 
         // --- Word suggestions (autofill) -------------------------------------
@@ -1361,39 +1350,26 @@ export function crosswordGrid({
             return pattern;
         },
 
-        toggleWordSuggestions() {
-            if (this.showWordSuggestions) {
-                this.closeWordSuggestions();
-            } else {
-                this.showWordSuggestions = true;
-                this.closeSuggestions();
-                this.fetchWordSuggestions({ force: true });
-            }
-            this.$refs.gridContainer?.focus();
-        },
-
         closeWordSuggestions() {
             this._wordSuggestSeq++; // drop any in-flight lookup
-            this.showWordSuggestions = false;
             this.wordSuggestions = [];
             this.wordSuggestionsPattern = '';
             this.wordSuggestionsLoading = false;
         },
 
         // Letter edits funnel through here so a burst of keystrokes costs one
-        // request. Serves the mobile popover and the desktop pane alike.
+        // request. Serves the mobile sheet and the desktop pane alike.
         debouncedRefreshWordSuggestions() {
-            if (!this.showWordSuggestions && !this.isSuggestionsPaneActive()) return;
+            if (!this.isSuggestionsSurfaceActive()) return;
             clearTimeout(this._wordSuggestTimer);
             this._wordSuggestTimer = setTimeout(() => this._runSuggestionLookups(), WORD_SUGGEST_DEBOUNCE_MS);
         },
 
         _runSuggestionLookups() {
-            const paneActive = this.isSuggestionsPaneActive();
-            if (this.showWordSuggestions || (paneActive && this.suggestionsTab === 'words')) {
+            if (!this.isSuggestionsSurfaceActive()) return;
+            if (this.suggestionsTab === 'words') {
                 this.fetchWordSuggestions();
-            }
-            if (paneActive && this.suggestionsTab === 'clues') {
+            } else {
                 this.fetchClueSuggestions();
             }
         },
@@ -1444,6 +1420,9 @@ export function crosswordGrid({
             this.suggestionsIndex = -1;
             this.closeWordSuggestions();
             this.markDirty();
+            // The mobile sheet collapses once a word is placed; the desktop
+            // pane refetches for the (now filled) slot.
+            if (this.suggestionsSheetOpen) this.closeSuggestionsSheet();
             this.refreshSuggestionsPane();
         },
 
@@ -1463,11 +1442,50 @@ export function crosswordGrid({
         },
 
         // True when the pane is rendered, expanded and actually visible (the
-        // layout hides it below `lg`, where the mobile popovers take over).
+        // layout hides it below `lg`, where the mobile sheet takes over).
         isSuggestionsPaneActive() {
             if (!this.suggestionsPaneMounted || this.suggestionsPaneCollapsed) return false;
             const el = this.$refs?.suggestionsPane;
             return !el || el.offsetParent !== null;
+        },
+
+        // --- Suggestions sheet (mobile) --------------------------------------
+        // A fixed bottom sheet, hidden at `lg` and above. Its peek strip only
+        // names the slot; opening it runs the same lookups as the pane. The
+        // sheet is position: fixed, so offsetParent is always null and
+        // visibility is read from its client rects instead.
+        isSuggestionsSheetActive() {
+            if (!this.suggestionsSheetOpen) return false;
+            const el = this.$refs?.suggestionsSheet;
+            if (!el || typeof el.getClientRects !== 'function') return true;
+            return el.getClientRects().length > 0;
+        },
+
+        // Either surface is showing suggestions, so lookups should run.
+        isSuggestionsSurfaceActive() {
+            return this.isSuggestionsPaneActive() || this.isSuggestionsSheetActive();
+        },
+
+        openSuggestionsSheet(tab = null) {
+            if (tab) this.suggestionsTab = tab;
+            this.suggestionsSheetOpen = true;
+            this.suggestionsIndex = -1;
+            this.clearSuggestionPreview();
+            this.refreshSuggestionsPane();
+        },
+
+        closeSuggestionsSheet() {
+            this.suggestionsSheetOpen = false;
+            this.suggestionsIndex = -1;
+            this.clearSuggestionPreview();
+        },
+
+        toggleSuggestionsSheet() {
+            if (this.suggestionsSheetOpen) {
+                this.closeSuggestionsSheet();
+            } else {
+                this.openSuggestionsSheet();
+            }
         },
 
         toggleSuggestionsPane() {
@@ -1487,7 +1505,7 @@ export function crosswordGrid({
         // Selection changes refetch right away (one request per slot); letter
         // edits go through debouncedRefreshWordSuggestions().
         refreshSuggestionsPane() {
-            if (!this.isSuggestionsPaneActive()) return;
+            if (!this.isSuggestionsSurfaceActive()) return;
             clearTimeout(this._wordSuggestTimer);
             this._runSuggestionLookups();
         },
