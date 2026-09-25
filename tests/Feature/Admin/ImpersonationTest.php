@@ -107,11 +107,15 @@ test('starting impersonation lands on the app home where the banner is visible',
         ->assertSee('Leave impersonation');
 });
 
-test('the marketing home page shows the impersonation banner too', function () {
+test('the home route sends an impersonated user to the dashboard, which shows the banner', function () {
     $target = User::factory()->create(['name' => 'Target Person']);
 
     $this->withSession([ImpersonationController::SESSION_KEY => $this->admin->id])
         ->actingAs($target)
+        ->get('/')
+        ->assertRedirect(route('crosswords.index'));
+
+    $this->followingRedirects()
         ->get('/')
         ->assertOk()
         ->assertSee('Impersonating')

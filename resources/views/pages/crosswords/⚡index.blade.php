@@ -486,37 +486,8 @@ new #[Title('Build')] class extends Component {
                 @endif
             </div>
         @else
-            {{-- Results collapse to their first row until expanded. Alpine reads the
-                 grid's resolved column count so the row is exact at any width, and
-                 re-applies after Livewire re-renders the cards. --}}
-            <div
-                x-data="{
-                    expanded: false,
-                    columns: 0,
-                    total: 0,
-                    get hasMore() { return this.total > this.columns },
-                    get shown() { return this.expanded ? this.total : Math.min(this.columns, this.total) },
-                    measure() {
-                        this.columns = getComputedStyle(this.$refs.grid).gridTemplateColumns.split(' ').length;
-                        this.apply();
-                    },
-                    apply() {
-                        const cards = Array.from(this.$refs.grid.children);
-                        this.total = cards.length;
-                        cards.forEach((card, index) => {
-                            const hide = ! this.expanded && index >= this.columns;
-                            if (card.hidden !== hide) { card.hidden = hide; }
-                        });
-                    },
-                }"
-                x-init="
-                    measure();
-                    new ResizeObserver(() => measure()).observe($refs.grid);
-                    new MutationObserver(() => apply()).observe($refs.grid, { childList: true, attributes: true, attributeFilter: ['hidden'] });
-                "
-                x-effect="expanded; apply()"
-                data-test="puzzle-results"
-            >
+            {{-- Results collapse to their first row until expanded (see collapsible-grid.js). --}}
+            <div x-data="collapsibleGrid" data-test="puzzle-results">
                 {{-- Below `sm` the grid holds three compact cards per row rather
                      than one full card, so the collapsed first row still shows
                      three puzzles on a phone. --}}

@@ -227,3 +227,26 @@ test('the constructor card stat dividers meet the top border and the card border
     expect($cells[1])->toHaveCount(3)
         ->each(fn ($cell) => $cell->toContain('pt-3.5')->toContain('pb-[18px]'));
 });
+
+test('the constructors header shows the community stats band', function () {
+    Crossword::factory()->count(4)->published()->create();
+    PuzzleAttempt::factory()->count(2)->completed()->create();
+
+    $this->actingAs(User::factory()->create());
+
+    Livewire::test('pages::constructors.index')
+        ->assertSeeInOrder(['data-page-header-footer', 'data-test="community-stat"', 'Constructors', 'Published Puzzles', 'Total Solves', 'Total Likes'], false);
+
+    Livewire::test('community-stats')
+        ->assertSet('constructorCount', 4)
+        ->assertSet('totalPublishedPuzzles', 4)
+        ->assertSet('totalSolves', 2)
+        ->assertSet('totalLikes', 0);
+});
+
+test('the solve page no longer carries the community stats block', function () {
+    $this->actingAs(User::factory()->create());
+
+    Livewire::test('pages::crosswords.solving')
+        ->assertDontSee('Published Puzzles');
+});

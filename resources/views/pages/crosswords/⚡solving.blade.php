@@ -6,7 +6,6 @@ use App\Models\CrosswordLike;
 use App\Models\DailyPuzzle;
 use App\Models\PuzzleAttempt;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
@@ -232,36 +231,6 @@ new #[Title('Solving')] class extends Component {
         return $lastSolveDate->isToday() || $lastSolveDate->isYesterday();
     }
 
-    #[Computed]
-    public function solvedCount(): int
-    {
-        return Auth::user()->puzzleAttempts()->where('is_completed', true)->count();
-    }
-
-    #[Computed]
-    public function likedCount(): int
-    {
-        return Auth::user()->crosswordLikes()->count();
-    }
-
-    #[Computed]
-    public function totalPublishedPuzzles(): int
-    {
-        return Cache::remember('stats:published_puzzles', 300, fn () => Crossword::where('is_published', true)->count());
-    }
-
-    #[Computed]
-    public function totalSolves(): int
-    {
-        return Cache::remember('stats:total_solves', 300, fn () => PuzzleAttempt::where('is_completed', true)->count());
-    }
-
-    #[Computed]
-    public function totalLikes(): int
-    {
-        return Cache::remember('stats:total_likes', 300, fn () => CrosswordLike::count());
-    }
-
     public function surpriseMe(): void
     {
         $query = Crossword::where('is_published', true)
@@ -296,6 +265,11 @@ new #[Title('Solving')] class extends Component {
                 <x-header-button variant="secondary" icon="chart-bar" :href="route('crosswords.stats')" wire:navigate data-test="solving-stats-button">
                     {{ __('Stats') }}
                 </x-header-button>
+
+                <x-slot:footer>
+                    {{-- Headline solve stats — flush under the header rule, like the builder stats on the Build page --}}
+                    <livewire:solver-stats key="solver-stats" />
+                </x-slot:footer>
             @endunless
         </x-page-header>
 
@@ -353,7 +327,10 @@ new #[Title('Solving')] class extends Component {
                 @endif
             </div>
         @else
-            <div class="grid gap-[22px] [grid-template-columns:repeat(auto-fill,minmax(268px,1fr))]">
+            {{-- Attempts collapse to their first row until expanded, like the
+                 Build page results (see collapsible-grid.js). --}}
+            <div x-data="collapsibleGrid" data-test="attempt-results">
+            <div x-ref="grid" class="grid gap-[22px] [grid-template-columns:repeat(auto-fill,minmax(268px,1fr))]" data-test="attempt-results-grid">
                 @foreach($this->attempts as $attempt)
                     <article
                         wire:key="attempt-{{ $attempt->id }}"
@@ -437,6 +414,19 @@ new #[Title('Solving')] class extends Component {
                         </div>
                     </article>
                 @endforeach
+            </div>
+
+                <div x-show="hasMore" x-cloak class="mt-5 flex flex-wrap items-center justify-between gap-3">
+                    <span class="meta-classical tnum" x-text="expanded ? '{{ __('Showing all :total puzzles') }}'.replace(':total', total) : '{{ __('Showing :shown of :total puzzles') }}'.replace(':shown', shown).replace(':total', total)"></span>
+                    <button
+                        type="button"
+                        class="btn-classical btn-classical-compact btn-classical-muted"
+                        @click="expanded = ! expanded"
+                        :aria-expanded="expanded"
+                        x-text="expanded ? '{{ __('Show fewer') }}' : '{{ __('Show all puzzles') }}'"
+                        data-test="toggle-all-attempts-button"
+                    ></button>
+                </div>
             </div>
         @endif
     </div>
@@ -693,109 +683,5 @@ new #[Title('Solving')] class extends Component {
         <div class="border-hairline -mx-6 border-t lg:-mx-8" aria-hidden="true" data-test="discover-puzzles-rule"></div>
         <h2 class="font-classical text-ink pt-4 text-[22px] leading-tight font-medium">{{ __('Discover Puzzles') }}</h2>
         <livewire:puzzle-discovery :exclude-attempted="true" />
-    </div>
-
-    {{-- Solving Streak --}}
-    @if($this->currentStreak > 0 || $this->longestStreak > 0)
-        <div @class([
-            'rounded-sm border p-4.5 transition-colors',
-            'border-amber-400/60' => $this->streakIsActive,
-            'border-border' => ! $this->streakIsActive,
-        ]) data-test="dashboard-streak-card">
-            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div class="flex items-center gap-4">
-                    <div @class([
-                        'flex size-12 shrink-0 items-center justify-center rounded-sm border',
-                        'border-amber-400 text-amber-400' => $this->streakIsActive,
-                        'border-border-strong text-ink-faint' => ! $this->streakIsActive,
-                    ])>
-                        <flux:icon name="fire" class="size-6" />
-                    </div>
-                    <div>
-                        <div class="flex flex-wrap items-center gap-2">
-                            <h2 class="font-classical text-ink text-[22px] leading-tight font-medium">{{ __('Solving Streak') }}</h2>
-                            @if($this->streakIsActive)
-                                <span class="chip-classical border-amber-400 text-amber-400">{{ __('Active') }}</span>
-                            @else
-                                <span class="chip-classical border-ink-faint text-ink-faint">{{ __('Inactive') }}</span>
-                            @endif
-                        </div>
-                        <p class="text-ink-muted mt-1 text-sm">
-                            @if($this->streakIsActive)
-                                {{ trans_choice(':count day in a row!|:count days in a row!', $this->currentStreak) }}
-                            @else
-                                {{ __('Solve a puzzle today to start a new streak.') }}
-                            @endif
-                        </p>
-                    </div>
-                </div>
-                <div class="flex items-center gap-6">
-                    <div class="text-center">
-                        <div @class([
-                            'font-classical tnum text-[32px] leading-none font-medium',
-                            'text-amber-400' => $this->streakIsActive,
-                            'text-ink' => ! $this->streakIsActive,
-                        ])>{{ $this->currentStreak }}</div>
-                        <div class="meta-classical mt-2">{{ __('Current') }}</div>
-                    </div>
-                    <div class="text-center">
-                        <div class="font-classical text-ink tnum text-[32px] leading-none font-medium">{{ $this->longestStreak }}</div>
-                        <div class="meta-classical mt-2">{{ __('Best') }}</div>
-                    </div>
-                    @if(! $this->streakIsActive)
-                        <a href="{{ route('puzzles.index') }}" wire:navigate.hover class="btn-classical btn-amber-outline">
-                            <flux:icon name="play" class="size-4" />
-                            {{ __('Solve Now') }}
-                        </a>
-                    @endif
-                </div>
-            </div>
-        </div>
-    @endif
-
-    {{-- Stats Cards --}}
-    <div class="border-border grid rounded-sm border sm:grid-cols-2">
-        {{-- Puzzles Solved --}}
-        <div class="border-hairline flex items-center gap-4 border-b p-4.5 sm:border-e sm:border-b-0">
-            <div class="border-border-strong text-ink-faint flex size-10 shrink-0 items-center justify-center rounded-sm border">
-                <flux:icon name="check-circle" class="size-5" />
-            </div>
-            <div>
-                <div class="meta-classical">{{ __('Solved') }}</div>
-                <div class="font-classical text-ink tnum text-[30px] leading-none font-medium">{{ $this->solvedCount }}</div>
-            </div>
-        </div>
-
-        {{-- Likes Given --}}
-        <div class="flex items-center gap-4 p-4.5">
-            <div class="border-border-strong text-ink-faint flex size-10 shrink-0 items-center justify-center rounded-sm border">
-                <flux:icon name="heart" class="size-5" />
-            </div>
-            <div>
-                <div class="meta-classical">{{ __('Liked') }}</div>
-                <div class="font-classical text-ink tnum text-[30px] leading-none font-medium">{{ $this->likedCount }}</div>
-            </div>
-        </div>
-    </div>
-
-    {{-- Community Stats --}}
-    <div class="border-border rounded-sm border p-4.5">
-        <div class="border-hairline mb-5 border-b pb-3.5">
-            <h2 class="font-classical text-ink text-[22px] leading-tight font-medium">{{ __('Community') }}</h2>
-        </div>
-        <div class="divide-hairline grid divide-y sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-            <div class="py-3 text-center sm:py-1">
-                <div class="font-classical text-ink tnum text-[32px] leading-none font-medium">{{ $this->totalPublishedPuzzles }}</div>
-                <div class="meta-classical mt-2">{{ __('Published Puzzles') }}</div>
-            </div>
-            <div class="py-3 text-center sm:py-1">
-                <div class="font-classical text-ink tnum text-[32px] leading-none font-medium">{{ $this->totalSolves }}</div>
-                <div class="meta-classical mt-2">{{ __('Total Solves') }}</div>
-            </div>
-            <div class="py-3 text-center sm:py-1">
-                <div class="font-classical text-ink tnum text-[32px] leading-none font-medium">{{ $this->totalLikes }}</div>
-                <div class="meta-classical mt-2">{{ __('Total Likes') }}</div>
-            </div>
-        </div>
     </div>
 </div>

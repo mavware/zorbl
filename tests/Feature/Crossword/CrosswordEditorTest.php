@@ -45,6 +45,23 @@ test('the editor clue lists do not show the slot length under each clue input', 
         ->assertDontSee("'(' + clue.length + ')'", false);
 });
 
+test('the editor clue lists use auto-growing textareas so long clues wrap instead of truncating', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create();
+
+    $this->actingAs($user);
+
+    $html = $this->get(route('crosswords.editor', $crossword))
+        ->assertOk()
+        ->getContent();
+
+    expect($html)
+        ->toMatch('/<textarea[^>]*x-model="clue\.clue"/')
+        ->toContain('field-sizing-content')
+        ->toContain('fitClueTextarea($el)')
+        ->not->toMatch('/<input[^>]*x-model="clue\.clue"/');
+});
+
 test('the editor toolbar shows an unpublish label once the puzzle is live', function () {
     $user = User::factory()->create();
     $crossword = Crossword::factory()->for($user)->create(['is_published' => true]);

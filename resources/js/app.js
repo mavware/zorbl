@@ -1,9 +1,11 @@
+import { collapsibleGrid } from './collapsible-grid.js';
 import { crosswordGrid } from './crossword-grid.js';
 import { crosswordSolver } from './crossword-solver.js';
 import { passkeyConfirm, passkeyLogin, passkeyManager } from './passkeys.js';
 import './pwa.js';
 
 document.addEventListener('alpine:init', () => {
+    Alpine.data('collapsibleGrid', collapsibleGrid);
     Alpine.data('crosswordGrid', crosswordGrid);
     Alpine.data('crosswordSolver', crosswordSolver);
     Alpine.data('passkeyLogin', passkeyLogin);

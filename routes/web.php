@@ -8,7 +8,17 @@ use App\Http\Controllers\SitemapController;
 use App\Models\Crossword;
 use Illuminate\Support\Facades\Route;
 
-Route::view('/', 'welcome')->name('home');
+// Signed-in users skip the marketing page and land on their dashboard (the
+// Build page, which is also where the `dashboard` route and post-login
+// redirects send them). Guests see the welcome page.
+Route::get('/', function () {
+    return auth()->check()
+        ? redirect()->route('crosswords.index')
+        : view('welcome');
+})->name('home');
+
+// Signed-in users who want the marketing page can still reach it here.
+Route::view('welcome', 'welcome')->name('welcome');
 
 Route::get('sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 Route::get('sitemaps/{section}.xml', [SitemapController::class, 'section'])

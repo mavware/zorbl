@@ -35,15 +35,30 @@ test('welcome page promotes the word catalog and clue library', function () {
         ->assertSee(route('clues.index'), false);
 });
 
-test('welcome page swaps CTAs for authenticated users', function () {
+test('the home route sends signed-in users to their dashboard', function () {
     $user = User::factory()->create();
 
-    $response = $this->actingAs($user)->get('/');
+    $this->actingAs($user)
+        ->get('/')
+        ->assertRedirect(route('crosswords.index'));
+});
 
-    $response->assertOk()
+test('the home route shows the welcome page to guests', function () {
+    $this->get('/')
+        ->assertOk()
+        ->assertSee('Create your free account', false);
+});
+
+test('signed-in users can still open the welcome page at /welcome', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->get('/welcome')
+        ->assertOk()
         ->assertSee('Go to dashboard', false)
-        ->assertDontSee('Create your free account', false)
-        ->assertDontSee('>Sign up<', false);
+        ->assertDontSee('Create your free account', false);
+
+    $this->get(route('welcome'))->assertOk();
 });
 
 test('trust strip is hidden when stats are below the credibility floor', function () {
@@ -86,25 +101,6 @@ test('welcome page shows the puzzle of the day card', function () {
         ->assertSee('Puzzle of the Day', false)
         ->assertSee('Daily Delight', false)
         ->assertSee('Ada Lovelace', false);
-});
-
-test('welcome page shows the daily puzzle card for signed-in users', function () {
-    $constructor = User::factory()->create();
-    $crossword = Crossword::factory()->published()->for($constructor)->create([
-        'title' => 'Daily Delight',
-    ]);
-
-    DailyPuzzle::create([
-        'date' => today(),
-        'crossword_id' => $crossword->id,
-    ]);
-
-    $user = User::factory()->create();
-
-    $response = $this->actingAs($user)->get('/');
-
-    $response->assertOk()
-        ->assertSee('Daily Delight', false);
 });
 
 test('low solve counts are suppressed even when other stats appear', function () {

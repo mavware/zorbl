@@ -174,6 +174,7 @@ test('results grid renders the collapse toggle with the puzzle count', function 
     $this->actingAs($user);
 
     Livewire::test('pages::crosswords.index')
+        ->assertSee('x-data="collapsibleGrid"', false)
         ->assertSee('data-test="toggle-all-puzzles-button"', false)
         ->assertSee('Show all puzzles')
         ->assertSee('Show fewer');

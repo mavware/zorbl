@@ -180,3 +180,21 @@ export function isTypeableCharacter(char) {
 export function normalizeTypedValue(value) {
     return value.toUpperCase().replaceAll('#', HASH_SUBSTITUTE);
 }
+
+// --- Clue textareas ---
+
+// True when the browser sizes textareas to their content natively via the
+// `field-sizing: content` CSS property, so no JavaScript fallback is needed.
+export function supportsFieldSizing(cssApi = globalThis.CSS) {
+    return typeof cssApi?.supports === 'function' && cssApi.supports('field-sizing', 'content');
+}
+
+// Grow (or shrink) a textarea so every line of its value is visible at once.
+// A no-op when the browser handles this natively, or when the element is not
+// laid out yet (a hidden panel reports a scrollHeight of 0).
+export function fitTextareaToContent(el, cssApi = globalThis.CSS) {
+    if (!el || supportsFieldSizing(cssApi)) return;
+    el.style.height = 'auto';
+    if (!el.scrollHeight) return;
+    el.style.height = `${el.scrollHeight}px`;
+}

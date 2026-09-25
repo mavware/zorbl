@@ -25,6 +25,7 @@
                                 x-on:focusin="selectClue('across', clue.number, $event)"
                                 x-on:keydown.tab.prevent="focusNextClue($el, 'across', false)"
                                 x-on:keydown.shift.tab.prevent="focusNextClue($el, 'across', true)"
+                                x-on:keydown.enter.prevent="focusNextClue($el, 'across', $event.shiftKey)"
                                 :class="[
 activeClueNumber === clue.number && direction === 'across' ? 'bg-blue-100 dark:bg-blue-900/40' : '',
 isClueIncomplete('across') && !clue.clue?.trim() ? 'ring-2 ring-amber-400 dark:ring-amber-500' : ''
@@ -34,13 +35,17 @@ isClueIncomplete('across') && !clue.clue?.trim() ? 'ring-2 ring-amber-400 dark:r
                                 <div class="flex items-start gap-1.5">
                                     <span class="mt-px text-xs font-bold text-zinc-600" x-text="clue.displayNumber"></span>
                                     <div class="flex-1">
-                                        <input
-                                            type="text"
+                                        <textarea
+                                            rows="1"
                                             x-model="clue.clue"
+                                            x-init="fitClueTextarea($el)"
+                                            x-effect="clue.clue; fitClueTextarea($el)"
+                                            x-on:input="fitClueTextarea($el)"
+                                            x-on:focus="fitClueTextarea($el)"
                                             x-on:blur="markDirty()"
                                             placeholder="{{ __('Enter clue...') }}"
-                                            class="w-full border-0 bg-transparent p-0 text-sm text-zinc-800 placeholder-zinc-400 focus:ring-0 dark:text-zinc-300 dark:placeholder-zinc-500"
-                                        />
+                                            class="field-sizing-content block w-full resize-none overflow-hidden border-0 bg-transparent p-0 text-sm leading-snug text-zinc-800 placeholder-zinc-400 focus:ring-0 dark:text-zinc-300 dark:placeholder-zinc-500"
+                                        ></textarea>
                                         <div class="flex items-center gap-1">
                                             @include('partials.clue-quality-icon', ['dir' => 'across'])
                                             <flux:tooltip content="{{ __('Clue library') }}" x-show="activeClueNumber === clue.number && direction === 'across'">
@@ -83,6 +88,7 @@ isClueIncomplete('across') && !clue.clue?.trim() ? 'ring-2 ring-amber-400 dark:r
                                 x-on:focusin="selectClue('down', clue.number, $event)"
                                 x-on:keydown.tab.prevent="focusNextClue($el, 'down', false)"
                                 x-on:keydown.shift.tab.prevent="focusNextClue($el, 'down', true)"
+                                x-on:keydown.enter.prevent="focusNextClue($el, 'down', $event.shiftKey)"
                                 :class="[
 activeClueNumber === clue.number && direction === 'down' ? 'bg-blue-100 dark:bg-blue-900/40' : '',
 isClueIncomplete('down') && !clue.clue?.trim() ? 'ring-2 ring-amber-400 dark:ring-amber-500' : ''
@@ -92,13 +98,17 @@ isClueIncomplete('down') && !clue.clue?.trim() ? 'ring-2 ring-amber-400 dark:rin
                                 <div class="flex items-start gap-1.5">
                                     <span class="mt-px text-xs font-bold text-zinc-600" x-text="clue.displayNumber"></span>
                                     <div class="flex-1">
-                                        <input
-                                            type="text"
+                                        <textarea
+                                            rows="1"
                                             x-model="clue.clue"
+                                            x-init="fitClueTextarea($el)"
+                                            x-effect="clue.clue; fitClueTextarea($el)"
+                                            x-on:input="fitClueTextarea($el)"
+                                            x-on:focus="fitClueTextarea($el)"
                                             x-on:blur="markDirty()"
                                             placeholder="{{ __('Enter clue...') }}"
-                                            class="w-full border-0 bg-transparent p-0 text-sm text-zinc-800 placeholder-zinc-400 focus:ring-0 dark:text-zinc-300 dark:placeholder-zinc-500"
-                                        />
+                                            class="field-sizing-content block w-full resize-none overflow-hidden border-0 bg-transparent p-0 text-sm leading-snug text-zinc-800 placeholder-zinc-400 focus:ring-0 dark:text-zinc-300 dark:placeholder-zinc-500"
+                                        ></textarea>
                                         <div class="flex items-center gap-1">
                                             @include('partials.clue-quality-icon', ['dir' => 'down'])
                                             <flux:tooltip content="{{ __('Clue library') }}" x-show="activeClueNumber === clue.number && direction === 'down'">

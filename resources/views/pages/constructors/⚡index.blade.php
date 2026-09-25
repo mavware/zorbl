@@ -113,7 +113,12 @@ new #[Title('Constructors')] class extends Component {
         <script type="application/ld+json">{!! json_encode($constructorsJsonLd, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
     @endpush
 
-    <x-page-header :kicker="__('Community')" :title="__('Constructors')" />
+    <x-page-header :kicker="__('Community')" :title="__('Constructors')">
+        <x-slot:footer>
+            {{-- Community totals — flush under the header rule, like the builder stats on the Build page --}}
+            <livewire:community-stats key="community-stats" />
+        </x-slot:footer>
+    </x-page-header>
 
     {{-- Search & Sort --}}
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center">

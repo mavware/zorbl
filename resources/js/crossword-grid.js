@@ -13,6 +13,7 @@ import {
     hasBottomBoundary,
     findSlot,
     getClueNumberForCell,
+    fitTextareaToContent,
     getWordCells,
     computeActiveWordCells,
     cleanupStyleEntry,
@@ -536,7 +537,8 @@ export function crosswordGrid({
             const clue = clues.find(c => c.number === number);
             if (!clue) return;
 
-            const clickedInput = event?.target?.tagName === 'INPUT'
+            const tag = event?.target?.tagName;
+            const clickedInput = tag === 'INPUT' || tag === 'TEXTAREA'
                 || event?.target?.closest?.('.clue-content');
 
             for (let row = 0; row < this.height; row++) {
@@ -563,9 +565,16 @@ export function crosswordGrid({
                 : (idx >= siblings.length - 1 ? 0 : idx + 1);
 
             const nextClue = siblings[nextIdx];
-            const input = nextClue?.querySelector('input');
+            const input = nextClue?.querySelector('textarea, input');
             if (input) input.focus();
             else nextClue?.focus();
+        },
+
+        // Keep a clue textarea tall enough to show its whole text. Called on
+        // mount, on every edit, and whenever the clue text changes underneath
+        // it (AI generation, clue library, undo).
+        fitClueTextarea(el) {
+            fitTextareaToContent(el);
         },
 
         scrollActiveClueIntoView() {

@@ -22,36 +22,35 @@ test('authenticated users can visit the solve page', function () {
         ->assertOk();
 });
 
-test('solve page shows solved puzzle count', function () {
-    $user = User::factory()->create();
-    PuzzleAttempt::factory()->count(2)->completed()->create(['user_id' => $user->id]);
+test('the solve page header carries the headline solve stats band', function () {
+    $user = User::factory()->create(['current_streak' => 3, 'longest_streak' => 9]);
+    PuzzleAttempt::factory()->count(2)->completed()->create(['user_id' => $user->id, 'solve_time_seconds' => 90]);
     PuzzleAttempt::factory()->create(['user_id' => $user->id]); // in progress
 
-    $component = Livewire::actingAs($user)->test('pages::crosswords.solving');
+    Livewire::actingAs($user)
+        ->test('pages::crosswords.solving')
+        ->assertSeeInOrder(['data-page-header-footer', 'data-test="solver-stat"', 'Puzzles Solved', 'Current Streak', 'Best Streak', 'Average Time', 'Fastest Solve'], false)
+        ->assertDontSee('Faster Than Avg')
+        ->assertDontSee('data-test="solver-stat"><!--', false);
 
-    expect($component->get('solvedCount'))->toBe(2);
+    Livewire::actingAs($user)
+        ->test('solver-stats')
+        ->assertSet('totalSolved', 2)
+        ->assertSet('currentStreak', 3)
+        ->assertSet('longestStreak', 9)
+        ->assertSet('averageTime', 90)
+        ->assertSee('1:30')
+        ->assertSeeInOrder(['3 days', '9 days']);
 });
 
-test('solve page shows liked count for authenticated user', function () {
+test('the solve stats band shows a dash before any timed solve', function () {
     $user = User::factory()->create();
-    $crossword = Crossword::factory()->published()->create();
 
-    CrosswordLike::create(['user_id' => $user->id, 'crossword_id' => $crossword->id]);
-
-    $component = Livewire::actingAs($user)->test('pages::crosswords.solving');
-
-    expect($component->get('likedCount'))->toBe(1);
-});
-
-test('solve page shows community stats', function () {
-    Crossword::factory()->count(4)->published()->create();
-    PuzzleAttempt::factory()->count(2)->completed()->create();
-
-    $user = User::factory()->create();
-    $component = Livewire::actingAs($user)->test('pages::crosswords.solving');
-
-    expect($component->get('totalPublishedPuzzles'))->toBe(4)
-        ->and($component->get('totalSolves'))->toBe(2);
+    Livewire::actingAs($user)
+        ->test('solver-stats')
+        ->assertSet('totalSolved', 0)
+        ->assertSet('averageTime', null)
+        ->assertSee('—');
 });
 
 test('solve page shows newest puzzles from other users', function () {
@@ -387,4 +386,15 @@ test('streak shows singular day for streak of one', function () {
     Livewire::actingAs($user)
         ->test('pages::crosswords.solving')
         ->assertSee('1 day in a row!');
+});
+
+test('the attempts grid collapses to one row with a toggle, like the Build page results', function () {
+    $user = User::factory()->create();
+    PuzzleAttempt::factory()->count(3)->create(['user_id' => $user->id]);
+
+    Livewire::actingAs($user)
+        ->test('pages::crosswords.solving')
+        ->assertSeeInOrder(['x-data="collapsibleGrid"', 'data-test="attempt-results-grid"', 'wire:key="attempt-', 'data-test="toggle-all-attempts-button"'], false)
+        ->assertSee('Show all puzzles')
+        ->assertSee('Show fewer');
 });
