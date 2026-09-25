@@ -133,6 +133,28 @@ test('build page stat cards show an amber number above the label with no icon', 
         ->not->toContain('<svg');
 });
 
+test('phones show only the published and draft stat cards in one row', function () {
+    $user = User::factory()->create();
+
+    $html = $this->actingAs($user)
+        ->get(route('crosswords.index'))
+        ->assertOk()
+        ->getContent();
+
+    preg_match_all('/<div[^>]*data-test="constructor-stat"[^>]*>/', $html, $cards);
+
+    expect($cards[0])->toHaveCount(5)
+        ->and($cards[0][0])->not->toContain('hidden')
+        ->and($cards[0][1])->not->toContain('hidden')
+        ->and($cards[0][2])->toContain('hidden sm:block')
+        ->and($cards[0][3])->toContain('hidden sm:block')
+        ->and($cards[0][4])->toContain('hidden sm:block');
+
+    preg_match('/<div class="grid grid-cols-2 lg:grid-cols-5">/', $html, $grid);
+
+    expect($grid)->not->toBeEmpty();
+});
+
 test('free users see full analytics dashboard', function () {
     $constructor = User::factory()->create();
     Crossword::factory()->published()->for($constructor)->create([

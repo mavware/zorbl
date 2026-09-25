@@ -864,7 +864,8 @@ class extends Component {
                 line: @js($lineColor),
             },
         })"
-    x-on:freestyle-locked.window="gridLocked = $event.detail.locked; grid = $wire.grid; solution = $wire.solution; cluesAcross = $wire.cluesAcross; cluesDown = $wire.cluesDown;"
+    x-on:freestyle-locked.window="onFreestyleLocked($event.detail.locked)"
+    x-on:keydown.window="handleShortcutKeydown($event)"
     x-on:saved.window="onSaved()"
     x-on:prefilled-saved.window="onSaved()"
     x-on:grid-resized.window="onGridResized()"
@@ -890,7 +891,7 @@ class extends Component {
             </flux:tooltip>
         </div>
 
-        {{-- Tools. Below `sm` this cluster (mode toggle, symmetry, fill, clear)
+        {{-- Tools. Below `sm` this cluster (mode toggle, undo/redo, fill, clear)
              takes its own row, leaving progress and publish to a third row. --}}
         <div class="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-1 sm:justify-center" data-test="editor-tools-row">
             {{-- Save status. Hidden while idle so its padding doesn't indent the row. --}}
@@ -920,26 +921,51 @@ class extends Component {
                 >{{ __('Solve') }}</a>
             </div>
 
-            {{-- Symmetry --}}
-            <flux:tooltip content="{{ __('Rotational symmetry') }}" x-show="puzzleType.allowSymmetryToggle">
-                <button
-                    x-on:click="symmetry = !symmetry"
-                    :class="symmetry ? 'bg-zinc-800 text-white dark:bg-zinc-200 dark:text-zinc-900' : 'text-fg-muted'"
-                    class="rounded-lg p-1.5 transition-colors"
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 24 24" fill="none"
-                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/>
-                        <path d="M21 3v5h-5"/>
-                    </svg>
-                </button>
-            </flux:tooltip>
+            {{-- Undo / Redo --}}
+            <div class="flex items-center">
+                <flux:tooltip content="{{ __('Undo') }}" kbd="Ctrl+Z">
+                    <button
+                        type="button"
+                        x-on:click="undo(); $refs.gridContainer?.focus()"
+                        :disabled="!canUndo"
+                        class="rounded-lg p-1.5 transition-colors disabled:opacity-30"
+                        :class="canUndo ? 'text-fg-muted hover:text-zinc-800 dark:hover:text-zinc-200' : 'text-fg-muted'"
+                        aria-label="{{ __('Undo') }}"
+                        aria-keyshortcuts="Control+Z"
+                        data-test="editor-undo-button"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/>
+                        </svg>
+                    </button>
+                </flux:tooltip>
+
+                <flux:tooltip content="{{ __('Redo') }}" kbd="Ctrl+Shift+Z">
+                    <button
+                        type="button"
+                        x-on:click="redo(); $refs.gridContainer?.focus()"
+                        :disabled="!canRedo"
+                        class="rounded-lg p-1.5 transition-colors disabled:opacity-30"
+                        :class="canRedo ? 'text-fg-muted hover:text-zinc-800 dark:hover:text-zinc-200' : 'text-fg-muted'"
+                        aria-label="{{ __('Redo') }}"
+                        aria-keyshortcuts="Control+Shift+Z"
+                        data-test="editor-redo-button"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/>
+                        </svg>
+                    </button>
+                </flux:tooltip>
+            </div>
+
 
             {{-- Fill Grid dropdown --}}
             <flux:dropdown position="bottom" align="end">
                 <flux:tooltip content="{{ __('Auto-fill grid') }}">
                     <flux:button variant="ghost" size="sm" icon="sparkles" x-bind:disabled="fillInProgress">
-                        <span x-show="!fillInProgress">{{ __('Fill') }}</span>
+                        <span x-show="!fillInProgress">{{ __('Auto-Fill') }}</span>
                         <span x-show="fillInProgress" x-cloak>
                             <flux:icon.loading class="size-4" />
                         </span>
@@ -991,7 +1017,7 @@ class extends Component {
                 <flux:menu>
                     <flux:menu.item x-on:click="clearLetters()">{{ __('Clear letters') }}</flux:menu.item>
                     <flux:menu.item x-on:click="clearAll()"
-                                    class="text-red-600 dark:text-red-400">{{ __('Clear everything') }}</flux:menu.item>
+                                    class="text-red-600 dark:text-red-400">{{ __('Reset to blank grid') }}</flux:menu.item>
                 </flux:menu>
             </flux:dropdown>
 
@@ -1293,6 +1319,19 @@ class extends Component {
                 <flux:input type="number" wire:model="minAnswerLength" min="1" max="15"/>
                 <flux:description>{{ __('Shortest allowed word length in the grid.') }}</flux:description>
                 <flux:error name="minAnswerLength"/>
+            </flux:field>
+
+            {{-- Symmetry is client-side editor state, not puzzle metadata, so
+                 it binds straight to the Alpine flag rather than a Livewire
+                 property. The switch element exposes `checked` and fires
+                 `change` like a checkbox. --}}
+            <flux:field variant="inline" x-show="puzzleType.allowSymmetryToggle" data-test="symmetry-toggle">
+                <flux:switch
+                    x-effect="$el.checked = symmetry"
+                    x-on:change="symmetry = $event.target.checked"
+                />
+                <flux:label>{{ __('Rotational symmetry') }}</flux:label>
+                <flux:description>{{ __('Placing or removing a block does the same to its mirror cell across the centre of the grid.') }}</flux:description>
             </flux:field>
 
             <flux:field>

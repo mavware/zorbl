@@ -93,3 +93,19 @@ test('the build page shows the welcome hero inside the header above the stats ba
         ->assertSeeInOrder(['data-page-header-footer', 'Total Solves'], false)
         ->assertDontSee('data-test="dashboard-welcome-hero"', false);
 });
+
+test('the page header kicker is hidden on phones', function () {
+    $user = User::factory()->create();
+    Crossword::factory()->for($user)->create();
+
+    $html = $this->actingAs($user)
+        ->get(route('crosswords.index'))
+        ->assertOk()
+        ->getContent();
+
+    preg_match('/<div[^>]*data-test="page-header-kicker"[^>]*>Your workshop<\/div>/', $html, $kicker);
+
+    expect($kicker)->not->toBeEmpty()
+        ->and($kicker[0])->toContain('hidden')
+        ->and($kicker[0])->toContain('sm:block');
+});

@@ -45,7 +45,7 @@
             @endif
 
             @if($hasSlot($kicker))
-                <div class="label-classical font-classical mb-2 text-[12px] font-semibold text-amber-400 [--label-tracking:0.14em]">{{ $kicker }}</div>
+                <div class="label-classical font-classical mb-2 hidden text-[12px] font-semibold text-amber-400 sm:block [--label-tracking:0.14em]" data-test="page-header-kicker">{{ $kicker }}</div>
             @endif
 
             <{{ $tag }} class="{{ $titleClasses }}">{{ $title }}</{{ $tag }}>

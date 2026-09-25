@@ -194,14 +194,36 @@ test('the editor tools take their own row on mobile', function () {
     $this->actingAs($user);
 
     $html = Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
-        ->assertSeeInOrder(['Puzzle settings', 'Edit', 'Rotational symmetry', 'Auto-fill grid', 'Cells', 'Publish'])
+        ->assertSeeInOrder(['Puzzle settings', 'Edit', 'Undo', 'Redo', 'Auto-fill grid', 'Cells', 'Publish'])
         ->html();
 
     preg_match('/<div[^>]*data-test="editor-tools-row"[^>]*>/', $html, $row);
 
     expect($row)->not->toBeEmpty()
         ->and($row[0])->toContain('w-full')
-        ->and($row[0])->toContain('sm:w-auto');
+        ->and($row[0])->toContain('sm:w-auto')
+        ->and(substr_count($html, 'data-test="editor-undo-button"'))->toBe(1)
+        ->and(substr_count($html, 'data-test="editor-redo-button"'))->toBe(1)
+        ->and($html)->toContain('x-on:keydown.window="handleShortcutKeydown($event)"');
+});
+
+test('the rotational symmetry toggle lives in the settings flyout, not the toolbar', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create();
+
+    $this->actingAs($user);
+
+    $html = Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])->html();
+
+    preg_match('/data-test="editor-tools-row".*?wire:click="attemptPublish"/s', $html, $toolbar);
+    preg_match('/<ui-modal[^>]*data-test="settings-flyout".*?<\/ui-modal>/s', $html, $flyout);
+
+    expect($toolbar)->not->toBeEmpty()
+        ->and($toolbar[0])->not->toContain('Rotational symmetry')
+        ->and($flyout)->not->toBeEmpty()
+        ->and($flyout[0])->toContain('data-test="symmetry-toggle"')
+        ->and($flyout[0])->toContain('Rotational symmetry')
+        ->and($flyout[0])->toContain('x-on:change="symmetry = $event.target.checked"');
 });
 
 test('settings open in a full-height flyout panel', function () {

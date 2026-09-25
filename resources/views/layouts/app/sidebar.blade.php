@@ -100,7 +100,7 @@
 <flux:toast position="top end"/>
 @endpersist
 
-@include('partials.install-prompt')
+{{--@include('partials.install-prompt')--}}
 
 @fluxScripts
 </body>

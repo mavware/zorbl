@@ -20,6 +20,7 @@ import {
     normalizeTypedValue,
 } from './grid/helpers.js';
 import { numberGrid as runNumberGrid } from './grid/numbering.js';
+import { createHistory } from './grid/history.js';
 import { cloneForWire, createAutosave } from './grid/persistence.js';
 import { puzzleTypeCapabilities } from './grid/puzzle-type.js';
 
@@ -27,11 +28,26 @@ const HIGHLIGHT_AUTO_CLEAR_MS = 8000;
 const WORD_SUGGEST_DEBOUNCE_MS = 300;
 const LONG_PRESS_MS = 500;
 
+// Everything undo/redo restores, as one comparable string. Cursor, mode and
+// suggestion state are deliberately left out: undoing a letter should not
+// also yank the cursor around.
+function serializeHistory({ grid, solution, styles, cluesAcross, cluesDown, prefilled }) {
+    return JSON.stringify({ grid, solution, styles, cluesAcross, cluesDown, prefilled });
+}
+
 export function crosswordGrid({
     width, height, grid, solution, styles, cluesAcross, cluesDown,
     minAnswerLength, prefilled, gridLocked, puzzleType, defaultColors,
 }) {
     const caps = puzzleTypeCapabilities(puzzleType);
+
+    styles = (styles && !Array.isArray(styles)) ? styles : {};
+    cluesAcross = cluesAcross || [];
+    cluesDown = cluesDown || [];
+    prefilled = prefilled || null;
+
+    const history = createHistory();
+    history.reset(serializeHistory({ grid, solution, styles, cluesAcross, cluesDown, prefilled }));
 
     return {
         // --- State -----------------------------------------------------------
@@ -39,12 +55,13 @@ export function crosswordGrid({
         height,
         grid,
         solution,
-        styles: (styles && !Array.isArray(styles)) ? styles : {},
+        styles,
         defaultColors: defaultColors || {},
-        cluesAcross: cluesAcross || [],
-        cluesDown: cluesDown || [],
+        cluesAcross,
+        cluesDown,
         minAnswerLength: minAnswerLength || 3,
-        prefilled: prefilled || null,
+        prefilled,
+        _history: history,
         gridLocked: caps.hasGridLock && !!gridLocked,
         puzzleType: caps,
         selectedRow: -1,
@@ -927,9 +944,12 @@ export function crosswordGrid({
             const cells = this.getMultiSelectedCoords();
             if (cells.length > 0) {
                 const makeBlock = !this.isBlock(this.contextMenu.row, this.contextMenu.col);
-                for (const [r, c] of cells) {
-                    if (makeBlock !== this.isBlock(r, c)) this.toggleBlock(r, c);
-                }
+                this._history.group(() => {
+                    for (const [r, c] of cells) {
+                        if (makeBlock !== this.isBlock(r, c)) this.toggleBlock(r, c);
+                    }
+                });
+                this.markDirty();
                 this.clearMultiSelection();
             } else {
                 this.toggleBlock(this.contextMenu.row, this.contextMenu.col);
@@ -941,9 +961,12 @@ export function crosswordGrid({
             const cells = this.getMultiSelectedCoords();
             if (cells.length > 0) {
                 const makeVoid = !this.isVoid(this.contextMenu.row, this.contextMenu.col);
-                for (const [r, c] of cells) {
-                    if (makeVoid !== this.isVoid(r, c)) this.toggleVoid(r, c);
-                }
+                this._history.group(() => {
+                    for (const [r, c] of cells) {
+                        if (makeVoid !== this.isVoid(r, c)) this.toggleVoid(r, c);
+                    }
+                });
+                this.markDirty();
                 this.clearMultiSelection();
             } else {
                 this.toggleVoid(this.contextMenu.row, this.contextMenu.col);
@@ -1153,8 +1176,72 @@ export function crosswordGrid({
         },
 
         // --- Persistence -----------------------------------------------------
+        // Every mutation ends here, which makes it the one place history is
+        // recorded. Unchanged state (a blur on an untouched clue input) is
+        // ignored by the helper, so callers don't need to guard.
         markDirty() {
             this.isDirty = true;
+            this._history.record(this._snapshotHistory());
+        },
+
+        // --- Undo / redo -----------------------------------------------------
+        get canUndo() { return this._history.canUndo; },
+        get canRedo() { return this._history.canRedo; },
+
+        undo() {
+            this._restoreHistory(this._history.undo());
+        },
+
+        redo() {
+            this._restoreHistory(this._history.redo());
+        },
+
+        _snapshotHistory() {
+            return serializeHistory(this);
+        },
+
+        _restoreHistory(json) {
+            if (json === null) return;
+            const snap = JSON.parse(json);
+            const prefilledChanged = JSON.stringify(this.prefilled) !== JSON.stringify(snap.prefilled);
+
+            this.grid = snap.grid;
+            this.solution = snap.solution;
+            this.styles = snap.styles;
+            this.cluesAcross = snap.cluesAcross;
+            this.cluesDown = snap.cluesDown;
+            if (prefilledChanged) {
+                this.prefilled = snap.prefilled;
+                this.savePrefilled();
+            }
+
+            // Not markDirty(): the history helper already points at this state.
+            this.isDirty = true;
+            this.clearSuggestionPreview();
+            this.refreshSuggestionsPane();
+        },
+
+        _resetHistory() {
+            this._history.reset(this._snapshotHistory());
+        },
+
+        // Bound at window level so Cmd/Ctrl+Z works after clicking a toolbar
+        // button, not only while the grid has focus. Editable fields keep
+        // the browser's own undo.
+        handleShortcutKeydown(e) {
+            const tag = e.target?.tagName;
+            if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || e.target?.isContentEditable) return;
+            if (!(e.metaKey || e.ctrlKey)) return;
+
+            const key = e.key.toLowerCase();
+            if (key === 'z') {
+                e.preventDefault();
+                if (e.shiftKey) this.redo();
+                else this.undo();
+            } else if (key === 'y') {
+                e.preventDefault();
+                this.redo();
+            }
         },
 
         // Manual save (kept for compatibility with templates that call it).
@@ -1278,6 +1365,18 @@ export function crosswordGrid({
             this.selectedRow = -1;
             this.selectedCol = -1;
             this.isDirty = false;
+            this._resetHistory();
+        },
+
+        // Freestyle lock/unlock is persisted server-side and hands back fresh
+        // grid state, so earlier history no longer applies.
+        onFreestyleLocked(locked) {
+            this.gridLocked = locked;
+            this.grid = this.$wire.grid;
+            this.solution = this.$wire.solution;
+            this.cluesAcross = this.$wire.cluesAcross;
+            this.cluesDown = this.$wire.cluesDown;
+            this._resetHistory();
         },
 
         // --- Clue suggestions ------------------------------------------------

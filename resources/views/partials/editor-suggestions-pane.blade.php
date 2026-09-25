@@ -40,8 +40,8 @@
                 <template x-if="suggestionsSlot">
                     <div>
                         <div class="text-fg flex items-baseline gap-1.5 truncate text-sm font-medium">
-                            <span x-text="suggestionsSlot?.direction === 'across' ? '{{ __('Across') }}' : '{{ __('Down') }}'"></span>
                             <span class="tnum" x-text="suggestionsSlot?.number"></span>
+                            <span x-text="suggestionsSlot?.direction === 'across' ? '{{ __('Across') }}' : '{{ __('Down') }}'"></span>
                             <span class="text-fg-subtle">·</span>
                             <span class="text-fg-muted font-mono text-[13px] tracking-[0.18em]" x-text="suggestionsSlot?.pattern"></span>
                         </div>

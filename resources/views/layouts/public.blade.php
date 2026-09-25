@@ -70,7 +70,7 @@
             </div>
         </footer>
 
-        @include('partials.install-prompt')
+{{--        @include('partials.install-prompt')--}}
 
         @fluxScripts
     </body>
