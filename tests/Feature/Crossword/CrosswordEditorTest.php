@@ -33,6 +33,18 @@ test('the editor toolbar shows a labeled publish button', function () {
         ->assertSeeInOrder(['Cells', 'Clues', 'Publish']);
 });
 
+test('the editor clue lists do not show the slot length under each clue input', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create();
+
+    $this->actingAs($user);
+
+    $this->get(route('crosswords.editor', $crossword))
+        ->assertOk()
+        ->assertSee('Enter clue...')
+        ->assertDontSee("'(' + clue.length + ')'", false);
+});
+
 test('the editor toolbar shows an unpublish label once the puzzle is live', function () {
     $user = User::factory()->create();
     $crossword = Crossword::factory()->for($user)->create(['is_published' => true]);

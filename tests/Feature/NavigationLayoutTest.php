@@ -343,7 +343,7 @@ test('the help center marks itself current in the chrome', function (string $nav
         ->and(array_filter($matches[0], fn (string $anchor): bool => str_contains($anchor, 'data-current')))->not->toBeEmpty();
 })->with(['sidebar', 'header']);
 
-test('both chromes center the main area under a max width', function (string $navigation) {
+test('both chromes let the main area fill the available width', function (string $navigation) {
     config(['crosswordbuilder.navigation' => $navigation]);
 
     $html = $this->actingAs(User::factory()->create())
@@ -354,6 +354,30 @@ test('both chromes center the main area under a max width', function (string $na
     preg_match('/<div[^>]*data-flux-main[^>]*>/', $html, $main);
 
     expect($main[0])
-        ->toContain('mx-auto')
-        ->toContain('max-w-6xl');
+        ->not->toContain('mx-auto')
+        ->not->toContain('max-w-');
 })->with(['sidebar', 'header']);
+
+test('the sidebar chrome can collapse to an icon rail on desktop', function () {
+    config(['crosswordbuilder.navigation' => 'sidebar']);
+
+    $html = $this->actingAs(User::factory()->create())
+        ->get(route('crosswords.index'))
+        ->assertOk()
+        ->assertSee('data-test="sidebar-collapse-button"', false)
+        ->assertSee('data-test="upgrade-callout-collapsed"', false)
+        ->getContent();
+
+    preg_match('/<ui-sidebar[^>]*data-test="app-sidebar"[^>]*>/', $html, $sidebar);
+
+    expect($sidebar)->not->toBeEmpty()
+        ->and($sidebar[0])->toContain('collapsible="true"');
+
+    // The collapse toggle stays visible on desktop, and the main nav groups
+    // are not Flux groups, which would vanish once the rail is collapsed.
+    preg_match('/<ui-sidebar-toggle[^>]*data-test="sidebar-collapse-button"[^>]*>/', $html, $toggle);
+
+    expect($toggle[0])->not->toContain('lg:hidden')
+        ->and($html)->toContain('data-sidebar-group')
+        ->and($html)->not->toContain('data-flux-sidebar-group>');
+});

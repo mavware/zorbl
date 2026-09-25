@@ -42,7 +42,6 @@ isClueIncomplete('across') && !clue.clue?.trim() ? 'ring-2 ring-amber-400 dark:r
                                             class="w-full border-0 bg-transparent p-0 text-sm text-zinc-800 placeholder-zinc-400 focus:ring-0 dark:text-zinc-300 dark:placeholder-zinc-500"
                                         />
                                         <div class="flex items-center gap-1">
-                                            <span class="text-xs text-zinc-500" x-text="'(' + clue.length + ')'"></span>
                                             @include('partials.clue-quality-icon', ['dir' => 'across'])
                                             <flux:tooltip content="{{ __('Clue library') }}" x-show="activeClueNumber === clue.number && direction === 'across'">
                                                 <button
@@ -137,7 +136,6 @@ isClueIncomplete('down') && !clue.clue?.trim() ? 'ring-2 ring-amber-400 dark:rin
                                             class="w-full border-0 bg-transparent p-0 text-sm text-zinc-800 placeholder-zinc-400 focus:ring-0 dark:text-zinc-300 dark:placeholder-zinc-500"
                                         />
                                         <div class="flex items-center gap-1">
-                                            <span class="text-xs text-zinc-500" x-text="'(' + clue.length + ')'"></span>
                                             @include('partials.clue-quality-icon', ['dir' => 'down'])
                                             <flux:tooltip content="{{ __('Clue library') }}" x-show="activeClueNumber === clue.number && direction === 'down'">
                                                 <button

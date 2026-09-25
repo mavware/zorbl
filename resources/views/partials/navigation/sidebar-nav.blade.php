@@ -1,17 +1,18 @@
 {{-- The main destinations as sidebar items: one group per AppNavigation group,
      with an inset separator between groups. Shared by the sidebar chrome and
-     the top bar's mobile drawer. --}}
+     the top bar's mobile drawer. Groups are plain divs rather than
+     flux:sidebar.group, which Flux hides when the sidebar is collapsed. --}}
 @inject('navigation', 'App\Support\AppNavigation')
 
 <flux:sidebar.nav>
     @foreach ($navigation->main(auth()->user()) as $group)
         @unless ($loop->first)
-            <div class="px-7 pb-2">
+            <div class="px-7 pb-2 in-data-flux-sidebar-collapsed-desktop:px-2">
                 <flux:separator class="bg-line" />
             </div>
         @endunless
 
-        <flux:sidebar.group class="grid mb-2 px-4">
+        <div class="grid mb-2 px-4 in-data-flux-sidebar-collapsed-desktop:px-2" data-sidebar-group>
             @foreach ($group as $item)
                 <flux:sidebar.item
                     :icon="$item->icon"
@@ -22,6 +23,6 @@
                     {{ $item->label }}
                 </flux:sidebar.item>
             @endforeach
-        </flux:sidebar.group>
+        </div>
     @endforeach
 </flux:sidebar.nav>

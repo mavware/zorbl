@@ -7,10 +7,12 @@
 @include('partials.impersonation-banner')
 @inject('navigation', 'App\Support\AppNavigation')
 
-<flux:sidebar sticky collapsible="mobile" class="bg-surface border-line border-e px-0! pt-0!">
-    <flux:sidebar.header class="p-4 border-b border-line">
+{{-- Collapsible on desktop too: Flux shrinks it to a rail of icons, the logo
+     mark, and the user's initials, and remembers the choice in localStorage. --}}
+<flux:sidebar sticky collapsible class="bg-surface border-line border-e px-0! pt-0!" data-test="app-sidebar">
+    <flux:sidebar.header class="p-4 border-b border-line in-data-flux-sidebar-collapsed-desktop:p-2 in-data-flux-sidebar-collapsed-desktop:justify-center">
         <x-app-logo :sidebar="true" href="{{ route('crosswords.index') }}" wire:navigate/>
-        <flux:sidebar.collapse class="lg:hidden"/>
+        <flux:sidebar.collapse data-test="sidebar-collapse-button"/>
     </flux:sidebar.header>
 
     @include('partials.navigation.sidebar-nav')
@@ -21,11 +23,11 @@
 
     @include('partials.navigation.sidebar-secondary')
 
-    <div class="hidden px-7 lg:block">
+    <div class="hidden px-7 lg:block in-data-flux-sidebar-collapsed-desktop:px-2">
         <flux:separator class="bg-line" />
     </div>
 
-    <div class="hidden px-4 lg:block">
+    <div class="hidden px-4 lg:block in-data-flux-sidebar-collapsed-desktop:px-2">
         @if ($navigation->hasAccount(auth()->user()))
             <x-user-menu variant="sidebar" :links="$navigation->sidebarAccount(auth()->user())"/>
         @else
@@ -55,7 +57,7 @@
         @endif
     </div>
 
-    @include('partials.navigation.legal-links', ['class' => 'mx-7 mb-3 mt-2 hidden lg:flex'])
+    @include('partials.navigation.legal-links', ['class' => 'mx-7 mb-3 mt-2 hidden lg:flex in-data-flux-sidebar-collapsed-desktop:hidden!'])
 </flux:sidebar>
 
 <!-- Mobile User Menu -->

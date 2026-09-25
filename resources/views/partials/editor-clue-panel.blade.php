@@ -38,8 +38,6 @@ isClueIncomplete('{{ $direction }}') && !clue.clue?.trim() ? 'ring-2 ring-amber-
                         class="w-full border-0 bg-transparent p-0 text-sm text-zinc-800 placeholder-zinc-400 focus:ring-0 dark:text-zinc-300 dark:placeholder-zinc-500"
                     />
                     <div class="flex items-center gap-1">
-                        <span class="text-xs text-zinc-500 cursor-text" x-text="'(' + clue.length + ')'"
-                              x-on:click="$event.target.closest('.clue-content').querySelector('input').focus()"></span>
                         @include('partials.clue-quality-icon', ['dir' => $direction])
                     </div>
                 </div>
