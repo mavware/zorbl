@@ -874,15 +874,20 @@ class extends Component {
 >
     {{-- Toolbar --}}
     <div class="mb-4 flex flex-wrap items-center gap-2">
-        {{-- Title --}}
-        <div class="flex shrink-0 items-center gap-2">
+        {{-- Title + settings. Below `sm` this pair takes its own full-width row
+             and the title stretches to fill it. --}}
+        <div class="flex w-full items-center gap-2 sm:w-auto sm:shrink-0" data-test="editor-title-row">
             <flux:input
                 size="sm"
                 placeholder="{{ __('Puzzle title') }}"
                 wire:model.blur="title"
                 wire:change="saveMetadata"
-                class="max-w-48"
+                class="flex-1 sm:max-w-48"
             />
+
+            <flux:tooltip content="{{ __('Puzzle settings') }}">
+                <flux:button variant="ghost" size="sm" icon="cog-6-tooth" wire:click="$set('showSettingsModal', true)" data-test="editor-settings-button"/>
+            </flux:tooltip>
         </div>
 
         {{-- Tools --}}
@@ -1008,11 +1013,6 @@ class extends Component {
                     >{{ __('Lock grid & write clues') }}</flux:button>
                 @endif
             @endif
-
-            {{-- Settings --}}
-            <flux:tooltip content="{{ __('Puzzle settings') }}">
-                <flux:button variant="ghost" size="sm" icon="cog-6-tooth" wire:click="$set('showSettingsModal', true)"/>
-            </flux:tooltip>
         </div>
 
         {{-- Progress + Publish --}}
@@ -1238,8 +1238,17 @@ class extends Component {
     </flux:modal>
 
     {{-- Settings Modal --}}
-    <flux:modal wire:model="showSettingsModal">
-        <div class="space-y-6">
+    {{-- Settings live in a full-height flyout on the right, like a sidebar,
+         so the grid stays visible while metadata is edited. The Save/Cancel
+         row sticks to the bottom of the panel as the form scrolls. --}}
+    <flux:modal
+        wire:model="showSettingsModal"
+        variant="flyout"
+        position="right"
+        class="w-full max-w-xl md:min-w-[28rem]! flex flex-col pb-0!"
+        data-test="settings-flyout"
+    >
+        <div class="flex-1 space-y-6">
             <div class="flex items-center justify-between gap-4 pe-8">
                 <flux:heading size="lg">{{ __('Puzzle Settings') }}</flux:heading>
 
@@ -1535,12 +1544,11 @@ class extends Component {
                 </div>
             </div>
 
-            <flux:separator/>
+        </div>
 
-            <div class="flex justify-end gap-2">
-                <flux:button wire:click="$set('showSettingsModal', false)">{{ __('Cancel') }}</flux:button>
-                <flux:button variant="primary" wire:click="saveMetadata">{{ __('Save') }}</flux:button>
-            </div>
+        <div class="sticky bottom-0 -mx-8 mt-6 flex shrink-0 justify-end gap-2 border-t border-zinc-200 bg-white px-8 py-4 dark:border-zinc-700 dark:bg-zinc-800">
+            <flux:button wire:click="$set('showSettingsModal', false)">{{ __('Cancel') }}</flux:button>
+            <flux:button variant="primary" wire:click="saveMetadata">{{ __('Save') }}</flux:button>
         </div>
     </flux:modal>
 </div>

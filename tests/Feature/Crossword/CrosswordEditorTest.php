@@ -169,6 +169,39 @@ test('settings modal saves all metadata fields', function () {
         ->and($crossword->metadata['min_answer_length'])->toBe(4);
 });
 
+test('the settings button sits beside the puzzle title on its own row', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create();
+
+    $this->actingAs($user);
+
+    $html = Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->assertSeeInOrder(['Puzzle title', 'Puzzle settings', 'Saving...'])
+        ->html();
+
+    preg_match('/<div[^>]*data-test="editor-title-row"[^>]*>/', $html, $row);
+
+    expect($row)->not->toBeEmpty()
+        ->and($row[0])->toContain('w-full')
+        ->and($row[0])->toContain('sm:w-auto')
+        ->and(substr_count($html, 'data-test="editor-settings-button"'))->toBe(1);
+});
+
+test('settings open in a full-height flyout panel', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create();
+
+    $this->actingAs($user);
+
+    $html = Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])->html();
+
+    preg_match('/<ui-modal[^>]*data-test="settings-flyout"[^>]*>\s*<dialog[^>]*>/s', $html, $dialog);
+
+    expect($dialog)->not->toBeEmpty()
+        ->and($dialog[0])->toContain('data-flux-flyout')
+        ->and($dialog[0])->toContain('min-h-dvh');
+});
+
 test('settings modal shows the export menu at the top', function () {
     $user = User::factory()->create();
     $crossword = Crossword::factory()->for($user)->create();
