@@ -90,4 +90,21 @@ return [
     'features' => [
         'contests' => (bool) env('CROSSWORDBUILDER_CONTESTS_ENABLED', false),
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Word Export
+    |--------------------------------------------------------------------------
+    |
+    | Static JSON files of every word, its score, and its approved clues,
+    | sharded by word length and regenerated on a schedule by the
+    | `words:export-json` command. Served straight from the disk so
+    | reads never touch the application.
+    |
+    */
+
+    'word_export' => [
+        'disk' => env('CROSSWORDBUILDER_WORD_EXPORT_DISK', 's3'),
+        'path' => trim(env('CROSSWORDBUILDER_WORD_EXPORT_PATH', 'exports/words'), '/'),
+    ],
 ];

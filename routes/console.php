@@ -12,3 +12,4 @@ Schedule::command('simulate:activity')->everyTenMinutes();
 Schedule::command('contests:publish-scheduled')->everyMinute()->when(fn (): bool => (bool) config('crosswordbuilder.features.contests'));
 Schedule::command('contests:process-ended')->everyMinute()->when(fn (): bool => (bool) config('crosswordbuilder.features.contests'));
 Schedule::command('constructors:send-weekly-digest')->weeklyOn(1, '9:00');
+Schedule::command('words:export-json')->hourly()->withoutOverlapping();
