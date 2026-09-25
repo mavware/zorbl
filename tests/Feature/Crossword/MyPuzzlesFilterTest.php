@@ -178,3 +178,27 @@ test('results grid renders the collapse toggle with the puzzle count', function 
         ->assertSee('Show all puzzles')
         ->assertSee('Show fewer');
 });
+
+test('results grid shows three compact cards per row on phones', function () {
+    $user = User::factory()->create();
+    Crossword::factory()->for($user)->create(['title' => 'Phone Card', 'is_published' => true]);
+
+    $this->actingAs($user);
+
+    $html = Livewire::test('pages::crosswords.index')->html();
+
+    preg_match('/<div[^>]*data-test="puzzle-results-grid"[^>]*>/', $html, $grid);
+
+    expect($grid)->not->toBeEmpty()
+        ->and($grid[0])->toContain('max-sm:[grid-template-columns:repeat(3,minmax(0,1fr))]')
+        ->and($grid[0])->toContain('sm:[grid-template-columns:repeat(auto-fill,minmax(268px,1fr))]');
+
+    // The card slims down to fit a third of a phone: the status badge and the
+    // Open editor button (the title and thumbnail already link there) hide.
+    preg_match('/<article.*?<\/article>/s', $html, $card);
+
+    expect($card)->not->toBeEmpty()
+        ->and($card[0])->toMatch('/<span class="badge-classical[^"]*max-sm:hidden!"/')
+        ->and($card[0])->toMatch('/<span class="[^"]*sm:hidden"[^>]*data-test="published-dot"/')
+        ->and($card[0])->toMatch('/<a[^>]*class="[^"]*btn-amber-outline flex-1 max-sm:hidden!"[^>]*>\s*Open editor/');
+});

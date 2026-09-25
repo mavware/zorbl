@@ -283,10 +283,10 @@ new #[Title('Constructor Profile')] class extends Component {
                 <label class="relative">
                     <span class="sr-only">{{ __('Sort') }}</span>
                     <select wire:model.live="sortBy" class="field-classical font-classical appearance-none pr-9 pl-3.5 text-[15px] font-medium">
-                        <option value="newest">{{ __('Sort') }}: {{ __('Newest') }}</option>
-                        <option value="oldest">{{ __('Sort') }}: {{ __('Oldest') }}</option>
-                        <option value="most_liked">{{ __('Sort') }}: {{ __('Most Liked') }}</option>
-                        <option value="most_played">{{ __('Sort') }}: {{ __('Most Played') }}</option>
+                        <option value="newest">{{ __('Newest') }}</option>
+                        <option value="oldest">{{ __('Oldest') }}</option>
+                        <option value="most_liked">{{ __('Most Liked') }}</option>
+                        <option value="most_played">{{ __('Most Played') }}</option>
                     </select>
                     <flux:icon name="chevron-down" class="text-ink-faint pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2" />
                 </label>

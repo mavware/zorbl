@@ -441,24 +441,24 @@ new #[Title('Build')] class extends Component {
                 />
             </label>
             <div class="flex items-center gap-3">
-                <div class="border-border-strong divide-hairline inline-flex h-10 divide-x overflow-hidden rounded-sm border" role="radiogroup" aria-label="{{ __('Status') }}">
+                <div class="border-border-strong divide-hairline flex h-10 divide-x overflow-hidden rounded-sm border max-sm:flex-auto" role="radiogroup" aria-label="{{ __('Status') }}">
                     @foreach (['' => __('All'), 'published' => __('Published'), 'draft' => __('Drafts')] as $value => $label)
-                        <label class="cursor-pointer">
+                        <label class="cursor-pointer max-sm:flex-auto">
                             <input type="radio" name="status" value="{{ $value }}" wire:model.live="status" class="peer sr-only" />
-                            <span class="font-classical text-ink-muted hover:text-ink peer-checked:bg-amber-400/10 peer-checked:text-amber-400 peer-focus-visible:outline-2 peer-focus-visible:-outline-offset-2 peer-focus-visible:outline-amber-400 flex h-full items-center px-3.5 text-[15px] font-medium transition-colors">
+                            <span class="font-classical text-ink-muted hover:text-ink peer-checked:bg-amber-400/10 peer-checked:text-amber-400 peer-focus-visible:outline-2 peer-focus-visible:-outline-offset-2 peer-focus-visible:outline-amber-400 flex h-full items-center justify-center px-3.5 text-[15px] font-medium transition-colors max-sm:px-2">
                                 {{ $label }}
                             </span>
                         </label>
                     @endforeach
                 </div>
-                <label class="relative">
+                <label class="relative max-sm:flex-auto">
                     <span class="sr-only">{{ __('Sort') }}</span>
-                    <select wire:model.live="sortBy" class="field-classical font-classical appearance-none pr-9 pl-3.5 text-[15px] font-medium">
-                        <option value="newest">{{ __('Sort') }}: {{ __('Newest') }}</option>
-                        <option value="oldest">{{ __('Sort') }}: {{ __('Oldest') }}</option>
-                        <option value="alpha">{{ __('Sort') }}: {{ __('A–Z') }}</option>
-                        <option value="largest">{{ __('Sort') }}: {{ __('Largest') }}</option>
-                        <option value="smallest">{{ __('Sort') }}: {{ __('Smallest') }}</option>
+                    <select wire:model.live="sortBy" class="field-classical font-classical appearance-none max-sm:w-full pr-9 pl-3.5 text-[15px] font-medium">
+                        <option value="newest">{{ __('Newest') }}</option>
+                        <option value="oldest">{{ __('Oldest') }}</option>
+                        <option value="alpha">{{ __('A–Z') }}</option>
+                        <option value="largest">{{ __('Largest') }}</option>
+                        <option value="smallest">{{ __('Smallest') }}</option>
                     </select>
                     <flux:icon name="chevron-down" class="text-ink-faint pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2" />
                 </label>
@@ -517,25 +517,32 @@ new #[Title('Build')] class extends Component {
                 x-effect="expanded; apply()"
                 data-test="puzzle-results"
             >
-                <div x-ref="grid" class="grid gap-[22px] px-6 [grid-template-columns:repeat(auto-fill,minmax(268px,1fr))] lg:px-8">
+                {{-- Below `sm` the grid holds three compact cards per row rather
+                     than one full card, so the collapsed first row still shows
+                     three puzzles on a phone. --}}
+                <div x-ref="grid" class="grid gap-2 px-6 max-sm:[grid-template-columns:repeat(3,minmax(0,1fr))] sm:gap-[22px] sm:[grid-template-columns:repeat(auto-fill,minmax(268px,1fr))] lg:px-8" data-test="puzzle-results-grid">
                 @foreach($this->crosswords as $crossword)
                     <article
                         wire:key="crossword-{{ $crossword->id }}"
-                        class="border-border hover:border-border-strong flex flex-col gap-3.5 rounded-sm border p-4.5 transition-colors"
+                        class="border-border hover:border-border-strong flex min-w-0 flex-col gap-2 rounded-sm border p-2 transition-colors sm:gap-3.5 sm:p-4.5"
                     >
                         <div class="flex items-start justify-between gap-3">
                             <div class="min-w-0">
-                                <h3 class="font-classical text-ink truncate text-[21px] leading-[1.15] font-semibold">
-                                    <a href="{{ route('crosswords.editor', $crossword) }}" wire:navigate class="hover:text-amber-300 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">
+                                <h3 class="font-classical text-ink flex min-w-0 items-center gap-1.5 text-[15px] leading-[1.15] font-semibold sm:text-[21px]">
+                                    @if($crossword->is_published)
+                                        {{-- Phones drop the badge for space; a dot keeps the status visible. --}}
+                                        <span class="size-1.5 shrink-0 rounded-full bg-amber-400 sm:hidden" title="{{ __('Published') }}" data-test="published-dot"></span>
+                                    @endif
+                                    <a href="{{ route('crosswords.editor', $crossword) }}" wire:navigate class="truncate hover:text-amber-300 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">
                                         {{ $crossword->displayTitle() }}
                                     </a>
                                 </h3>
                                 <x-puzzle-details :crossword="$crossword" />
                             </div>
                             @if($crossword->is_published)
-                                <span class="badge-classical border-amber-400 text-amber-400">{{ __('Published') }}</span>
+                                <span class="badge-classical border-amber-400 text-amber-400 max-sm:hidden!">{{ __('Published') }}</span>
                             @else
-                                <span class="badge-classical border-ink-faint text-ink-faint">{{ __('Draft') }}</span>
+                                <span class="badge-classical border-ink-faint text-ink-faint max-sm:hidden!">{{ __('Draft') }}</span>
                             @endif
                         </div>
 
@@ -554,11 +561,11 @@ new #[Title('Build')] class extends Component {
                         <x-puzzle-completeness-bar :crossword="$crossword" />
 
                         <div class="flex gap-[10px] pt-1">
-                            <a href="{{ route('crosswords.editor', $crossword) }}" wire:navigate class="btn-classical btn-classical-compact btn-amber-outline flex-1">
+                            <a href="{{ route('crosswords.editor', $crossword) }}" wire:navigate class="btn-classical btn-classical-compact btn-amber-outline flex-1 max-sm:hidden!">
                                 {{ __('Open editor') }}
                             </a>
-                            <flux:dropdown position="bottom" align="end">
-                                <button type="button" class="btn-classical btn-classical-compact btn-classical-muted" aria-label="{{ __('More actions') }}">
+                            <flux:dropdown position="bottom" align="end" class="max-sm:flex-1">
+                                <button type="button" class="btn-classical btn-classical-compact btn-classical-muted max-sm:w-full max-sm:py-1.5!" aria-label="{{ __('More actions') }}">
                                     <flux:icon name="ellipsis-vertical" class="size-4" />
                                 </button>
                                 <flux:menu>

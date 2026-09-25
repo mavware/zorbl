@@ -1019,10 +1019,15 @@ test('the toolbar shows cell and clue progress as rings beside the publish butto
     $this->actingAs($user);
 
     $html = Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
-        ->assertSeeInOrder(['Cells', 'Clues', 'Publish'])
+        ->assertSeeInOrder(['Auto-fill grid', 'Saving...', 'Saved', 'Cells', 'Clues', 'Publish'])
         ->html();
 
     preg_match('/<div[^>]*data-test="editor-progress".*?data-test="editor-publish-button"/s', $html, $cluster);
+
+    // The save status lives in the progress cluster, directly before the rings.
+    preg_match('/data-test="editor-save-status".*?data-test="editor-progress"/s', $html, $saveStatus);
+    expect($saveStatus)->not->toBeEmpty()
+        ->and($saveStatus[0])->not->toContain('data-test="editor-tools-row"');
 
     expect($cluster)->not->toBeEmpty()
         ->and($cluster[0])->toContain('data-test="editor-progress-cells"')

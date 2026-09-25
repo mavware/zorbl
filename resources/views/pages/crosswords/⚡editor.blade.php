@@ -898,22 +898,6 @@ class extends Component {
         {{-- Tools. Below `sm` this cluster (mode toggle, undo/redo, fill, clear)
              takes its own row, leaving progress and publish to a third row. --}}
         <div class="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-1 sm:justify-center" data-test="editor-tools-row">
-            {{-- Save status. Hidden while idle so its padding doesn't indent the row. --}}
-            <div class="flex items-center gap-1 pr-2 text-sm text-zinc-500" x-show="saving || showSaved">
-                <template x-if="saving">
-                    <span>{{ __('Saving...') }}</span>
-                </template>
-                <template x-if="showSaved">
-                        <span class="text-emerald-500">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="inline size-4" viewBox="0 0 20 20"
-                                 fill="currentColor"><path fill-rule="evenodd"
-                                                           d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z"
-                                                           clip-rule="evenodd"/></svg>
-                            {{ __('Saved') }}
-                        </span>
-                </template>
-            </div>
-
             {{-- Mode toggle --}}
             <div class="flex rounded-lg border border-line">
                 <span
@@ -1052,6 +1036,21 @@ class extends Component {
              gates. Each ring is an SVG circle with pathLength="100", so the
              fill percentage is its dash offset directly. --}}
         <div class="ml-auto flex shrink-0 items-center gap-2">
+            {{-- Save status. Hidden while idle so it takes no room; when shown
+                 it sits right before the progress pill so save state and
+                 fill state read as one status group. --}}
+            <div class="flex items-center gap-1 text-sm text-zinc-500" x-show="saving || showSaved" data-test="editor-save-status">
+                <template x-if="saving">
+                    <span>{{ __('Saving...') }}</span>
+                </template>
+                <template x-if="showSaved">
+                    <span class="flex items-center gap-1 text-emerald-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="size-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd"/></svg>
+                        <span class="max-sm:sr-only">{{ __('Saved') }}</span>
+                    </span>
+                </template>
+            </div>
+
             <div class="flex h-8 items-center divide-x divide-line rounded-lg border border-line bg-elevated text-xs" data-test="editor-progress">
                 @foreach ([
                     'cells' => ['label' => __('Cells'), 'tooltip' => __('Cells with a letter / total playable cells')],
