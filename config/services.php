@@ -51,4 +51,8 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URI', '/auth/google/callback'),
     ],
 
+    'nightwatch' => [
+        'dashboard_url' => env('NIGHTWATCH_DASHBOARD_URL', 'https://nightwatch.laravel.com/us/environments/a2d588b0-49d1-4a98-9c98-34b776924339/dashboard?period=1h'),
+    ],
+
 ];
