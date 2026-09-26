@@ -22,6 +22,23 @@ class ClueQualityChecker
     public const int MAX_LENGTH = 120;
 
     /**
+     * Rules that only apply while writing a puzzle. Length is a style call
+     * for the constructor, not a reason to flag a library clue.
+     *
+     * @var list<string>
+     */
+    private const array PUZZLE_ONLY_CODES = ['too_short', 'too_long'];
+
+    /**
+     * Rules that only apply to standalone library clues. "Goes with
+     * 22-Across" works inside its own puzzle and only becomes a problem once
+     * the clue is pulled into the library without that context.
+     *
+     * @var list<string>
+     */
+    private const array LIBRARY_ONLY_CODES = ['cross_reference'];
+
+    /**
      * Suffixes stripped when comparing word roots, longest first so "ings"
      * wins over "s".
      *
@@ -46,11 +63,19 @@ class ClueQualityChecker
     ];
 
     /**
-     * Check a single clue against its answer.
+     * Check a standalone clue library entry against its answer.
      *
      * @return list<ClueIssue>
      */
     public function check(string $clue, ?string $answer = null): array
+    {
+        return $this->withoutCodes($this->runRules($clue, $answer), self::PUZZLE_ONLY_CODES);
+    }
+
+    /**
+     * @return list<ClueIssue>
+     */
+    private function runRules(string $clue, ?string $answer): array
     {
         $clue = trim($clue);
 
@@ -106,7 +131,7 @@ class ClueQualityChecker
 
         foreach ($clues as $clue) {
             $text = (string) ($clue['clue'] ?? '');
-            $issues = $this->check($text, $clue['answer'] ?? null);
+            $issues = $this->withoutCodes($this->runRules($text, $clue['answer'] ?? null), self::LIBRARY_ONLY_CODES);
 
             if (($textCounts[mb_strtolower(trim($text))] ?? 0) > 1) {
                 $issues[] = $this->warning('duplicate', 'Duplicate clue text');
@@ -118,6 +143,16 @@ class ClueQualityChecker
         }
 
         return $results;
+    }
+
+    /**
+     * @param  list<ClueIssue>  $issues
+     * @param  list<string>  $codes
+     * @return list<ClueIssue>
+     */
+    private function withoutCodes(array $issues, array $codes): array
+    {
+        return array_values(array_filter($issues, fn (array $issue): bool => ! in_array($issue['code'], $codes, true)));
     }
 
     /**

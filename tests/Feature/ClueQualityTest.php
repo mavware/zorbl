@@ -103,3 +103,26 @@ test('admins can filter pending clues to those with quality issues', function ()
         ->assertCanSeeTableRecords([$flagged])
         ->assertCanNotSeeTableRecords([$clean]);
 });
+
+test('the editor does not flag clues that reference other clues in the puzzle', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create();
+
+    $this->actingAs($user);
+
+    $issues = Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->call('checkClueQuality', [
+            ['direction' => 'across', 'number' => 1, 'clue' => 'Goes with 22 Across', 'answer' => 'OREO'],
+        ])
+        ->effects['returns'][0];
+
+    expect($issues)->toBe([]);
+});
+
+test('short and long library clues are not stored as quality issues', function () {
+    $short = ClueEntry::factory()->create(['answer' => 'NAY', 'clue' => 'No']);
+    $long = ClueEntry::factory()->create(['answer' => 'NAY', 'clue' => str_repeat('word ', 30)]);
+
+    expect($short->fresh()->quality_issues)->toBeNull()
+        ->and($long->fresh()->quality_issues)->toBeNull();
+});

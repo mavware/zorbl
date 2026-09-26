@@ -82,9 +82,19 @@ test('placeholder clues are flagged', function (string $clue) {
     expect(issueCodes($this->checker->check($clue, 'OREO')))->toBe(['placeholder']);
 })->with(['TODO', 'tbd', '???', 'xxx', 'Clue', 'Fix this TODO']);
 
-test('very short and very long clues are flagged', function () {
-    expect(issueCodes($this->checker->check('No', 'NAY')))->toBe(['too_short'])
-        ->and(issueCodes($this->checker->check(str_repeat('word ', 30), 'NAY')))->toBe(['too_long']);
+test('very short and very long clues are flagged in a puzzle', function () {
+    $results = $this->checker->checkPuzzle([
+        ['direction' => 'across', 'number' => 1, 'clue' => 'No', 'answer' => 'NAY'],
+        ['direction' => 'across', 'number' => 4, 'clue' => str_repeat('word ', 30), 'answer' => 'NAY'],
+    ]);
+
+    expect(issueCodes($results['across-1']))->toBe(['too_short'])
+        ->and(issueCodes($results['across-4']))->toBe(['too_long']);
+});
+
+test('clue length is not flagged for library clues', function () {
+    expect($this->checker->check('No', 'NAY'))->toBe([])
+        ->and($this->checker->check(str_repeat('word ', 30), 'NAY'))->toBe([]);
 });
 
 test('unbalanced quotes and brackets are flagged', function (string $clue) {
@@ -114,8 +124,18 @@ test('checking a puzzle flags duplicates and keys results by slot', function () 
 
 test('checking a puzzle works for unfilled answers', function () {
     $results = $this->checker->checkPuzzle([
-        ['direction' => 'across', 'number' => 1, 'clue' => 'See 5-Down', 'answer' => null],
+        ['direction' => 'across', 'number' => 1, 'clue' => 'TODO', 'answer' => null],
     ]);
 
-    expect(issueCodes($results['across-1']))->toBe(['cross_reference']);
+    expect(issueCodes($results['across-1']))->toBe(['placeholder']);
+});
+
+test('checking a puzzle allows clues that reference other clues in the same puzzle', function () {
+    $results = $this->checker->checkPuzzle([
+        ['direction' => 'across', 'number' => 1, 'clue' => 'Goes with 22-Across', 'answer' => 'OREO'],
+        ['direction' => 'across', 'number' => 5, 'clue' => 'See 1-Across (brand', 'answer' => 'MILK'],
+    ]);
+
+    expect(array_keys($results))->toBe(['across-5'])
+        ->and(issueCodes($results['across-5']))->toBe(['unbalanced_punctuation']);
 });
