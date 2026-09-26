@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\ClueSource;
 use App\Models\ClueEntry;
 use App\Models\User;
 use App\Models\Word;
@@ -18,7 +19,10 @@ class WordClueBackfiller
 
     public const int MIN_WORD_LENGTH = 3;
 
-    public function __construct(private readonly AiWordClueWriter $writer) {}
+    public function __construct(
+        private readonly AiWordClueWriter $writer,
+        private readonly WiktionaryClueWriter $wiktionaryWriter,
+    ) {}
 
     /**
      * Words that have no clue entries at all, in random order so a word the
@@ -37,17 +41,21 @@ class WordClueBackfiller
     }
 
     /**
-     * Write up to $limit clues for one word and store them as clue entries
-     * attributed to the admin, pending review unless $approve is set.
+     * Write up to $limit clues for one word from the given source and store
+     * them as clue entries attributed to the admin, pending review unless
+     * $approve is set.
      *
      * @return array{success: bool, inserted: int, message: string}
      *
      * @throws RuntimeException when no Admin user exists to attribute clues to.
      */
-    public function backfill(Word $word, int $limit = self::DEFAULT_LIMIT, bool $approve = false): array
+    public function backfill(Word $word, int $limit = self::DEFAULT_LIMIT, bool $approve = false, ClueSource $source = ClueSource::Ai): array
     {
         $admin = $this->attributionUser();
-        $result = $this->writer->write($word->word, $limit);
+        $result = match ($source) {
+            ClueSource::Ai => $this->writer->write($word->word, $limit),
+            ClueSource::Wiktionary => $this->wiktionaryWriter->write($word->word, $limit),
+        };
 
         if (! $result['success']) {
             return ['success' => false, 'inserted' => 0, 'message' => $result['message']];

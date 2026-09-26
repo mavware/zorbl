@@ -13,11 +13,21 @@
         <x-filament::section>
             <x-slot name="heading">Backfill clues</x-slot>
             <x-slot name="description">
-                Writes AI clues for random catalog words with no clues, up to
+                Writes clues, from AI or Wiktionary definitions, for random catalog words with no clues, up to
                 {{ \App\Filament\Pages\Commands::MAX_BACKFILL_WORDS }} words per run.
             </x-slot>
 
             {{ $this->backfillCluesAction }}
+        </x-filament::section>
+
+        <x-filament::section>
+            <x-slot name="heading">Import words from Wiktionary</x-slot>
+            <x-slot name="description">
+                Adds dictionary words and phrases that aren't in the word list yet, up to
+                {{ \App\Filament\Pages\Commands::MAX_IMPORT_PAGES }} pages of 500 entries per run.
+            </x-slot>
+
+            {{ $this->importWordsAction }}
         </x-filament::section>
     </div>
 
