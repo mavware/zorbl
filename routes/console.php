@@ -14,4 +14,3 @@ Schedule::command('contests:process-ended')->everyMinute()->when(fn (): bool => 
 Schedule::command('constructors:send-weekly-digest')->weeklyOn(1, '9:00');
 Schedule::command('words:export-json')->weekly()->withoutOverlapping();
 Schedule::command('clues:backfill')->hourly()->withoutOverlapping()->when(fn (): bool => (bool) config('crosswordbuilder.features.clue_backfill'));
-Schedule::command('log-hub:purge')->daily()->withoutOverlapping();
