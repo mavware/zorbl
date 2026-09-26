@@ -4,7 +4,6 @@ namespace App\Providers\Filament;
 
 use App\Filament\Pages\Dashboard;
 use App\Filament\Pages\PulseDashboard;
-use App\Services\WordExporter;
 use Filament\Actions\Action;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -21,10 +20,8 @@ use Filament\Widgets\FilamentInfoWidget;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
-use Illuminate\Support\Facades\Route;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 class AdminPanelProvider extends PanelProvider
@@ -45,17 +42,12 @@ class AdminPanelProvider extends PanelProvider
                     ->url(fn (): string => config('services.nightwatch.dashboard_url'), shouldOpenInNewTab: true)
                     ->icon(Heroicon::OutlinedEye)
                     ->sort(2),
-                // Links to a redirect so the export disk is only resolved on click, not on every render.
+                // The manifest indexes the per-length JSON shards served by the API.
                 NavigationItem::make('Word List JSON')
-                    ->url(fn (): string => route('filament.admin.word-list'), shouldOpenInNewTab: true)
+                    ->url(fn (): string => route('api.v1.words.manifest'), shouldOpenInNewTab: true)
                     ->icon(Heroicon::OutlinedDocumentText)
                     ->sort(3),
             ])
-            // Redirects to the manifest indexing the per-length JSON shards written by words:export-json.
-            ->authenticatedRoutes(function (): void {
-                Route::get('word-list', fn (WordExporter $exporter): RedirectResponse => redirect()->away($exporter->manifestUrl()))
-                    ->name('word-list');
-            })
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->renderHook(

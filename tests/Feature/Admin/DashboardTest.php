@@ -2,7 +2,6 @@
 
 use App\Filament\Widgets\Pulse\ExceptionsWidget;
 use App\Models\User;
-use Illuminate\Support\Facades\Storage;
 use Spatie\Permission\Models\Role;
 
 test('admin can access dashboard', function () {
@@ -55,7 +54,7 @@ test('admin navigation links to nightwatch in a new tab', function () {
         ->assertSee('target="_blank"', false);
 });
 
-test('admin navigation links to the word list json redirect in a new tab', function () {
+test('admin navigation links to the word list json manifest in a new tab', function () {
     Role::findOrCreate('Admin', 'web');
     $admin = User::factory()->create();
     $admin->assignRole('Admin');
@@ -64,22 +63,5 @@ test('admin navigation links to the word list json redirect in a new tab', funct
         ->get('/admin/dashboard')
         ->assertSuccessful()
         ->assertSee('Word List JSON')
-        ->assertSee('href="'.route('filament.admin.word-list').'"', false);
-});
-
-test('word list link redirects admins to the json manifest', function () {
-    Storage::fake('s3');
-    Role::findOrCreate('Admin', 'web');
-    $admin = User::factory()->create();
-    $admin->assignRole('Admin');
-
-    $this->actingAs($admin)
-        ->get(route('filament.admin.word-list'))
-        ->assertRedirect(Storage::disk('s3')->url('exports/words/manifest.json'));
-});
-
-test('word list link is forbidden to non-admins', function () {
-    $this->actingAs(User::factory()->create())
-        ->get(route('filament.admin.word-list'))
-        ->assertForbidden();
+        ->assertSee('href="'.route('api.v1.words.manifest').'"', false);
 });

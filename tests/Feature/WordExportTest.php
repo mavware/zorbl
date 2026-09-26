@@ -7,55 +7,54 @@ use App\Models\Word;
 use App\Services\WordExporter;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 
 uses(RefreshDatabase::class);
 
-beforeEach(function (): void {
-    Storage::fake('s3');
-    config([
-        'crosswordbuilder.word_export.disk' => 's3',
-        'crosswordbuilder.word_export.path' => 'exports/words',
-    ]);
-});
-
-/**
- * @return array<string, mixed>
- */
-function readExportJson(string $path): array
-{
-    return json_decode((string) Storage::disk('s3')->get($path), true, 512, JSON_THROW_ON_ERROR);
-}
-
-test('the export writes one shard per word length plus a manifest', function () {
+test('the manifest lists one shard per word length', function () {
     Word::factory()->word('CAT')->create(['score' => 42.5]);
     Word::factory()->word('DOG')->create(['score' => 40]);
     Word::factory()->word('OCEAN')->create(['score' => 55.25]);
 
-    $this->artisan('words:export-json')
-        ->expectsOutputToContain('Exported 3 words and 0 approved clues across 2 shards.')
-        ->assertSuccessful();
+    $manifest = $this->getJson(route('api.v1.words.manifest'))
+        ->assertOk()
+        ->assertHeader('Content-Type', 'application/json')
+        ->json();
 
-    Storage::disk('s3')->assertExists('exports/words/manifest.json');
-    Storage::disk('s3')->assertExists('exports/words/words/03.json');
-    Storage::disk('s3')->assertExists('exports/words/words/05.json');
-
-    $manifest = readExportJson('exports/words/manifest.json');
     expect($manifest['version'])->toBe(WordExporter::VERSION)
         ->and($manifest['words'])->toBe(3)
         ->and($manifest['clues'])->toBe(0)
         ->and($manifest['fingerprint'])->toBeString()
         ->and(array_column($manifest['shards'], 'length'))->toBe([3, 5])
-        ->and($manifest['shards'][0]['path'])->toBe('exports/words/words/03.json')
-        ->and($manifest['shards'][0]['words'])->toBe(2)
-        ->and($manifest['shards'][0]['sha256'])->toBe(hash('sha256', (string) Storage::disk('s3')->get('exports/words/words/03.json')));
+        ->and($manifest['shards'][0]['url'])->toBe(route('api.v1.words.shard', 3))
+        ->and($manifest['shards'][0]['words'])->toBe(2);
 
-    $shard = readExportJson('exports/words/words/03.json');
-    expect($shard['length'])->toBe(3)
-        ->and($shard['words'])->toBe([
+    $shardResponse = $this->get(route('api.v1.words.shard', 3))->assertOk();
+
+    expect($manifest['shards'][0]['sha256'])->toBe(hash('sha256', $shardResponse->getContent()))
+        ->and($shardResponse->json('length'))->toBe(3)
+        ->and($shardResponse->json('words'))->toBe([
             ['word' => 'CAT', 'score' => 42.5, 'clues' => []],
             ['word' => 'DOG', 'score' => 40.0, 'clues' => []],
         ]);
+});
+
+test('responses are publicly cacheable with an etag', function () {
+    Word::factory()->word('CAT')->create();
+
+    $response = $this->get(route('api.v1.words.manifest'))->assertOk();
+
+    expect($response->headers->get('Cache-Control'))->toContain('public')->toContain('max-age=600')
+        ->and($response->headers->get('ETag'))->not->toBeNull();
+
+    $this->get(route('api.v1.words.manifest'), ['If-None-Match' => $response->headers->get('ETag')])
+        ->assertStatus(304);
+});
+
+test('a length with no words returns not found', function () {
+    Word::factory()->word('CAT')->create();
+
+    $this->get(route('api.v1.words.shard', 7))->assertNotFound();
 });
 
 test('shards include approved clues with puzzle attribution and leave out pending ones', function () {
@@ -82,64 +81,49 @@ test('shards include approved clues with puzzle attribution and leave out pendin
         'status' => ClueEntry::STATUS_PENDING,
     ]);
 
-    app(WordExporter::class)->export();
+    $words = $this->getJson(route('api.v1.words.shard', 5))->assertOk()->json('words');
 
-    $shard = readExportJson('exports/words/words/05.json');
-    expect($shard['words'])->toHaveCount(1)
-        ->and($shard['words'][0]['word'])->toBe('OCEAN')
-        ->and($shard['words'][0]['clues'])->toBe([
+    expect($words)->toHaveCount(1)
+        ->and($words[0]['word'])->toBe('OCEAN')
+        ->and($words[0]['clues'])->toBe([
             ['text' => 'Large body of water', 'puzzle' => ['title' => 'Sea Legs', 'author' => 'Ada Lovelace']],
             ['text' => 'Pacific, for one', 'puzzle' => null],
         ]);
 
-    $manifest = readExportJson('exports/words/manifest.json');
-    expect($manifest['clues'])->toBe(2);
+    expect($this->getJson(route('api.v1.words.manifest'))->json('clues'))->toBe(2);
 });
 
-test('an approved clue whose answer is not in the word list is still exported', function () {
-    $user = User::factory()->create();
-    ClueEntry::factory()->standalone()->for($user)->create([
+test('an approved clue whose answer is not in the word list is still included', function () {
+    ClueEntry::factory()->standalone()->for(User::factory()->create())->create([
         'answer' => 'ZEBRA',
         'clue' => 'Striped grazer',
         'status' => ClueEntry::STATUS_APPROVED,
     ]);
 
-    app(WordExporter::class)->export();
-
-    $shard = readExportJson('exports/words/words/05.json');
-    expect($shard['words'])->toBe([
+    expect($this->getJson(route('api.v1.words.shard', 5))->assertOk()->json('words'))->toBe([
         ['word' => 'ZEBRA', 'score' => null, 'clues' => [['text' => 'Striped grazer', 'puzzle' => null]]],
     ]);
 });
 
-test('a repeat run with no changes writes nothing unless forced', function () {
+test('repeat requests are served from the cache without rebuilding', function () {
     Word::factory()->word('CAT')->create();
+    $this->get(route('api.v1.words.manifest'))->assertOk();
 
-    app(WordExporter::class)->export();
-    $firstManifest = (string) Storage::disk('s3')->get('exports/words/manifest.json');
+    DB::enableQueryLog();
+    $this->get(route('api.v1.words.manifest'))->assertOk();
+    $this->get(route('api.v1.words.shard', 3))->assertOk();
 
-    $this->travel(2)->hours();
-
-    $this->artisan('words:export-json')
-        ->expectsOutputToContain('Nothing written')
-        ->assertSuccessful();
-    expect((string) Storage::disk('s3')->get('exports/words/manifest.json'))->toBe($firstManifest);
-
-    $this->artisan('words:export-json --force')
-        ->expectsOutputToContain('Exported 1 words')
-        ->assertSuccessful();
-    expect((string) Storage::disk('s3')->get('exports/words/manifest.json'))->not->toBe($firstManifest);
+    expect(DB::getQueryLog())->toBe([]);
 });
 
-test('a change to words or approved clues triggers a rewrite', function () {
+test('a change to words or approved clues is served once the fingerprint refreshes', function () {
     $word = Word::factory()->word('CAT')->create(['score' => 10]);
-    app(WordExporter::class)->export();
+    $this->get(route('api.v1.words.shard', 3))->assertOk();
 
     $this->travel(1)->hour();
     $word->update(['score' => 99]);
 
-    expect(app(WordExporter::class)->export()['skipped'])->toBeFalse()
-        ->and(readExportJson('exports/words/words/03.json')['words'][0]['score'])->toBe(99.0);
+    expect($this->getJson(route('api.v1.words.shard', 3))->json('words.0.score'))->toBe(99.0);
 
     $this->travel(1)->hour();
     ClueEntry::factory()->standalone()->for(User::factory()->create())->create([
@@ -148,28 +132,39 @@ test('a change to words or approved clues triggers a rewrite', function () {
         'status' => ClueEntry::STATUS_APPROVED,
     ]);
 
-    expect(app(WordExporter::class)->export()['skipped'])->toBeFalse()
-        ->and(readExportJson('exports/words/words/03.json')['words'][0]['clues'][0]['text'])->toBe('Whiskered pet');
+    expect($this->getJson(route('api.v1.words.shard', 3))->json('words.0.clues.0.text'))->toBe('Whiskered pet');
 });
 
-test('shards for lengths that no longer exist are removed', function () {
+test('lengths that no longer exist drop out of the manifest', function () {
     $word = Word::factory()->word('OCEAN')->create();
     Word::factory()->word('CAT')->create();
-    app(WordExporter::class)->export();
-    Storage::disk('s3')->assertExists('exports/words/words/05.json');
+    $this->get(route('api.v1.words.shard', 5))->assertOk();
 
     $this->travel(1)->hour();
     $word->delete();
-    app(WordExporter::class)->export();
 
-    Storage::disk('s3')->assertMissing('exports/words/words/05.json');
-    expect(array_column(readExportJson('exports/words/manifest.json')['shards'], 'length'))->toBe([3]);
+    expect(array_column($this->getJson(route('api.v1.words.manifest'))->json('shards'), 'length'))->toBe([3]);
+    $this->get(route('api.v1.words.shard', 5))->assertNotFound();
 });
 
-test('the export runs weekly on the scheduler', function () {
+test('the command rebuilds immediately and warms the cache', function () {
+    Word::factory()->word('CAT')->create(['score' => 10]);
+    $this->get(route('api.v1.words.shard', 3))->assertOk();
+
+    Word::query()->update(['score' => 50]);
+
+    $this->artisan('words:export-json')
+        ->expectsOutputToContain('Cached 1 words and 0 approved clues across 1 shards.')
+        ->assertSuccessful();
+
+    DB::enableQueryLog();
+    expect($this->getJson(route('api.v1.words.shard', 3))->json('words.0.score'))->toBe(50.0)
+        ->and(DB::getQueryLog())->toBe([]);
+});
+
+test('the export is no longer scheduled', function () {
     $events = collect(app(Schedule::class)->events())
         ->filter(fn ($event) => str_contains($event->command ?? '', 'words:export-json'));
 
-    expect($events)->toHaveCount(1)
-        ->and($events->first()->expression)->toBe('0 0 * * 0');
+    expect($events)->toBeEmpty();
 });

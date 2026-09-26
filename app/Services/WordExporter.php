@@ -4,121 +4,141 @@ namespace App\Services;
 
 use App\Models\ClueEntry;
 use App\Models\Word;
-use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Cache;
 
 /**
- * Writes the public word list (with scores and approved clues) to a storage
- * disk as static JSON, one shard per word length plus a manifest.
+ * Builds the public word list (with scores and approved clues) as JSON, one
+ * shard per word length plus a manifest, and keeps it in the cache.
  *
- * Layout under the configured path:
- *   manifest.json        index of shards, counts, and a change fingerprint
- *   words/{NN}.json      every word of length NN with its score and clues
+ * Served by the API:
+ *   /api/v1/words/manifest    index of shards, counts, and a change fingerprint
+ *   /api/v1/words/{length}    every word of that length with its score and clues
  *
- * The manifest's fingerprint lets a scheduled run skip rewriting when nothing
- * has changed, and lets clients skip shards whose hash they already hold.
+ * Cache keys include the fingerprint, so any change to words or approved clues
+ * makes the next request rebuild, and clients can skip shards whose hash they
+ * already hold.
  */
 class WordExporter
 {
-    public const int VERSION = 1;
-
-    public const string MANIFEST = 'manifest.json';
+    public const int VERSION = 2;
 
     /**
-     * @return array{skipped: bool, shards: int, words: int, clues: int}
+     * How long the fingerprint is reused before the database is checked for changes.
      */
-    public function export(bool $force = false): array
+    public const int FINGERPRINT_SECONDS = 600;
+
+    /**
+     * How long a built export stays cached. Changes invalidate it sooner via the fingerprint.
+     */
+    public const int EXPORT_SECONDS = 604800;
+
+    /**
+     * The manifest JSON, building the export if it isn't cached.
+     */
+    public function manifest(): string
     {
-        $disk = $this->disk();
+        return Cache::get($this->cacheKey('manifest')) ?? $this->build()['manifest'];
+    }
+
+    /**
+     * The JSON shard for one word length, or null when no word has that length.
+     */
+    public function shard(int $length): ?string
+    {
+        return Cache::get($this->cacheKey("shard:{$length}")) ?? ($this->build()['shards'][$length] ?? null);
+    }
+
+    /**
+     * Build every shard and the manifest and store them in the cache.
+     *
+     * @return array{manifest: string, shards: array<int, string>, words: int, clues: int}
+     */
+    public function build(): array
+    {
         $fingerprint = $this->fingerprint();
-        $previous = $this->readManifest($disk);
 
-        if (! $force && $previous !== null && ($previous['fingerprint'] ?? null) === $fingerprint) {
-            return [
-                'skipped' => true,
-                'shards' => count($previous['shards'] ?? []),
-                'words' => (int) ($previous['words'] ?? 0),
-                'clues' => (int) ($previous['clues'] ?? 0),
-            ];
-        }
+        return Cache::lock("word-export:build:{$fingerprint}", 120)->block(60, function () use ($fingerprint): array {
+            $generatedAt = now()->toIso8601String();
+            $cluesByLength = $this->approvedCluesByLength();
+            $shards = [];
+            $shardSummaries = [];
+            $totalWords = 0;
+            $totalClues = 0;
 
-        $generatedAt = now()->toIso8601String();
-        $cluesByLength = $this->approvedCluesByLength();
-        $shards = [];
-        $totalWords = 0;
-        $totalClues = 0;
+            foreach ($this->lengths($cluesByLength) as $length) {
+                $words = $this->wordsForLength($length, $cluesByLength->get($length, collect()));
+                $clueCount = $words->sum(fn (array $word): int => count($word['clues']));
+                $json = $this->encode([
+                    'version' => self::VERSION,
+                    'generated_at' => $generatedAt,
+                    'length' => $length,
+                    'words' => $words->values()->all(),
+                ]);
 
-        foreach ($this->lengths($cluesByLength) as $length) {
-            $words = $this->wordsForLength($length, $cluesByLength->get($length, collect()));
-            $clueCount = $words->sum(fn (array $word): int => count($word['clues']));
-            $path = $this->shardPath($length);
-            $json = $this->encode([
+                $shards[$length] = $json;
+                $shardSummaries[] = [
+                    'length' => $length,
+                    'url' => route('api.v1.words.shard', $length),
+                    'words' => $words->count(),
+                    'clues' => $clueCount,
+                    'bytes' => strlen($json),
+                    'sha256' => hash('sha256', $json),
+                ];
+                $totalWords += $words->count();
+                $totalClues += $clueCount;
+            }
+
+            $manifest = $this->encode([
                 'version' => self::VERSION,
                 'generated_at' => $generatedAt,
-                'length' => $length,
-                'words' => $words->values()->all(),
+                'fingerprint' => $fingerprint,
+                'words' => $totalWords,
+                'clues' => $totalClues,
+                'shards' => $shardSummaries,
             ]);
 
-            $disk->put($path, $json, 'public');
+            foreach ($shards as $length => $json) {
+                Cache::put($this->cacheKey("shard:{$length}", $fingerprint), $json, self::EXPORT_SECONDS);
+            }
+            Cache::put($this->cacheKey('manifest', $fingerprint), $manifest, self::EXPORT_SECONDS);
 
-            $shards[] = [
-                'length' => $length,
-                'path' => $path,
-                'words' => $words->count(),
-                'clues' => $clueCount,
-                'bytes' => strlen($json),
-                'sha256' => hash('sha256', $json),
+            return [
+                'manifest' => $manifest,
+                'shards' => $shards,
+                'words' => $totalWords,
+                'clues' => $totalClues,
             ];
-            $totalWords += $words->count();
-            $totalClues += $clueCount;
-        }
-
-        $this->removeStaleShards($disk, $previous, $shards);
-
-        $disk->put($this->fullPath(self::MANIFEST), $this->encode([
-            'version' => self::VERSION,
-            'generated_at' => $generatedAt,
-            'fingerprint' => $fingerprint,
-            'words' => $totalWords,
-            'clues' => $totalClues,
-            'shards' => $shards,
-        ]), 'public');
-
-        return [
-            'skipped' => false,
-            'shards' => count($shards),
-            'words' => $totalWords,
-            'clues' => $totalClues,
-        ];
-    }
-
-    /**
-     * Public URL of the manifest, for clients discovering the export.
-     */
-    public function manifestUrl(): string
-    {
-        return $this->disk()->url($this->fullPath(self::MANIFEST));
-    }
-
-    public function shardPath(int $length): string
-    {
-        return $this->fullPath(sprintf('words/%02d.json', $length));
+        });
     }
 
     /**
      * A cheap digest of everything the export depends on. Any word or approved
-     * clue being added, removed, rescored, or re-reviewed changes it.
+     * clue being added, removed, rescored, or re-reviewed changes it. Reused for
+     * a few minutes so every request doesn't query the word table.
      */
     public function fingerprint(): string
     {
-        return hash('sha256', implode('|', [
+        return Cache::remember('word-export:fingerprint', self::FINGERPRINT_SECONDS, fn (): string => hash('sha256', implode('|', [
             self::VERSION,
             Word::query()->count(),
             (string) Word::query()->max('updated_at'),
             ClueEntry::approved()->count(),
             (string) ClueEntry::approved()->max('updated_at'),
-        ]));
+        ])));
+    }
+
+    /**
+     * Drop the cached fingerprint so the next request checks the database for changes.
+     */
+    public function forgetFingerprint(): void
+    {
+        Cache::forget('word-export:fingerprint');
+    }
+
+    private function cacheKey(string $suffix, ?string $fingerprint = null): string
+    {
+        return 'word-export:'.($fingerprint ?? $this->fingerprint()).':'.$suffix;
     }
 
     /**
@@ -206,53 +226,10 @@ class WordExporter
     }
 
     /**
-     * @param  array<string, mixed>|null  $previous
-     * @param  list<array{path: string}>  $current
-     */
-    private function removeStaleShards(Filesystem $disk, ?array $previous, array $current): void
-    {
-        $keep = array_column($current, 'path');
-
-        foreach ($previous['shards'] ?? [] as $shard) {
-            $path = $shard['path'] ?? null;
-            if (is_string($path) && ! in_array($path, $keep, true)) {
-                $disk->delete($path);
-            }
-        }
-    }
-
-    /**
-     * @return array<string, mixed>|null
-     */
-    private function readManifest(Filesystem $disk): ?array
-    {
-        $raw = $disk->get($this->fullPath(self::MANIFEST));
-        if ($raw === null) {
-            return null;
-        }
-
-        $decoded = json_decode($raw, true);
-
-        return is_array($decoded) ? $decoded : null;
-    }
-
-    /**
      * @param  array<string, mixed>  $data
      */
     private function encode(array $data): string
     {
         return json_encode($data, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRESERVE_ZERO_FRACTION);
-    }
-
-    private function fullPath(string $file): string
-    {
-        $base = (string) config('crosswordbuilder.word_export.path', 'exports/words');
-
-        return $base === '' ? $file : "{$base}/{$file}";
-    }
-
-    private function disk(): Filesystem
-    {
-        return Storage::disk((string) config('crosswordbuilder.word_export.disk', 's3'));
     }
 }

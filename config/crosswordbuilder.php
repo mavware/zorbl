@@ -92,21 +92,4 @@ return [
         // Hourly AI clue writing for catalog words with no clues (spends API credits).
         'clue_backfill' => (bool) env('CROSSWORDBUILDER_CLUE_BACKFILL_ENABLED', false),
     ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Word Export
-    |--------------------------------------------------------------------------
-    |
-    | Static JSON files of every word, its score, and its approved clues,
-    | sharded by word length and regenerated on a schedule by the
-    | `words:export-json` command. Served straight from the disk so
-    | reads never touch the application.
-    |
-    */
-
-    'word_export' => [
-        'disk' => env('CROSSWORDBUILDER_WORD_EXPORT_DISK', 's3'),
-        'path' => trim(env('CROSSWORDBUILDER_WORD_EXPORT_PATH', 'exports/words'), '/'),
-    ],
 ];

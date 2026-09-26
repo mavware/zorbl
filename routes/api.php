@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\V1\MeController;
 use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\PuzzleAttemptController;
 use App\Http\Controllers\Api\V1\PuzzleCommentController;
+use App\Http\Controllers\Api\V1\WordListController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -46,6 +47,11 @@ Route::middleware('feature:contests')->group(function (): void {
 });
 
 Route::get('/clues', [ClueEntryController::class, 'index']);
+
+Route::middleware('cache.headers:public;max_age=600;etag')->group(function (): void {
+    Route::get('/words/manifest', [WordListController::class, 'manifest'])->name('api.v1.words.manifest');
+    Route::get('/words/{length}', [WordListController::class, 'shard'])->whereNumber('length')->name('api.v1.words.shard');
+});
 
 // --- Authenticated endpoints ---
 Route::middleware('auth:sanctum')->group(function () {
