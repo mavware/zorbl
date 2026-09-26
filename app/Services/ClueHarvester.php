@@ -42,6 +42,7 @@ class ClueHarvester
                 $entries[] = [
                     'answer' => $answer,
                     'clue' => $clueText,
+                    'quality_issues' => ClueEntry::encodedQualityIssues($clueText, $answer),
                     'crossword_id' => $crossword->id,
                     'user_id' => $crossword->user_id,
                     'direction' => $direction,
@@ -55,7 +56,7 @@ class ClueHarvester
             ClueEntry::upsert(
                 $entries,
                 ['crossword_id', 'direction', 'clue_number'],
-                ['answer', 'clue', 'user_id'],
+                ['answer', 'clue', 'quality_issues', 'user_id'],
             );
 
             $this->syncWords($entries);

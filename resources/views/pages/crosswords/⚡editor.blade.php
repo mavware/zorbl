@@ -7,6 +7,7 @@ use App\Models\Crossword;
 use App\Models\Tag;
 use App\Notifications\NewPuzzlePublished;
 use App\Services\ClueHarvester;
+use App\Services\ClueQualityChecker;
 use App\Livewire\Concerns\ExportsCrossword;
 use Illuminate\Support\Facades\Notification;
 use CrosswordBuilder\CrosswordIO\GridNumberer;
@@ -19,6 +20,7 @@ use App\Support\AiUsageTracker;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
+use Livewire\Attributes\Renderless;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -509,6 +511,32 @@ class extends Component {
                 'puzzle' => $entry->crossword?->displayTitle() ?? 'Untitled',
             ])
             ->all();
+    }
+
+    /**
+     * Check the puzzle's clues for quality issues. Answers come from the
+     * Alpine grid state (null while a slot is unfilled), so the results
+     * track unsaved edits.
+     *
+     * @param  list<array{direction: string, number: int, clue: string|null, answer: string|null}>  $clues
+     * @return array<string, list<array{code: string, severity: string, message: string}>>
+     */
+    #[Renderless]
+    public function checkClueQuality(array $clues): array
+    {
+        $clues = collect($clues)
+            ->take(2000)
+            ->filter(fn($clue) => is_array($clue) && in_array($clue['direction'] ?? null, ['across', 'down'], true))
+            ->map(fn(array $clue) => [
+                'direction' => $clue['direction'],
+                'number'    => (int) ($clue['number'] ?? 0),
+                'clue'      => mb_substr((string) ($clue['clue'] ?? ''), 0, 1000),
+                'answer'    => isset($clue['answer']) ? mb_substr((string) $clue['answer'], 0, 100) : null,
+            ])
+            ->values()
+            ->all();
+
+        return app(ClueQualityChecker::class)->checkPuzzle($clues);
     }
 
     /**

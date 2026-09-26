@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\ClueEntries\Tables;
 
 use App\Models\ClueEntry;
+use App\Services\ClueQualityChecker;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
@@ -10,8 +11,10 @@ use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
 
@@ -29,6 +32,13 @@ class ClueEntriesTable
                     ->searchable()
                     ->limit(80)
                     ->wrap(),
+                TextColumn::make('quality_issues')
+                    ->label('Quality')
+                    ->state(fn (ClueEntry $record): ?string => $record->quality_issues === null ? null : count($record->quality_issues).' '.str('issue')->plural(count($record->quality_issues)))
+                    ->placeholder('OK')
+                    ->badge()
+                    ->color(fn (ClueEntry $record): string => collect($record->quality_issues)->contains('severity', ClueQualityChecker::SEVERITY_ERROR) ? 'danger' : 'warning')
+                    ->tooltip(fn (ClueEntry $record): ?string => $record->quality_issues === null ? null : $record->qualityIssuesSummary()),
                 TextColumn::make('user.name')
                     ->label('Author')
                     ->searchable()
@@ -63,6 +73,10 @@ class ClueEntriesTable
                         ClueEntry::STATUS_PENDING => 'Pending',
                         ClueEntry::STATUS_APPROVED => 'Approved',
                     ]),
+                Filter::make('has_quality_issues')
+                    ->label('Has quality issues')
+                    ->toggle()
+                    ->query(fn (Builder $query): Builder => $query->whereNotNull('quality_issues')),
             ])
             ->defaultSort('created_at', 'desc')
             ->paginationPageOptions([10, 25, 50, 100])

@@ -7,6 +7,13 @@ use App\Models\ClueEntry;
 
 class ClueEntryObserver
 {
+    public function saving(ClueEntry $clueEntry): void
+    {
+        if (! $clueEntry->exists || $clueEntry->isDirty(['clue', 'answer'])) {
+            $clueEntry->refreshQualityIssues();
+        }
+    }
+
     public function saved(ClueEntry $clueEntry): void
     {
         $this->invalidateSitemapIfRelevant($clueEntry);

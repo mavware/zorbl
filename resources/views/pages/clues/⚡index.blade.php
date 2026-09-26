@@ -443,6 +443,12 @@ new class extends Component {
                                             <span class="chip-classical border-amber-400 text-amber-400">{{ __('Pending review') }}</span>
                                         @endif
 
+                                        @if($entry->quality_issues)
+                                            <flux:tooltip content="{{ $entry->qualityIssuesSummary() }}">
+                                                <span class="chip-classical border-amber-400 text-amber-400 cursor-help" data-test="clue-quality-chip">{{ __('Quality issues') }}</span>
+                                            </flux:tooltip>
+                                        @endif
+
                                         @if($entry->reports_count > 0)
                                             <span class="chip-classical border-amber-400 text-amber-400 tnum">
                                                 {{ $entry->reports_count }} {{ trans_choice('report|reports', $entry->reports_count) }}

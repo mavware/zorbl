@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Observers\ClueEntryObserver;
+use App\Services\ClueQualityChecker;
 use Carbon\CarbonImmutable;
 use Database\Factories\ClueEntryFactory;
 use Eloquent;
@@ -18,6 +19,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $id
  * @property string $answer
  * @property string $clue
+ * @property list<array{code: string, severity: string, message: string}>|null $quality_issues
  * @property int|null $crossword_id
  * @property int $user_id
  * @property string|null $direction
@@ -69,6 +71,7 @@ class ClueEntry extends Model
     {
         return [
             'reviewed_at' => 'datetime',
+            'quality_issues' => 'array',
         ];
     }
 
@@ -103,5 +106,32 @@ class ClueEntry extends Model
     public function scopeApproved(Builder $query): Builder
     {
         return $query->where('status', self::STATUS_APPROVED);
+    }
+
+    /**
+     * Re-run the clue quality checks, storing null when the clue is clean so
+     * flagged entries can be found with a simple NULL check.
+     */
+    public function refreshQualityIssues(): void
+    {
+        $issues = app(ClueQualityChecker::class)->check($this->clue, $this->answer);
+
+        $this->quality_issues = $issues === [] ? null : $issues;
+    }
+
+    /**
+     * Quality issues JSON-encoded for bulk inserts and upserts, which skip
+     * model casts and the observer.
+     */
+    public static function encodedQualityIssues(string $clue, string $answer): ?string
+    {
+        $issues = app(ClueQualityChecker::class)->check($clue, $answer);
+
+        return $issues === [] ? null : json_encode($issues);
+    }
+
+    public function qualityIssuesSummary(): string
+    {
+        return collect($this->quality_issues ?? [])->pluck('message')->implode(', ');
     }
 }

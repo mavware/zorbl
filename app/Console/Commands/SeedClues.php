@@ -119,6 +119,7 @@ class SeedClues extends Command
             $batch[] = [
                 'answer' => $answer,
                 'clue' => $clue,
+                'quality_issues' => ClueEntry::encodedQualityIssues($clue, $answer),
                 'user_id' => $admin->id,
                 'crossword_id' => null,
                 'direction' => null,

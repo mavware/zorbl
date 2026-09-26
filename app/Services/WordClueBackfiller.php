@@ -65,6 +65,7 @@ class WordClueBackfiller
         $rows = array_map(fn (string $clue): array => [
             'answer' => $word->word,
             'clue' => $clue,
+            'quality_issues' => ClueEntry::encodedQualityIssues($clue, $word->word),
             'crossword_id' => null,
             'user_id' => $admin->id,
             'direction' => null,

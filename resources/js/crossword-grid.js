@@ -27,6 +27,7 @@ import { puzzleTypeCapabilities } from './grid/puzzle-type.js';
 
 const HIGHLIGHT_AUTO_CLEAR_MS = 8000;
 const WORD_SUGGEST_DEBOUNCE_MS = 300;
+const CLUE_QUALITY_DEBOUNCE_MS = 500;
 const LONG_PRESS_MS = 500;
 
 // Everything undo/redo restores, as one comparable string. Cursor, mode and
@@ -103,6 +104,8 @@ export function crosswordGrid({
         cellsCompleteFlash: false,
         cellsCompleteRippleOrigin: null,
         cluesCompleteFlash: false,
+        // Clue quality issues from the server, keyed "{direction}-{number}".
+        clueIssues: {},
 
         // Internal: timers and listeners. Kept on `this` so destroy() can clean them up.
         _autosave: null,
@@ -110,6 +113,8 @@ export function crosswordGrid({
         _wordSuggestTimer: null,
         _wordSuggestSeq: 0,
         _clueSuggestSeq: 0,
+        _clueQualityTimer: null,
+        _clueQualitySeq: 0,
         _paneMedia: null,
         _onPaneMediaChange: null,
         _highlightTimer: null,
@@ -160,6 +165,12 @@ export function crosswordGrid({
             this.$watch('activeClueNumber', () => this.onActiveSlotChanged());
             this.$watch('direction', () => this.onActiveSlotChanged());
 
+            // Recheck clue quality whenever clue text or grid letters change.
+            this.$watch('cluesAcross', () => this.scheduleClueQualityCheck());
+            this.$watch('cluesDown', () => this.scheduleClueQualityCheck());
+            this.$watch('solution', () => this.scheduleClueQualityCheck());
+            this.checkClueQuality();
+
             // Flash the grid green when every playable cell is filled, and the
             // clue panels green when every clue text is filled. Re-arm whenever
             // the user dips back below complete so the next completion replays.
@@ -208,6 +219,7 @@ export function crosswordGrid({
             clearTimeout(this._longPressTimer);
             clearTimeout(this._wordSuggestTimer);
             clearTimeout(this._highlightTimer);
+            clearTimeout(this._clueQualityTimer);
         },
 
         // --- Cell / slot helpers (delegate to grid/helpers) -----------------
@@ -1321,41 +1333,41 @@ export function crosswordGrid({
         },
 
         // --- Clue quality indicators -----------------------------------------
-        clueQuality(clue, dir) {
-            const text = (clue.clue || '').trim();
-            if (!text) return [];
+        scheduleClueQualityCheck() {
+            clearTimeout(this._clueQualityTimer);
+            this._clueQualityTimer = setTimeout(() => this.checkClueQuality(), CLUE_QUALITY_DEBOUNCE_MS);
+        },
 
-            const issues = [];
-            const answer = this.getAnswerForSlot(dir, clue.number);
+        async checkClueQuality() {
+            if (!this.$wire?.checkClueQuality) return;
+            clearTimeout(this._clueQualityTimer);
 
-            if (text.length < 4) {
-                issues.push({ type: 'short', message: 'Clue may be too short' });
-            }
-
-            if (answer && answer.length > 1) {
-                if (text.toLowerCase().includes(answer.toLowerCase())) {
-                    issues.push({ type: 'answer', message: 'Clue contains the answer' });
-                }
-            }
-
-            const allClues = [...this.cluesAcross, ...this.cluesDown];
-            const dupes = allClues.filter(c => {
-                if (c.number === clue.number
-                    && ((dir === 'across' && this.cluesAcross.includes(c))
-                        || (dir === 'down' && this.cluesDown.includes(c)))) return false;
-                return (c.clue || '').trim().toLowerCase() === text.toLowerCase();
+            const toPayload = (direction) => (c) => ({
+                direction,
+                number: c.number,
+                clue: c.clue || '',
+                answer: this.getAnswerForSlot(direction, c.number),
             });
-            if (dupes.length > 0) {
-                issues.push({ type: 'duplicate', message: 'Duplicate clue text' });
-            }
+            const clues = [...this.cluesAcross.map(toPayload('across')), ...this.cluesDown.map(toPayload('down'))];
 
-            return issues;
+            const seq = ++this._clueQualitySeq;
+            try {
+                const issues = await this.$wire.checkClueQuality(clues);
+                if (seq === this._clueQualitySeq) this.clueIssues = issues || {};
+            } catch {
+                // Quality hints are advisory; keep the last known results.
+            }
+        },
+
+        clueQuality(clue, dir) {
+            if (!(clue.clue || '').trim()) return [];
+            return this.clueIssues[dir + '-' + clue.number] || [];
         },
 
         clueQualityIcon(clue, dir) {
             const issues = this.clueQuality(clue, dir);
             if (issues.length === 0) return '';
-            if (issues.some(i => i.type === 'answer')) return 'error';
+            if (issues.some(i => i.severity === 'error')) return 'error';
             return 'warning';
         },
 
