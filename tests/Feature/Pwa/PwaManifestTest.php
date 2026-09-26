@@ -88,10 +88,10 @@ test('public layout pages reference the manifest', function () {
         ->assertSee('apple-mobile-web-app-capable', false);
 });
 
-test('install prompt partial is included in public layout pages', function () {
+test('install prompt partial is not included in public layout pages', function () {
     $response = $this->get(route('puzzles.index'));
 
     $response->assertOk()
-        ->assertSee('crosswordbuilderPwa', false)
-        ->assertSee('install-banner-title', false);
+        ->assertDontSee('crosswordbuilderPwa', false)
+        ->assertDontSee('install-banner-title', false);
 });

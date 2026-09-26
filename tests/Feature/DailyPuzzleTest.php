@@ -177,25 +177,7 @@ test('public puzzles page shows daily puzzle', function () {
         ->assertSee('Public Daily');
 });
 
-test('solving page shows solved badge when user has completed today\'s daily puzzle', function () {
-    $user = User::factory()->create();
-    $crossword = Crossword::factory()->published()->create(['title' => 'Solved Daily']);
-    DailyPuzzle::create(['date' => today(), 'crossword_id' => $crossword->id]);
-    PuzzleAttempt::factory()->completed()->create([
-        'user_id' => $user->id,
-        'crossword_id' => $crossword->id,
-    ]);
-
-    Cache::flush();
-
-    Livewire::actingAs($user)
-        ->test('pages::crosswords.solving')
-        ->assertSee('Solved')
-        ->assertSee('View Solution')
-        ->assertDontSee('Solve Today\'s Puzzle');
-});
-
-test('solving page does not show solved badge when user has not completed today\'s daily puzzle', function () {
+test('solving page does not show the daily puzzle banner', function () {
     $user = User::factory()->create();
     $crossword = Crossword::factory()->published()->create(['title' => 'Unsolved Daily']);
     DailyPuzzle::create(['date' => today(), 'crossword_id' => $crossword->id]);
@@ -204,26 +186,8 @@ test('solving page does not show solved badge when user has not completed today\
 
     Livewire::actingAs($user)
         ->test('pages::crosswords.solving')
-        ->assertSee('Solve Today\'s Puzzle')
-        ->assertDontSee('View Solution');
-});
-
-test('solving page does not show solved badge when user has incomplete attempt on daily puzzle', function () {
-    $user = User::factory()->create();
-    $crossword = Crossword::factory()->published()->create(['title' => 'In Progress Daily']);
-    DailyPuzzle::create(['date' => today(), 'crossword_id' => $crossword->id]);
-    PuzzleAttempt::factory()->create([
-        'user_id' => $user->id,
-        'crossword_id' => $crossword->id,
-        'is_completed' => false,
-    ]);
-
-    Cache::flush();
-
-    Livewire::actingAs($user)
-        ->test('pages::crosswords.solving')
-        ->assertSee('Solve Today\'s Puzzle')
-        ->assertDontSee('View Solution');
+        ->assertDontSee('Solve Today\'s Puzzle')
+        ->assertDontSee('View past puzzles');
 });
 
 test('public puzzles page does not show solved badge for guests', function () {

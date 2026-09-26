@@ -275,93 +275,6 @@ test('solve page shows contest participant and puzzle counts', function () {
 
 // --- Solving Streak ---
 
-test('solve page shows solving streak card when user has a streak', function () {
-    $user = User::factory()->create([
-        'current_streak' => 5,
-        'longest_streak' => 12,
-        'last_solve_date' => today()->toDateString(),
-    ]);
-
-    Livewire::actingAs($user)
-        ->test('pages::crosswords.solving')
-        ->assertSee('Solving Streak')
-        ->assertSee('5 days in a row!');
-});
-
-test('streak card shows active badge when solved today', function () {
-    $user = User::factory()->create([
-        'current_streak' => 3,
-        'longest_streak' => 3,
-        'last_solve_date' => today()->toDateString(),
-    ]);
-
-    Livewire::actingAs($user)
-        ->test('pages::crosswords.solving')
-        ->assertSee('Active');
-});
-
-test('streak card shows active badge when solved yesterday', function () {
-    $user = User::factory()->create([
-        'current_streak' => 7,
-        'longest_streak' => 7,
-        'last_solve_date' => today()->subDay()->toDateString(),
-    ]);
-
-    Livewire::actingAs($user)
-        ->test('pages::crosswords.solving')
-        ->assertSee('Active');
-});
-
-test('streak card shows inactive when streak is broken', function () {
-    $user = User::factory()->create([
-        'current_streak' => 3,
-        'longest_streak' => 10,
-        'last_solve_date' => today()->subDays(3)->toDateString(),
-    ]);
-
-    Livewire::actingAs($user)
-        ->test('pages::crosswords.solving')
-        ->assertSee('Solving Streak')
-        ->assertSee('Inactive')
-        ->assertSee('Solve a puzzle today to start a new streak.');
-});
-
-test('streak card shows solve now button when inactive', function () {
-    $user = User::factory()->create([
-        'current_streak' => 2,
-        'longest_streak' => 5,
-        'last_solve_date' => today()->subDays(5)->toDateString(),
-    ]);
-
-    Livewire::actingAs($user)
-        ->test('pages::crosswords.solving')
-        ->assertSee('Solve Now');
-});
-
-test('streak card does not show solve now button when active', function () {
-    $user = User::factory()->create([
-        'current_streak' => 4,
-        'longest_streak' => 4,
-        'last_solve_date' => today()->toDateString(),
-    ]);
-
-    Livewire::actingAs($user)
-        ->test('pages::crosswords.solving')
-        ->assertDontSee('Solve Now');
-});
-
-test('solve page hides streak card when user has no streak history', function () {
-    $user = User::factory()->create([
-        'current_streak' => 0,
-        'longest_streak' => 0,
-        'last_solve_date' => null,
-    ]);
-
-    Livewire::actingAs($user)
-        ->test('pages::crosswords.solving')
-        ->assertDontSee('Solving Streak');
-});
-
 test('streak computed properties return correct values', function () {
     $user = User::factory()->create([
         'current_streak' => 8,
@@ -374,18 +287,6 @@ test('streak computed properties return correct values', function () {
     expect($component->get('currentStreak'))->toBe(8)
         ->and($component->get('longestStreak'))->toBe(15)
         ->and($component->get('streakIsActive'))->toBeTrue();
-});
-
-test('streak shows singular day for streak of one', function () {
-    $user = User::factory()->create([
-        'current_streak' => 1,
-        'longest_streak' => 1,
-        'last_solve_date' => today()->toDateString(),
-    ]);
-
-    Livewire::actingAs($user)
-        ->test('pages::crosswords.solving')
-        ->assertSee('1 day in a row!');
 });
 
 test('the attempts grid collapses to one row with a toggle, like the Build page results', function () {

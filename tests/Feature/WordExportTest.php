@@ -166,10 +166,10 @@ test('shards for lengths that no longer exist are removed', function () {
     expect(array_column(readExportJson('exports/words/manifest.json')['shards'], 'length'))->toBe([3]);
 });
 
-test('the export runs hourly on the scheduler', function () {
+test('the export runs weekly on the scheduler', function () {
     $events = collect(app(Schedule::class)->events())
         ->filter(fn ($event) => str_contains($event->command ?? '', 'words:export-json'));
 
     expect($events)->toHaveCount(1)
-        ->and($events->first()->expression)->toBe('0 * * * *');
+        ->and($events->first()->expression)->toBe('0 0 * * 0');
 });
