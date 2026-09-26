@@ -252,7 +252,7 @@
                 @foreach ($cluesAcross as $clue)
                     <p class="clue-item">
                         <span class="clue-number">{{ $clue['number'] }}.</span>
-                        {{ $clue['clue'] ?? '' }}
+                        {!! nl2br(e($clue['clue'] ?? '')) !!}
                     </p>
                 @endforeach
             </div>
@@ -266,7 +266,7 @@
                 @foreach ($cluesDown as $clue)
                     <p class="clue-item">
                         <span class="clue-number">{{ $clue['number'] }}.</span>
-                        {{ $clue['clue'] ?? '' }}
+                        {!! nl2br(e($clue['clue'] ?? '')) !!}
                     </p>
                 @endforeach
             </div>

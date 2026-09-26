@@ -3,6 +3,9 @@
 use App\Filament\Resources\ClueEntries\Pages\ListClueEntries;
 use App\Models\ClueEntry;
 use App\Models\User;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\Testing\TestAction;
 use Livewire\Livewire;
 use Spatie\Permission\Models\Role;
 
@@ -45,4 +48,34 @@ test('the pending clue table shows 50 entries per page by default', function () 
         ->assertSet('tableRecordsPerPage', 50);
 
     expect($component->instance()->getTableRecords())->toHaveCount(50);
+});
+
+test('admin can delete a pending clue written by another user from its row', function () {
+    $pending = ClueEntry::factory()->create(['status' => ClueEntry::STATUS_PENDING]);
+
+    Livewire::test(ListClueEntries::class)
+        ->assertActionVisible(TestAction::make(DeleteAction::class)->table($pending))
+        ->callAction(TestAction::make(DeleteAction::class)->table($pending))
+        ->assertNotified();
+
+    $this->assertModelMissing($pending);
+});
+
+test('non-admin users still cannot delete clues written by others', function () {
+    $clue = ClueEntry::factory()->create();
+
+    expect(User::factory()->create()->can('delete', $clue))->toBeFalse()
+        ->and($clue->user->can('delete', $clue))->toBeTrue();
+});
+
+test('admin can bulk delete pending clues written by other users', function () {
+    $pending = ClueEntry::factory()->count(2)->create(['status' => ClueEntry::STATUS_PENDING]);
+
+    Livewire::test(ListClueEntries::class)
+        ->selectTableRecords($pending)
+        ->assertActionVisible(TestAction::make(DeleteBulkAction::class)->table()->bulk())
+        ->callAction(TestAction::make(DeleteBulkAction::class)->table()->bulk())
+        ->assertNotified();
+
+    $pending->each(fn (ClueEntry $clue) => $this->assertModelMissing($clue));
 });

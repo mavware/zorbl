@@ -25,7 +25,7 @@
                                 x-on:focusin="selectClue('across', clue.number, $event)"
                                 x-on:keydown.tab.prevent="focusNextClue($el, 'across', false)"
                                 x-on:keydown.shift.tab.prevent="focusNextClue($el, 'across', true)"
-                                x-on:keydown.enter.prevent="focusNextClue($el, 'across', $event.shiftKey)"
+                                x-on:keydown.enter="if (! $event.shiftKey) { $event.preventDefault(); focusNextClue($el, 'across', false) }"
                                 :class="[
 activeClueNumber === clue.number && direction === 'across' ? 'bg-blue-100 dark:bg-blue-900/40' : '',
 isClueIncomplete('across') && !clue.clue?.trim() ? 'ring-2 ring-amber-400 dark:ring-amber-500' : ''
@@ -88,7 +88,7 @@ isClueIncomplete('across') && !clue.clue?.trim() ? 'ring-2 ring-amber-400 dark:r
                                 x-on:focusin="selectClue('down', clue.number, $event)"
                                 x-on:keydown.tab.prevent="focusNextClue($el, 'down', false)"
                                 x-on:keydown.shift.tab.prevent="focusNextClue($el, 'down', true)"
-                                x-on:keydown.enter.prevent="focusNextClue($el, 'down', $event.shiftKey)"
+                                x-on:keydown.enter="if (! $event.shiftKey) { $event.preventDefault(); focusNextClue($el, 'down', false) }"
                                 :class="[
 activeClueNumber === clue.number && direction === 'down' ? 'bg-blue-100 dark:bg-blue-900/40' : '',
 isClueIncomplete('down') && !clue.clue?.trim() ? 'ring-2 ring-amber-400 dark:ring-amber-500' : ''

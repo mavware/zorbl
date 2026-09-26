@@ -318,3 +318,18 @@ test('solver default colors are empty when none are set', function () {
     Livewire::test('pages::crosswords.solver', ['crossword' => $crossword])
         ->assertSet('defaultColors', []);
 });
+
+test('solver clue lists preserve line breaks in clues', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->published()->for($user)->create();
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::crosswords.solver', ['crossword' => $crossword])
+        ->assertSeeHtml('class="text-sm whitespace-pre-line text-zinc-800 dark:text-zinc-300" x-text="clue.clue || \'—\'"');
+
+    auth()->logout();
+
+    Livewire::test('pages::puzzles.solve', ['crossword' => $crossword])
+        ->assertSeeHtml('class="text-sm whitespace-pre-line text-zinc-800 dark:text-zinc-300" x-text="clue.clue || \'—\'"');
+});

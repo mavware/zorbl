@@ -62,6 +62,21 @@ test('the editor clue lists use auto-growing textareas so long clues wrap instea
         ->not->toMatch('/<input[^>]*x-model="clue\.clue"/');
 });
 
+test('the editor clue lists let shift+enter insert a newline instead of changing clues', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create();
+
+    $this->actingAs($user);
+
+    $html = $this->get(route('crosswords.editor', $crossword))
+        ->assertOk()
+        ->getContent();
+
+    expect($html)
+        ->toContain('x-on:keydown.enter="if (! $event.shiftKey) { $event.preventDefault(); focusNextClue($el,')
+        ->not->toContain('x-on:keydown.enter.prevent="focusNextClue');
+});
+
 test('the editor toolbar shows an unpublish label once the puzzle is live', function () {
     $user = User::factory()->create();
     $crossword = Crossword::factory()->for($user)->create(['is_published' => true]);

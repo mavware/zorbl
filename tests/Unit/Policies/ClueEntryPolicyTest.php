@@ -43,5 +43,17 @@ test('delete allows the owner', function () {
 });
 
 test('delete denies non-owners', function () {
-    expect($this->policy->delete($this->otherUser, makeClueEntry(1)))->toBeFalse();
+    $nonAdmin = Mockery::mock(User::class)->makePartial();
+    $nonAdmin->id = 2;
+    $nonAdmin->shouldReceive('hasRole')->with('Admin')->andReturnFalse();
+
+    expect($this->policy->delete($nonAdmin, makeClueEntry(1)))->toBeFalse();
+});
+
+test('delete allows admins who are not the owner', function () {
+    $admin = Mockery::mock(User::class)->makePartial();
+    $admin->id = 2;
+    $admin->shouldReceive('hasRole')->with('Admin')->andReturnTrue();
+
+    expect($this->policy->delete($admin, makeClueEntry(1)))->toBeTrue();
 });

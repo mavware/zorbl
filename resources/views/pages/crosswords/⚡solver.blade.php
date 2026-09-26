@@ -914,7 +914,7 @@ new #[Title('Solve Crossword')] class extends Component {
                         <div class="flex items-start gap-1.5">
                             <span class="mt-px text-xs font-bold text-zinc-600" x-text="clue.displayNumber"></span>
                             <div class="flex-1">
-                                <span class="text-sm text-zinc-800 dark:text-zinc-300" x-text="clue.clue || '—'"></span>
+                                <span class="text-sm whitespace-pre-line text-zinc-800 dark:text-zinc-300" x-text="clue.clue || '—'"></span>
                                 <span class="text-xs text-zinc-500" x-text="'(' + clue.length + ')'"></span>
                             </div>
                         </div>
@@ -1028,7 +1028,7 @@ new #[Title('Solve Crossword')] class extends Component {
                         <div class="flex items-start gap-1.5">
                             <span class="mt-px text-xs font-bold text-zinc-600" x-text="clue.displayNumber"></span>
                             <div class="flex-1">
-                                <span class="text-sm text-zinc-800 dark:text-zinc-300" x-text="clue.clue || '—'"></span>
+                                <span class="text-sm whitespace-pre-line text-zinc-800 dark:text-zinc-300" x-text="clue.clue || '—'"></span>
                                 <span class="text-xs text-zinc-500" x-text="'(' + clue.length + ')'"></span>
                             </div>
                         </div>
@@ -1068,7 +1068,7 @@ new #[Title('Solve Crossword')] class extends Component {
                                 <div class="flex items-start gap-1.5">
                                     <span class="mt-px text-xs font-bold text-zinc-600" x-text="clue.displayNumber"></span>
                                     <div class="flex-1">
-                                        <span class="text-sm text-zinc-800 dark:text-zinc-300" x-text="clue.clue || '—'"></span>
+                                        <span class="text-sm whitespace-pre-line text-zinc-800 dark:text-zinc-300" x-text="clue.clue || '—'"></span>
                                         <span class="text-xs text-zinc-500" x-text="'(' + clue.length + ')'"></span>
                                     </div>
                                 </div>
@@ -1092,7 +1092,7 @@ new #[Title('Solve Crossword')] class extends Component {
                                 <div class="flex items-start gap-1.5">
                                     <span class="mt-px text-xs font-bold text-zinc-600" x-text="clue.displayNumber"></span>
                                     <div class="flex-1">
-                                        <span class="text-sm text-zinc-800 dark:text-zinc-300" x-text="clue.clue || '—'"></span>
+                                        <span class="text-sm whitespace-pre-line text-zinc-800 dark:text-zinc-300" x-text="clue.clue || '—'"></span>
                                         <span class="text-xs text-zinc-500" x-text="'(' + clue.length + ')'"></span>
                                     </div>
                                 </div>

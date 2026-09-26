@@ -911,3 +911,36 @@ it('adjusts page break threshold for landscape orientation', function () {
     expect($breakLandscape)->toBeTrue();
     expect($breakPortrait)->toBeFalse();
 });
+
+it('renders line breaks in clues and escapes clue html', function () {
+    $html = view('exports.crossword-pdf', [
+        'title' => 'Multiline Clues',
+        'author' => 'Tester',
+        'copyright' => null,
+        'numberedGrid' => [[1, 2], [3, 0]],
+        'solution' => [['A', 'B'], ['C', 'D']],
+        'cluesAcross' => [
+            ['number' => 1, 'clue' => "First line\nSecond line"],
+            ['number' => 3, 'clue' => '<b>Bold</b> claim'],
+        ],
+        'cluesDown' => [
+            ['number' => 1, 'clue' => "Up\nDown"],
+            ['number' => 2, 'clue' => 'Plain'],
+        ],
+        'styles' => [],
+        'prefilled' => null,
+        'notes' => null,
+        'includeSolution' => false,
+        'cellSize' => 0.33,
+        'numberFontSize' => 6,
+        'letterFontSize' => 9,
+        'numberHeight' => 0.116,
+        'forceCluePageBreak' => false,
+    ])->render();
+
+    expect($html)
+        ->toContain("First line<br />\nSecond line")
+        ->toContain("Up<br />\nDown")
+        ->toContain('&lt;b&gt;Bold&lt;/b&gt; claim')
+        ->not->toContain('<b>Bold</b>');
+});

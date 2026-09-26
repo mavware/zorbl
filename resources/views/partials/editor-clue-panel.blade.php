@@ -20,7 +20,7 @@
             x-on:focusin="selectClue('{{ $direction }}', clue.number, $event)"
             x-on:keydown.tab.prevent="focusNextClue($el, '{{ $direction }}', false)"
             x-on:keydown.shift.tab.prevent="focusNextClue($el, '{{ $direction }}', true)"
-            x-on:keydown.enter.prevent="focusNextClue($el, '{{ $direction }}', $event.shiftKey)"
+            x-on:keydown.enter="if (! $event.shiftKey) { $event.preventDefault(); focusNextClue($el, '{{ $direction }}', false) }"
             :class="[
 activeClueNumber === clue.number && direction === '{{ $direction }}' ? 'bg-blue-100 dark:bg-blue-900/40' : 'hover:bg-zinc-100 dark:hover:bg-zinc-700/50',
 isClueIncomplete('{{ $direction }}') && !clue.clue?.trim() ? 'ring-2 ring-amber-400 dark:ring-amber-500' : ''
