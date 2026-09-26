@@ -36,3 +36,13 @@ test('switching tabs filters clue entries by status', function () {
         ->set('activeTab', 'all')
         ->assertCanSeeTableRecords([$pending, $approved]);
 });
+
+test('the pending clue table shows 50 entries per page by default', function () {
+    ClueEntry::factory()->count(51)->create(['status' => ClueEntry::STATUS_PENDING]);
+
+    $component = Livewire::test(ListClueEntries::class)
+        ->assertCountTableRecords(51)
+        ->assertSet('tableRecordsPerPage', 50);
+
+    expect($component->instance()->getTableRecords())->toHaveCount(50);
+});

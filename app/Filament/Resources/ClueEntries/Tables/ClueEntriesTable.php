@@ -65,6 +65,8 @@ class ClueEntriesTable
                     ]),
             ])
             ->defaultSort('created_at', 'desc')
+            ->paginationPageOptions([10, 25, 50, 100])
+            ->defaultPaginationPageOption(50)
             ->recordActions([
                 Action::make('approve')
                     ->icon(Heroicon::Check)
