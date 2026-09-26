@@ -3,10 +3,12 @@
 namespace App\Filament\Resources\ClueEntries;
 
 use App\Filament\Resources\ClueEntries\Pages\ListClueEntries;
+use App\Filament\Resources\ClueEntries\Schemas\ClueEntryForm;
 use App\Filament\Resources\ClueEntries\Tables\ClueEntriesTable;
 use App\Models\ClueEntry;
 use BackedEnum;
 use Filament\Resources\Resource;
+use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 
@@ -21,6 +23,11 @@ class ClueEntryResource extends Resource
     protected static ?string $modelLabel = 'Clue';
 
     protected static ?string $pluralModelLabel = 'Clues';
+
+    public static function form(Schema $schema): Schema
+    {
+        return ClueEntryForm::configure($schema);
+    }
 
     public static function table(Table $table): Table
     {

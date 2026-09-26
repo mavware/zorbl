@@ -5,6 +5,7 @@ use App\Models\ClueEntry;
 use App\Models\User;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
 use Filament\Actions\Testing\TestAction;
 use Livewire\Livewire;
 use Spatie\Permission\Models\Role;
@@ -86,4 +87,34 @@ test('the clue column shows the full clue without truncating', function () {
 
     Livewire::test(ListClueEntries::class)
         ->assertSee($longClue);
+});
+
+test('admin can edit a clue written by another user from its row', function () {
+    $entry = ClueEntry::factory()->create(['answer' => 'CAT', 'clue' => 'Cat nap spot', 'status' => ClueEntry::STATUS_PENDING]);
+
+    Livewire::test(ListClueEntries::class)
+        ->assertActionVisible(TestAction::make(EditAction::class)->table($entry))
+        ->callAction(TestAction::make(EditAction::class)->table($entry), [
+            'answer' => ' cat ',
+            'clue' => '  Feline pet  ',
+        ])
+        ->assertHasNoFormErrors()
+        ->assertNotified();
+
+    $entry->refresh();
+
+    expect($entry->answer)->toBe('CAT')
+        ->and($entry->clue)->toBe('Feline pet')
+        ->and($entry->quality_issues)->toBeNull();
+});
+
+test('editing a clue validates the answer and clue', function () {
+    $entry = ClueEntry::factory()->create(['status' => ClueEntry::STATUS_PENDING]);
+
+    Livewire::test(ListClueEntries::class)
+        ->callAction(TestAction::make(EditAction::class)->table($entry), [
+            'answer' => 'NOT OK1',
+            'clue' => '',
+        ])
+        ->assertHasFormErrors(['answer' => 'regex', 'clue' => 'required']);
 });
