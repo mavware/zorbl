@@ -83,16 +83,12 @@ class WordExporter
             $totalClues = 0;
 
             foreach ($this->lengths() as $length) {
-                $words = $this->wordsForLength($length);
-                $wordCount = count($words);
-                $clueCount = array_sum(array_map(fn (array $word): int => count($word['clues']), $words));
-                $json = $this->encode([
-                    'version' => self::VERSION,
-                    'generated_at' => $generatedAt,
-                    'length' => $length,
-                    'words' => $words,
-                ]);
-                unset($words);
+                ['json' => $wordsJson, 'words' => $wordCount, 'clues' => $clueCount] = $this->wordsForLength($length);
+                $json = '{"version":'.self::VERSION
+                    .',"generated_at":'.$this->encode($generatedAt)
+                    .',"length":'.$length
+                    .',"words":['.$wordsJson.']}';
+                unset($wordsJson);
 
                 Cache::put($this->cacheKey("shard:{$length}", $fingerprint), $json, self::EXPORT_SECONDS);
 
@@ -120,6 +116,15 @@ class WordExporter
 
             return ['shards' => count($shardSummaries), 'words' => $totalWords, 'clues' => $totalClues];
         });
+    }
+
+    /**
+     * Release a build lock left behind by a build that crashed (e.g. ran out of
+     * memory) so a forced rebuild doesn't wait for it to expire.
+     */
+    public function releaseBuildLock(): void
+    {
+        Cache::lock('word-export:build:'.$this->fingerprint())->forceRelease();
     }
 
     private function buildThenGet(string $key): ?string
@@ -176,39 +181,55 @@ class WordExporter
     }
 
     /**
-     * Words of one length merged with their approved clues. Answers that only
-     * exist as approved clues (not yet in the word list) are included with a
-     * null score so no approved clue is left out of the export.
+     * Words of one length merged with their approved clues, as the comma-joined
+     * JSON objects of the shard's "words" array. Answers that only exist as
+     * approved clues (not yet in the word list) are included with a null score
+     * so no approved clue is left out of the export.
      *
-     * @return list<array{word: string, score: float|null, clues: list<array{text: string, puzzle: array{title: string, author: string|null}|null}>}>
+     * Each word is encoded as soon as it's read: nested PHP arrays for a large
+     * shard take roughly ten times the memory of the JSON they produce.
+     *
+     * @return array{json: string, words: int, clues: int}
      */
     private function wordsForLength(int $length): array
     {
         $cluesByAnswer = $this->approvedCluesForLength($length);
-        $words = [];
+        $encodedByWord = [];
+        $clueCount = 0;
 
-        foreach (Word::query()->toBase()->where('length', $length)->orderBy('word')->select(['word', 'score'])->cursor() as $row) {
-            $words[] = [
-                'word' => $row->word,
-                'score' => round((float) $row->score, 2),
-                'clues' => $cluesByAnswer[$row->word] ?? [],
-            ];
+        $rows = Word::query()->toBase()->where('length', $length)->select(['word', 'score'])->cursor();
+
+        foreach ($rows as $row) {
+            $encodedByWord[$row->word] = $this->encodeWord($row->word, round((float) $row->score, 2), $cluesByAnswer[$row->word] ?? null);
+            $clueCount += $cluesByAnswer[$row->word]['count'] ?? 0;
             unset($cluesByAnswer[$row->word]);
         }
 
         foreach ($cluesByAnswer as $answer => $clues) {
-            $words[] = ['word' => (string) $answer, 'score' => null, 'clues' => $clues];
+            $encodedByWord[(string) $answer] = $this->encodeWord((string) $answer, null, $clues);
+            $clueCount += $clues['count'];
         }
 
-        usort($words, fn (array $a, array $b): int => strcmp($a['word'], $b['word']));
+        ksort($encodedByWord, SORT_STRING);
 
-        return $words;
+        return ['json' => implode(',', $encodedByWord), 'words' => count($encodedByWord), 'clues' => $clueCount];
     }
 
     /**
-     * Approved clues for answers of one length, grouped by answer in the order they were written.
+     * @param  array{count: int, json: string}|null  $clues
+     */
+    private function encodeWord(string $word, ?float $score, ?array $clues): string
+    {
+        return '{"word":'.$this->encode($word)
+            .',"score":'.$this->encode($score)
+            .',"clues":['.($clues['json'] ?? '').']}';
+    }
+
+    /**
+     * Approved clues for answers of one length, grouped by answer in the order
+     * they were written, each group already encoded as comma-joined JSON objects.
      *
-     * @return array<string, list<array{text: string, puzzle: array{title: string, author: string|null}|null}>>
+     * @return array<string, array{count: int, json: string}>
      */
     private function approvedCluesForLength(int $length): array
     {
@@ -222,13 +243,20 @@ class WordExporter
             ->cursor();
 
         foreach ($rows as $row) {
-            $cluesByAnswer[$row->answer][] = [
+            $clue = $this->encode([
                 'text' => $row->clue,
                 'puzzle' => $row->puzzle_id === null ? null : [
                     'title' => $row->puzzle_title,
                     'author' => $row->puzzle_author,
                 ],
-            ];
+            ]);
+
+            if (isset($cluesByAnswer[$row->answer])) {
+                $cluesByAnswer[$row->answer]['count']++;
+                $cluesByAnswer[$row->answer]['json'] .= ','.$clue;
+            } else {
+                $cluesByAnswer[$row->answer] = ['count' => 1, 'json' => $clue];
+            }
         }
 
         return $cluesByAnswer;
@@ -239,10 +267,7 @@ class WordExporter
         return DB::table('clue_entries')->where('clue_entries.status', ClueEntry::STATUS_APPROVED);
     }
 
-    /**
-     * @param  array<string, mixed>  $data
-     */
-    private function encode(array $data): string
+    private function encode(mixed $data): string
     {
         return json_encode($data, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRESERVE_ZERO_FRACTION);
     }

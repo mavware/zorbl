@@ -14,6 +14,7 @@ class ExportWordsJson extends Command
     public function handle(WordExporter $exporter): int
     {
         $exporter->forgetFingerprint();
+        $exporter->releaseBuildLock();
         $result = $exporter->build(force: true);
 
         $this->info('Cached '.$result['words'].' words and '.$result['clues'].' approved clues across '.$result['shards'].' shards.');
