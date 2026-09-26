@@ -30,7 +30,6 @@ class ClueEntriesTable
                     ->fontFamily('mono'),
                 TextColumn::make('clue')
                     ->searchable()
-                    ->limit(80)
                     ->wrap(),
                 TextColumn::make('quality_issues')
                     ->label('Quality')

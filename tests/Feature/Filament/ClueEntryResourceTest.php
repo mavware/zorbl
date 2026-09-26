@@ -79,3 +79,11 @@ test('admin can bulk delete pending clues written by other users', function () {
 
     $pending->each(fn (ClueEntry $clue) => $this->assertModelMissing($clue));
 });
+
+test('the clue column shows the full clue without truncating', function () {
+    $longClue = str_repeat('A very long and winding clue ', 5).'that ends here';
+    ClueEntry::factory()->create(['clue' => $longClue, 'status' => ClueEntry::STATUS_PENDING]);
+
+    Livewire::test(ListClueEntries::class)
+        ->assertSee($longClue);
+});
