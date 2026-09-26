@@ -3,6 +3,7 @@
 use App\Console\Commands\GenerateWordList;
 use App\Models\Word;
 use App\Services\WiktionaryWordImporter;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Sleep;
@@ -106,4 +107,14 @@ test('the command fails cleanly when Wiktionary is unreachable', function () {
         ->assertFailed();
 
     expect(Word::count())->toBe(0);
+});
+
+test('the import runs daily with a modest page count', function () {
+    $events = collect(app(Schedule::class)->events())
+        ->filter(fn ($event) => str_contains($event->command ?? '', 'words:import-wiktionary'));
+
+    expect($events)->toHaveCount(1)
+        ->and($events->first()->command)->toContain('--pages=20')
+        ->and($events->first()->expression)->toBe('0 3 * * *')
+        ->and($events->first()->withoutOverlapping)->toBeTrue();
 });
