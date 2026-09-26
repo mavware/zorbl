@@ -4,8 +4,9 @@ namespace App\Services;
 
 use App\Models\ClueEntry;
 use App\Models\Word;
-use Illuminate\Support\Collection;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Builds the public word list (with scores and approved clues) as JSON, one
@@ -38,7 +39,9 @@ class WordExporter
      */
     public function manifest(): string
     {
-        return Cache::get($this->cacheKey('manifest')) ?? $this->build()['manifest'];
+        $key = $this->cacheKey('manifest');
+
+        return Cache::get($key) ?? $this->buildThenGet($key) ?? '';
     }
 
     /**
@@ -46,70 +49,84 @@ class WordExporter
      */
     public function shard(int $length): ?string
     {
-        return Cache::get($this->cacheKey("shard:{$length}")) ?? ($this->build()['shards'][$length] ?? null);
+        $key = $this->cacheKey("shard:{$length}");
+
+        return Cache::get($key) ?? $this->buildThenGet($key);
     }
 
     /**
      * Build every shard and the manifest and store them in the cache.
      *
-     * @return array{manifest: string, shards: array<int, string>, words: int, clues: int}
+     * Shards are built one length at a time from plain rows and cached as soon
+     * as they're encoded, so memory stays bounded by the largest single shard
+     * rather than the whole word list.
+     *
+     * @return array{shards: int, words: int, clues: int}
      */
-    public function build(): array
+    public function build(bool $force = false): array
     {
         $fingerprint = $this->fingerprint();
 
-        return Cache::lock("word-export:build:{$fingerprint}", 120)->block(60, function () use ($fingerprint): array {
+        return Cache::lock("word-export:build:{$fingerprint}", 300)->block(120, function () use ($fingerprint, $force): array {
+            $manifestKey = $this->cacheKey('manifest', $fingerprint);
+
+            // Another request may have finished the build while this one waited on the lock.
+            if (! $force && ($cached = Cache::get($manifestKey)) !== null) {
+                $manifest = json_decode($cached, true, 512, JSON_THROW_ON_ERROR);
+
+                return ['shards' => count($manifest['shards']), 'words' => $manifest['words'], 'clues' => $manifest['clues']];
+            }
+
             $generatedAt = now()->toIso8601String();
-            $cluesByLength = $this->approvedCluesByLength();
-            $shards = [];
             $shardSummaries = [];
             $totalWords = 0;
             $totalClues = 0;
 
-            foreach ($this->lengths($cluesByLength) as $length) {
-                $words = $this->wordsForLength($length, $cluesByLength->get($length, collect()));
-                $clueCount = $words->sum(fn (array $word): int => count($word['clues']));
+            foreach ($this->lengths() as $length) {
+                $words = $this->wordsForLength($length);
+                $wordCount = count($words);
+                $clueCount = array_sum(array_map(fn (array $word): int => count($word['clues']), $words));
                 $json = $this->encode([
                     'version' => self::VERSION,
                     'generated_at' => $generatedAt,
                     'length' => $length,
-                    'words' => $words->values()->all(),
+                    'words' => $words,
                 ]);
+                unset($words);
 
-                $shards[$length] = $json;
+                Cache::put($this->cacheKey("shard:{$length}", $fingerprint), $json, self::EXPORT_SECONDS);
+
                 $shardSummaries[] = [
                     'length' => $length,
                     'url' => route('api.v1.words.shard', $length),
-                    'words' => $words->count(),
+                    'words' => $wordCount,
                     'clues' => $clueCount,
                     'bytes' => strlen($json),
                     'sha256' => hash('sha256', $json),
                 ];
-                $totalWords += $words->count();
+                $totalWords += $wordCount;
                 $totalClues += $clueCount;
+                unset($json);
             }
 
-            $manifest = $this->encode([
+            Cache::put($manifestKey, $this->encode([
                 'version' => self::VERSION,
                 'generated_at' => $generatedAt,
                 'fingerprint' => $fingerprint,
                 'words' => $totalWords,
                 'clues' => $totalClues,
                 'shards' => $shardSummaries,
-            ]);
+            ]), self::EXPORT_SECONDS);
 
-            foreach ($shards as $length => $json) {
-                Cache::put($this->cacheKey("shard:{$length}", $fingerprint), $json, self::EXPORT_SECONDS);
-            }
-            Cache::put($this->cacheKey('manifest', $fingerprint), $manifest, self::EXPORT_SECONDS);
-
-            return [
-                'manifest' => $manifest,
-                'shards' => $shards,
-                'words' => $totalWords,
-                'clues' => $totalClues,
-            ];
+            return ['shards' => count($shardSummaries), 'words' => $totalWords, 'clues' => $totalClues];
         });
+    }
+
+    private function buildThenGet(string $key): ?string
+    {
+        $this->build();
+
+        return Cache::get($key);
     }
 
     /**
@@ -142,20 +159,20 @@ class WordExporter
     }
 
     /**
-     * @param  Collection<int, Collection<int, ClueEntry>>  $cluesByLength
+     * Every length that has a word or an approved clue.
+     *
      * @return list<int>
      */
-    private function lengths(Collection $cluesByLength): array
+    private function lengths(): array
     {
-        $lengths = Word::query()->distinct()->pluck('length')
-            ->merge($cluesByLength->keys())
+        return Word::query()->distinct()->pluck('length')
+            ->merge($this->approvedClues()->selectRaw('DISTINCT LENGTH(clue_entries.answer) AS answer_length')->pluck('answer_length'))
             ->map(fn (int|string $length): int => (int) $length)
             ->filter(fn (int $length): bool => $length > 0)
             ->unique()
             ->sort()
-            ->values();
-
-        return $lengths->all();
+            ->values()
+            ->all();
     }
 
     /**
@@ -163,66 +180,63 @@ class WordExporter
      * exist as approved clues (not yet in the word list) are included with a
      * null score so no approved clue is left out of the export.
      *
-     * @param  Collection<int, ClueEntry>  $clues
-     * @return Collection<int, array{word: string, score: float|null, clues: list<array{text: string, puzzle: array{title: string, author: string|null}|null}>}>
+     * @return list<array{word: string, score: float|null, clues: list<array{text: string, puzzle: array{title: string, author: string|null}|null}>}>
      */
-    private function wordsForLength(int $length, Collection $clues): Collection
+    private function wordsForLength(int $length): array
     {
-        $cluesByAnswer = $clues->groupBy('answer');
+        $cluesByAnswer = $this->approvedCluesForLength($length);
+        $words = [];
 
-        $words = Word::query()
-            ->where('length', $length)
-            ->orderBy('word')
-            ->get(['word', 'score'])
-            ->map(fn (Word $word): array => [
-                'word' => $word->word,
-                'score' => round((float) $word->score, 2),
-                'clues' => $this->formatClues($cluesByAnswer->get($word->word, collect())),
-            ]);
+        foreach (Word::query()->toBase()->where('length', $length)->orderBy('word')->select(['word', 'score'])->cursor() as $row) {
+            $words[] = [
+                'word' => $row->word,
+                'score' => round((float) $row->score, 2),
+                'clues' => $cluesByAnswer[$row->word] ?? [],
+            ];
+            unset($cluesByAnswer[$row->word]);
+        }
 
-        $known = $words->pluck('word')->flip();
+        foreach ($cluesByAnswer as $answer => $clues) {
+            $words[] = ['word' => (string) $answer, 'score' => null, 'clues' => $clues];
+        }
 
-        $orphans = $cluesByAnswer
-            ->reject(fn (Collection $entries, string $answer): bool => $known->has($answer))
-            ->map(fn (Collection $entries, string $answer): array => [
-                'word' => $answer,
-                'score' => null,
-                'clues' => $this->formatClues($entries),
-            ])
-            ->values();
+        usort($words, fn (array $a, array $b): int => strcmp($a['word'], $b['word']));
 
-        return $words->concat($orphans)->sortBy('word')->values();
+        return $words;
     }
 
     /**
-     * @param  Collection<int, ClueEntry>  $entries
-     * @return list<array{text: string, puzzle: array{title: string, author: string|null}|null}>
+     * Approved clues for answers of one length, grouped by answer in the order they were written.
+     *
+     * @return array<string, list<array{text: string, puzzle: array{title: string, author: string|null}|null}>>
      */
-    private function formatClues(Collection $entries): array
+    private function approvedCluesForLength(int $length): array
     {
-        return $entries
-            ->sortBy('id')
-            ->map(fn (ClueEntry $entry): array => [
-                'text' => $entry->clue,
-                'puzzle' => $entry->crossword === null ? null : [
-                    'title' => $entry->crossword->title,
-                    'author' => $entry->crossword->author,
+        $cluesByAnswer = [];
+
+        $rows = $this->approvedClues()
+            ->leftJoin('crosswords', 'crosswords.id', '=', 'clue_entries.crossword_id')
+            ->whereRaw('LENGTH(clue_entries.answer) = ?', [$length])
+            ->orderBy('clue_entries.id')
+            ->select(['clue_entries.answer', 'clue_entries.clue', 'crosswords.id as puzzle_id', 'crosswords.title as puzzle_title', 'crosswords.author as puzzle_author'])
+            ->cursor();
+
+        foreach ($rows as $row) {
+            $cluesByAnswer[$row->answer][] = [
+                'text' => $row->clue,
+                'puzzle' => $row->puzzle_id === null ? null : [
+                    'title' => $row->puzzle_title,
+                    'author' => $row->puzzle_author,
                 ],
-            ])
-            ->values()
-            ->all();
+            ];
+        }
+
+        return $cluesByAnswer;
     }
 
-    /**
-     * @return Collection<int, Collection<int, ClueEntry>>
-     */
-    private function approvedCluesByLength(): Collection
+    private function approvedClues(): Builder
     {
-        return ClueEntry::approved()
-            ->with('crossword:id,title,author')
-            ->orderBy('id')
-            ->get(['id', 'answer', 'clue', 'crossword_id'])
-            ->groupBy(fn (ClueEntry $entry): int => mb_strlen($entry->answer));
+        return DB::table('clue_entries')->where('clue_entries.status', ClueEntry::STATUS_APPROVED);
     }
 
     /**

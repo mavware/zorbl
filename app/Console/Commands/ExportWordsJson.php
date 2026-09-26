@@ -14,9 +14,9 @@ class ExportWordsJson extends Command
     public function handle(WordExporter $exporter): int
     {
         $exporter->forgetFingerprint();
-        $result = $exporter->build();
+        $result = $exporter->build(force: true);
 
-        $this->info('Cached '.$result['words'].' words and '.$result['clues'].' approved clues across '.count($result['shards']).' shards.');
+        $this->info('Cached '.$result['words'].' words and '.$result['clues'].' approved clues across '.$result['shards'].' shards.');
         $this->line('Manifest: '.route('api.v1.words.manifest'));
 
         return self::SUCCESS;
