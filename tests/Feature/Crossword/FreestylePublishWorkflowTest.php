@@ -223,3 +223,21 @@ test('completeness fill check rejects a freestyle puzzle with no letters at all'
 
     expect($crossword->completeness()['checks']['fill'])->toBeFalse();
 });
+
+test('unlocked freestyle editor shows instructions in the mobile clue area', function () {
+    $crossword = Crossword::factory()->freestyle()->create(['freestyle_locked' => false]);
+
+    $this->actingAs($crossword->user);
+
+    Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->assertSeeHtml('data-testid="freestyle-mobile-instructions"');
+});
+
+test('locked freestyle editor hides the mobile instructions', function () {
+    $crossword = Crossword::factory()->freestyle()->create(['freestyle_locked' => true]);
+
+    $this->actingAs($crossword->user);
+
+    Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->assertDontSeeHtml('data-testid="freestyle-mobile-instructions"');
+});

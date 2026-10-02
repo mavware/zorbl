@@ -145,4 +145,10 @@ isClueIncomplete('down') && !clue.clue?.trim() ? 'ring-2 ring-amber-400 dark:rin
                 </template>
             </div>
         </div>
+        @else
+        <div class="text-fg-muted space-y-2 px-4 py-3 text-center text-sm lg:hidden" data-testid="freestyle-mobile-instructions">
+            <p>{{ __('Place words anywhere in the grid — no need to fill every cell.') }}</p>
+            <p>{{ __('When you lock the grid, any unused cells disappear and the remaining words become your clues.') }}</p>
+            <p>{{ __('Lock the grid to start writing clues.') }}</p>
+        </div>
         @endif
