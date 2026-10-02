@@ -15,8 +15,8 @@ class GridTemplateProvider
      */
     public function getTemplates(int $width, int $height): array
     {
-        // Only support square grids from 3x3 to 27x27
-        if ($width !== $height || $width < 3 || $width > 27) {
+        // Only support square grids from 3x3 to 35x35
+        if ($width !== $height || $width < 3 || $width > 35) {
             return [];
         }
 
@@ -31,24 +31,6 @@ class GridTemplateProvider
         $merged = $fromAdmin;
 
         foreach ($fromDb as $template) {
-            if (count($merged) >= 5) {
-                break;
-            }
-
-            if (! isset($seen[$template['name']])) {
-                $merged[] = $template;
-                $seen[$template['name']] = true;
-            }
-        }
-
-        if (count($merged) >= 5) {
-            return $merged;
-        }
-
-        // Fill remaining slots with generated templates
-        $generated = $this->generateTemplates($width, $height);
-
-        foreach ($generated as $template) {
             if (count($merged) >= 5) {
                 break;
             }
@@ -278,47 +260,6 @@ class GridTemplateProvider
     }
 
     /**
-     * Build a grid from block positions.
-     *
-     * @param  array<int, array{int, int}>  $blocks  Positions of block cells as [row, col] pairs
-     * @return array<int, array<int, int|string>>
-     */
-    private function buildGrid(int $width, int $height, array $blocks): array
-    {
-        $grid = array_fill(0, $height, array_fill(0, $width, 0));
-
-        foreach ($blocks as [$r, $c]) {
-            $grid[$r][$c] = '#';
-        }
-
-        return $grid;
-    }
-
-    /**
-     * Generate symmetric block positions from half the blocks.
-     * Each block at (r,c) automatically mirrors to (h-1-r, w-1-c).
-     *
-     * @param  array<int, array{int, int}>  $halfBlocks  Block positions for one half
-     * @return array<int, array{int, int}>
-     */
-    private function symmetricBlocks(int $width, int $height, array $halfBlocks): array
-    {
-        $all = [];
-
-        foreach ($halfBlocks as [$r, $c]) {
-            $all[] = [$r, $c];
-            $mr = $height - 1 - $r;
-            $mc = $width - 1 - $c;
-
-            if ($mr !== $r || $mc !== $c) {
-                $all[] = [$mr, $mc];
-            }
-        }
-
-        return $all;
-    }
-
-    /**
      * Validate that all words (consecutive non-block cells) are at least the minimum length.
      *
      * @param  array<int, array<int, int|string>>  $grid
@@ -358,174 +299,5 @@ class GridTemplateProvider
         }
 
         return true;
-    }
-
-    /**
-     * Generate templates parametrically for sizes without enough database examples.
-     *
-     * @return array<int, array{name: string, grid: array<int, array<int, int|string>>, styles: array<string, array<string, mixed>>|null}>
-     */
-    public function generateTemplates(int $width, int $height): array
-    {
-        // Only support square grids from 3x3 to 27x27
-        if ($width !== $height || $width < 3 || $width > 27) {
-            return [];
-        }
-
-        $n = $width;
-
-        $candidates = [];
-
-        // "Open" - no blocks, always valid for n >= 3
-        $candidates[] = ['name' => 'Open', 'blocks' => []];
-
-        // Generate size-appropriate candidates
-        if ($n <= 6) {
-            // Small grids: only corner blocks are safe
-            $candidates[] = ['name' => 'Corner', 'blocks' => [[0, 0]]];
-            $candidates[] = ['name' => 'Right Corner', 'blocks' => [[0, $n - 1]]];
-
-            if ($n >= 5) {
-                $candidates[] = ['name' => 'Frame', 'blocks' => [[0, 0], [0, $n - 1]]];
-            }
-        } elseif ($n <= 10) {
-            // Medium grids: corners + simple interior
-            $candidates[] = ['name' => 'Corner', 'blocks' => [[0, 0]]];
-            $candidates[] = ['name' => 'Right Corner', 'blocks' => [[0, $n - 1]]];
-            $candidates[] = ['name' => 'Frame', 'blocks' => [[0, 0], [0, $n - 1]]];
-
-            if ($n % 2 === 1) {
-                $mid = intdiv($n, 2);
-                $candidates[] = ['name' => 'Diamond', 'blocks' => [[0, $mid], [$mid, 0]]];
-                $candidates[] = ['name' => 'Cross', 'blocks' => [[0, $mid], [0, 0], [$mid, 0]]];
-                $candidates[] = ['name' => 'Classic', 'blocks' => [[0, 0], [0, $mid]]];
-            } else {
-                $candidates[] = ['name' => 'Diamond', 'blocks' => [[0, 3], [3, 0]]];
-                $candidates[] = ['name' => 'Cross', 'blocks' => [[0, 3], [0, $n - 4], [3, 0]]];
-                $candidates[] = ['name' => 'Classic', 'blocks' => [[0, 0], [0, $n - 1], [3, 0]]];
-            }
-        } else {
-            // Large grids (n >= 11): rich interior patterns
-            $this->addLargeGridCandidates($candidates, $n);
-        }
-
-        // Build and validate each candidate
-        $templates = [];
-
-        foreach ($candidates as $candidate) {
-            $blocks = $this->symmetricBlocks($n, $n, $candidate['blocks']);
-            $grid = $this->buildGrid($n, $n, $blocks);
-
-            if (self::validateMinWordLength($grid, $n, $n)) {
-                $templates[] = ['name' => $candidate['name'], 'grid' => $grid, 'styles' => null];
-            }
-
-            if (count($templates) >= 5) {
-                break;
-            }
-        }
-
-        return $templates;
-    }
-
-    /**
-     * Add candidate block patterns for large grids (n >= 11).
-     *
-     * @param  array<int, array{name: string, blocks: array<int, array{int, int}>}>  $candidates
-     */
-    private function addLargeGridCandidates(array &$candidates, int $n): void
-    {
-        $mid = intdiv($n, 2);
-        $isOdd = $n % 2 === 1;
-
-        // "Corner" - blocks in corners only
-        $candidates[] = ['name' => 'Corner', 'blocks' => [[0, 0], [0, $n - 1]]];
-
-        // "Cross" - center cross pattern
-        if ($isOdd) {
-            $candidates[] = ['name' => 'Cross', 'blocks' => [
-                [0, $mid], [3, 0], [3, $n - 1], [$mid, 3], [$mid, $n - 4],
-            ]];
-        } else {
-            $candidates[] = ['name' => 'Cross', 'blocks' => [
-                [0, 3], [0, $n - 4], [3, 0], [3, $n - 1],
-            ]];
-        }
-
-        // "Staircase" - diagonal stepping
-        $stairBlocks = [];
-        $step = max(3, intdiv($n, 4));
-
-        for ($i = 0; $i < 4; $i++) {
-            $r = $i * $step;
-            $c = ($i % 2 === 0) ? intdiv($n, 5) : $n - 1 - intdiv($n, 5);
-
-            if ($r < $mid || ($isOdd && $r === $mid)) {
-                $stairBlocks[] = [$r, $c];
-            }
-        }
-        $candidates[] = ['name' => 'Staircase', 'blocks' => $stairBlocks];
-
-        // "Diamond" - diamond-shaped arrangement
-        if ($isOdd) {
-            $candidates[] = ['name' => 'Diamond', 'blocks' => [
-                [0, $mid], [$mid, 0], [intdiv($mid, 2), intdiv($mid, 2)], [intdiv($mid, 2), $n - 1 - intdiv($mid, 2)],
-            ]];
-        } else {
-            $q = intdiv($n, 4);
-            $candidates[] = ['name' => 'Diamond', 'blocks' => [
-                [0, $q], [0, $n - 1 - $q], [$q, 0], [$q, $n - 1],
-            ]];
-        }
-
-        // "Classic" - balanced themed layout with more blocks
-        $classicBlocks = [[0, intdiv($n, 3)]];
-
-        if ($isOdd) {
-            $classicBlocks[] = [0, $n - 1 - intdiv($n, 3)];
-            $classicBlocks[] = [intdiv($n, 3), 0];
-            $classicBlocks[] = [intdiv($n, 3), $mid];
-            $classicBlocks[] = [$mid, intdiv($n, 3)];
-        } else {
-            $classicBlocks[] = [0, $n - 1 - intdiv($n, 3)];
-            $classicBlocks[] = [intdiv($n, 3), 0];
-            $classicBlocks[] = [intdiv($n, 3), $n - 1];
-        }
-        $candidates[] = ['name' => 'Classic', 'blocks' => $classicBlocks];
-
-        // "Dense" - more blocks for larger grids
-        if ($n >= 14) {
-            $denseBlocks = [];
-            $third = intdiv($n, 3);
-            $twoThird = $n - 1 - $third;
-
-            $denseBlocks[] = [0, $third];
-            $denseBlocks[] = [0, $twoThird];
-            $denseBlocks[] = [$third, 0];
-            $denseBlocks[] = [$third, $n - 1];
-
-            if ($isOdd) {
-                $denseBlocks[] = [$mid, $third];
-            }
-
-            // Add edge blocks for more density
-            $denseBlocks[] = [1, $third];
-            $denseBlocks[] = [1, $twoThird];
-
-            $candidates[] = ['name' => 'Dense', 'blocks' => $denseBlocks];
-        }
-
-        // "Lattice" - regular grid-like pattern
-        $latticeBlocks = [];
-        $spacing = max(4, intdiv($n, 3));
-
-        for ($r = 0; $r <= $mid; $r += $spacing) {
-            for ($c = $spacing; $c < $n - $spacing; $c += $spacing) {
-                if ($r < $mid || ($isOdd && $r === $mid)) {
-                    $latticeBlocks[] = [$r, $c];
-                }
-            }
-        }
-        $candidates[] = ['name' => 'Lattice', 'blocks' => $latticeBlocks];
     }
 }

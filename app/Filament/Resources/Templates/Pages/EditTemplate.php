@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Templates\Pages;
 
+use App\Filament\Resources\Templates\Actions\CheckFillAction;
 use App\Filament\Resources\Templates\Concerns\WarnsOnShortRuns;
 use App\Filament\Resources\Templates\TemplateResource;
 use Filament\Actions\DeleteAction;
@@ -16,6 +17,7 @@ class EditTemplate extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            CheckFillAction::make(),
             DeleteAction::make(),
         ];
     }

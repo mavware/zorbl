@@ -2,7 +2,6 @@
 
 use App\Models\Template;
 use App\Models\User;
-use Database\Seeders\ProceduralTemplateSeeder;
 use Spatie\Permission\Models\Role;
 
 beforeEach(function () {
@@ -34,14 +33,16 @@ it('renders the interactive grid editor on the template edit page', function () 
         ->assertNoJavaScriptErrors();
 });
 
-it('renders the grid editor for a seeded procedural template', function () {
+it('renders the grid editor for a template with blocks', function () {
     $admin = User::factory()->create();
     $admin->assignRole('Admin');
     $this->actingAs($admin);
 
-    $this->seed(ProceduralTemplateSeeder::class);
-
-    $template = Template::where('width', 15)->where('name', 'Cross')->firstOrFail();
+    $grid = array_fill(0, 15, array_fill(0, 15, 0));
+    foreach ([[0, 7], [3, 0], [3, 14], [7, 3], [7, 11], [11, 0], [11, 14], [14, 7]] as [$r, $c]) {
+        $grid[$r][$c] = '#';
+    }
+    $template = Template::factory()->square(15)->create(['name' => 'Cross', 'grid' => $grid]);
 
     visit("/admin/templates/{$template->id}/edit")
         ->assertPresent('[data-testid="template-grid-editor"]')
@@ -55,8 +56,10 @@ it('renders the grid with visible cell dimensions (no Tailwind utility dependenc
     $admin->assignRole('Admin');
     $this->actingAs($admin);
 
-    $this->seed(ProceduralTemplateSeeder::class);
-    $template = Template::where('width', 5)->where('name', 'Corner')->firstOrFail();
+    $grid = array_fill(0, 5, array_fill(0, 5, 0));
+    $grid[0][0] = '#';
+    $grid[4][4] = '#';
+    $template = Template::factory()->square(5)->create(['name' => 'Corner', 'grid' => $grid]);
 
     $page = visit("/admin/templates/{$template->id}/edit");
 
@@ -182,4 +185,26 @@ it('toggles a block and its rotational mirror when a cell is clicked', function 
     );
 
     $page->assertNoJavaScriptErrors();
+});
+
+it('opens the procedural generation modal and reveals its lever sections', function () {
+    $admin = User::factory()->create();
+    $admin->assignRole('Admin');
+    $this->actingAs($admin);
+
+    $page = visit('/admin/templates');
+
+    $page->click('Generate procedurally')
+        ->assertSee('Generate templates procedurally')
+        ->assertSee('Words to fit')
+        ->assertSee('Minimum touching blocks')
+        ->click('Shape targets')
+        ->assertSee('Minimum block density (%)')
+        ->click('Scoring weights')
+        ->assertSee('Chokepoints')
+        ->assertNoJavaScriptErrors();
+
+    // Placeholders show the defaults for the selected size: 13x13 allows 56-62 words.
+    expect($page->script('document.querySelector(\'input[id$="min_words"]\').placeholder'))->toBe('56')
+        ->and($page->script('document.querySelector(\'input[id$="max_words"]\').placeholder'))->toBe('62');
 });

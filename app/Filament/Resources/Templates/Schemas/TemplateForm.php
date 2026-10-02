@@ -30,14 +30,14 @@ class TemplateForm
                     ->required()
                     ->numeric()
                     ->minValue(3)
-                    ->maxValue(27)
+                    ->maxValue(35)
                     ->default(15)
                     ->live(onBlur: true),
                 TextInput::make('height')
                     ->required()
                     ->numeric()
                     ->minValue(3)
-                    ->maxValue(27)
+                    ->maxValue(35)
                     ->default(15)
                     ->live(onBlur: true),
                 ViewField::make('grid')

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Templates\Tables;
 
+use App\Filament\Resources\Templates\Actions\CheckFillAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -16,7 +17,7 @@ class TemplatesTable
     public static function configure(Table $table): Table
     {
         return $table
-            ->defaultSort('width', 'desc')
+            ->defaultSort('created_at', 'desc')
             ->columns([
                 TextColumn::make('name')
                     ->searchable()
@@ -51,6 +52,7 @@ class TemplatesTable
             ])
             ->recordActions([
                 EditAction::make(),
+                CheckFillAction::make(),
                 DeleteAction::make(),
             ])
             ->toolbarActions([

@@ -11,6 +11,8 @@ test('template picker appears in new puzzle modal for standard sizes', function 
     $user = User::factory()->create();
     $this->actingAs($user);
 
+    Template::factory()->square(15)->create(['name' => 'Picker Template']);
+
     $templates = app(GridTemplateProvider::class)->getTemplates(15, 15);
     $firstTemplateName = $templates[0]['name'];
 
@@ -87,6 +89,12 @@ test('creating puzzle with selected template uses that grid', function () {
     $user = User::factory()->create();
     $this->actingAs($user);
 
+    $grid = TemplateFactory::openGrid(15, 15);
+    foreach ([[0, 4], [3, 7], [11, 7], [14, 10]] as [$r, $c]) {
+        $grid[$r][$c] = '#';
+    }
+    Template::factory()->square(15)->create(['grid' => $grid]);
+
     $templates = app(GridTemplateProvider::class)->getTemplates(15, 15);
     $expectedBlocks = [];
 
@@ -107,6 +115,8 @@ test('creating puzzle with selected template uses that grid', function () {
     $crossword = Crossword::latest()->first();
     expect($crossword->width)->toBe(15)
         ->and($crossword->height)->toBe(15);
+
+    expect($expectedBlocks)->toHaveCount(4);
 
     // Verify the template blocks are present in the created grid
     foreach ($expectedBlocks as [$r, $c]) {
@@ -254,6 +264,8 @@ test('square dimensions within range show templates not informational message', 
     $user = User::factory()->create();
     $this->actingAs($user);
 
+    Template::factory()->square(11)->create();
+
     Livewire\Livewire::test('pages::crosswords.index')
         ->set('showNewModal', true)
         ->set('newWidth', 11)
@@ -266,6 +278,8 @@ test('switching from square to non-square dimensions keeps template section stab
     $user = User::factory()->create();
     $this->actingAs($user);
 
+    Template::factory()->square(15)->create();
+
     Livewire\Livewire::test('pages::crosswords.index')
         ->set('showNewModal', true)
         ->set('newWidth', 15)
@@ -275,4 +289,17 @@ test('switching from square to non-square dimensions keeps template section stab
         ->assertSet('selectedTemplate', null)
         ->assertDontSee('Grid Template')
         ->assertSee('Templates are available for square grids');
+});
+
+test('a supported square size with no templates says so instead of showing the picker', function () {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    Livewire\Livewire::test('pages::crosswords.index')
+        ->set('showNewModal', true)
+        ->set('newWidth', 13)
+        ->set('newHeight', 13)
+        ->assertDontSee('Grid Template')
+        ->assertSee('No templates for this size yet.')
+        ->assertDontSee('Templates are available for square grids');
 });

@@ -311,7 +311,11 @@ new class extends Component {
                 </div>
             @else
                 <div class="flex h-full min-h-[6.5rem] items-center justify-center">
-                    <flux:text size="sm" class="text-zinc-500">{{ __('Templates are available for square grids (3×3 to 27×27).') }}</flux:text>
+                    @if ($newWidth === $newHeight && $newWidth >= 3 && $newWidth <= 35)
+                        <flux:text size="sm" class="text-zinc-500">{{ __('No templates for this size yet.') }}</flux:text>
+                    @else
+                        <flux:text size="sm" class="text-zinc-500">{{ __('Templates are available for square grids (3×3 to 35×35).') }}</flux:text>
+                    @endif
                 </div>
             @endif
         </div>
