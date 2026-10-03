@@ -22,6 +22,15 @@ test('it saves generated templates as inactive drafts with an annotation', funct
     }
 });
 
+test('the activate flag saves live templates', function () {
+    $this->artisan('templates:generate', ['size' => 9, '--count' => 1, '--seed' => 5, '--activate' => true])
+        ->expectsOutputToContain('active template(s)')
+        ->assertSuccessful();
+
+    expect(Template::where('is_active', true)->count())->toBe(1)
+        ->and(Template::where('is_active', false)->count())->toBe(0);
+});
+
 test('a dry run prints the templates without saving them', function () {
     $this->artisan('templates:generate', ['size' => 9, '--count' => 1, '--seed' => 5, '--dry-run' => true])
         ->expectsOutputToContain('Dry run: nothing saved.')

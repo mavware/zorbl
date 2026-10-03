@@ -19,6 +19,7 @@ use InvalidArgumentException;
     {--theme-lengths= : Themed only: comma-separated slot lengths from the top row down}
     {--word=* : A word the grid must have a slot for; repeat the option for several, add :down for a down word}
     {--dry-run : Print the templates without saving them}
+    {--activate : Save the templates as active instead of as inactive drafts}
     {--fill-check : Try to fill each template from the word list}
     {--fill-timeout=20 : Seconds allowed per fill check}')]
 #[Description('Generate crossword templates procedurally and save them as inactive drafts')]
@@ -94,7 +95,14 @@ class GenerateTemplates extends Command
             return self::SUCCESS;
         }
 
-        $ids = $drafts->saveAsDrafts($candidates);
+        if ($this->option('activate')) {
+            $ids = $drafts->save($candidates, active: true);
+            $this->info(sprintf('Saved %d active template(s). They are available in the puzzle picker now.', count($ids)));
+
+            return self::SUCCESS;
+        }
+
+        $ids = $drafts->save($candidates);
         $this->info(sprintf('Saved %d inactive draft(s). Review and activate them in the admin panel.', count($ids)));
 
         return self::SUCCESS;

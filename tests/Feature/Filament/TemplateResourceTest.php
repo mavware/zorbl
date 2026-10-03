@@ -407,3 +407,24 @@ test('the fill check reports a template the word list cannot fill', function () 
         ->callAction('checkFill', ['timeout' => 5])
         ->assertNotified('Tiny did not fill');
 });
+
+test('admin can activate and deactivate templates in bulk', function () {
+    $drafts = Template::factory()->count(3)->inactive()->create();
+    $untouched = Template::factory()->inactive()->create();
+
+    Livewire::test(ListTemplates::class)
+        ->selectTableRecords($drafts->modelKeys())
+        ->callAction(TestAction::make('activate')->table()->bulk())
+        ->assertNotified('Templates activated');
+
+    expect(Template::whereIn('id', $drafts->modelKeys())->where('is_active', true)->count())->toBe(3)
+        ->and($untouched->refresh()->is_active)->toBeFalse();
+
+    Livewire::test(ListTemplates::class)
+        ->selectTableRecords([$drafts[0]->id])
+        ->callAction(TestAction::make('deactivate')->table()->bulk())
+        ->assertNotified('Templates deactivated');
+
+    expect($drafts[0]->refresh()->is_active)->toBeFalse()
+        ->and($drafts[1]->refresh()->is_active)->toBeTrue();
+});

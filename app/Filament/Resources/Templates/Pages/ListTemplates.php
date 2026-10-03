@@ -230,7 +230,7 @@ class ListTemplates extends ListRecords
                     return;
                 }
 
-                $savedIds = app(TemplateDraftSaver::class)->saveAsDrafts($candidates);
+                $savedIds = app(TemplateDraftSaver::class)->save($candidates);
 
                 if ($savedIds === []) {
                     Notification::make()
@@ -544,7 +544,7 @@ class ListTemplates extends ListRecords
 
                 try {
                     $candidates = app(TemplateGeneratorService::class)->generate($spec);
-                    $savedIds = app(TemplateDraftSaver::class)->saveAsDrafts($candidates);
+                    $savedIds = app(TemplateDraftSaver::class)->save($candidates);
                 } catch (\Throwable $e) {
                     Notification::make()
                         ->title('Generation failed')

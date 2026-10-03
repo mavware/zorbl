@@ -58,7 +58,7 @@ class GenerateTemplateDrafts implements ShouldQueue
             seedWords: $this->seedWords,
         );
 
-        $savedIds = $drafts->saveAsDrafts($candidates);
+        $savedIds = $drafts->save($candidates);
 
         $notification = $savedIds === []
             ? Notification::make()

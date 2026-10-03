@@ -10,12 +10,13 @@ class TemplateDraftSaver
     public function __construct(private TemplateTagger $tagger) {}
 
     /**
-     * Save valid candidates as inactive, tagged templates for admin review.
+     * Save valid candidates as tagged templates: inactive drafts for admin
+     * review by default, or live templates when $active is set.
      *
      * @param  list<GenerationCandidate>  $candidates
      * @return list<int> template IDs that were saved
      */
-    public function saveAsDrafts(array $candidates): array
+    public function save(array $candidates, bool $active = false): array
     {
         $ids = [];
         foreach ($candidates as $candidate) {
@@ -31,7 +32,7 @@ class TemplateDraftSaver
                 'styles' => null,
                 'min_word_length' => 3,
                 'sort_order' => 0,
-                'is_active' => false,
+                'is_active' => $active,
             ]);
 
             $template->annotation()->create([
