@@ -24,7 +24,7 @@ test('template picker appears in new puzzle modal for standard sizes', function 
         ->assertSee($firstTemplateName);
 });
 
-test('template picker does not appear for non-standard sizes', function () {
+test('template picker offers only a blank grid for sizes without templates', function () {
     $user = User::factory()->create();
     $this->actingAs($user);
 
@@ -32,7 +32,8 @@ test('template picker does not appear for non-standard sizes', function () {
         ->set('showNewModal', true)
         ->set('newWidth', 2)
         ->set('newHeight', 2)
-        ->assertDontSee('Grid Template')
+        ->assertSee('Grid Template')
+        ->assertSee('Blank')
         ->assertSee('Templates are available for square grids');
 });
 
@@ -248,7 +249,7 @@ test('admin templates respect sort_order', function () {
     expect($firstIndex)->toBeLessThan($secondIndex);
 });
 
-test('non-square dimensions show informational message instead of empty space', function () {
+test('non-square dimensions offer a blank grid with an informational note', function () {
     $user = User::factory()->create();
     $this->actingAs($user);
 
@@ -256,7 +257,8 @@ test('non-square dimensions show informational message instead of empty space', 
         ->set('showNewModal', true)
         ->set('newWidth', 10)
         ->set('newHeight', 8)
-        ->assertDontSee('Grid Template')
+        ->assertSee('Grid Template')
+        ->assertSee('Blank')
         ->assertSee('Templates are available for square grids');
 });
 
@@ -287,11 +289,12 @@ test('switching from square to non-square dimensions keeps template section stab
         ->assertSee('Grid Template')
         ->set('newWidth', 10)
         ->assertSet('selectedTemplate', null)
-        ->assertDontSee('Grid Template')
+        ->assertSee('Grid Template')
+        ->assertSee('Blank')
         ->assertSee('Templates are available for square grids');
 });
 
-test('a supported square size with no templates says so instead of showing the picker', function () {
+test('a supported square size with no templates still offers a blank grid and says so', function () {
     $user = User::factory()->create();
     $this->actingAs($user);
 
@@ -299,7 +302,8 @@ test('a supported square size with no templates says so instead of showing the p
         ->set('showNewModal', true)
         ->set('newWidth', 13)
         ->set('newHeight', 13)
-        ->assertDontSee('Grid Template')
+        ->assertSee('Grid Template')
+        ->assertSee('Blank')
         ->assertSee('No templates for this size yet.')
         ->assertDontSee('Templates are available for square grids');
 });

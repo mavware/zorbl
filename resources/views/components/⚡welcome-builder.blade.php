@@ -285,38 +285,35 @@ new class extends Component {
             <div wire:loading.delay wire:target="newWidth, newHeight, puzzleType" class="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-zinc-900/60">
                 <flux:icon.loading class="size-5 text-zinc-400" />
             </div>
-            @if(count($this->templates) > 0)
-                <flux:label class="text-zinc-200">{{ __('GRID TEMPLATE') }} <span class="text-zinc-500 ml-2 text-xs font-normal"> {{ __('(optional)') }}</span></flux:label>
-                <div class="flex min-h-[6.5rem] gap-3 overflow-x-auto pb-2 mt-2">
-                    {{-- Blank grid option --}}
+            <flux:label class="text-zinc-200">{{ __('GRID TEMPLATE') }} <span class="text-zinc-500 ml-2 text-xs font-normal"> {{ __('(optional)') }}</span></flux:label>
+            <div class="flex min-h-[6.5rem] gap-3 overflow-x-auto pb-2 mt-2">
+                {{-- Blank grid option --}}
+                <button
+                    type="button"
+                    wire:click="$set('selectedTemplate', null)"
+                    class="flex shrink-0 flex-col items-center gap-1.5 rounded-lg border p-2 transition-colors {{ $selectedTemplate === null ? 'border-amber-500 bg-amber-500/10' : 'border-zinc-700 hover:border-zinc-500' }}"
+                >
+                    <x-grid-thumbnail :grid="Crossword::emptyGrid($newWidth, $newHeight)" :width="$newWidth" :height="$newHeight" :cell-size="6" :max-width="80" />
+                    <span class="whitespace-nowrap text-xs text-zinc-400">{{ __('Blank') }}</span>
+                </button>
+
+                @foreach($this->templates as $index => $template)
                     <button
                         type="button"
-                        wire:click="$set('selectedTemplate', null)"
-                        class="flex shrink-0 flex-col items-center gap-1.5 rounded-lg border p-2 transition-colors {{ $selectedTemplate === null ? 'border-amber-500 bg-amber-500/10' : 'border-zinc-700 hover:border-zinc-500' }}"
+                        wire:click="$set('selectedTemplate', {{ $index }})"
+                        class="flex shrink-0 flex-col items-center gap-1.5 rounded-lg border p-2 transition-colors {{ $selectedTemplate === $index ? 'border-amber-500 bg-amber-500/10' : 'border-zinc-700 hover:border-zinc-500' }}"
                     >
-                        <x-grid-thumbnail :grid="Crossword::emptyGrid($newWidth, $newHeight)" :width="$newWidth" :height="$newHeight" :cell-size="6" :max-width="80" />
-                        <span class="whitespace-nowrap text-xs text-zinc-400">{{ __('Blank') }}</span>
+                        <x-grid-thumbnail :grid="$template['grid']" :styles="$template['styles'] ?? null" :width="$newWidth" :height="$newHeight" :cell-size="6" :max-width="80" />
+                        <span class="whitespace-nowrap text-xs text-zinc-400">{{ $template['name'] }}</span>
                     </button>
-
-                    @foreach($this->templates as $index => $template)
-                        <button
-                            type="button"
-                            wire:click="$set('selectedTemplate', {{ $index }})"
-                            class="flex shrink-0 flex-col items-center gap-1.5 rounded-lg border p-2 transition-colors {{ $selectedTemplate === $index ? 'border-amber-500 bg-amber-500/10' : 'border-zinc-700 hover:border-zinc-500' }}"
-                        >
-                            <x-grid-thumbnail :grid="$template['grid']" :styles="$template['styles'] ?? null" :width="$newWidth" :height="$newHeight" :cell-size="6" :max-width="80" />
-                            <span class="whitespace-nowrap text-xs text-zinc-400">{{ $template['name'] }}</span>
-                        </button>
-                    @endforeach
-                </div>
-            @else
-                <div class="flex h-full min-h-[6.5rem] items-center justify-center">
-                    @if ($newWidth === $newHeight && $newWidth >= 3 && $newWidth <= 35)
-                        <flux:text size="sm" class="text-zinc-500">{{ __('No templates for this size yet.') }}</flux:text>
-                    @else
-                        <flux:text size="sm" class="text-zinc-500">{{ __('Templates are available for square grids (3×3 to 35×35).') }}</flux:text>
-                    @endif
-                </div>
+                @endforeach
+            </div>
+            @if (count($this->templates) === 0)
+                @if ($newWidth === $newHeight && $newWidth >= 3 && $newWidth <= 35)
+                    <flux:text size="sm" class="text-zinc-500">{{ __('No templates for this size yet.') }}</flux:text>
+                @else
+                    <flux:text size="sm" class="text-zinc-500">{{ __('Templates are available for square grids (3×3 to 35×35).') }}</flux:text>
+                @endif
             @endif
         </div>
     @endif
