@@ -58,36 +58,6 @@ new #[Title('Solve Statistics')] class extends Component {
     }
 
     #[Computed]
-    public function totalSolved(): int
-    {
-        return Auth::user()->puzzleAttempts()->where('is_completed', true)->count();
-    }
-
-    #[Computed]
-    public function averageTime(): ?int
-    {
-        $avg = Auth::user()
-            ->puzzleAttempts()
-            ->where('is_completed', true)
-            ->whereNotNull('solve_time_seconds')
-            ->avg('solve_time_seconds');
-
-        return $avg ? (int) round($avg) : null;
-    }
-
-    #[Computed]
-    public function fastestSolve(): ?PuzzleAttempt
-    {
-        return Auth::user()
-            ->puzzleAttempts()
-            ->where('is_completed', true)
-            ->whereNotNull('solve_time_seconds')
-            ->with('crossword:id,title')
-            ->orderBy('solve_time_seconds')
-            ->first();
-    }
-
-    #[Computed]
     public function averageBySize(): array
     {
         return Auth::user()
@@ -155,31 +125,6 @@ new #[Title('Solve Statistics')] class extends Component {
             ->all();
     }
 
-    #[Computed]
-    public function communityComparison(): array
-    {
-        $subquery = DB::table('puzzle_attempts')
-            ->select('crossword_id', DB::raw('AVG(solve_time_seconds) as avg_time'))
-            ->where('is_completed', true)
-            ->whereNotNull('solve_time_seconds')
-            ->groupBy('crossword_id')
-            ->havingRaw('COUNT(*) > 1');
-
-        $result = DB::table('puzzle_attempts', 'pa')
-            ->joinSub($subquery, 'community', 'pa.crossword_id', '=', 'community.crossword_id')
-            ->where('pa.user_id', Auth::id())
-            ->where('pa.is_completed', true)
-            ->whereNotNull('pa.solve_time_seconds')
-            ->selectRaw('COUNT(*) as total_with_community')
-            ->selectRaw('SUM(CASE WHEN pa.solve_time_seconds < community.avg_time THEN 1 ELSE 0 END) as faster_count')
-            ->first();
-
-        return [
-            'total' => (int) ($result->total_with_community ?? 0),
-            'faster' => (int) ($result->faster_count ?? 0),
-        ];
-    }
-
     public function formatTime(?int $seconds): string
     {
         if ($seconds === null) {
@@ -219,87 +164,30 @@ new #[Title('Solve Statistics')] class extends Component {
         <x-header-button variant="secondary" icon="arrow-left" :href="route('crosswords.solving')" wire:navigate>
             {{ __('Back to Solving') }}
         </x-header-button>
+
+        <x-slot:footer>
+            {{-- Headline solve stats — flush under the header rule, like the builder stats on the Build page --}}
+            <livewire:solver-stats key="solver-stats" />
+        </x-slot:footer>
     </x-page-header>
 
-    {{-- Streak & Achievements --}}
-    <div class="grid gap-[22px] sm:grid-cols-2">
-        <div class="border-amber-400/60 flex items-center gap-4 rounded-sm border p-4.5">
-            <div class="border-amber-400 flex size-12 shrink-0 items-center justify-center rounded-sm border text-amber-400">
-                <flux:icon name="fire" class="size-6" />
+    {{-- Achievements --}}
+    <div class="border-border rounded-sm border p-4.5">
+        <h2 class="font-classical text-ink mb-3 text-[19px] leading-tight font-semibold">{{ __('Achievements') }}</h2>
+        @php($achievements = Auth::user()->achievements()->orderBy('earned_at', 'desc')->get())
+        @if($achievements->isEmpty())
+            <p class="text-ink-muted text-sm">{{ __('Complete puzzles to earn achievements!') }}</p>
+        @else
+            <div class="flex flex-wrap gap-2">
+                @foreach($achievements as $achievement)
+                    <flux:tooltip :content="$achievement->description">
+                        <span class="chip-classical border-amber-400 text-amber-400 h-7 gap-1.5 px-2.5">
+                            <flux:icon :name="$achievement->icon" class="size-3.5" />
+                            {{ $achievement->label }}
+                        </span>
+                    </flux:tooltip>
+                @endforeach
             </div>
-            <div>
-                <div class="meta-classical">{{ __('Current Streak') }}</div>
-                <div class="font-classical tnum text-[30px] leading-none font-medium text-amber-400">{{ Auth::user()->current_streak }} {{ __('days') }}</div>
-                <div class="meta-classical mt-1.5">{{ __('Best: :days days', ['days' => Auth::user()->longest_streak]) }}</div>
-            </div>
-        </div>
-
-        <div class="border-border rounded-sm border p-4.5">
-            <h2 class="font-classical text-ink mb-3 text-[19px] leading-tight font-semibold">{{ __('Achievements') }}</h2>
-            @php($achievements = Auth::user()->achievements()->orderBy('earned_at', 'desc')->get())
-            @if($achievements->isEmpty())
-                <p class="text-ink-muted text-sm">{{ __('Complete puzzles to earn achievements!') }}</p>
-            @else
-                <div class="flex flex-wrap gap-2">
-                    @foreach($achievements as $achievement)
-                        <flux:tooltip :content="$achievement->description">
-                            <span class="chip-classical border-amber-400 text-amber-400 h-7 gap-1.5 px-2.5">
-                                <flux:icon :name="$achievement->icon" class="size-3.5" />
-                                {{ $achievement->label }}
-                            </span>
-                        </flux:tooltip>
-                    @endforeach
-                </div>
-            @endif
-        </div>
-    </div>
-
-    {{-- Summary Cards --}}
-    <div class="border-border divide-hairline grid divide-y rounded-sm border sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-4">
-        <div class="flex items-center gap-4 p-4.5 sm:border-hairline sm:border-e sm:border-b lg:border-b-0">
-            <div class="border-border-strong text-ink-faint flex size-10 shrink-0 items-center justify-center rounded-sm border">
-                <flux:icon name="check-circle" class="size-5" />
-            </div>
-            <div class="min-w-0">
-                <div class="meta-classical">{{ __('Puzzles Solved') }}</div>
-                <div class="font-classical text-ink tnum text-[30px] leading-none font-medium">{{ $this->totalSolved }}</div>
-            </div>
-        </div>
-
-        <div class="flex items-center gap-4 p-4.5 sm:border-hairline sm:border-b lg:border-e lg:border-b-0">
-            <div class="border-border-strong text-ink-faint flex size-10 shrink-0 items-center justify-center rounded-sm border">
-                <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            </div>
-            <div class="min-w-0">
-                <div class="meta-classical">{{ __('Average Time') }}</div>
-                <div class="font-classical text-ink tnum text-[30px] leading-none font-medium">{{ $this->formatTime($this->averageTime) }}</div>
-            </div>
-        </div>
-
-        <div class="flex items-center gap-4 p-4.5 sm:border-hairline sm:border-e">
-            <div class="border-border-strong text-ink-faint flex size-10 shrink-0 items-center justify-center rounded-sm border">
-                <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-            </div>
-            <div class="min-w-0">
-                <div class="meta-classical">{{ __('Fastest Solve') }}</div>
-                <div class="font-classical text-ink tnum text-[30px] leading-none font-medium">{{ $this->fastestSolve ? $this->formatTime($this->fastestSolve->solve_time_seconds) : '—' }}</div>
-                @if($this->fastestSolve)
-                    <div class="meta-classical mt-1.5 truncate normal-case tracking-normal">{{ $this->fastestSolve->crossword->title }}</div>
-                @endif
-            </div>
-        </div>
-
-        @if($this->communityComparison['total'] > 0)
-        <div class="flex items-center gap-4 p-4.5 ">
-            <div class="border-border-strong text-ink-faint flex size-10 shrink-0 items-center justify-center rounded-sm border">
-                <flux:icon name="arrow-trending-up" class="size-5" />
-            </div>
-            <div class="min-w-0">
-                <div class="meta-classical">{{ __('Faster Than Avg') }}</div>
-                <div class="font-classical text-ink tnum text-[30px] leading-none font-medium">{{ round(($this->communityComparison['faster'] / $this->communityComparison['total']) * 100) }}%</div>
-                <div class="meta-classical mt-1.5">{{ __(':count of :total puzzles', ['count' => $this->communityComparison['faster'], 'total' => $this->communityComparison['total']]) }}</div>
-            </div>
-        </div>
         @endif
     </div>
 

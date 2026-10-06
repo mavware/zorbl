@@ -15,18 +15,19 @@ class AppNavigation
     public function __construct(private Request $request) {}
 
     /**
-     * The main destinations, grouped: the user's own work first, then the
-     * shared libraries. Groups are rendered with a separator between them.
-     * Favorites and Constructors are offered from the user menu instead (see
-     * account() and sidebarAccount()). Public pages (e.g. the help center) render the chrome
-     * for signed-out visitors too, so $user may be null.
+     * The main destinations: the user's own work, then the shared reference
+     * section, as one group. (The chrome renders a separator between groups,
+     * so a second group would split the list.) Favorites and Constructors are
+     * offered from the user menu instead (see account() and sidebarAccount()).
+     * Public pages (e.g. the help center) render the chrome for signed-out
+     * visitors too, so $user may be null.
      *
      * @return array<int, array<int, NavigationItem>>
      */
     public function main(?User $user): array
     {
         return [
-            [
+            array_values(array_filter([
                 new NavigationItem(
                     label: __('Build'),
                     icon: 'wrench-screwdriver',
@@ -37,21 +38,15 @@ class AppNavigation
                     label: __('Solve'),
                     icon: 'play',
                     href: route('crosswords.solving'),
-                    current: $this->request->routeIs('crosswords.solving', 'crosswords.solver', 'crosswords.stats'),
+                    current: $this->request->routeIs('crosswords.solving', 'crosswords.discover', 'crosswords.solver', 'crosswords.stats'),
                 ),
-            ],
-            array_values(array_filter([
+                // The Clue Library and Word Catalog are tabs of one Reference
+                // section (see reference()), so the chrome offers a single entry.
                 new NavigationItem(
-                    label: __('Clue Library'),
+                    label: __('Reference'),
                     icon: 'book-open',
                     href: route('clues.index'),
-                    current: $this->request->routeIs('clues.index'),
-                ),
-                new NavigationItem(
-                    label: __('Word Catalog'),
-                    icon: 'language',
-                    href: route('words.index'),
-                    current: $this->request->routeIs('words.*'),
+                    current: $this->request->routeIs('clues.index', 'words.*'),
                 ),
                 config('crosswordbuilder.features.contests') ? new NavigationItem(
                     label: __('Contests'),
@@ -60,6 +55,30 @@ class AppNavigation
                     current: $this->request->routeIs('contests.*'),
                 ) : null,
             ])),
+        ];
+    }
+
+    /**
+     * The tabs of the Reference section, rendered under the page header of
+     * each of its pages.
+     *
+     * @return array<int, NavigationItem>
+     */
+    public function reference(): array
+    {
+        return [
+            new NavigationItem(
+                label: __('Clue Library'),
+                icon: 'book-open',
+                href: route('clues.index'),
+                current: $this->request->routeIs('clues.index'),
+            ),
+            new NavigationItem(
+                label: __('Word Catalog'),
+                icon: 'language',
+                href: route('words.index'),
+                current: $this->request->routeIs('words.*'),
+            ),
         ];
     }
 

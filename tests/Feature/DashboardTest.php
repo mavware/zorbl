@@ -49,19 +49,38 @@ test('the sidebar lists build first and solve second instead of a dashboard item
         ->assertDontSee('>Dashboard<', false);
 });
 
-test('the sidebar separates its nav groups and the user menu with inset separators', function () {
-    $this->actingAs(User::factory()->create())
+test('the sidebar lists its main destinations unbroken and separates the user menu with an inset separator', function () {
+    $html = $this->actingAs(User::factory()->create())
         ->get(route('crosswords.index'))
         ->assertOk()
         ->assertSeeInOrder([
             route('crosswords.solving'),
-            'data-flux-separator',
             route('clues.index'),
             route('support.index'),
             'data-flux-separator',
             'data-test="sidebar-menu-button"',
             route('favorites.index'),
-        ], false);
+        ], false)
+        ->getContent();
+
+    preg_match('/data-test="app-sidebar".*?href="'.preg_quote(route('clues.index'), '/').'"/s', $html, $buildToReference);
+
+    expect($buildToReference[0])->not->toContain('data-flux-separator');
+});
+
+test('the top bar lists its main destinations without a separator', function () {
+    config(['crosswordbuilder.navigation' => 'header']);
+
+    $html = $this->actingAs(User::factory()->create())
+        ->get(route('crosswords.index'))
+        ->assertOk()
+        ->getContent();
+
+    preg_match('/data-test="header-nav".*?<\/nav>/s', $html, $headerNav);
+
+    expect($headerNav[0])
+        ->toContain('href="'.route('clues.index').'"')
+        ->not->toContain('data-flux-separator');
 });
 
 test('the sidebar marks build current on the build page and solve current on the solve page', function () {
@@ -76,13 +95,14 @@ test('the sidebar marks build current on the build page and solve current on the
         ->assertSeeInOrder(['href="'.route('crosswords.solving').'"', 'data-current'], false);
 });
 
-test('the build page shows the welcome hero inside the header above the stats band for a new user', function () {
+test('the build page header has no welcome hero or stats band', function () {
     $newUser = User::factory()->create();
 
     $this->actingAs($newUser)
         ->get(route('crosswords.index'))
         ->assertOk()
-        ->assertSeeInOrder(['data-page-header-body', 'data-test="dashboard-welcome-hero"', 'data-page-header-footer', 'Total Solves'], false);
+        ->assertDontSee('data-test="dashboard-welcome-hero"', false)
+        ->assertDontSee('data-page-header-footer', false);
 
     $builder = User::factory()->create();
     Crossword::factory()->for($builder)->create();
@@ -90,8 +110,8 @@ test('the build page shows the welcome hero inside the header above the stats ba
     $this->actingAs($builder)
         ->get(route('crosswords.index'))
         ->assertOk()
-        ->assertSeeInOrder(['data-page-header-footer', 'Total Solves'], false)
-        ->assertDontSee('data-test="dashboard-welcome-hero"', false);
+        ->assertDontSee('data-test="dashboard-welcome-hero"', false)
+        ->assertDontSee('data-page-header-footer', false);
 });
 
 test('the page header kicker is hidden on phones', function () {

@@ -24,6 +24,12 @@ new class extends Component {
     #[Url]
     public string $sortDirection = 'asc';
 
+    public bool $showAddModal = false;
+
+    public string $newClue = '';
+
+    public string $addError = '';
+
     public function mount(Word $word): void
     {
         $this->wordId = $word->id;
@@ -72,6 +78,47 @@ new class extends Component {
         }
 
         $this->resetPage();
+    }
+
+    /**
+     * Submit a standalone clue for this word, as the clue library does; the
+     * answer is fixed to the word, and the clue waits for review before it
+     * shows to anyone but its author.
+     */
+    public function addClue(): void
+    {
+        abort_unless(Auth::check(), 403);
+
+        $this->addError = '';
+
+        $this->validate([
+            'newClue' => ['required', 'string', 'min:2', 'max:500'],
+        ]);
+
+        $clue = trim($this->newClue);
+
+        $exists = ClueEntry::where('answer', $this->wordText)
+            ->where('clue', $clue)
+            ->where('user_id', Auth::id())
+            ->whereNull('crossword_id')
+            ->exists();
+
+        if ($exists) {
+            $this->addError = 'You already have this exact clue for this word in the library.';
+
+            return;
+        }
+
+        ClueEntry::create([
+            'answer' => $this->wordText,
+            'clue' => $clue,
+            'user_id' => Auth::id(),
+            'status' => ClueEntry::STATUS_PENDING,
+        ]);
+
+        $this->newClue = '';
+        $this->showAddModal = false;
+        unset($this->clues);
     }
 
     /**
@@ -134,10 +181,15 @@ new class extends Component {
     {{-- Word Header --}}
     <div class="border-hairline flex flex-col gap-4 border-b pb-5 sm:flex-row sm:items-end sm:justify-between">
         <h1 class="font-classical text-ink text-[40px] leading-none font-semibold tracking-[0.08em]">{{ $this->word->word }}</h1>
-        <div class="flex flex-wrap gap-2">
+        <div class="flex flex-wrap items-center gap-2">
             <span class="chip-classical border-ink-faint text-ink-faint tnum h-7 px-2.5">{{ $this->word->length }} {{ __('letters') }}</span>
             <span class="chip-classical border-ink-faint text-ink-faint tnum h-7 px-2.5">{{ __('Score') }}: {{ number_format($this->word->score, 1) }}</span>
             <span class="chip-classical border-amber-400 text-amber-400 tnum h-7 px-2.5">{{ number_format($this->clues->total()) }} {{ trans_choice('clue|clues', $this->clues->total()) }}</span>
+            @auth
+                <x-header-button icon="plus" wire:click="$set('showAddModal', true)" class="ms-1" data-test="add-clue-button">
+                    {{ __('Add Clue') }}
+                </x-header-button>
+            @endauth
         </div>
     </div>
 
@@ -189,4 +241,30 @@ new class extends Component {
             </div>
         @endif
     @endif
+
+    {{-- Add Clue Modal --}}
+    @auth
+        <flux:modal wire:model="showAddModal">
+            <div class="space-y-6">
+                <flux:heading size="lg">{{ __('Add Clue for :word', ['word' => $this->word->word]) }}</flux:heading>
+
+                <flux:field>
+                    <flux:label>{{ __('Clue') }}</flux:label>
+                    <flux:input wire:model="newClue" placeholder="{{ __('e.g. Large body of water') }}" wire:keydown.enter="addClue" />
+                    <flux:error name="newClue" />
+                </flux:field>
+
+                @if($addError)
+                    <flux:callout variant="danger">
+                        <flux:text>{{ $addError }}</flux:text>
+                    </flux:callout>
+                @endif
+
+                <div class="flex justify-end gap-2">
+                    <flux:button wire:click="$set('showAddModal', false)">{{ __('Cancel') }}</flux:button>
+                    <flux:button variant="primary" wire:click="addClue">{{ __('Add') }}</flux:button>
+                </div>
+            </div>
+        </flux:modal>
+    @endauth
 </div>

@@ -75,6 +75,12 @@ new #[Title('Build')] class extends Component {
     }
 
     #[Computed]
+    public function totalCount(): int
+    {
+        return Auth::user()->crosswords()->count();
+    }
+
+    #[Computed]
     public function publishedCount(): int
     {
         return Auth::user()->crosswords()->where('is_published', true)->count();
@@ -84,18 +90,6 @@ new #[Title('Build')] class extends Component {
     public function draftCount(): int
     {
         return Auth::user()->crosswords()->where('is_published', false)->count();
-    }
-
-    /**
-     * Brand-new account with no activity yet — render a friendlier first-run
-     * hero so they don't bounce off a wall of zero-state cards.
-     */
-    #[Computed]
-    public function isNewUser(): bool
-    {
-        return $this->publishedCount === 0
-            && $this->draftCount === 0
-            && ! Auth::user()->puzzleAttempts()->exists();
     }
 
     #[Computed]
@@ -371,7 +365,7 @@ new #[Title('Build')] class extends Component {
 }
 ?>
 
-<div class="space-y-6" data-full-bleed>
+<div class="space-y-4" data-full-bleed>
         <x-page-header :kicker="__('Your workshop')" :title="__('Build puzzles')" :bleed="false">
             <x-header-button icon="plus" wire:click="$set('showNewModal', true)">
                 {{ __('New Puzzle') }}
@@ -379,81 +373,35 @@ new #[Title('Build')] class extends Component {
             <x-header-button variant="secondary" icon="arrow-up-tray" wire:click="$set('showImportModal', true)">
                 {{ __('Import Puzzle') }}
             </x-header-button>
-
-            @if($this->isNewUser)
-                {{-- First-run welcome — inside the header, above its rule, so the stats band below stays attached. --}}
-                <x-slot:body>
-                <div class="relative overflow-hidden rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 p-6 dark:border-amber-800/50 dark:from-amber-950/30 dark:to-orange-950/20" data-test="dashboard-welcome-hero">
-                    <div class="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-                        <div class="max-w-xl">
-                            <flux:heading size="lg" class="!text-amber-700 dark:!text-amber-300">
-                                {{ __('Welcome to :app, :name!', ['app' => config('app.name'), 'name' => auth()->user()->name]) }}
-                            </flux:heading>
-                            <flux:text class="mt-2">
-                                {{ __('You\'re all set up. Two good ways to get started:') }}
-                            </flux:text>
-                            <ul class="mt-3 space-y-2 text-sm text-zinc-700 dark:text-zinc-300">
-                                <li class="flex items-start gap-2">
-                                    <flux:icon name="play" class="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400" />
-                                    <span>{{ __('Try a solve — pick any puzzle from the community to see how the editor and solver feel.') }}</span>
-                                </li>
-                                <li class="flex items-start gap-2">
-                                    <flux:icon name="pencil-square" class="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400" />
-                                    <span>{{ __('Build your first puzzle — the editor handles symmetry, numbering, and exports for you.') }}</span>
-                                </li>
-                            </ul>
-                        </div>
-                        <div class="flex flex-shrink-0 flex-col gap-2 sm:items-end">
-                            <flux:button variant="primary" icon="plus" wire:click="$set('showNewModal', true)">
-                                {{ __('Build a puzzle') }}
-                            </flux:button>
-                            <flux:button variant="ghost" icon="play" :href="route('crosswords.solving')" wire:navigate>
-                                {{ __('Browse puzzles to solve') }}
-                            </flux:button>
-                            <a href="{{ route('help.index') }}" wire:navigate class="mt-1 text-xs text-zinc-600 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200">
-                                {{ __('Read the Help Center →') }}
-                            </a>
-                        </div>
-                    </div>
-                </div>
-
-                </x-slot:body>
-            @endif
-
-            <x-slot:footer>
-                {{-- Builder Stats — flush under the header rule --}}
-                <livewire:constructor-stats key="constructor-stats" />
-            </x-slot:footer>
+            {{-- The analytics page needs a registered account (see routes/web.php),
+                 so guest builders don't get a button that would bounce them. --}}
+            @unless (auth()->user()->isAnonymous())
+                <x-header-button variant="secondary" icon="chart-bar" :href="route('crosswords.analytics')" wire:navigate data-test="build-analytics-button">
+                    {{ __('Analytics') }}
+                </x-header-button>
+            @endunless
         </x-page-header>
 
         {{-- First-run welcome — only visible to brand-new accounts with zero activity. --}}
 
         {{-- Search & Filters --}}
-        <div class="flex flex-col gap-3 px-6 py-5 sm:flex-row sm:items-center lg:px-8">
-            <label class="relative flex-1">
-                <span class="sr-only">{{ __('Search puzzles...') }}</span>
-                <flux:icon name="magnifying-glass" class="text-ink-faint pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
-                <input
-                    type="search"
-                    placeholder="{{ __('Search puzzles...') }}"
-                    wire:model.live.debounce.300ms="search"
-                    class="field-classical w-full pr-3 pl-9"
-                />
-            </label>
-            <div class="flex items-center gap-3">
-                <div class="border-border-strong divide-hairline flex h-10 divide-x overflow-hidden rounded-sm border max-sm:flex-auto" role="radiogroup" aria-label="{{ __('Status') }}">
-                    @foreach (['' => __('All'), 'published' => __('Published'), 'draft' => __('Drafts')] as $value => $label)
-                        <label class="cursor-pointer max-sm:flex-auto">
-                            <input type="radio" name="status" value="{{ $value }}" wire:model.live="status" class="peer sr-only" />
-                            <span class="font-classical text-ink-muted hover:text-ink peer-checked:bg-amber-400/10 peer-checked:text-amber-400 peer-focus-visible:outline-2 peer-focus-visible:-outline-offset-2 peer-focus-visible:outline-amber-400 flex h-full items-center justify-center px-3.5 text-[15px] font-medium transition-colors max-sm:px-2">
-                                {{ $label }}
-                            </span>
-                        </label>
-                    @endforeach
-                </div>
-                <label class="relative max-sm:flex-auto">
+        {{-- Spaced like the Solve page's row: search and sort together on the
+             left, the status filter on the right. --}}
+        <div class="flex flex-col gap-3 px-6 sm:flex-row sm:items-center sm:justify-between lg:px-8" data-test="puzzle-filters">
+            <div class="flex items-center gap-2">
+                <label class="relative max-sm:flex-auto sm:w-48">
+                    <span class="sr-only">{{ __('Search puzzles...') }}</span>
+                    <flux:icon name="magnifying-glass" class="text-ink-faint pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+                    <input
+                        type="search"
+                        placeholder="{{ __('Search puzzles...') }}"
+                        wire:model.live.debounce.300ms="search"
+                        class="field-classical w-full pr-3 pl-9"
+                    />
+                </label>
+                <label class="relative max-sm:flex-auto sm:w-36">
                     <span class="sr-only">{{ __('Sort') }}</span>
-                    <select wire:model.live="sortBy" class="field-classical font-classical appearance-none max-sm:w-full pr-9 pl-3.5 text-[15px] font-medium">
+                    <select wire:model.live="sortBy" class="field-classical font-classical w-full appearance-none pr-9 pl-3.5 text-[15px] font-medium">
                         <option value="newest">{{ __('Newest') }}</option>
                         <option value="oldest">{{ __('Oldest') }}</option>
                         <option value="alpha">{{ __('A–Z') }}</option>
@@ -462,6 +410,25 @@ new #[Title('Build')] class extends Component {
                     </select>
                     <flux:icon name="chevron-down" class="text-ink-faint pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2" />
                 </label>
+            </div>
+
+            <div class="border-border-strong divide-hairline flex h-10 divide-x overflow-hidden rounded-sm border max-sm:flex-auto" role="radiogroup" aria-label="{{ __('Status') }}">
+                {{-- Each option carries the user's puzzle count for that status,
+                     independent of the search term, so the totals stay stable
+                     while filtering. --}}
+                @foreach ([
+                    '' => [__('All'), $this->totalCount],
+                    'published' => [__('Published'), $this->publishedCount],
+                    'draft' => [__('Drafts'), $this->draftCount],
+                ] as $value => [$label, $count])
+                    <label class="cursor-pointer max-sm:flex-auto">
+                        <input type="radio" name="status" value="{{ $value }}" wire:model.live="status" class="peer sr-only" />
+                        <span class="font-classical text-ink-muted hover:text-ink peer-checked:bg-zinc-800 peer-checked:text-white dark:peer-checked:bg-zinc-700 peer-focus-visible:outline-2 peer-focus-visible:-outline-offset-2 peer-focus-visible:outline-amber-400 flex h-full items-center justify-center gap-1.5 px-3.5 text-[15px] font-medium transition-colors max-sm:px-2">
+                            {{ $label }}
+                            <span class="tnum text-[13px]" data-test="status-count-{{ $value ?: 'all' }}">({{ $count }})</span>
+                        </span>
+                    </label>
+                @endforeach
             </div>
         </div>
 
@@ -486,12 +453,10 @@ new #[Title('Build')] class extends Component {
                 @endif
             </div>
         @else
-            {{-- Results collapse to their first row until expanded (see collapsible-grid.js). --}}
-            <div x-data="collapsibleGrid" data-test="puzzle-results">
+            <div data-test="puzzle-results">
                 {{-- Below `sm` the grid holds three compact cards per row rather
-                     than one full card, so the collapsed first row still shows
-                     three puzzles on a phone. --}}
-                <div x-ref="grid" class="grid gap-2 px-6 max-sm:[grid-template-columns:repeat(3,minmax(0,1fr))] sm:gap-[22px] sm:[grid-template-columns:repeat(auto-fill,minmax(268px,1fr))] lg:px-8" data-test="puzzle-results-grid">
+                     than one full card. --}}
+                <div class="grid gap-2 px-6 max-sm:[grid-template-columns:repeat(3,minmax(0,1fr))] sm:gap-[22px] sm:[grid-template-columns:repeat(auto-fill,minmax(268px,1fr))] lg:px-8" data-test="puzzle-results-grid">
                 @foreach($this->crosswords as $crossword)
                     <article
                         wire:key="crossword-{{ $crossword->id }}"
@@ -556,26 +521,11 @@ new #[Title('Build')] class extends Component {
                 @endforeach
                 </div>
 
-                <div x-show="hasMore" x-cloak class="mt-5 flex flex-wrap items-center justify-between gap-3 px-6 lg:px-8">
-                    <span class="meta-classical tnum" x-text="expanded ? '{{ __('Showing all :total puzzles') }}'.replace(':total', total) : '{{ __('Showing :shown of :total puzzles') }}'.replace(':shown', shown).replace(':total', total)"></span>
-                    <button
-                        type="button"
-                        class="btn-classical btn-classical-compact btn-classical-muted"
-                        @click="expanded = ! expanded"
-                        :aria-expanded="expanded"
-                        x-text="expanded ? '{{ __('Show fewer') }}' : '{{ __('Show all puzzles') }}'"
-                        data-test="toggle-all-puzzles-button"
-                    ></button>
+                <div class="mt-5 px-6 lg:px-8">
+                    <span class="meta-classical tnum" data-test="puzzle-results-count">{{ trans_choice('Showing :count puzzle|Showing :count puzzles', $this->crosswords->count(), ['count' => $this->crosswords->count()]) }}</span>
                 </div>
             </div>
         @endif
-
-        <hr class="border-hairline" />
-
-        {{-- Constructor Analytics --}}
-        <div class="px-6 lg:px-8">
-            <livewire:constructor-analytics key="constructor-analytics" />
-        </div>
 
         {{-- New Puzzle Modal --}}
     <flux:modal wire:model="showNewModal" class="w-full max-w-lg">

@@ -194,11 +194,13 @@ test('stats page faster than average count is correct', function () {
         'solve_time_seconds' => 200,
     ]);
 
-    $component = Livewire::actingAs($user)->test('pages::crosswords.stats');
+    $component = Livewire::actingAs($user)->test('solver-stats');
 
     $comparison = $component->get('communityComparison');
     expect($comparison['faster'])->toBe(1);
     expect($comparison['total'])->toBe(2);
+
+    $component->assertSeeInOrder(['Fastest Solve', '50%', 'Faster Than Avg']);
 });
 
 test('stats page shows vs avg column in solve history', function () {

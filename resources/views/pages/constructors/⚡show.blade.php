@@ -273,7 +273,7 @@ new #[Title('Constructor Profile')] class extends Component {
                     @foreach (['' => __('All'), 'Easy' => __('Easy'), 'Medium' => __('Medium'), 'Hard' => __('Hard'), 'Expert' => __('Expert')] as $value => $label)
                         <label class="cursor-pointer">
                             <input type="radio" name="difficulty" value="{{ $value }}" wire:model.live="difficulty" class="peer sr-only" />
-                            <span class="font-classical text-ink-muted hover:text-ink peer-checked:bg-amber-400/10 peer-checked:text-amber-400 peer-focus-visible:outline-2 peer-focus-visible:-outline-offset-2 peer-focus-visible:outline-amber-400 flex h-full items-center px-3.5 text-[15px] font-medium transition-colors">
+                            <span class="font-classical text-ink-muted hover:text-ink peer-checked:bg-zinc-800 peer-checked:text-white dark:peer-checked:bg-zinc-700 peer-focus-visible:outline-2 peer-focus-visible:-outline-offset-2 peer-focus-visible:outline-amber-400 flex h-full items-center px-3.5 text-[15px] font-medium transition-colors">
                                 {{ $label }}
                             </span>
                         </label>

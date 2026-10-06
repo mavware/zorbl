@@ -154,11 +154,15 @@ new class extends Component {
         <script type="application/ld+json">{!! json_encode($wordsJsonLd, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
     @endpush
 
-    <x-page-header
-        :kicker="__('Reference')"
-        :title="__('Word Catalog')"
-        :subtitle="__('Browse :count crossword answers. Search by pattern — use ? for any single letter and * for any run of letters.', ['count' => number_format($this->totalWords)])"
-    />
+    <x-page-header :kicker="__('Reference')" :title="__('Word Catalog')">
+        <x-slot:footer>
+            <x-page-tabs :tabs="app(\App\Support\AppNavigation::class)->reference()" />
+        </x-slot:footer>
+    </x-page-header>
+
+    <p class="text-ink-muted text-sm leading-[1.65]" data-test="word-catalog-intro">
+        {{ __('Browse :count crossword answers. Search by pattern — use ? for any single letter and * for any run of letters.', ['count' => number_format($this->totalWords)]) }}
+    </p>
 
     {{-- Search and Filters --}}
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center">

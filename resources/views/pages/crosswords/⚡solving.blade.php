@@ -230,27 +230,6 @@ new #[Title('Solving')] class extends Component {
 
         return $lastSolveDate->isToday() || $lastSolveDate->isYesterday();
     }
-
-    public function surpriseMe(): void
-    {
-        $query = Crossword::where('is_published', true)
-            ->where('user_id', '!=', Auth::id())
-            ->safeFor(Auth::user());
-
-        $blockedTagIds = Auth::user()->blockedTags()->pluck('tags.id');
-
-        if ($blockedTagIds->isNotEmpty()) {
-            $query->whereDoesntHave('tags', fn ($q) => $q->whereIn('tags.id', $blockedTagIds));
-        }
-
-        $crossword = $query->inRandomOrder()->first();
-
-        if (! $crossword) {
-            return;
-        }
-
-        $this->redirect(route('crosswords.solver', $crossword), navigate: true);
-    }
 }
 ?>
 
@@ -258,18 +237,13 @@ new #[Title('Solving')] class extends Component {
     {{-- My Attempts --}}
     <div class="space-y-4">
         <x-page-header :kicker="__('Puzzles you\'re solving')" :title="__('Solve')">
-            <x-header-button variant="secondary" icon="sparkles" wire:click="surpriseMe" data-test="surprise-me-button">
-                {{ __('Surprise Me') }}
+            <x-header-button icon="magnifying-glass" :href="route('crosswords.discover')" wire:navigate data-test="discover-puzzles-button">
+                {{ __('Discover Puzzles') }}
             </x-header-button>
             @unless (auth()->user()->isAnonymous())
                 <x-header-button variant="secondary" icon="chart-bar" :href="route('crosswords.stats')" wire:navigate data-test="solving-stats-button">
                     {{ __('Stats') }}
                 </x-header-button>
-
-                <x-slot:footer>
-                    {{-- Headline solve stats — flush under the header rule, like the builder stats on the Build page --}}
-                    <livewire:solver-stats key="solver-stats" />
-                </x-slot:footer>
             @endunless
         </x-page-header>
 
@@ -279,26 +253,40 @@ new #[Title('Solving')] class extends Component {
 {{--        @endif--}}
 
         {{-- Filters --}}
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <flux:radio.group wire:model.live="filter" variant="segmented" size="sm">
-                <flux:radio value="" label="{{ __('All') }} ({{ $this->attemptCounts['all'] }})" />
-                <flux:radio value="in_progress" label="{{ __('In Progress') }} ({{ $this->attemptCounts['in_progress'] }})" />
-                <flux:radio value="completed" label="{{ __('Completed') }} ({{ $this->attemptCounts['completed'] }})" />
-            </flux:radio.group>
-
+        {{-- Same controls as the Build page's search row: search and sort
+             together on the left, the status filter on the right. --}}
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between" data-test="attempt-filters">
             <div class="flex items-center gap-2">
-                <flux:input
-                    icon="magnifying-glass"
-                    placeholder="{{ __('Search puzzles...') }}"
-                    wire:model.live.debounce.300ms="search"
-                    size="sm"
-                    class="w-48"
-                />
-                <flux:select wire:model.live="sortBy" size="sm" class="w-36">
-                    <flux:select.option value="recent">{{ __('Recent') }}</flux:select.option>
-                    <flux:select.option value="oldest">{{ __('Oldest') }}</flux:select.option>
-                    <flux:select.option value="fastest">{{ __('Fastest') }}</flux:select.option>
-                </flux:select>
+                <label class="relative max-sm:flex-auto sm:w-48">
+                    <span class="sr-only">{{ __('Search puzzles...') }}</span>
+                    <flux:icon name="magnifying-glass" class="text-ink-faint pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+                    <input
+                        type="search"
+                        placeholder="{{ __('Search puzzles...') }}"
+                        wire:model.live.debounce.300ms="search"
+                        class="field-classical w-full pr-3 pl-9"
+                    />
+                </label>
+                <label class="relative max-sm:flex-auto sm:w-36">
+                    <span class="sr-only">{{ __('Sort') }}</span>
+                    <select wire:model.live="sortBy" class="field-classical font-classical w-full appearance-none pr-9 pl-3.5 text-[15px] font-medium">
+                        <option value="recent">{{ __('Recent') }}</option>
+                        <option value="oldest">{{ __('Oldest') }}</option>
+                        <option value="fastest">{{ __('Fastest') }}</option>
+                    </select>
+                    <flux:icon name="chevron-down" class="text-ink-faint pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2" />
+                </label>
+            </div>
+
+            <div class="border-border-strong divide-hairline flex h-10 divide-x overflow-hidden rounded-sm border max-sm:flex-auto" role="radiogroup" aria-label="{{ __('Status') }}">
+                @foreach (['' => __('All').' ('.$this->attemptCounts['all'].')', 'in_progress' => __('In Progress').' ('.$this->attemptCounts['in_progress'].')', 'completed' => __('Completed').' ('.$this->attemptCounts['completed'].')'] as $value => $label)
+                    <label class="cursor-pointer max-sm:flex-auto">
+                        <input type="radio" name="filter" value="{{ $value }}" wire:model.live="filter" class="peer sr-only" />
+                        <span class="font-classical text-ink-muted hover:text-ink peer-checked:bg-zinc-800 peer-checked:text-white dark:peer-checked:bg-zinc-700 peer-focus-visible:outline-2 peer-focus-visible:-outline-offset-2 peer-focus-visible:outline-amber-400 tnum flex h-full items-center justify-center px-3.5 text-[15px] font-medium whitespace-nowrap transition-colors max-sm:px-2">
+                            {{ $label }}
+                        </span>
+                    </label>
+                @endforeach
             </div>
         </div>
 
@@ -327,62 +315,73 @@ new #[Title('Solving')] class extends Component {
                 @endif
             </div>
         @else
-            {{-- Attempts collapse to their first row until expanded, like the
-                 Build page results (see collapsible-grid.js). --}}
-            <div x-data="collapsibleGrid" data-test="attempt-results">
-            <div x-ref="grid" class="grid gap-[22px] [grid-template-columns:repeat(auto-fill,minmax(268px,1fr))]" data-test="attempt-results-grid">
+            <div data-test="attempt-results">
+                {{-- Styled like the Build page results: below `sm` the grid holds
+                     three compact cards per row rather than one full card. --}}
+                <div class="grid gap-2 max-sm:[grid-template-columns:repeat(3,minmax(0,1fr))] sm:gap-[22px] sm:[grid-template-columns:repeat(auto-fill,minmax(268px,1fr))]" data-test="attempt-results-grid">
                 @foreach($this->attempts as $attempt)
+                    @php($solveProgress = $attempt->is_completed ? 100 : $attempt->solveProgress())
+                    @php($avgSeconds = $attempt->is_completed ? ($attempt->crossword->cached_avg_solve_time ?? 0) : 0)
+                    @php($solveTimeDiffPercent = ($attempt->is_completed && $attempt->solve_time_seconds && $avgSeconds > 0) ? (int) round((1 - $attempt->solve_time_seconds / $avgSeconds) * 100) : null)
                     <article
                         wire:key="attempt-{{ $attempt->id }}"
-                        class="border-border hover:border-border-strong flex flex-col gap-3.5 rounded-sm border p-4.5 transition-colors"
+                        class="border-border hover:border-border-strong flex min-w-0 flex-col gap-2 rounded-sm border p-2 transition-colors sm:gap-3.5 sm:p-4.5"
                     >
                         <div class="flex items-start justify-between gap-3">
                             <div class="min-w-0">
-                                <h3 class="font-classical text-ink truncate text-[21px] leading-tight font-semibold">
-                                    <a href="{{ route('crosswords.solver', $attempt->crossword) }}" wire:navigate class="hover:text-amber-300 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">
+                                <h3 class="font-classical text-ink flex min-w-0 items-center gap-1.5 text-[15px] leading-[1.15] font-semibold sm:text-[21px]">
+                                    @if($attempt->is_completed)
+                                        {{-- Phones drop the badge for space; a dot keeps the status visible. --}}
+                                        <span class="size-1.5 shrink-0 rounded-full bg-amber-400 sm:hidden" title="{{ __('Completed') }}" data-test="completed-dot"></span>
+                                    @endif
+                                    <a href="{{ route('crosswords.solver', $attempt->crossword) }}" wire:navigate class="truncate hover:text-amber-300 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">
                                         {{ $attempt->crossword->displayTitle() }}
                                     </a>
                                 </h3>
-                                <div class="meta-classical mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                                    <span class="flex items-center gap-1">
-                                        {{ __('by :author', ['author' => $attempt->crossword->user->name ?? __('Unknown')]) }} <x-supporter-badge :user="$attempt->crossword->user" />
+                                {{-- Same meta line as x-puzzle-details, with the constructor in place of the edit date. --}}
+                                <div class="text-ink-faint tnum mt-1.5 flex min-w-0 items-center gap-x-2 overflow-hidden text-[12px] whitespace-nowrap label-classical [--label-tracking:0.06em]">
+                                    <flux:tooltip :content="$attempt->crossword->puzzle_type->label()">
+                                        <flux:icon :name="$attempt->crossword->puzzle_type->icon()" class="size-3 shrink-0"/>
+                                    </flux:tooltip>
+                                    <span class="shrink-0">{{ $attempt->crossword->width }}&times;{{ $attempt->crossword->height }}</span>
+                                    <span aria-hidden="true" class="shrink-0">&middot;</span>
+                                    <span class="flex min-w-0 items-center gap-1">
+                                        <span class="truncate">{{ __('by :author', ['author' => $attempt->crossword->user->name ?? __('Unknown')]) }}</span>
+                                        <x-supporter-badge :user="$attempt->crossword->user" />
                                     </span>
-                                    <span aria-hidden="true">&middot;</span>
-                                    <span class="tnum whitespace-nowrap">{{ $attempt->crossword->width }}&times;{{ $attempt->crossword->height }}</span>
                                 </div>
                             </div>
                             @if($attempt->is_completed)
-                                <span class="chip-classical border-amber-400 text-amber-400">{{ __('Completed') }}</span>
+                                <span class="badge-classical border-amber-400 text-amber-400 max-sm:hidden!">{{ __('Completed') }}</span>
                             @else
-                                <span class="chip-classical border-ink-faint text-ink-faint">{{ __('In Progress') }}</span>
+                                <span class="badge-classical border-ink-faint text-ink-faint max-sm:hidden!">{{ __('In Progress') }}</span>
                             @endif
                         </div>
 
-                        <a href="{{ route('crosswords.solver', $attempt->crossword) }}" wire:navigate class="flex justify-center py-1 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">
+                        <a href="{{ route('crosswords.solver', $attempt->crossword) }}" wire:navigate class="block focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">
                             <x-grid-thumbnail
                                 :grid="$attempt->crossword->grid"
                                 :width="$attempt->crossword->width"
                                 :height="$attempt->crossword->height"
+                                :fluid="true"
                                 frame-class="border-hairline bg-hairline rounded-sm border"
                                 open-class="bg-panel"
                                 block-class="bg-zinc-300"
                             />
                         </a>
 
-                        @php($solveProgress = $attempt->is_completed ? 100 : $attempt->solveProgress())
+                        {{-- Same bar as x-puzzle-completeness-bar, tracking solve progress. --}}
                         <div>
-                            <div class="meta-classical flex items-center justify-between gap-2">
-                                <span>{{ $solveProgress === 100 ? __('Complete') : __('Progress') }}</span>
-                                <span class="font-classical text-ink tnum text-[15px] font-medium normal-case tracking-normal">{{ $solveProgress }}%</span>
+                            <div class="meta-classical tnum mb-[7px] flex items-center justify-between gap-2">
+                                <span class="max-sm:hidden">{{ $solveProgress === 100 ? __('Complete') : __('Progress') }}</span>
+                                <span class="max-sm:ml-auto">{{ $solveProgress }}%</span>
                             </div>
-                            <div class="bg-border mt-1.5 h-0.5 w-full overflow-hidden">
-                                <div class="h-full bg-amber-400 transition-all" style="width: {{ $solveProgress }}%"></div>
+                            <div class="bg-border h-[2px] w-full overflow-hidden">
+                                <div class="h-full bg-amber-400" style="width: {{ $solveProgress }}%"></div>
                             </div>
                         </div>
 
-                        @php($avgSeconds = $attempt->is_completed ? ($attempt->crossword->cached_avg_solve_time ?? 0) : 0)
-                        @php($solveTimeDiffPercent = ($attempt->is_completed && $attempt->solve_time_seconds && $avgSeconds > 0) ? (int) round((1 - $attempt->solve_time_seconds / $avgSeconds) * 100) : null)
-                        <div class="meta-classical flex flex-wrap items-center gap-x-3 gap-y-1">
+                        <div class="meta-classical flex flex-wrap items-center gap-x-3 gap-y-1 max-sm:hidden">
                             @if($attempt->is_completed && $attempt->formattedSolveTime())
                                 <span class="flex items-center gap-1 whitespace-nowrap">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
@@ -390,19 +389,19 @@ new #[Title('Solving')] class extends Component {
                                 </span>
                             @endif
                             @if($solveTimeDiffPercent !== null && $solveTimeDiffPercent !== 0)
-                                <span class="chip-classical {{ $solveTimeDiffPercent > 0 ? 'border-amber-400 text-amber-400' : 'border-ink-faint text-ink-faint' }}">
+                                <span class="badge-classical {{ $solveTimeDiffPercent > 0 ? 'border-amber-400 text-amber-400' : 'border-ink-faint text-ink-faint' }}">
                                     {{ abs($solveTimeDiffPercent) }}% {{ $solveTimeDiffPercent > 0 ? __('faster') : __('slower') }}
                                 </span>
                             @endif
                             <span class="whitespace-nowrap">{{ $attempt->updated_at->diffForHumans() }}</span>
                         </div>
 
-                        <div class="flex items-center justify-between gap-2 pt-1">
-                            <a href="{{ route('crosswords.solver', $attempt->crossword) }}" wire:navigate class="btn-classical btn-amber-outline">
+                        <div class="flex gap-[10px] pt-1">
+                            <a href="{{ route('crosswords.solver', $attempt->crossword) }}" wire:navigate class="btn-classical btn-classical-compact btn-amber-outline flex-1 max-sm:hidden!">
                                 {{ $attempt->is_completed ? __('Review') : __('Continue') }}
                             </a>
-                            <flux:dropdown position="bottom" align="end">
-                                <button type="button" class="btn-classical btn-classical-muted w-9 px-0" aria-label="{{ __('More actions') }}">
+                            <flux:dropdown position="bottom" align="end" class="max-sm:flex-1">
+                                <button type="button" class="btn-classical btn-classical-compact btn-classical-muted max-sm:w-full max-sm:py-1.5!" aria-label="{{ __('More actions') }}">
                                     <flux:icon name="ellipsis-vertical" class="size-4" />
                                 </button>
                                 <flux:menu>
@@ -414,18 +413,10 @@ new #[Title('Solving')] class extends Component {
                         </div>
                     </article>
                 @endforeach
-            </div>
+                </div>
 
-                <div x-show="hasMore" x-cloak class="mt-5 flex flex-wrap items-center justify-between gap-3">
-                    <span class="meta-classical tnum" x-text="expanded ? '{{ __('Showing all :total puzzles') }}'.replace(':total', total) : '{{ __('Showing :shown of :total puzzles') }}'.replace(':shown', shown).replace(':total', total)"></span>
-                    <button
-                        type="button"
-                        class="btn-classical btn-classical-compact btn-classical-muted"
-                        @click="expanded = ! expanded"
-                        :aria-expanded="expanded"
-                        x-text="expanded ? '{{ __('Show fewer') }}' : '{{ __('Show all puzzles') }}'"
-                        data-test="toggle-all-attempts-button"
-                    ></button>
+                <div class="mt-5">
+                    <span class="meta-classical tnum" data-test="attempt-results-count">{{ trans_choice('Showing :count puzzle|Showing :count puzzles', $this->attempts->count(), ['count' => $this->attempts->count()]) }}</span>
                 </div>
             </div>
         @endif
@@ -677,11 +668,4 @@ new #[Title('Solving')] class extends Component {
 {{--        </div>--}}
 {{--    </div>--}}
 
-    {{-- Browse Published Puzzles: full-bleed hairline rule (same negative margins
-         as x-page-header so it meets the sidebar), section title, then the list --}}
-    <div class="space-y-4" data-test="discover-puzzles-section">
-        <div class="border-hairline -mx-6 border-t lg:-mx-8" aria-hidden="true" data-test="discover-puzzles-rule"></div>
-        <h2 class="font-classical text-ink pt-4 text-[22px] leading-tight font-medium">{{ __('Discover Puzzles') }}</h2>
-        <livewire:puzzle-discovery :exclude-attempted="true" />
-    </div>
 </div>

@@ -22,6 +22,7 @@
     };
 
     $rowClasses = $size === 'md' ? 'pb-5' : 'pt-[34px] pb-6';
+    $rowClasses = auth()->user()?->isAnonymous() ? 'pt-3 pb-6' : $rowClasses;
     $wrapperClasses = $bleed ? '-mx-6 px-6 lg:-mx-8 lg:px-8' : 'px-6 lg:px-8';
 
     $hasSlot = fn ($slot): bool => $slot instanceof \Illuminate\View\ComponentSlot ? $slot->isNotEmpty() : filled($slot);

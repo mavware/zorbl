@@ -230,9 +230,8 @@ test('stats page shows current streak', function () {
     $this->actingAs($user);
 
     Livewire::test('pages::crosswords.stats')
-        ->assertSee('Current Streak')
-        ->assertSee('5 days')
-        ->assertSee('Best: 12 days');
+        ->assertSeeInOrder(['Current Streak', 'Best Streak'])
+        ->assertSeeInOrder(['5 days', '12 days']);
 });
 
 test('stats page shows achievements', function () {
@@ -563,7 +562,19 @@ test('stats page resets to page 1 when sorting changes', function () {
     expect($paginated->currentPage())->toBe(1);
 });
 
-test('stats page summary cards show totals across all pages', function () {
+test('stats page header carries the solve stats band', function () {
+    $user = User::factory()->create(['current_streak' => 2, 'longest_streak' => 5]);
+    PuzzleAttempt::factory()->for($user)->completed()->create(['solve_time_seconds' => 75]);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::crosswords.stats')
+        ->assertSeeInOrder(['data-page-header-footer', 'data-test="solver-stat"', 'Puzzles Solved', 'Current Streak', 'Best Streak', 'Average Time', 'Fastest Solve'], false)
+        ->assertSeeInOrder(['2 days', '5 days'])
+        ->assertSee('1:15');
+});
+
+test('stats band totals span all solve history pages', function () {
     $user = User::factory()->create();
 
     Crossword::factory()->published()->count(20)->create([
@@ -578,7 +589,7 @@ test('stats page summary cards show totals across all pages', function () {
 
     $this->actingAs($user);
 
-    $component = Livewire::test('pages::crosswords.stats');
+    $component = Livewire::test('solver-stats');
 
     expect($component->get('totalSolved'))->toBe(20);
     expect($component->get('averageTime'))->toBe(120);

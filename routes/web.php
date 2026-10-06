@@ -101,9 +101,7 @@ Route::middleware('auth')->group(function () {
 // wildcard below, otherwise the wildcard swallows them (e.g. "analytics" would be
 // treated as a {crossword} and 404 on the model binding).
 Route::middleware(['auth', 'verified', 'not-anonymous'])->group(function () {
-    // Analytics now live on the Build page; the name survives for old links
-    // (e.g. the constructor weekly digest email).
-    Route::redirect('crosswords/analytics', '/crosswords')->name('crosswords.analytics');
+    Route::livewire('crosswords/analytics', 'pages::crosswords.analytics')->name('crosswords.analytics');
 });
 
 // Builder surface + Build home — anonymous "guest builder" users are allowed in
@@ -122,6 +120,7 @@ Route::middleware(['auth'])->group(function () {
     // The Solve home lists the visitor's own attempts, so guest builders can
     // use it too; stats stay behind a registered account.
     Route::livewire('solving', 'pages::crosswords.solving')->name('crosswords.solving');
+    Route::livewire('solving/discover', 'pages::crosswords.discover')->name('crosswords.discover');
 });
 
 Route::middleware(['auth', 'verified', 'not-anonymous'])->group(function () {

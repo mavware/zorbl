@@ -22,6 +22,19 @@ test('guests can view the word catalog', function () {
         ->assertSee('OCEAN');
 });
 
+test('the pattern search explanation sits in the body above the search bar', function () {
+    Word::factory()->word('OCEAN')->create();
+
+    $this->get(route('words.index'))
+        ->assertSuccessful()
+        ->assertSeeInOrder([
+            'data-page-header-group',
+            '<p class="text-ink-muted text-sm leading-[1.65]" data-test="word-catalog-intro">',
+            'Browse 1 crossword answers.',
+            'type="search"',
+        ], false);
+});
+
 test('words are displayed in the listing', function () {
     $user = User::factory()->create();
     Word::factory()->word('OCEAN')->create();
@@ -200,6 +213,69 @@ test('related clues are shown on the show page', function () {
         ->test('pages::words.show', ['word' => $word])
         ->assertSee('Large body of water')
         ->assertSee('Pacific, for one');
+});
+
+test('authenticated users can add a clue from the word detail page', function () {
+    $user = User::factory()->create();
+    $word = Word::factory()->word('OCEAN')->create();
+
+    Livewire::actingAs($user)
+        ->test('pages::words.show', ['word' => $word])
+        ->assertSee('data-test="add-clue-button"', false)
+        ->set('showAddModal', true)
+        ->set('newClue', '  Large body of water  ')
+        ->call('addClue')
+        ->assertHasNoErrors()
+        ->assertSet('showAddModal', false)
+        ->assertSet('newClue', '')
+        ->assertSee('Large body of water')
+        ->assertSee('1 clue');
+
+    $entry = ClueEntry::sole();
+    expect($entry->answer)->toBe('OCEAN')
+        ->and($entry->clue)->toBe('Large body of water')
+        ->and($entry->user_id)->toBe($user->id)
+        ->and($entry->crossword_id)->toBeNull()
+        ->and($entry->status)->toBe(ClueEntry::STATUS_PENDING);
+});
+
+test('adding a clue from the word detail page validates the clue text', function () {
+    $user = User::factory()->create();
+    $word = Word::factory()->word('OCEAN')->create();
+
+    Livewire::actingAs($user)
+        ->test('pages::words.show', ['word' => $word])
+        ->set('newClue', '')
+        ->call('addClue')
+        ->assertHasErrors(['newClue' => 'required']);
+
+    expect(ClueEntry::count())->toBe(0);
+});
+
+test('adding a duplicate clue from the word detail page is rejected', function () {
+    $user = User::factory()->create();
+    $word = Word::factory()->word('OCEAN')->create();
+    ClueEntry::create(['answer' => 'OCEAN', 'clue' => 'Large body of water', 'user_id' => $user->id]);
+
+    Livewire::actingAs($user)
+        ->test('pages::words.show', ['word' => $word])
+        ->set('newClue', 'Large body of water')
+        ->call('addClue')
+        ->assertSet('addError', 'You already have this exact clue for this word in the library.');
+
+    expect(ClueEntry::count())->toBe(1);
+});
+
+test('guests cannot add a clue from the word detail page', function () {
+    $word = Word::factory()->word('OCEAN')->create();
+
+    Livewire::test('pages::words.show', ['word' => $word])
+        ->assertDontSee('data-test="add-clue-button"', false)
+        ->set('newClue', 'Large body of water')
+        ->call('addClue')
+        ->assertForbidden();
+
+    expect(ClueEntry::count())->toBe(0);
 });
 
 test('unrelated clues are not shown on the show page', function () {

@@ -119,7 +119,6 @@ test('stats page shows streak and achievements', function () {
     $this->actingAs($user)
         ->get(route('crosswords.stats'))
         ->assertOk()
-        ->assertSee('3 days')
-        ->assertSee('Best: 7 days')
+        ->assertSeeInOrder(['3 days', '7 days'])
         ->assertSee('First Solve');
 });

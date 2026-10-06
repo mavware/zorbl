@@ -8,12 +8,33 @@ use App\Models\PuzzleAttempt;
 use App\Models\User;
 use Livewire\Livewire;
 
-test('the solve page introduces the discovery list with a rule and a Discover Puzzles title', function () {
+test('the solve page links to the discover page from its header instead of listing puzzles inline', function () {
     $this->actingAs(User::factory()->create())
         ->get(route('crosswords.solving'))
         ->assertOk()
-        ->assertSeeInOrder(['data-test="discover-puzzles-section"', 'data-test="discover-puzzles-rule"', 'Discover Puzzles', 'wire:name="puzzle-discovery"'], false)
-        ->assertSee('class="border-hairline -mx-6 border-t lg:-mx-8"', false);
+        ->assertSeeInOrder(['data-page-header', 'href="'.route('crosswords.discover').'"', 'data-test="discover-puzzles-button"', 'Discover Puzzles', 'data-test="solving-stats-button"'], false)
+        ->assertDontSee('wire:name="puzzle-discovery"', false)
+        ->assertDontSee('data-test="surprise-me-button"', false);
+});
+
+test('the discover page lists unattempted puzzles with a surprise me button and marks Solve current', function () {
+    $user = User::factory()->create();
+    $other = User::factory()->create();
+    Crossword::factory()->published()->create(['user_id' => $other->id, 'title' => 'Fresh Puzzle']);
+    $attempted = Crossword::factory()->published()->create(['user_id' => $other->id, 'title' => 'Started Puzzle']);
+    PuzzleAttempt::factory()->create(['user_id' => $user->id, 'crossword_id' => $attempted->id]);
+
+    $this->actingAs($user)
+        ->get(route('crosswords.discover'))
+        ->assertOk()
+        ->assertSeeInOrder(['href="'.route('crosswords.solving').'"', 'data-current'], false)
+        ->assertSeeInOrder(['data-page-header', 'Discover Puzzles', 'data-test="back-to-solving-button"', 'data-test="surprise-me-button"', 'wire:name="puzzle-discovery"'], false)
+        ->assertSee('Fresh Puzzle')
+        ->assertDontSee('Started Puzzle');
+});
+
+test('guests are sent to log in from the discover page', function () {
+    $this->get(route('crosswords.discover'))->assertRedirect(route('login'));
 });
 
 test('authenticated users can visit the solve page', function () {
@@ -22,19 +43,27 @@ test('authenticated users can visit the solve page', function () {
         ->assertOk();
 });
 
-test('the solve page header carries the headline solve stats band', function () {
+test('the solve page links to stats but no longer carries the stats band', function () {
+    $user = User::factory()->create();
+    PuzzleAttempt::factory()->completed()->create(['user_id' => $user->id, 'solve_time_seconds' => 90]);
+
+    Livewire::actingAs($user)
+        ->test('pages::crosswords.solving')
+        ->assertSee('data-test="solving-stats-button"', false)
+        ->assertDontSee('data-page-header-footer', false)
+        ->assertDontSee('data-test="solver-stat"', false);
+});
+
+test('the solve stats band shows the headline solve figures', function () {
     $user = User::factory()->create(['current_streak' => 3, 'longest_streak' => 9]);
     PuzzleAttempt::factory()->count(2)->completed()->create(['user_id' => $user->id, 'solve_time_seconds' => 90]);
     PuzzleAttempt::factory()->create(['user_id' => $user->id]); // in progress
 
     Livewire::actingAs($user)
-        ->test('pages::crosswords.solving')
-        ->assertSeeInOrder(['data-page-header-footer', 'data-test="solver-stat"', 'Puzzles Solved', 'Current Streak', 'Best Streak', 'Average Time', 'Fastest Solve'], false)
-        ->assertDontSee('Faster Than Avg')
-        ->assertDontSee('data-test="solver-stat"><!--', false);
-
-    Livewire::actingAs($user)
         ->test('solver-stats')
+        ->assertSeeInOrder(['data-test="solver-stat"', 'Puzzles Solved', 'Current Streak', 'Best Streak', 'Average Time', 'Fastest Solve'], false)
+        ->assertDontSee('Faster Than Avg')
+        ->assertDontSee('data-test="solver-stat"><!--', false)
         ->assertSet('totalSolved', 2)
         ->assertSet('currentStreak', 3)
         ->assertSet('longestStreak', 9)
@@ -53,13 +82,13 @@ test('the solve stats band shows a dash before any timed solve', function () {
         ->assertSee('—');
 });
 
-test('solve page shows newest puzzles from other users', function () {
+test('discover page shows newest puzzles from other users', function () {
     $user = User::factory()->create();
     $other = User::factory()->create();
     Crossword::factory()->published()->create(['user_id' => $other->id, 'title' => 'Fresh Puzzle']);
 
     Livewire::actingAs($user)
-        ->test('pages::crosswords.solving')
+        ->test('pages::crosswords.discover')
         ->assertSee('Fresh Puzzle');
 });
 
@@ -81,7 +110,7 @@ test('solve page limits newest puzzles to 3', function () {
     expect($component->get('newestPuzzles'))->toHaveCount(3);
 });
 
-test('solve page shows trending puzzles based on recent likes', function () {
+test('discover page shows trending puzzles based on recent likes', function () {
     $user = User::factory()->create();
     $other = User::factory()->create();
     $crossword = Crossword::factory()->published()->create(['user_id' => $other->id, 'title' => 'Hot Puzzle']);
@@ -91,7 +120,7 @@ test('solve page shows trending puzzles based on recent likes', function () {
     CrosswordLike::create(['user_id' => User::factory()->create()->id, 'crossword_id' => $crossword->id]);
 
     Livewire::actingAs($user)
-        ->test('pages::crosswords.solving')
+        ->test('pages::crosswords.discover')
         ->assertSee('Hot Puzzle');
 });
 
@@ -289,13 +318,64 @@ test('streak computed properties return correct values', function () {
         ->and($component->get('streakIsActive'))->toBeTrue();
 });
 
-test('the attempts grid collapses to one row with a toggle, like the Build page results', function () {
+test('attempt cards match the Build page results: three compact cards per row on phones', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->published()->create(['title' => 'Phone Card']);
+    PuzzleAttempt::factory()->completed()->create(['user_id' => $user->id, 'crossword_id' => $crossword->id]);
+
+    $html = Livewire::actingAs($user)->test('pages::crosswords.solving')->html();
+
+    preg_match('/<div[^>]*data-test="attempt-results-grid"[^>]*>/', $html, $grid);
+
+    expect($grid)->not->toBeEmpty()
+        ->and($grid[0])->toContain('max-sm:[grid-template-columns:repeat(3,minmax(0,1fr))]')
+        ->and($grid[0])->toContain('sm:[grid-template-columns:repeat(auto-fill,minmax(268px,1fr))]');
+
+    // The card slims down to fit a third of a phone, as on the Build page: the
+    // status badge and the Review button (the title and thumbnail already link
+    // to the solver) hide, and a dot stands in for the Completed badge.
+    preg_match('/<article.*?<\/article>/s', $html, $card);
+
+    expect($card)->not->toBeEmpty()
+        ->and($card[0])->toContain('flex min-w-0 flex-col gap-2 rounded-sm border p-2 transition-colors sm:gap-3.5 sm:p-4.5')
+        ->and($card[0])->toMatch('/<span class="badge-classical[^"]*max-sm:hidden!">\s*Completed/')
+        ->and($card[0])->toMatch('/<span class="[^"]*sm:hidden"[^>]*data-test="completed-dot"/')
+        ->and($card[0])->toMatch('/<a[^>]*class="[^"]*btn-amber-outline flex-1 max-sm:hidden!"[^>]*>\s*Review/')
+        ->and($card[0])->toContain('grid w-full')
+        ->and($card[0])->not->toContain('chip-classical');
+});
+
+test('the attempt filter row uses the Build page controls in the Solve layout', function () {
+    $user = User::factory()->create();
+    PuzzleAttempt::factory()->completed()->create(['user_id' => $user->id]);
+    PuzzleAttempt::factory()->create(['user_id' => $user->id]);
+
+    $html = Livewire::actingAs($user)->test('pages::crosswords.solving')->html();
+
+    preg_match('/<div[^>]*data-test="attempt-filters".*?data-test="attempt-results"/s', $html, $row);
+
+    expect($row)->not->toBeEmpty()
+        ->and($row[0])->toContain('sm:flex-row sm:items-center sm:justify-between')
+        // Build page styling: the classical radio group and fields, no Flux inputs.
+        ->and($row[0])->toContain('role="radiogroup"')
+        ->and($row[0])->toContain('peer-checked:bg-zinc-800 peer-checked:text-white')
+        ->and($row[0])->toContain('class="field-classical w-full pr-3 pl-9"')
+        ->and($row[0])->toContain('<select wire:model.live="sortBy" class="field-classical')
+        ->and($row[0])->not->toContain('flux-radio')
+        // Order: search, then sort, then the status filter with its counts.
+        ->and(preg_replace('/\s+/', ' ', strip_tags($row[0])))->toContain('All (2) In Progress (1) Completed (1)')
+        ->and(strpos($row[0], 'type="search"'))->toBeLessThan(strpos($row[0], 'wire:model.live="sortBy"'))
+        ->and(strpos($row[0], 'wire:model.live="sortBy"'))->toBeLessThan(strpos($row[0], 'role="radiogroup"'));
+});
+
+test('the attempts grid lists every attempt with a count and no collapse toggle', function () {
     $user = User::factory()->create();
     PuzzleAttempt::factory()->count(3)->create(['user_id' => $user->id]);
 
     Livewire::actingAs($user)
         ->test('pages::crosswords.solving')
-        ->assertSeeInOrder(['x-data="collapsibleGrid"', 'data-test="attempt-results-grid"', 'wire:key="attempt-', 'data-test="toggle-all-attempts-button"'], false)
-        ->assertSee('Show all puzzles')
-        ->assertSee('Show fewer');
+        ->assertDontSee('x-data="collapsibleGrid"', false)
+        ->assertDontSee('data-test="toggle-all-attempts-button"', false)
+        ->assertDontSee('Show all puzzles')
+        ->assertSeeInOrder(['data-test="attempt-results-grid"', 'wire:key="attempt-', 'data-test="attempt-results-count"', 'Showing 3 puzzles'], false);
 });

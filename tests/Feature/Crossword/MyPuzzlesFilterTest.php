@@ -56,6 +56,25 @@ test('status filter shows only draft puzzles', function () {
         ->assertDontSee('Published One');
 });
 
+test('status filter options show puzzle totals that ignore the search term', function () {
+    $user = User::factory()->create();
+    Crossword::factory()->for($user)->published()->count(2)->create();
+    Crossword::factory()->for($user)->count(3)->create(['title' => 'Draft', 'is_published' => false]);
+    Crossword::factory()->published()->create();
+
+    $this->actingAs($user);
+
+    $component = Livewire::test('pages::crosswords.index')
+        ->set('search', 'Draft');
+
+    $html = $component->html();
+
+    expect($html)
+        ->toContain('data-test="status-count-all">(5)<')
+        ->toContain('data-test="status-count-published">(2)<')
+        ->toContain('data-test="status-count-draft">(3)<');
+});
+
 test('sort by oldest shows oldest first', function () {
     $user = User::factory()->create();
     Crossword::factory()->for($user)->create(['title' => 'Older', 'created_at' => now()->subDay()]);
@@ -167,17 +186,33 @@ test('empty state changes when filters are active', function () {
         ->assertSee('No matching puzzles');
 });
 
-test('results grid renders the collapse toggle with the puzzle count', function () {
+test('results grid lists every puzzle with a count and no collapse toggle', function () {
     $user = User::factory()->create();
     Crossword::factory()->for($user)->count(3)->create();
 
     $this->actingAs($user);
 
     Livewire::test('pages::crosswords.index')
-        ->assertSee('x-data="collapsibleGrid"', false)
-        ->assertSee('data-test="toggle-all-puzzles-button"', false)
-        ->assertSee('Show all puzzles')
-        ->assertSee('Show fewer');
+        ->assertDontSee('x-data="collapsibleGrid"', false)
+        ->assertDontSee('data-test="toggle-all-puzzles-button"', false)
+        ->assertDontSee('Show all puzzles')
+        ->assertSeeInOrder(['data-test="puzzle-results-grid"', 'data-test="puzzle-results-count"', 'Showing 3 puzzles'], false);
+});
+
+test('the search row is ordered search, then sort, then the status filter', function () {
+    $this->actingAs(User::factory()->create());
+
+    $html = Livewire::test('pages::crosswords.index')->html();
+
+    preg_match('/<div[^>]*data-test="puzzle-filters"[^>]*>/', $html, $row);
+
+    expect(strpos($html, 'type="search"'))->toBeLessThan(strpos($html, 'wire:model.live="sortBy"'))
+        ->and(strpos($html, 'wire:model.live="sortBy"'))->toBeLessThan(strpos($html, 'role="radiogroup"'))
+        // Spaced like the Solve page: search and sort paired on the left, the filter pushed right.
+        ->and($row[0])->toContain('sm:justify-between')
+        ->and($row[0])->not->toContain('py-5')
+        ->and($html)->toContain('<div class="flex items-center gap-2">
+                <label class="relative max-sm:flex-auto sm:w-48">');
 });
 
 test('results grid shows three compact cards per row on phones', function () {

@@ -337,6 +337,10 @@ new class extends Component {
                 {{ __('Add Clue') }}
             </x-header-button>
         @endauth
+
+        <x-slot:footer>
+            <x-page-tabs :tabs="app(\App\Support\AppNavigation::class)->reference()" />
+        </x-slot:footer>
     </x-page-header>
 
     {{-- Search and Filters --}}

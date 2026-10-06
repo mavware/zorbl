@@ -20,8 +20,7 @@ function expectedNavigationLinks(bool $registered, bool $admin = false): array
         route('crosswords.solving'),
         $registered ? route('favorites.index') : null,
         $registered ? route('constructors.index') : null,
-        route('clues.index'),
-        route('words.index'),
+        route('clues.index'), // the Reference section: its Word Catalog tab lives on the page
         route('contests.index'),
         route('help.index'),
         route('support.index'),
@@ -79,6 +78,55 @@ test('the top bar offers a registered user favorites, constructors, help, and su
         ->not->toContain('href="'.route('constructors.index').'"')
         ->not->toContain('href="'.route('help.index').'"')
         ->not->toContain('href="'.route('support.index').'"');
+});
+
+test('both chromes offer one Reference entry that is current on the clue library and word catalog', function (string $navigation) {
+    config(['crosswordbuilder.navigation' => $navigation]);
+
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->get(route('crosswords.index'))
+        ->assertOk()
+        ->assertSee('Reference')
+        ->assertDontSee('href="'.route('words.index').'"', false);
+
+    $this->actingAs($user)
+        ->get(route('clues.index'))
+        ->assertSeeInOrder(['href="'.route('clues.index').'"', 'data-current', 'Reference'], false);
+
+    $this->actingAs($user)
+        ->get(route('words.index'))
+        ->assertSeeInOrder(['href="'.route('clues.index').'"', 'data-current', 'Reference'], false);
+})->with(['sidebar', 'header']);
+
+test('the clue library and word catalog are tabs of the Reference section', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->get(route('clues.index'))
+        ->assertOk()
+        ->assertSeeInOrder([
+            'data-page-header-footer',
+            'data-test="page-tabs"',
+            'href="'.route('clues.index').'"',
+            'aria-current="page"',
+            'Clue Library',
+            'href="'.route('words.index').'"',
+            'Word Catalog',
+        ], false);
+
+    $this->actingAs($user)
+        ->get(route('words.index'))
+        ->assertOk()
+        ->assertSeeInOrder([
+            'data-test="page-tabs"',
+            'href="'.route('clues.index').'"',
+            'Clue Library',
+            'href="'.route('words.index').'"',
+            'aria-current="page"',
+            'Word Catalog',
+        ], false);
 });
 
 test('the top bar offers an admin the admin link from the user menu', function () {

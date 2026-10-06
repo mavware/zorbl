@@ -26,7 +26,7 @@ test('analytics page is accessible for authenticated users', function () {
     $user = User::factory()->create();
 
     $this->actingAs($user)
-        ->get(route('crosswords.index'))
+        ->get(route('crosswords.analytics'))
         ->assertOk()
         ->assertSeeLivewire('constructor-analytics');
 });
@@ -36,14 +36,14 @@ test('the puzzle analytics table has a title', function () {
     Crossword::factory()->for($user)->create(['is_published' => true]);
 
     $this->actingAs($user)
-        ->get(route('crosswords.index'))
+        ->get(route('crosswords.analytics'))
         ->assertOk()
         ->assertSeeInOrder(['Puzzle Analytics', 'Attempts', 'Completion Rate']);
 });
 
 test('the puzzle analytics title shows above the empty state too', function () {
     $this->actingAs(makeAnalyticsProUser())
-        ->get(route('crosswords.index'))
+        ->get(route('crosswords.analytics'))
         ->assertOk()
         ->assertSeeInOrder(['Puzzle Analytics', 'Publish puzzles to see analytics']);
 });
@@ -52,7 +52,7 @@ test('analytics page shows empty state without published puzzles', function () {
     $user = makeAnalyticsProUser();
 
     $this->actingAs($user)
-        ->get(route('crosswords.index'))
+        ->get(route('crosswords.analytics'))
         ->assertOk()
         ->assertSee('Publish puzzles to see analytics');
 });
@@ -75,7 +75,7 @@ test('analytics page shows puzzle performance data', function () {
     ]);
 
     $this->actingAs($constructor)
-        ->get(route('crosswords.index'))
+        ->get(route('crosswords.analytics'))
         ->assertOk()
         ->assertSee('Analytics Test Puzzle')
         ->assertSee('2:00');
@@ -107,22 +107,27 @@ test('analytics counts solves and completions across all published puzzles', fun
         ->and($component->get('totalCompletions'))->toBe(2);
 });
 
-test('analytics overview cards appear on the build page', function () {
+test('the builder stats strip sits under the analytics page header, not on the build page', function () {
     $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->get(route('crosswords.analytics'))
+        ->assertOk()
+        ->assertSeeInOrder(['data-page-header-footer', 'data-test="constructor-stat"', 'Total Solves', 'Completions'], false);
 
     $this->actingAs($user)
         ->get(route('crosswords.index'))
         ->assertOk()
-        ->assertSee('Total Solves')
-        ->assertSee('Completions');
+        ->assertDontSeeLivewire('constructor-stats')
+        ->assertDontSee('Total Solves');
 });
 
-test('build page stat cards show an amber number above the label with no icon', function () {
+test('analytics stat cards show an amber number above the label with no icon', function () {
     $user = User::factory()->create();
     Crossword::factory()->count(2)->for($user)->create();
 
     $html = $this->actingAs($user)
-        ->get(route('crosswords.index'))
+        ->get(route('crosswords.analytics'))
         ->assertOk()
         ->getContent();
 
@@ -137,7 +142,7 @@ test('phones show only the published and draft stat cards in one row', function 
     $user = User::factory()->create();
 
     $html = $this->actingAs($user)
-        ->get(route('crosswords.index'))
+        ->get(route('crosswords.analytics'))
         ->assertOk()
         ->getContent();
 
@@ -574,7 +579,7 @@ test('rating displays on analytics page for pro users', function () {
     PuzzleComment::create(['user_id' => $solver->id, 'crossword_id' => $puzzle->id, 'body' => 'Excellent', 'rating' => 5]);
 
     $this->actingAs($constructor)
-        ->get(route('crosswords.index'))
+        ->get(route('crosswords.analytics'))
         ->assertOk()
         // The overview no longer has an Avg Rating card; ratings live in the
         // per-puzzle performance table.
@@ -709,7 +714,7 @@ test('rating trend chart stays hidden even when 2+ months of data exist', functi
     PuzzleComment::where('id', $c2->id)->update(['created_at' => now()->subMonth()->startOfMonth()->addDay()]);
 
     $this->actingAs($constructor)
-        ->get(route('crosswords.index'))
+        ->get(route('crosswords.analytics'))
         ->assertOk()
         ->assertDontSee('Rating Trend')
         ->assertDontSee('Average rating received per month');
@@ -728,7 +733,7 @@ test('rating trend chart is hidden with fewer than 2 data points', function () {
     PuzzleComment::create(['user_id' => $solver->id, 'crossword_id' => $puzzle->id, 'body' => 'Only one month', 'rating' => 4]);
 
     $this->actingAs($constructor)
-        ->get(route('crosswords.index'))
+        ->get(route('crosswords.analytics'))
         ->assertOk()
         ->assertDontSee('Rating Trend');
 });
@@ -774,8 +779,30 @@ test('rating trend is sorted chronologically', function () {
         ->and($trend[2]['avg_rating'])->toBe(5.0);
 });
 
-test('the analytics route redirects to the build page', function () {
+test('the build page links to the analytics page instead of rendering it inline', function () {
+    $user = makeAnalyticsProUser();
+    Crossword::factory()->for($user)->create(['is_published' => true]);
+
+    $this->actingAs($user)
+        ->get(route('crosswords.index'))
+        ->assertOk()
+        ->assertSee('data-test="build-analytics-button"', false)
+        ->assertSee(route('crosswords.analytics', absolute: false))
+        ->assertDontSeeLivewire('constructor-analytics')
+        ->assertDontSee('Completion Rate');
+});
+
+test('guest builders do not see the analytics button', function () {
+    $this->actingAs(User::factory()->create(['is_anonymous' => true]))
+        ->get(route('crosswords.index'))
+        ->assertOk()
+        ->assertDontSee('data-test="build-analytics-button"', false);
+});
+
+test('the analytics page links back to the build page', function () {
     $this->actingAs(User::factory()->create())
         ->get(route('crosswords.analytics'))
-        ->assertRedirect(route('crosswords.index', absolute: false));
+        ->assertOk()
+        ->assertSee('Back to Build')
+        ->assertSee(route('crosswords.index', absolute: false));
 });

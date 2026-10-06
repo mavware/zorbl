@@ -264,7 +264,7 @@ new #[Title('Leaderboard')] class extends Component {
         @foreach (['solvers' => __('Top Solvers'), 'speed' => __('Speed Demons'), 'constructors' => __('Top Constructors'), 'streaks' => __('Best Streaks')] as $value => $label)
             <label class="cursor-pointer">
                 <input type="radio" name="tab" value="{{ $value }}" wire:model.live="tab" class="peer sr-only" />
-                <span class="font-classical text-ink-muted hover:text-ink peer-checked:bg-amber-400/10 peer-checked:text-amber-400 peer-focus-visible:outline-2 peer-focus-visible:-outline-offset-2 peer-focus-visible:outline-amber-400 flex h-full items-center px-3.5 text-[15px] font-medium whitespace-nowrap transition-colors">
+                <span class="font-classical text-ink-muted hover:text-ink peer-checked:bg-zinc-800 peer-checked:text-white dark:peer-checked:bg-zinc-700 peer-focus-visible:outline-2 peer-focus-visible:-outline-offset-2 peer-focus-visible:outline-amber-400 flex h-full items-center px-3.5 text-[15px] font-medium whitespace-nowrap transition-colors">
                     {{ $label }}
                 </span>
             </label>
