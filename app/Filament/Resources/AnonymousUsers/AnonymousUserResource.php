@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\AnonymousUsers;
 
+use App\Filament\Clusters\Users\UsersCluster;
 use App\Filament\Resources\AnonymousUsers\Pages\ListAnonymousUsers;
 use App\Filament\Resources\AnonymousUsers\Tables\AnonymousUsersTable;
 use App\Models\User;
@@ -16,6 +17,8 @@ class AnonymousUserResource extends Resource
     protected static ?string $model = User::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUserGroup;
+
+    protected static ?string $cluster = UsersCluster::class;
 
     protected static ?string $recordTitleAttribute = 'name';
 

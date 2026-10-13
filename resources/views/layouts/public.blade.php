@@ -31,10 +31,10 @@
                         {{ __('Browse Puzzles') }}
                     </a>
                     <a href="{{ route('words.index') }}" wire:navigate class="text-fg-muted hidden text-sm transition hover:text-zinc-900 sm:inline dark:hover:text-zinc-100">
-                        {{ __('Word Catalog') }}
+                        {{ __('Words') }}
                     </a>
                     <a href="{{ route('clues.index') }}" wire:navigate class="text-fg-muted hidden text-sm transition hover:text-zinc-900 sm:inline dark:hover:text-zinc-100">
-                        {{ __('Clue Library') }}
+                        {{ __('Clues') }}
                     </a>
                 </div>
                 <div class="flex items-center gap-4">
@@ -58,8 +58,8 @@
             <div class="text-fg-muted mx-auto flex max-w-6xl flex-col items-center gap-2 px-6 text-center text-xs sm:flex-row sm:justify-between">
                 <p>&copy; {{ date('Y') }} {{ config('app.name') }}.</p>
                 <div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
-                    <a href="{{ route('words.index') }}" wire:navigate class="hover:text-zinc-700 dark:hover:text-zinc-300">{{ __('Word Catalog') }}</a>
-                    <a href="{{ route('clues.index') }}" wire:navigate class="hover:text-zinc-700 dark:hover:text-zinc-300">{{ __('Clue Library') }}</a>
+                    <a href="{{ route('words.index') }}" wire:navigate class="hover:text-zinc-700 dark:hover:text-zinc-300">{{ __('Words') }}</a>
+                    <a href="{{ route('clues.index') }}" wire:navigate class="hover:text-zinc-700 dark:hover:text-zinc-300">{{ __('Clues') }}</a>
                     <a href="{{ route('tools.convert') }}" wire:navigate class="hover:text-zinc-700 dark:hover:text-zinc-300">{{ __('Converter') }}</a>
                     <a href="{{ route('help.index') }}" wire:navigate class="hover:text-zinc-700 dark:hover:text-zinc-300">{{ __('Help') }}</a>
                     <a href="{{ route('legal.terms') }}" wire:navigate class="hover:text-zinc-700 dark:hover:text-zinc-300">{{ __('Terms') }}</a>

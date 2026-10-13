@@ -47,7 +47,7 @@ test('the stop route returns the original admin to their session', function () {
     $this->withSession([ImpersonationController::SESSION_KEY => $this->admin->id])
         ->actingAs($target)
         ->post(route('impersonate.stop'))
-        ->assertRedirect('/admin/users');
+        ->assertRedirect('/admin/people/users');
 
     expect(auth()->id())->toBe($this->admin->id)
         ->and(session()->has(ImpersonationController::SESSION_KEY))->toBeFalse();
@@ -134,7 +134,7 @@ test('switching users clears the panel session password hash so the admin panel 
     session()->put('password_hash_web', 'hash-recorded-for-the-target');
 
     $this->post(route('impersonate.stop'))
-        ->assertRedirect('/admin/users');
+        ->assertRedirect('/admin/people/users');
 
     expect(auth()->id())->toBe($this->admin->id)
         ->and(session()->has('password_hash_web'))->toBeFalse();

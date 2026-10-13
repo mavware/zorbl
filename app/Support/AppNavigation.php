@@ -40,7 +40,7 @@ class AppNavigation
                     href: route('crosswords.solving'),
                     current: $this->request->routeIs('crosswords.solving', 'crosswords.discover', 'crosswords.solver', 'crosswords.stats'),
                 ),
-                // The Clue Library and Word Catalog are tabs of one Reference
+                // Clues and Words are tabs of one Reference
                 // section (see reference()), so the chrome offers a single entry.
                 new NavigationItem(
                     label: __('Reference'),
@@ -68,13 +68,13 @@ class AppNavigation
     {
         return [
             new NavigationItem(
-                label: __('Clue Library'),
+                label: __('Clues'),
                 icon: 'book-open',
                 href: route('clues.index'),
                 current: $this->request->routeIs('clues.index'),
             ),
             new NavigationItem(
-                label: __('Word Catalog'),
+                label: __('Words'),
                 icon: 'language',
                 href: route('words.index'),
                 current: $this->request->routeIs('words.*'),

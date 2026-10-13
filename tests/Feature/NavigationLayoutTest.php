@@ -20,7 +20,7 @@ function expectedNavigationLinks(bool $registered, bool $admin = false): array
         route('crosswords.solving'),
         $registered ? route('favorites.index') : null,
         $registered ? route('constructors.index') : null,
-        route('clues.index'), // the Reference section: its Word Catalog tab lives on the page
+        route('clues.index'), // the Reference section: its Words tab lives on the page
         route('contests.index'),
         route('help.index'),
         route('support.index'),
@@ -111,9 +111,9 @@ test('the clue library and word catalog are tabs of the Reference section', func
             'data-test="page-tabs"',
             'href="'.route('clues.index').'"',
             'aria-current="page"',
-            'Clue Library',
+            'Clues',
             'href="'.route('words.index').'"',
-            'Word Catalog',
+            'Words',
         ], false);
 
     $this->actingAs($user)
@@ -122,10 +122,10 @@ test('the clue library and word catalog are tabs of the Reference section', func
         ->assertSeeInOrder([
             'data-test="page-tabs"',
             'href="'.route('clues.index').'"',
-            'Clue Library',
+            'Clues',
             'href="'.route('words.index').'"',
             'aria-current="page"',
-            'Word Catalog',
+            'Words',
         ], false);
 });
 

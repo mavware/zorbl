@@ -412,7 +412,7 @@ test('clue library page appears in navigation', function () {
 
     $this->actingAs($user)
         ->get(route('clues.index'))
-        ->assertSee('Clue Library');
+        ->assertSee('Clues');
 });
 
 test('the clue library shows a generated source title for clues from untitled puzzles', function () {

@@ -19,7 +19,7 @@ test('non-admin cannot access user list', function () {
     $user = User::factory()->create();
 
     $this->actingAs($user)
-        ->get('/admin/users')
+        ->get('/admin/people/users')
         ->assertForbidden();
 });
 
@@ -27,7 +27,7 @@ test('non-admin cannot access create user page', function () {
     $user = User::factory()->create();
 
     $this->actingAs($user)
-        ->get('/admin/users/create')
+        ->get('/admin/people/users/create')
         ->assertForbidden();
 });
 
@@ -36,14 +36,14 @@ test('non-admin cannot access edit user page', function () {
     $target = User::factory()->create();
 
     $this->actingAs($user)
-        ->get("/admin/users/{$target->id}/edit")
+        ->get("/admin/people/users/{$target->id}/edit")
         ->assertForbidden();
 });
 
 test('guest is redirected to admin login', function () {
     auth()->logout();
 
-    $this->get('/admin/users')
+    $this->get('/admin/people/users')
         ->assertRedirect('/admin/login');
 });
 

@@ -145,11 +145,11 @@ test('word catalog carries a canonical, description and CollectionPage ItemList'
     expect($html)
         ->toContain('<link rel="canonical" href="'.route('words.index').'"')
         ->toContain('<meta name="description"')
-        ->toContain('<title>Word Catalog — '.config('app.name').'</title>');
+        ->toContain('<title>Words — '.config('app.name').'</title>');
 
     $collection = collect(jsonLdBlocks($html))->firstWhere('@type', 'CollectionPage');
     expect($collection)->not->toBeNull()
-        ->and($collection['name'])->toBe('Word Catalog');
+        ->and($collection['name'])->toBe('Words');
     expect(collect($collection['mainEntity']['itemListElement'])->pluck('name'))->toContain('OCEAN');
 });
 
@@ -206,11 +206,11 @@ test('clue library carries a canonical, description and CollectionPage schema', 
     expect($html)
         ->toContain('<link rel="canonical" href="'.route('clues.index').'"')
         ->toContain('<meta name="description"')
-        ->toContain('<title>Clue Library — '.config('app.name').'</title>');
+        ->toContain('<title>Clues — '.config('app.name').'</title>');
 
     $collection = collect(jsonLdBlocks($html))->firstWhere('@type', 'CollectionPage');
     expect($collection)->not->toBeNull()
-        ->and($collection['name'])->toBe('Clue Library');
+        ->and($collection['name'])->toBe('Clues');
 });
 
 test('a word page with clues is indexable and emits DefinedTerm schema', function () {

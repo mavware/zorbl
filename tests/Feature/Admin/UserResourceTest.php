@@ -27,7 +27,7 @@ test('non-admin cannot access user list', function () {
     $user = User::factory()->create();
 
     $this->actingAs($user)
-        ->get('/admin/users')
+        ->get('/admin/people/users')
         ->assertForbidden();
 });
 

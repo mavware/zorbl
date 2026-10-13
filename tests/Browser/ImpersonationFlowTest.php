@@ -27,7 +27,7 @@ it('lets an admin impersonate a user and leave impersonation without being logge
 
     $this->actingAs($admin);
 
-    $page = visit('/admin/users')
+    $page = visit('/admin/people/users')
         ->assertSee('Target Person');
 
     $page->click('Impersonate')
@@ -39,7 +39,7 @@ it('lets an admin impersonate a user and leave impersonation without being logge
         ->assertNoJavaScriptErrors();
 
     $page->click('Leave impersonation')
-        ->assertPathIs('/admin/users')
+        ->assertPathIs('/admin/people/users')
         ->assertSee('Target Person')
         ->assertDontSee('Impersonating')
         ->assertDontSee('Sign in');
@@ -50,7 +50,7 @@ it('lets an admin impersonate a user who signed up with Google and has no passwo
 
     $this->actingAs($admin);
 
-    $page = visit('/admin/users')
+    $page = visit('/admin/people/users')
         ->assertSee('Target Person');
 
     $page->click('Impersonate')
@@ -61,7 +61,7 @@ it('lets an admin impersonate a user who signed up with Google and has no passwo
         ->assertSee('Target Person');
 
     $page->click('Leave impersonation')
-        ->assertPathIs('/admin/users')
+        ->assertPathIs('/admin/people/users')
         ->assertSee('Target Person')
         ->assertDontSee('Impersonating');
 });

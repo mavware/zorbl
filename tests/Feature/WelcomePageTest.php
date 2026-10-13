@@ -29,8 +29,8 @@ test('welcome page promotes the word catalog and clue library', function () {
 
     $response->assertOk()
         ->assertSee('Free reference tools', false)
-        ->assertSee('Word Catalog', false)
-        ->assertSee('Clue Library', false)
+        ->assertSee('Words', false)
+        ->assertSee('Clues', false)
         ->assertSee(route('words.index'), false)
         ->assertSee(route('clues.index'), false);
 });

@@ -119,14 +119,14 @@ new class extends Component {
     {
         return $this->view()
             ->layout(Auth::check() ? 'layouts.app' : 'layouts.public')
-            ->title(__('Word Catalog'));
+            ->title(__('Words'));
     }
 }
 ?>
 
 <div class="space-y-6">
     <x-seo-meta
-        title="Word Catalog"
+        title="Words"
         :canonical="route('words.index')"
         :description="__('Search a catalog of crossword answers by length and pattern. Use ? for any single letter and * for any run — perfect for filling that last stubborn slot.')"
     />
@@ -136,7 +136,7 @@ new class extends Component {
             $wordsJsonLd = [
                 '@context' => 'https://schema.org',
                 '@type' => 'CollectionPage',
-                'name' => __('Word Catalog'),
+                'name' => __('Words'),
                 'url' => route('words.index'),
                 'isPartOf' => ['@id' => url('/').'#website'],
                 'description' => __('A searchable catalog of crossword answers with clue counts and fill scores.'),
@@ -154,7 +154,7 @@ new class extends Component {
         <script type="application/ld+json">{!! json_encode($wordsJsonLd, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
     @endpush
 
-    <x-page-header :kicker="__('Reference')" :title="__('Word Catalog')">
+    <x-page-header :kicker="__('Reference')" :title="__('Words')">
         <x-slot:footer>
             <x-page-tabs :tabs="app(\App\Support\AppNavigation::class)->reference()" />
         </x-slot:footer>

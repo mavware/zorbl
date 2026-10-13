@@ -174,7 +174,7 @@ new class extends Component {
     <div>
         <a href="{{ route('words.index') }}" wire:navigate class="btn-classical btn-classical-muted h-8 px-3 text-[14px]">
             <flux:icon name="arrow-left" class="size-4" />
-            {{ __('Word Catalog') }}
+            {{ __('Words') }}
         </a>
     </div>
 

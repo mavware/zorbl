@@ -32,7 +32,7 @@ function anonymousUser(array $attributes = []): User
 
 test('non-admin cannot access the anonymous user list', function () {
     $this->actingAs(User::factory()->create())
-        ->get('/admin/anonymous-users')
+        ->get('/admin/people/anonymous-users')
         ->assertForbidden();
 });
 
@@ -104,4 +104,23 @@ test('an admin can impersonate an anonymous user', function () {
 
     expect(auth()->id())->toBe($guest->id)
         ->and(session(ImpersonationController::SESSION_KEY))->toBe($this->admin->id);
+});
+
+test('registered and anonymous users share one sidebar item and are tabs of it', function () {
+    $html = $this->get('/admin/people/users')->assertSuccessful()->getContent();
+
+    $sidebar = Str::before(Str::after($html, '<nav class="fi-sidebar-nav">'), '</nav>');
+    $tabs = Str::before(Str::after($html, 'fi-page-sub-navigation-tabs'), '</nav>');
+
+    expect(Str::substrCount($sidebar, 'Users'))->toBe(1)
+        ->and($sidebar)->toContain('/admin/people')
+        ->and($sidebar)->not->toContain('Anonymous Users')
+        ->and($tabs)->toContain('/admin/people/users')
+        ->and($tabs)->toContain('/admin/people/anonymous-users')
+        ->and($tabs)->toContain('Anonymous Users');
+
+    $this->get('/admin/people/anonymous-users')
+        ->assertSuccessful()
+        ->assertSee('fi-page-sub-navigation-tabs', false)
+        ->assertSee('/admin/people/users');
 });

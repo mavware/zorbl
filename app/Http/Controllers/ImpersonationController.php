@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Filament\Resources\Users\UserResource;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -45,7 +46,7 @@ class ImpersonationController extends Controller
         Auth::loginUsingId($originalId);
         $this->forgetSessionPasswordHash();
 
-        return redirect('/admin/users');
+        return redirect(UserResource::getUrl());
     }
 
     /**

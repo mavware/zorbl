@@ -305,14 +305,14 @@ new class extends Component {
     {
         return $this->view()
             ->layout(Auth::check() ? 'layouts.app' : 'layouts.public')
-            ->title(__('Clue Library'));
+            ->title(__('Clues'));
     }
 }
 ?>
 
 <div class="space-y-6">
     <x-seo-meta
-        title="Clue Library"
+        title="Clues"
         :canonical="route('clues.index')"
         :description="__('Search a community library of crossword clues and their answers. See how constructors have clued any word, or contribute your own.')"
     />
@@ -322,7 +322,7 @@ new class extends Component {
             $cluesJsonLd = [
                 '@context' => 'https://schema.org',
                 '@type' => 'CollectionPage',
-                'name' => __('Clue Library'),
+                'name' => __('Clues'),
                 'url' => route('clues.index'),
                 'isPartOf' => ['@id' => url('/').'#website'],
                 'description' => __('A searchable, community-built library of crossword clues and answers.'),
@@ -331,7 +331,7 @@ new class extends Component {
         <script type="application/ld+json">{!! json_encode($cluesJsonLd, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
     @endpush
 
-    <x-page-header :kicker="__('Reference')" :title="__('Clue Library')">
+    <x-page-header :kicker="__('Reference')" :title="__('Clues')">
         @auth
             <x-header-button icon="plus" wire:click="$set('showAddModal', true)">
                 {{ __('Add Clue') }}
