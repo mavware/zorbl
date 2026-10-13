@@ -175,13 +175,21 @@ class GridFiller
             // Mark word as used
             $this->usedWords[$word] = true;
 
-            // Check all crossing slots still have candidates
-            if ($this->isConsistent($slots, $newSolution, $target)) {
+            // Check all crossing slots still have candidates, and that any slot this
+            // placement completed through crossings spells a real, unused word.
+            $completedByCrossing = $this->isConsistent($unfilled, $newSolution, $target);
+
+            if ($completedByCrossing !== false) {
                 $fills[] = [
                     'direction' => $target['direction'],
                     'number' => $target['number'],
                     'word' => $word,
                 ];
+
+                foreach ($completedByCrossing as $completed) {
+                    $this->usedWords[$completed['word']] = true;
+                    $fills[] = $completed;
+                }
 
                 if ($this->backtrack($slots, $newSolution, $width, $height, $grid, $styles, $minLength, $fills)) {
                     // Update solution for caller
@@ -194,6 +202,10 @@ class GridFiller
                     return true;
                 }
 
+                foreach ($completedByCrossing as $completed) {
+                    unset($this->usedWords[$completed['word']]);
+                    array_pop($fills);
+                }
                 array_pop($fills);
             }
 
@@ -220,27 +232,42 @@ class GridFiller
     }
 
     /**
-     * Check that placing a word doesn't leave any crossing slot with zero candidates.
+     * Check that placing a word doesn't leave any open slot with zero candidates,
+     * and that every slot it completed through crossings is a real, unused word.
      *
-     * @param  list<array{direction: string, number: int, row: int, col: int, length: int}>  $allSlots
+     * Slots pre-filled by the user never reach here (they're excluded up front),
+     * so a fully-lettered slot in this list was spelled by the solver's own
+     * crossings and must be validated like any other placement.
+     *
+     * @param  list<array{direction: string, number: int, row: int, col: int, length: int}>  $openSlots  Slots that still had blanks before this placement
      * @param  array<int, array<int, string>>  $solution
      * @param  array{direction: string, number: int}  $placed
+     * @return list<array{direction: string, number: int, word: string}>|false Words completed by crossing, or false when inconsistent
      */
-    private function isConsistent(array $allSlots, array $solution, array $placed): bool
+    private function isConsistent(array $openSlots, array $solution, array $placed): array|false
     {
-        foreach ($allSlots as $slot) {
+        $completed = [];
+        $completedWords = [];
+
+        foreach ($openSlots as $slot) {
             if ($slot['direction'] === $placed['direction'] && $slot['number'] === $placed['number']) {
                 continue;
             }
 
             $pattern = self::getPattern($solution, $slot, $slot['direction']);
-            if (! str_contains($pattern, '_')) {
-                // Fully filled — check it's a valid word
-                $candidates = $this->getCandidates($pattern, $slot['length']);
 
-                // A fully filled word that doesn't match any dictionary word is still ok
-                // if it was pre-filled by the user. But if we just created it through
-                // crossing, it should ideally be valid. For performance, skip this check.
+            if (! str_contains($pattern, '_')) {
+                if (! $this->isWord($pattern) || isset($this->usedWords[$pattern]) || isset($completedWords[$pattern])) {
+                    return false;
+                }
+
+                $completedWords[$pattern] = true;
+                $completed[] = [
+                    'direction' => $slot['direction'],
+                    'number' => $slot['number'],
+                    'word' => $pattern,
+                ];
+
                 continue;
             }
 
@@ -253,7 +280,12 @@ class GridFiller
             }
         }
 
-        return true;
+        return $completed;
+    }
+
+    private function isWord(string $word): bool
+    {
+        return in_array($word, $this->getCandidates($word, strlen($word)), true);
     }
 
     /**

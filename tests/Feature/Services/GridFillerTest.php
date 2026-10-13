@@ -19,6 +19,65 @@ beforeEach(function () {
         ['word' => 'TEA', 'length' => 3, 'score' => 62.0, 'created_at' => now(), 'updated_at' => now()],
         ['word' => 'PEA', 'length' => 3, 'score' => 42.0, 'created_at' => now(), 'updated_at' => now()],
     ]);
+
+    // Every slot must spell a dictionary word, including ones completed by
+    // crossings, so the list needs enough words for real 3x3 word squares.
+    Word::insert(array_map(fn (string $word, int $i): array => [
+        'word' => $word,
+        'length' => 3,
+        'score' => 40 - $i,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ], GRID_FILLER_EXTRA_WORDS, array_keys(GRID_FILLER_EXTRA_WORDS)));
+});
+
+const GRID_FILLER_EXTRA_WORDS = [
+    'EAT', 'ONE', 'TEN', 'NET', 'PET', 'PEN', 'TAR', 'ART', 'SEA',
+    'TIE', 'TIN', 'ANT', 'TAN', 'NAP', 'PAN', 'PAT', 'TOP', 'POT', 'ROT',
+    'ROE', 'COD', 'DEN',
+];
+
+it('never leaves a slot spelling a non-word, even one completed by crossings', function () {
+    Word::query()->delete();
+
+    // The only way to fill the top row and both outer columns is CAT / COT / TEA,
+    // which would force the un-chosen middle slots to spell "OPE"/"ATE"-style
+    // leftovers that are missing from this deliberately thin dictionary.
+    Word::insert(array_map(fn (string $word): array => [
+        'word' => $word, 'length' => 3, 'score' => 50.0, 'created_at' => now(), 'updated_at' => now(),
+    ], ['CAT', 'COT', 'TEA', 'APE', 'TOE', 'ATE']));
+
+    $filler = app(GridFiller::class);
+    $grid = [[1, 2, 3], [4, 0, 0], [5, 0, 0]];
+    $empty = [['', '', ''], ['', '', ''], ['', '', '']];
+
+    $result = $filler->fill($grid, $empty, 3, 3, [], 3);
+
+    expect($result['success'])->toBeFalse();
+
+    $validWords = Word::pluck('word')->all();
+    foreach ($result['fills'] as $fill) {
+        expect($fill['word'])->toBeIn($validWords);
+    }
+});
+
+it('reports words completed by crossings as fills and keeps them unique', function () {
+    $filler = app(GridFiller::class);
+    $grid = [[1, 2, 3], [4, 0, 0], [5, 0, 0]];
+    $empty = [['', '', ''], ['', '', ''], ['', '', '']];
+
+    $result = $filler->fill($grid, $empty, 3, 3, [], 3);
+
+    expect($result['success'])->toBeTrue()
+        ->and($result['fills'])->toHaveCount(6);
+
+    $validWords = Word::pluck('word')->all();
+    $words = array_column($result['fills'], 'word');
+
+    expect($words)->toHaveCount(count(array_unique($words)));
+    foreach ($words as $word) {
+        expect($word)->toBeIn($validWords);
+    }
 });
 
 it('fills a simple grid with valid words', function () {

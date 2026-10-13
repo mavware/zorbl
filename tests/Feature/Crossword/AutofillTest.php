@@ -10,6 +10,12 @@ use CrosswordBuilder\CrosswordIO\GridNumberer;
 use Illuminate\Support\Facades\Http;
 use Laravel\Cashier\Subscription;
 
+const AUTOFILL_EXTRA_WORDS = [
+    'EAT', 'ONE', 'TEN', 'NET', 'PET', 'PEN', 'TAR', 'ART', 'SEA',
+    'TIE', 'TIN', 'ANT', 'TAN', 'NAP', 'PAN', 'PAT', 'TOP', 'POT', 'ROT',
+    'ROE', 'COD', 'DEN',
+];
+
 function seedExtraThreeLetterWords(): void
 {
     $words = [
@@ -62,6 +68,16 @@ beforeEach(function () {
         ['word' => 'PEA', 'length' => 3, 'score' => 42.0, 'created_at' => now(), 'updated_at' => now()],
         ['word' => 'OPE', 'length' => 3, 'score' => 30.0, 'created_at' => now(), 'updated_at' => now()],
     ]);
+
+    // GridFiller validates crossing-completed slots too, so a 3x3 fill needs
+    // a real word square to exist in the seed list.
+    Word::insert(array_map(fn (string $word, int $i): array => [
+        'word' => $word,
+        'length' => 3,
+        'score' => 40 - $i,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ], AUTOFILL_EXTRA_WORDS, array_keys(AUTOFILL_EXTRA_WORDS)));
 });
 
 function makeSmallCrossword(User $user): Crossword
