@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\PuzzlePublication;
 use App\Observers\ClueEntryObserver;
 use App\Services\ClueQualityChecker;
 use Carbon\CarbonImmutable;
@@ -24,6 +25,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $user_id
  * @property string|null $direction
  * @property int|null $clue_number
+ * @property string|null $source
+ * @property CarbonImmutable|null $source_date
  * @property string $status
  * @property int|null $reviewed_by
  * @property CarbonImmutable|null $reviewed_at
@@ -59,6 +62,8 @@ class ClueEntry extends Model
         'user_id',
         'direction',
         'clue_number',
+        'source',
+        'source_date',
         'status',
         'reviewed_by',
         'reviewed_at',
@@ -71,8 +76,26 @@ class ClueEntry extends Model
     {
         return [
             'reviewed_at' => 'datetime',
+            'source_date' => 'date',
             'quality_issues' => 'array',
         ];
+    }
+
+    /**
+     * Where a scraped clue came from, e.g. "Newsday, 12 Oct 2026"; null for
+     * clues that weren't scraped from a publication.
+     */
+    public function sourceLabel(): ?string
+    {
+        $publication = PuzzlePublication::tryFrom((string) $this->source);
+
+        if ($publication === null) {
+            return null;
+        }
+
+        return $this->source_date === null
+            ? $publication->label()
+            : $publication->label().', '.$this->source_date->format('j M Y');
     }
 
     public function crossword(): BelongsTo

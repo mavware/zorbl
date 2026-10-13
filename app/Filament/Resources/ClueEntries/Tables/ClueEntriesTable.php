@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\ClueEntries\Tables;
 
+use App\Enums\PuzzlePublication;
 use App\Models\ClueEntry;
 use App\Services\ClueQualityChecker;
 use Filament\Actions\Action;
@@ -45,6 +46,7 @@ class ClueEntriesTable
                     ->toggleable(),
                 TextColumn::make('crossword.title')
                     ->label('Source')
+                    ->state(fn (ClueEntry $record): ?string => $record->crossword?->title ?? $record->sourceLabel())
                     ->placeholder('Standalone')
                     ->limit(30)
                     ->toggleable(),
@@ -73,6 +75,11 @@ class ClueEntriesTable
                         ClueEntry::STATUS_PENDING => 'Pending',
                         ClueEntry::STATUS_APPROVED => 'Approved',
                     ]),
+                SelectFilter::make('source')
+                    ->label('Publication')
+                    ->options(collect(PuzzlePublication::cases())
+                        ->mapWithKeys(fn (PuzzlePublication $publication): array => [$publication->value => $publication->label()])
+                        ->all()),
                 Filter::make('has_quality_issues')
                     ->label('Has quality issues')
                     ->toggle()

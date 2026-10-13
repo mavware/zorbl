@@ -29,6 +29,16 @@
 
             {{ $this->importWordsAction }}
         </x-filament::section>
+
+        <x-filament::section>
+            <x-slot name="heading">Scrape published crosswords</x-slot>
+            <x-slot name="description">
+                Files words and clues from completed Newsday and Guardian Quick crosswords, up to
+                {{ \App\Filament\Pages\Commands::MAX_SCRAPE_PUZZLES }} puzzles per publication per run.
+            </x-slot>
+
+            {{ $this->scrapePublishedCluesAction }}
+        </x-filament::section>
     </div>
 
     @if ($output !== null)

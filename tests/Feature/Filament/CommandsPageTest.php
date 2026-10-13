@@ -20,7 +20,8 @@ test('admin can load the commands page', function (): void {
         ->assertSuccessful()
         ->assertSee('Run words:export-json')
         ->assertSee('Run clues:backfill')
-        ->assertSee('Run words:import-wiktionary');
+        ->assertSee('Run words:import-wiktionary')
+        ->assertSee('Run clues:scrape-published');
 });
 
 test('non-admins cannot load the commands page', function (): void {
@@ -96,4 +97,28 @@ test('the import action caps how many pages one run can read', function (): void
     Livewire::test(Commands::class)
         ->callAction('importWords', ['pages' => Commands::MAX_IMPORT_PAGES + 1, 'restart' => false])
         ->assertHasFormErrors(['pages' => 'max']);
+});
+
+test('the scrape action reads the chosen publication and shows the output', function (): void {
+    Http::fake([
+        'brainsonly.com/*' => Http::response(implode("\n\n", [
+            'ARCHIVE', now()->subDay()->format('ymd'), '10/12/26 FOR ALL AGES', 'Gail Grabowski, edited by Stanley Newman',
+            3, 3, 3, 3, "BAT\nORE\nWED", "Flying mammal\nMineral deposit\nMarry", "Bend at the waist\nExist\nKennedy of the Senate",
+        ])),
+    ]);
+
+    Livewire::test(Commands::class)
+        ->callAction('scrapePublishedClues', ['publication' => 'newsday', 'puzzles' => 1, 'approve' => true])
+        ->assertHasNoFormErrors()
+        ->assertNotified('clues:scrape-published finished')
+        ->assertSee('Newsday: read 1 puzzle(s), added 6 clue(s) approved, skipped 0.');
+
+    expect(ClueEntry::where('source', 'newsday')->where('status', ClueEntry::STATUS_APPROVED)->count())->toBe(6);
+    Http::assertNotSent(fn ($request): bool => str_contains($request->url(), 'theguardian.com'));
+});
+
+test('the scrape action caps how many puzzles one run can read', function (): void {
+    Livewire::test(Commands::class)
+        ->callAction('scrapePublishedClues', ['publication' => 'all', 'puzzles' => Commands::MAX_SCRAPE_PUZZLES + 1, 'approve' => false])
+        ->assertHasFormErrors(['puzzles' => 'max']);
 });

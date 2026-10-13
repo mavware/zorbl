@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Enums\ClueSource;
+use App\Enums\PuzzlePublication;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
@@ -30,6 +31,11 @@ class Commands extends Page
      * Most 500-entry Wiktionary pages one import run may read; each is a separate request.
      */
     public const int MAX_IMPORT_PAGES = 20;
+
+    /**
+     * Most puzzles per publication one scrape run may read; each is a separate request.
+     */
+    public const int MAX_SCRAPE_PUZZLES = 5;
 
     protected string $view = 'filament.pages.commands';
 
@@ -114,6 +120,39 @@ class Commands extends Page
                 '--pages' => (int) $data['pages'],
                 '--restart' => (bool) $data['restart'],
             ]));
+    }
+
+    public function scrapePublishedCluesAction(): Action
+    {
+        return Action::make('scrapePublishedClues')
+            ->label('Run clues:scrape-published')
+            ->icon(Heroicon::OutlinedNewspaper)
+            ->modalDescription('Read completed crosswords from trusted publications and file their words and clues, continuing from where the last run stopped.')
+            ->modalSubmitActionLabel('Run')
+            ->fillForm(['publication' => 'all', 'puzzles' => 1, 'approve' => false])
+            ->schema([
+                Select::make('publication')
+                    ->options(collect(PuzzlePublication::cases())
+                        ->mapWithKeys(fn (PuzzlePublication $publication): array => [$publication->value => $publication->label()])
+                        ->prepend('All publications', 'all')
+                        ->all())
+                    ->required(),
+                TextInput::make('puzzles')
+                    ->label('Puzzles per publication')
+                    ->numeric()
+                    ->integer()
+                    ->minValue(1)
+                    ->maxValue(self::MAX_SCRAPE_PUZZLES)
+                    ->required(),
+                Toggle::make('approve')
+                    ->label('Approve clues immediately')
+                    ->helperText('Off stores them as pending review.'),
+            ])
+            ->action(fn (array $data) => $this->runCommand('clues:scrape-published', array_filter([
+                '--publication' => $data['publication'] === 'all' ? null : (string) $data['publication'],
+                '--puzzles' => (int) $data['puzzles'],
+                '--approve' => (bool) $data['approve'],
+            ], fn (mixed $value): bool => $value !== null)));
     }
 
     /**
