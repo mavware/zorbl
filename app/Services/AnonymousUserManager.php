@@ -48,6 +48,7 @@ class AnonymousUserManager
             'is_anonymous' => true,
             'anonymous_token' => $token,
             'anonymous_created_at' => now(),
+            'last_seen_at' => now(),
         ]);
 
         Cookie::queue(Cookie::make(

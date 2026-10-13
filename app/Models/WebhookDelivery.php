@@ -6,7 +6,9 @@ use Carbon\CarbonImmutable;
 use Database\Factories\WebhookDeliveryFactory;
 use Eloquent;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\MassPrunable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -32,7 +34,18 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class WebhookDelivery extends Model
 {
     /** @use HasFactory<WebhookDeliveryFactory> */
-    use HasFactory;
+    use HasFactory, MassPrunable;
+
+    /**
+     * Delivery logs carry the full outbound payload and response body; a
+     * month is plenty for endpoint owners to diagnose failures.
+     *
+     * @return Builder<static>
+     */
+    public function prunable(): Builder
+    {
+        return static::query()->where('created_at', '<', now()->subDays(30));
+    }
 
     /**
      * @return array<string, string>

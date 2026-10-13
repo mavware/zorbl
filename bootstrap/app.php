@@ -4,6 +4,7 @@ use App\Http\Middleware\EnsureFeatureEnabled;
 use App\Http\Middleware\EnsureNotAnonymous;
 use App\Http\Middleware\RedirectIfAuthenticated;
 use App\Http\Middleware\SecurityHeaders;
+use App\Http\Middleware\TrackLastSeen;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -24,6 +25,9 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->validateCsrfTokens(except: ['stripe/*']);
         $middleware->append(SecurityHeaders::class);
+        // Runs after the session/auth layers so the user is resolved; feeds users:prune-anonymous.
+        $middleware->web(append: TrackLastSeen::class);
+        $middleware->api(append: TrackLastSeen::class);
         // Without this, authenticated users hitting guest-only routes would be
         // sent to the route named "dashboard", which is now just a redirect.
         $middleware->redirectUsersTo(fn () => route('crosswords.index'));

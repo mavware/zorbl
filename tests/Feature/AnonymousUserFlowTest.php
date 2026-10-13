@@ -194,7 +194,7 @@ test('login with anon cookie merges the anon puzzle into the real account', func
 
 test('prune command deletes old anonymous users and their puzzles', function () {
     $stale = app(AnonymousUserManager::class)->create();
-    $stale->forceFill(['anonymous_created_at' => now()->subDays(31)])->save();
+    $stale->forceFill(['anonymous_created_at' => now()->subDays(31), 'last_seen_at' => now()->subDays(31)])->save();
     $staleCrossword = Crossword::factory()->for($stale)->create();
 
     $fresh = app(AnonymousUserManager::class)->create();

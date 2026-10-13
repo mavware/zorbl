@@ -6,7 +6,9 @@ use Carbon\CarbonImmutable;
 use Database\Factories\StripeWebhookLogFactory;
 use Eloquent;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\MassPrunable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -32,7 +34,18 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class StripeWebhookLog extends Model
 {
     /** @use HasFactory<StripeWebhookLogFactory> */
-    use HasFactory;
+    use HasFactory, MassPrunable;
+
+    /**
+     * Full event payloads are only useful while debugging a recent billing
+     * issue; Stripe keeps its own event history for longer.
+     *
+     * @return Builder<static>
+     */
+    public function prunable(): Builder
+    {
+        return static::query()->where('created_at', '<', now()->subDays(90));
+    }
 
     /**
      * @return array<string, string>

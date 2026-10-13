@@ -53,6 +53,11 @@ use Spatie\Permission\Traits\HasRoles;
  * @property CarbonImmutable|null $grandfathered_at
  * @property CarbonImmutable|null $manual_pro_started_at
  * @property CarbonImmutable|null $manual_pro_ended_at
+ * @property bool $is_anonymous
+ * @property string|null $anonymous_token
+ * @property CarbonImmutable|null $anonymous_created_at
+ * @property CarbonImmutable|null $converted_at
+ * @property CarbonImmutable|null $last_seen_at
  * @property-read Collection<int, Achievement> $achievements
  * @property-read int|null $achievements_count
  * @property-read Collection<int, ClueEntry> $clueEntries
@@ -92,7 +97,7 @@ use Spatie\Permission\Traits\HasRoles;
  *
  * @mixin Eloquent
  */
-#[Fillable(['name', 'email', 'password', 'copyright_name', 'bio', 'google_id', 'current_streak', 'longest_streak', 'last_solve_date', 'notification_preferences', 'safe_search_enabled', 'grandfathered_at', 'manual_pro_started_at', 'manual_pro_ended_at', 'is_anonymous', 'anonymous_token', 'anonymous_created_at', 'converted_at'])]
+#[Fillable(['name', 'email', 'password', 'copyright_name', 'bio', 'google_id', 'current_streak', 'longest_streak', 'last_solve_date', 'notification_preferences', 'safe_search_enabled', 'grandfathered_at', 'manual_pro_started_at', 'manual_pro_ended_at', 'is_anonymous', 'anonymous_token', 'anonymous_created_at', 'converted_at', 'last_seen_at'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements FilamentUser, PasskeyUser
 {
@@ -117,6 +122,7 @@ class User extends Authenticatable implements FilamentUser, PasskeyUser
             'is_anonymous' => 'boolean',
             'anonymous_created_at' => 'datetime',
             'converted_at' => 'datetime',
+            'last_seen_at' => 'datetime',
         ];
     }
 

@@ -4,7 +4,9 @@ namespace App\Models;
 
 use Carbon\CarbonImmutable;
 use Database\Factories\AiUsageFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\MassPrunable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -19,11 +21,22 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class AiUsage extends Model
 {
     /** @use HasFactory<AiUsageFactory> */
-    use HasFactory;
+    use HasFactory, MassPrunable;
 
     public $timestamps = false;
 
     protected $fillable = ['user_id', 'type'];
+
+    /**
+     * Quotas are counted per calendar month, so anything before the previous
+     * month can never affect a limit check again.
+     *
+     * @return Builder<static>
+     */
+    public function prunable(): Builder
+    {
+        return static::query()->where('created_at', '<', now()->startOfMonth()->subMonth());
+    }
 
     protected static function booted(): void
     {

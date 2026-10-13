@@ -49,7 +49,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property bool $allow_embed
  * @property CarbonImmutable|null $created_at
  * @property CarbonImmutable|null $updated_at
- * @property array<array-key, mixed>|null $user_progress
  * @property numeric|null $difficulty_score
  * @property string|null $difficulty_label
  * @property int $cached_attempts_count
@@ -73,7 +72,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'meta_answer_prompt', 'meta_answers', 'meta_answer_reveal',
     'secret_theme', 'layout',
     'width', 'height', 'kind', 'puzzle_type', 'freestyle_locked',
-    'grid', 'solution', 'prefilled', 'user_progress', 'clues_across', 'clues_down',
+    'grid', 'solution', 'prefilled', 'clues_across', 'clues_down',
     'styles', 'metadata', 'is_published', 'allow_embed', 'contains_profanity',
     'difficulty_score', 'difficulty_label',
     'cached_attempts_count', 'cached_completed_count', 'cached_avg_solve_time',
@@ -95,7 +94,6 @@ class Crossword extends Model
             'grid' => 'array',
             'solution' => 'array',
             'prefilled' => 'array',
-            'user_progress' => 'array',
             'clues_across' => 'array',
             'clues_down' => 'array',
             'styles' => 'array',
