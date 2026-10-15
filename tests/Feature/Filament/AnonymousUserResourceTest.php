@@ -124,3 +124,36 @@ test('registered and anonymous users share one sidebar item and are tabs of it',
         ->assertSee('fi-page-sub-navigation-tabs', false)
         ->assertSee('/admin/people/users');
 });
+
+test('the registered users tab comes before the anonymous users tab', function () {
+    $html = $this->get('/admin/people/users')->assertSuccessful()->getContent();
+
+    $tabs = Str::before(Str::after($html, 'fi-page-sub-navigation-tabs'), '</nav>');
+
+    expect(strpos($tabs, '/admin/people/users"'))
+        ->toBeLessThan(strpos($tabs, '/admin/people/anonymous-users'));
+});
+
+test('the users sidebar item shows a badge counting registered users from the last 24 hours', function () {
+    User::factory()->create(['created_at' => now()->subHours(2)]);
+    User::factory()->create(['created_at' => now()->subHours(23)]);
+    User::factory()->create(['created_at' => now()->subDays(2)]);
+    anonymousUser(['created_at' => now()->subHour()]);
+
+    $html = $this->get('/admin/people/users')->assertSuccessful()->getContent();
+    $sidebar = Str::before(Str::after($html, '<nav class="fi-sidebar-nav">'), '</nav>');
+
+    // The acting admin was created moments ago, so it counts too.
+    expect($sidebar)->toContain('fi-badge')
+        ->and($sidebar)->toMatch('/fi-badge[^>]*>\s*3\s*</');
+});
+
+test('the users sidebar item shows no badge when nobody registered in the last 24 hours', function () {
+    $this->admin->forceFill(['created_at' => now()->subDays(3)])->save();
+
+    $html = $this->get('/admin/people/users')->assertSuccessful()->getContent();
+    $sidebar = Str::before(Str::after($html, '<nav class="fi-sidebar-nav">'), '</nav>');
+    $usersItem = Str::before(Str::after($sidebar, '/admin/people'), '</a>');
+
+    expect($usersItem)->not->toContain('fi-badge');
+});
