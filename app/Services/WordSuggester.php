@@ -3,9 +3,17 @@
 namespace App\Services;
 
 use App\Models\Word;
+use Illuminate\Support\Facades\Cache;
 
 class WordSuggester
 {
+    /**
+     * How long the suggestions for a fully-empty slot stay cached. The word
+     * list only changes via bulk imports, so stale results for this long
+     * are harmless.
+     */
+    private const int EMPTY_SLOT_CACHE_SECONDS = 3600;
+
     /**
      * Suggest words matching a pattern.
      *
@@ -24,6 +32,30 @@ class WordSuggester
             return [];
         }
 
+        // A fully-empty slot yields the same top words for every puzzle, and the
+        // editor asks for it every time a user clicks into a blank entry — serve
+        // it from the cache rather than scanning the word table each time.
+        if (trim($pattern, '_') === '') {
+            return Cache::remember(
+                self::emptySlotCacheKey($length, $limit, $minScore),
+                self::EMPTY_SLOT_CACHE_SECONDS,
+                fn (): array => $this->query($pattern, $length, $limit, $minScore),
+            );
+        }
+
+        return $this->query($pattern, $length, $limit, $minScore);
+    }
+
+    private static function emptySlotCacheKey(int $length, int $limit, float $minScore): string
+    {
+        return "word-suggest:empty:{$length}:{$limit}:{$minScore}";
+    }
+
+    /**
+     * @return array<int, array{word: string, score: float}>
+     */
+    private function query(string $pattern, int $length, int $limit, float $minScore): array
+    {
         // SQL LIKE already uses _ as single-char wildcard — pattern maps directly
         $query = Word::where('length', $length)
             ->where('word', 'LIKE', $pattern);

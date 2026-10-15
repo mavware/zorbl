@@ -2,6 +2,7 @@
 
 use App\Models\Word;
 use App\Services\WordSuggester;
+use Illuminate\Support\Facades\Cache;
 
 beforeEach(function () {
     // Seed a small test word list
@@ -80,4 +81,35 @@ it('handles all-underscore pattern', function () {
     $results = $suggester->suggest('___', 3);
 
     expect($results)->toHaveCount(3);
+});
+
+it('caches suggestions for an empty slot so repeat lookups skip the word table', function () {
+    $suggester = app(WordSuggester::class);
+    $first = $suggester->suggest('___', 3);
+
+    Word::insert(['word' => 'CIT', 'length' => 3, 'score' => 99.0, 'created_at' => now(), 'updated_at' => now()]);
+
+    expect(Cache::has('word-suggest:empty:3:20:0'))->toBeTrue()
+        ->and($suggester->suggest('___', 3))->toBe($first)
+        ->and(collect($first)->pluck('word')->all())->not->toContain('CIT');
+});
+
+it('keys the empty-slot cache by length', function () {
+    $suggester = app(WordSuggester::class);
+
+    $three = collect($suggester->suggest('___', 3))->pluck('word')->all();
+    $five = collect($suggester->suggest('_____', 5))->pluck('word')->all();
+
+    expect($three)->toContain('CAT', 'COT', 'CUT')
+        ->and($five)->toContain('CRANE', 'TASTE')
+        ->and($five)->not->toContain('CAT');
+});
+
+it('does not cache partially filled patterns', function () {
+    $suggester = app(WordSuggester::class);
+    $suggester->suggest('C_T', 3);
+
+    Word::insert(['word' => 'CIT', 'length' => 3, 'score' => 99.0, 'created_at' => now(), 'updated_at' => now()]);
+
+    expect(collect($suggester->suggest('C_T', 3))->pluck('word')->all())->toContain('CIT');
 });

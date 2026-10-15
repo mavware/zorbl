@@ -112,6 +112,10 @@ export function crosswordGrid({
         _longPressTimer: null,
         _wordSuggestTimer: null,
         _wordSuggestSeq: 0,
+        // Memo of server results for fully-empty slots, keyed by pattern ("____").
+        // Those depend only on length, so clicking between blank entries of the
+        // same size shouldn't cost a round-trip each time.
+        _emptySlotSuggestions: {},
         _clueSuggestSeq: 0,
         _clueQualityTimer: null,
         _clueQualitySeq: 0,
@@ -1511,12 +1515,23 @@ export function crosswordGrid({
 
             if (!force && pattern === this.wordSuggestionsPattern) return;
 
+            const isEmptySlot = !pattern.replace(/_/g, '');
             const seq = ++this._wordSuggestSeq;
             this.wordSuggestionsPattern = pattern;
+
+            if (isEmptySlot && this._emptySlotSuggestions[pattern]) {
+                this.wordSuggestions = this._emptySlotSuggestions[pattern];
+                this.suggestionsIndex = -1;
+                this.clearSuggestionPreview();
+                this.wordSuggestionsLoading = false;
+                return;
+            }
+
             this.wordSuggestionsLoading = true;
             try {
                 const results = await this.$wire.suggestWords(pattern, pattern.length);
                 if (seq !== this._wordSuggestSeq) return; // superseded
+                if (isEmptySlot) this._emptySlotSuggestions[pattern] = results;
                 this.wordSuggestions = results;
             } catch (e) {
                 if (seq !== this._wordSuggestSeq) return;

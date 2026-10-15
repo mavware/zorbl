@@ -197,6 +197,48 @@ describe('suggestions pane lookups', () => {
         expect(g.$wire.suggestWords).toHaveBeenLastCalledWith('AB_', 3);
     });
 
+    it('serves a blank slot of a known length from memory instead of refetching', async () => {
+        const g = makeGrid();
+        g.suggestionsPaneMounted = true;
+        g.$wire.suggestWords = vi.fn(() => Promise.resolve([{ word: 'ABC', score: 50 }]));
+
+        // 5-across and 2-down are both empty 3-letter slots.
+        g.selectedRow = 2; g.selectedCol = 0; g.direction = 'across';
+        g.refreshSuggestionsPane();
+        await vi.runAllTimersAsync();
+        expect(g.$wire.suggestWords).toHaveBeenCalledTimes(1);
+        expect(g.$wire.suggestWords).toHaveBeenLastCalledWith('___', 3);
+
+        g.selectedRow = 1; g.selectedCol = 0; g.direction = 'across';
+        g.onActiveSlotChanged();
+        await vi.runAllTimersAsync();
+        expect(g.$wire.suggestWords).toHaveBeenLastCalledWith('S_L', 3);
+
+        g.selectedRow = 0; g.selectedCol = 1; g.direction = 'down';
+        g.onActiveSlotChanged();
+        await vi.runAllTimersAsync();
+        expect(g.$wire.suggestWords).toHaveBeenCalledTimes(2);
+        expect(g.wordSuggestions).toEqual([{ word: 'ABC', score: 50 }]);
+        expect(g.wordSuggestionsLoading).toBe(false);
+    });
+
+    it('does not memoise partially filled patterns', async () => {
+        const g = makeGrid();
+        g.suggestionsPaneMounted = true;
+        g.selectedRow = 1; g.selectedCol = 0; g.direction = 'across';
+        g.refreshSuggestionsPane();
+        await vi.runAllTimersAsync();
+        expect(g.$wire.suggestWords).toHaveBeenLastCalledWith('S_L', 3);
+
+        g.selectedRow = 2; g.selectedCol = 0;
+        g.onActiveSlotChanged();
+        await vi.runAllTimersAsync();
+        g.selectedRow = 1; g.selectedCol = 0;
+        g.onActiveSlotChanged();
+        await vi.runAllTimersAsync();
+        expect(g.$wire.suggestWords).toHaveBeenCalledTimes(3);
+    });
+
     it('does not refetch the same pattern twice', () => {
         const g = makeGrid();
         g.suggestionsPaneMounted = true;
@@ -262,11 +304,19 @@ describe('suggestions pane focus', () => {
     it('clicking inside the pane keeps the grid selection', () => {
         const g = makeGrid();
         const target = {};
+        g.$refs.gridContainer = { focus: vi.fn(), contains: () => false };
         g.$refs.suggestionsPane = { contains: (el) => el === target, offsetParent: {} };
         g.selectedRow = 1; g.selectedCol = 0;
         g.handleClickOutside({ target });
         expect(g.selectedRow).toBe(1);
-        g.handleClickOutside({ target: {} });
+
+        // A genuine outside click still deselects (the handler blurs via document).
+        vi.stubGlobal('document', { activeElement: null });
+        try {
+            g.handleClickOutside({ target: {} });
+        } finally {
+            vi.unstubAllGlobals();
+        }
         expect(g.selectedRow).toBe(-1);
     });
 });
