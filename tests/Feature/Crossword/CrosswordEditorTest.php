@@ -18,6 +18,16 @@ function editorSettingsFlyoutHtml(string $html): string
     return $flyout[0];
 }
 
+function editorSettingsFormHtml(string $html, string $surface): string
+{
+    $start = strpos($html, sprintf('id="%s-settings-tab-details"', $surface));
+    $end = strpos($html, sprintf('id="%s-settings-panel-theme"', $surface));
+    $end = strpos($html, 'wire:click="saveMetadata"', $end);
+    expect($start)->not->toBeFalse()->and($end)->not->toBeFalse();
+
+    return substr($html, $start, $end - $start);
+}
+
 function editorSettingsPaneHtml(string $html): string
 {
     preg_match('/<aside[^>]*data-test="settings-pane".*?<\/aside>/s', $html, $pane);
@@ -330,10 +340,16 @@ test('settings modal shows the export menu at the top', function () {
         ->assertSeeInOrder(['Puzzle Settings', 'Export', '.ipuz', '.puz (Across Lite)', '.jpz (Crossword Compiler)', '.pdf (Print-Ready)', 'Title'])
         ->html();
 
-    // Once in the sidebar header, once in the flyout header.
+    // Once in the sidebar footer, once in the flyout header.
     expect(substr_count($html, "attemptExport('ipuz')"))->toBe(2);
     expect(strpos(editorSettingsFlyoutHtml($html), "attemptExport('ipuz')"))
         ->toBeLessThan(strpos(editorSettingsFlyoutHtml($html), 'wire:model="title"'));
+
+    // The sidebar has no heading; Export sits in its footer, before Save.
+    $pane = editorSettingsPaneHtml($html);
+    expect($pane)->not->toContain('Puzzle Settings')
+        ->and(strpos($pane, 'wire:model="title"'))->toBeLessThan(strpos($pane, "attemptExport('ipuz')"))
+        ->and(strpos($pane, "attemptExport('ipuz')"))->toBeLessThan(strpos($pane, 'wire:click="saveMetadata"'));
 });
 
 test('settings modal renders the secret theme and meta answer prompt as real inputs', function () {
@@ -932,7 +948,7 @@ test('saveMetadata validates default colors are hex values', function () {
         ->assertHasErrors(['cellColor']);
 });
 
-test('every desktop layout renders the suggestions pane exactly once', function (CrosswordLayout $layout) {
+test('every desktop layout leaves the suggestions pane to the settings sidebar, rendered exactly once', function (CrosswordLayout $layout) {
     $user = User::factory()->create();
     $crossword = Crossword::factory()->for($user)->create([
         'width' => 15,
@@ -946,6 +962,10 @@ test('every desktop layout renders the suggestions pane exactly once', function 
 
     expect(substr_count($html, 'data-suggestions-pane'))->toBe(1);
     expect($html)->toContain('handleSuggestionsKeydown($event)');
+
+    // The pane is the sidebar's Suggestions tab, not part of the layout.
+    expect(editorSettingsPaneHtml($html))->toContain('data-suggestions-pane');
+    expect(strpos($html, 'data-suggestions-pane'))->toBeLessThan(strpos($html, 'data-test="editor-workspace"'));
 
     // The tabs and list are shared with the mobile sheet, so they render
     // twice: once in the pane, once in the sheet.
@@ -1100,7 +1120,7 @@ test('settings tabs flag the tab whose fields failed validation', function () {
         ->not->toContain('data-test="settings-tab-error-theme"');
 });
 
-test('settings render in a collapsible sidebar beside the layout on desktop', function () {
+test('settings render in a permanent flush sidebar column down the left of the editor on desktop', function () {
     $user = User::factory()->create();
     $crossword = Crossword::factory()->for($user)->create(['title' => 'Sidebar Puzzle']);
 
@@ -1108,51 +1128,80 @@ test('settings render in a collapsible sidebar beside the layout on desktop', fu
 
     $html = Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])->html();
 
-    // One strip, desktop only, capped to the same height as the layouts. The
-    // open panel overlays the editor from the strip's edge instead of
-    // pushing the grid, so the strip keeps a fixed width.
+    // One sidebar, desktop only, in the first column of the root grid across
+    // both rows. It is always open: no collapsed strip, no overlay panel and
+    // no client-side open state. Negative margins pull it out through main's
+    // gutters so it butts up to the page edge and the header, and it takes
+    // the page colour rather than a card surface.
     preg_match('/<aside[^>]*data-test="settings-pane"[^>]*>/', $html, $aside);
     expect(substr_count($html, 'data-test="settings-pane"'))->toBe(1)
         ->and($aside[0])->toContain('hidden')
         ->toContain('lg:flex')
-        ->toContain('w-10')
-        ->toContain('relative')
-        ->toContain('lg:max-h-[calc(100dvh-8rem)]')
-        ->toContain('x-data="{ settingsPaneOpen: false }"');
+        ->toContain('min-h-0')
+        ->toContain('lg:col-start-1')
+        ->toContain('lg:row-start-1')
+        ->toContain('lg:row-span-2')
+        ->toContain('lg:-ms-8')
+        ->toContain('lg:-mt-8')
+        ->toContain('lg:-mb-8')
+        ->toContain('border-e')
+        ->not->toContain('bg-surface')
+        ->not->toContain('rounded')
+        ->not->toContain('w-10')
+        ->not->toContain('absolute')
+        ->not->toContain('settingsPaneOpen');
 
-    preg_match('/<div[^>]*data-test="settings-pane-panel"[^>]*>/s', $html, $panel);
-    expect($panel)->not->toBeEmpty()
-        ->and($panel[0])->toContain('x-show="settingsPaneOpen"')
-        ->toContain('absolute')
-        ->toContain('inset-y-0')
-        ->toContain('right-0')
-        ->toContain('w-80');
+    expect($html)->not->toContain('data-test="settings-pane-panel"')
+        ->not->toContain('data-test="settings-pane-open"')
+        ->not->toContain('data-test="settings-pane-close"')
+        ->not->toContain('settingsPaneOpen');
 
-    // Collapsed strip opens it; the header closes it. The same export menu,
-    // tabs and Save as the flyout sit inside.
+    // The same export menu, tabs and Save as the flyout sit inside, plus a
+    // fourth Suggestions tab whose panel holds the suggestions pane (its
+    // own Words / Clue library tabs make six tabs in all).
     $pane = editorSettingsPaneHtml($html);
-    expect($pane)->toContain('data-test="settings-pane-open"')
-        ->toContain('x-on:click="settingsPaneOpen = true"')
-        ->toContain('data-test="settings-pane-close"')
-        ->toContain('x-on:click="settingsPaneOpen = false"')
-        ->toContain("attemptExport('ipuz')")
+    expect($pane)->toContain("attemptExport('ipuz')")
         ->toContain('id="pane-settings-panel-details"')
         ->toContain('id="pane-settings-panel-grid"')
         ->toContain('id="pane-settings-panel-theme"')
+        ->toContain('id="pane-settings-tab-suggestions"')
+        ->toContain('id="pane-settings-panel-suggestions"')
+        ->toContain('data-suggestions-pane')
+        ->toContain('x-init="mountSuggestionsPane($el)"')
+        ->toContain('showSuggestionsPane()')
         ->toContain('wire:model="title"')
         ->toContain('wire:click="resizeGrid"')
         ->toContain('wire:click="saveMetadata"')
-        ->and(substr_count($pane, 'role="tab"'))->toBe(3);
+        ->and(substr_count($pane, 'role="tab"'))->toBe(6);
 
-    // The sidebar shares a row with the active layout, after it, inside a
-    // wrapper that only exists as a box from `lg`.
+    // The flyout keeps its three tabs; mobile suggestions stay in the sheet.
+    expect($html)->not->toContain('id="modal-settings-tab-suggestions"')
+        ->not->toContain('id="modal-settings-panel-suggestions"');
+
+    // Only the sidebar's form switches to Suggestions when the grid asks.
+    expect(substr_count($html, 'x-on:editor-reveal-suggestions.window="settingsTab = \'suggestions\'"'))->toBe(1)
+        ->and($pane)->toContain('x-on:editor-reveal-suggestions.window')
+        ->and(editorSettingsFlyoutHtml($html))->not->toContain('x-on:editor-reveal-suggestions.window');
+
+    // The root is a two-column grid from `lg`: the sidebar comes first so it
+    // fills the narrow first track, then the toolbar and the workspace stack
+    // in the flexible second one.
+    preg_match('/<div[^>]*x-data="crosswordGrid\(.*?class="([^"]*)"/s', $html, $root);
+    expect($root)->not->toBeEmpty()
+        ->and($root[1])->toContain('lg:grid')
+        ->toContain('lg:grid-cols-[18rem_minmax(0,1fr)]')
+        ->toContain('lg:grid-rows-[auto_minmax(0,1fr)]');
+
     preg_match('/<div[^>]*data-test="editor-workspace"[^>]*>/', $html, $workspace);
     expect($workspace)->not->toBeEmpty()
         ->and($workspace[0])->toContain('max-lg:contents')
         ->toContain('lg:flex')
+        ->toContain('lg:min-h-0')
+        ->and(strpos($html, 'data-test="settings-pane"'))->toBeLessThan(strpos($html, 'data-suggestions-pane'))
+        ->and(strpos($html, 'data-suggestions-pane'))->toBeLessThan(strpos($html, 'data-test="editor-tools-row"'))
+        ->and(strpos($html, 'data-test="editor-tools-row"'))->toBeLessThan(strpos($html, 'data-test="editor-workspace"'))
         ->and(strpos($html, 'data-test="editor-workspace"'))->toBeLessThan(strpos($html, 'lg:max-h-[calc(100dvh-8rem)]'))
-        ->and(strpos($html, 'data-suggestions-pane'))->toBeLessThan(strpos($html, 'data-test="settings-pane"'))
-        ->and(strpos($html, 'data-test="settings-pane"'))->toBeLessThan(strpos($html, 'x-ref="suggestionsSheet"'));
+        ->and(strpos($html, 'data-test="editor-workspace"'))->toBeLessThan(strpos($html, 'x-ref="suggestionsSheet"'));
 
     // The flyout is the mobile surface only.
     preg_match('/<ui-modal[^>]*data-test="settings-flyout"[^>]*>\s*<dialog[^>]*>/s', $html, $dialog);
@@ -1185,37 +1234,94 @@ test('the settings form renders once per surface with distinct tab and panel ids
     expect($html)->not->toContain('id="settings-tab-')
         ->not->toContain('id="settings-panel-');
 
+    // The sidebar's tabs spread across the pane; the flyout's stay packed.
+    preg_match_all('/<div[^>]*data-test="settings-tabs"[^>]*>/', $html, $tabBars);
+    expect($tabBars[0])->toHaveCount(2);
+    [$paneTabs, $flyoutTabs] = strpos($tabBars[0][0], 'justify-between') !== false
+        ? [$tabBars[0][0], $tabBars[0][1]]
+        : [$tabBars[0][1], $tabBars[0][0]];
+    expect($paneTabs)->toContain('justify-between')
+        ->and($flyoutTabs)->not->toContain('justify-between')
+        ->and(editorSettingsPaneHtml($html))->toContain('justify-between');
+
     // The form is a container, so its grids size to the surface, not the viewport.
     expect(substr_count($html, 'grid-cols-3 gap-2 @sm:grid-cols-4 @lg:grid-cols-5'))->toBe(2)
         ->and(substr_count($html, 'grid-cols-1 gap-2 @sm:grid-cols-2'))->toBe(2);
 });
 
-test('the toolbar shows cell and clue progress as rings beside the publish button', function () {
+test('settings explanations render as info tooltips beside their labels instead of descriptions', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create();
+
+    $this->actingAs($user);
+
+    $html = Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])->html();
+
+    $explanations = [
+        'When off, solvers can no longer copy the embed code.',
+        'Categorize your puzzle so solvers can find it more easily.',
+        'Shortest allowed word length in the grid.',
+        'Placing or removing a block does the same to its mirror cell',
+        'How the grid and clues are arranged on screen.',
+        'Default colors for the whole grid.',
+        'Existing content will be preserved where dimensions overlap.',
+        'Only used by AI Autofill to pick the best fill.',
+        'Add a meta answer prompt that solvers see after completing the puzzle.',
+        'Add one or more correct answers. Matching is case-insensitive.',
+        'When enabled, solvers get instant feedback after submitting their answer.',
+    ];
+
+    // Each explanation lives in a toggleable tooltip, once per surface.
+    foreach (['pane', 'modal'] as $surface) {
+        $form = editorSettingsFormHtml($html, $surface);
+
+        // Flux's field classes mention [data-flux-description] in selectors,
+        // so only a real attribute on an element counts.
+        expect(substr_count($form, 'data-test="info-tooltip"'))->toBe(count($explanations))
+            ->and($form)->not->toMatch('/<[a-z-]+[^>]*\sdata-flux-description[\s>]/');
+
+        // The icon's click must not bubble to the Flux label, which would
+        // forward it to the control and flip a switch or checkbox.
+        expect(substr_count($form, 'x-on:click.stop'))->toBeGreaterThanOrEqual(count($explanations));
+
+        foreach ($explanations as $explanation) {
+            expect(substr_count($form, $explanation))->toBe(1);
+            // A toggleable Flux tooltip renders as a ui-dropdown.
+            expect($form)->toMatch('/<ui-dropdown[^>]*data-flux-tooltip[^>]*>(?:(?!<\/ui-dropdown>).)*'.preg_quote($explanation, '/').'/s');
+        }
+    }
+});
+
+test('the toolbar has no progress meters and its publish button carries the completion ring', function () {
     $user = User::factory()->create();
     $crossword = Crossword::factory()->for($user)->create();
 
     $this->actingAs($user);
 
     $html = Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
-        ->assertSeeInOrder(['Auto-fill grid', 'Saving...', 'Saved', 'Cells', 'Clues', 'Publish'])
+        ->assertSeeInOrder(['Auto-fill grid', 'Saving...', 'Saved', 'Publish'])
+        ->assertDontSee('Cells with a letter')
+        ->assertDontSee('Clues with text')
         ->html();
 
-    preg_match('/<div[^>]*data-test="editor-progress".*?data-test="editor-publish-button"/s', $html, $cluster);
+    expect($html)->not->toContain('data-test="editor-progress"')
+        ->not->toContain('data-test="editor-progress-cells"')
+        ->not->toContain('data-test="editor-progress-clues"')
+        ->not->toContain('cellsFillPercent')
+        ->not->toContain('cluesFillPercent');
 
-    // The save status lives in the progress cluster, directly before the rings.
-    preg_match('/data-test="editor-save-status".*?data-test="editor-progress"/s', $html, $saveStatus);
+    // The save status sits directly before the publish button, outside the tools row.
+    preg_match('/data-test="editor-save-status".*?data-test="editor-toolbar-publish"/s', $html, $saveStatus);
     expect($saveStatus)->not->toBeEmpty()
         ->and($saveStatus[0])->not->toContain('data-test="editor-tools-row"');
 
-    expect($cluster)->not->toBeEmpty()
-        ->and($cluster[0])->toContain('data-test="editor-progress-cells"')
-        ->toContain('data-test="editor-progress-clues"')
-        ->toContain(':stroke-dashoffset="100 - cellsFillPercent"')
-        ->toContain(':stroke-dashoffset="100 - cluesFillPercent"')
-        ->toContain(':class="cellsFillColorClass"')
-        ->toContain(':class="cluesFillColorClass"')
-        ->toContain('x-bind:class="isReadyToPublish ? \'btn-amber-solid\' : \'btn-amber-outline\'"')
-        ->toContain('max-sm:sr-only');
+    // The toolbar button carries the pooled ring, like the mobile one.
+    preg_match('/<div[^>]*data-test="editor-toolbar-publish".*?data-test="editor-publish-button".*?<\/ui-tooltip>/s', $html, $toolbarButton);
+    expect($toolbarButton)->not->toBeEmpty()
+        ->and($toolbarButton[0])->toContain('data-test="editor-publish-progress"')
+        ->toContain(':stroke-dashoffset="100 - totalFillPercent"')
+        ->toContain("x-text=\"totalFillPercent + '% complete'\"")
+        ->and($html)->toContain('x-bind:class="isReadyToPublish ? \'btn-amber-solid\' : \'btn-amber-outline\'"');
 });
 
 test('on mobile the publish button sits beside the clue tabs and carries a pooled completion ring', function () {
@@ -1226,29 +1332,24 @@ test('on mobile the publish button sits beside the clue tabs and carries a poole
 
     $html = Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])->html();
 
-    // The toolbar meters and its publish button are desktop only.
-    preg_match('/<div[^>]*data-test="editor-progress"[^>]*>/', $html, $meters);
+    // The toolbar publish button is desktop only.
     preg_match('/<div[^>]*data-test="editor-toolbar-publish"[^>]*>/', $html, $toolbarPublish);
-    expect($meters)->not->toBeEmpty()
-        ->and($meters[0])->toContain('hidden')
-        ->toContain('lg:flex')
-        ->and($toolbarPublish)->not->toBeEmpty()
+    expect($toolbarPublish)->not->toBeEmpty()
         ->and($toolbarPublish[0])->toContain('hidden lg:contents');
 
     // The mobile tab row holds Across, Down, then Publish with the ring.
     preg_match('/<div[^>]*data-test="editor-mobile-clue-tabs"[^>]*>.*?data-test="editor-publish-button-mobile".*?<\/flux:tooltip>|<div[^>]*data-test="editor-mobile-clue-tabs"[^>]*>/s', $html, $tabs);
     $tabsStart = strpos($html, 'data-test="editor-mobile-clue-tabs"');
     $mobileButton = strpos($html, 'data-test="editor-publish-button-mobile"');
-    $ring = strpos($html, 'data-test="editor-publish-progress"');
+    $ring = strpos($html, 'data-test="editor-publish-progress"', $tabsStart);
     expect($tabsStart)->not->toBeFalse()
         ->and(strpos($html, '>Across<', $tabsStart))->toBeLessThan(strpos($html, '>Down<', $tabsStart))
         ->and(strpos($html, '>Down<', $tabsStart))->toBeLessThan($mobileButton)
         ->and($ring)->toBeGreaterThan($tabsStart)
         ->and(substr_count($html, 'data-test="editor-publish-button-mobile"'))->toBe(1)
         ->and(substr_count($html, 'data-test="editor-publish-button"'))->toBe(1)
-        // Only the mobile button carries the ring.
-        ->and(substr_count($html, 'data-test="editor-publish-progress"'))->toBe(1)
-        ->and($ring)->toBeGreaterThan(strpos($html, 'data-test="editor-publish-button"'));
+        // Both buttons carry the ring: one in the toolbar, one beside the tabs.
+        ->and(substr_count($html, 'data-test="editor-publish-progress"'))->toBe(2);
 
     $ringHtml = substr($html, $ring, 1200);
     expect($ringHtml)->toContain(':stroke-dashoffset="100 - totalFillPercent"')

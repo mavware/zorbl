@@ -1,5 +1,4 @@
-{{-- TabbedCluesRight: tabbed clue panel on the right of the grid; suggestions
-     pane on the far right. --}}
+{{-- TabbedCluesRight: tabbed clue panel on the right of the grid. --}}
 <div class="flex flex-1 gap-4 overflow-hidden max-lg:flex-col lg:max-h-[calc(100dvh-8rem)]">
     @include('partials.editor-grid')
 
@@ -7,7 +6,6 @@
         @include('partials.editor-tabbed-clues-desktop')
     </div>
 
-    @include('partials.editor-suggestions-pane')
 
     @include('partials.editor-mobile-clues')
 </div>

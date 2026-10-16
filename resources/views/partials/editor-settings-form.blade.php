@@ -5,6 +5,10 @@
      field binds to the editor component, so both copies stay in sync and
      the surface only supplies the header and the Save row.
 
+     The sidebar gets a fourth tab, Suggestions (editor-suggestions-pane),
+     which on desktop replaces the pane that used to sit beside the grid.
+     The modal does not: below `lg` the bottom sheet serves suggestions.
+
      $settingsSurface prefixes the tab and panel ids so the two copies never
      collide. The root is a container, so the layout and colour grids pick
      their column count from the width they are given rather than from the
@@ -15,20 +19,35 @@
      switching. A tab whose fields failed validation gets a dot so the error
      is not hidden. When the surface gives the form a fixed height the tab
      bar stays put and the panels scroll underneath it. --}}
-<div x-data="{ settingsTab: 'details' }" class="@container flex min-h-0 flex-1 flex-col" data-test="settings-form">
+{{-- On the sidebar, the grid asks for the Suggestions tab whenever a cell is
+     selected or a clue is focused (revealSuggestions in crossword-grid.js). --}}
+<div
+    x-data="{ settingsTab: 'details' }"
+    @if ($settingsSurface === 'pane') x-on:editor-reveal-suggestions.window="settingsTab = 'suggestions'" @endif
+    class="@container flex min-h-0 flex-1 flex-col"
+    data-test="settings-form"
+>
     @php
         $settingsTabs = [
             'details' => __('Details'),
             'grid' => __('Grid'),
             'theme' => __('Theme'),
         ];
+        if ($settingsSurface === 'pane') {
+            $settingsTabs['suggestions'] = __('Suggestions');
+        }
         $settingsTabErrors = [
             'details' => $errors->hasAny(['title', 'author', 'copyright', 'notes', 'allowEmbed', 'tagIds']),
             'grid' => $errors->hasAny(['minAnswerLength', 'layout', 'cellColor', 'blockColor', 'circleColor', 'letterColor', 'lineColor', 'resizeWidth', 'resizeHeight']),
             'theme' => $errors->hasAny(['secretTheme', 'metaAnswerPrompt', 'metaAnswers', 'metaAnswers.*', 'metaAnswerReveal']),
+            'suggestions' => false,
         ];
     @endphp
-    <div class="border-line flex shrink-0 border-b" role="tablist" aria-label="{{ __('Settings sections') }}" data-test="settings-tabs">
+    {{-- In the desktop sidebar the tabs spread across the full width of the
+         pane with slimmer padding so all four fit; in the wider flyout they
+         stay packed to the start. Picking Suggestions also starts its
+         lookups, which only run while that panel is visible. --}}
+    <div class="border-line flex shrink-0 border-b {{ $settingsSurface === 'pane' ? 'justify-between' : '' }}" role="tablist" aria-label="{{ __('Settings sections') }}" data-test="settings-tabs">
         @foreach ($settingsTabs as $tabKey => $tabLabel)
             <button
                 type="button"
@@ -36,11 +55,11 @@
                 id="{{ $settingsSurface }}-settings-tab-{{ $tabKey }}"
                 aria-controls="{{ $settingsSurface }}-settings-panel-{{ $tabKey }}"
                 data-test="settings-tab-{{ $tabKey }}"
-                x-on:click="settingsTab = '{{ $tabKey }}'"
+                x-on:click="settingsTab = '{{ $tabKey }}'{{ $tabKey === 'suggestions' ? '; showSuggestionsPane()' : '' }}"
                 :aria-selected="settingsTab === '{{ $tabKey }}'"
                 :tabindex="settingsTab === '{{ $tabKey }}' ? 0 : -1"
                 :class="settingsTab === '{{ $tabKey }}' ? 'border-zinc-800 dark:border-zinc-200' : 'border-transparent text-zinc-600 dark:text-zinc-400'"
-                class="text-fg -mb-px inline-flex items-center gap-1.5 border-b-2 px-3 py-2 text-sm font-medium"
+                class="text-fg -mb-px inline-flex items-center gap-1.5 border-b-2 py-2 text-sm font-medium {{ $settingsSurface === 'pane' ? 'px-1.5' : 'px-3' }}"
             >
                 {{ $tabLabel }}
                 @if ($settingsTabErrors[$tabKey])
@@ -53,8 +72,9 @@
     </div>
 
 
-    {{-- Panels --}}
-    <div class="min-h-0 flex-1 overflow-y-auto pt-5 pb-6">
+    {{-- Panels. A flex column so the Suggestions panel can fill the height
+         and scroll its own list; the other panels scroll the container. --}}
+    <div class="flex min-h-0 flex-1 flex-col overflow-y-auto pt-5 pb-6">
         {{-- Details: what solvers see on the puzzle page --}}
         <div
             id="{{ $settingsSurface }}-settings-panel-details"
@@ -91,14 +111,16 @@
 
             <flux:field variant="inline">
                 <flux:switch wire:model.live="allowEmbed"/>
-                <flux:label>{{ __('Allow others to embed this puzzle') }}</flux:label>
-                <flux:description>{{ __('When off, solvers can no longer copy the embed code. You can still embed your own puzzle from this page.') }}</flux:description>
+                <flux:label>
+                    <span>{{ __('Embedding Allowed') }} <x-info-tooltip>{{ __('When off, solvers can no longer copy the embed code. You can still embed your own puzzle from this page.') }}</x-info-tooltip></span>
+                </flux:label>
                 <flux:error name="allowEmbed"/>
             </flux:field>
 
             <flux:field>
-                <flux:label>{{ __('Tags') }}</flux:label>
-                <flux:description>{{ __('Categorize your puzzle so solvers can find it more easily.') }}</flux:description>
+                <flux:label>
+                    <span>{{ __('Tags') }} <x-info-tooltip>{{ __('Categorize your puzzle so solvers can find it more easily.') }}</x-info-tooltip></span>
+                </flux:label>
 
                 @if(count($this->selectedTags))
                     <div class="mt-2 flex flex-wrap gap-1.5">
@@ -188,9 +210,10 @@
             data-test="settings-panel-grid"
         >
             <flux:field>
-                <flux:label>{{ __('Minimum Answer Length') }}</flux:label>
+                <flux:label>
+                    <span>{{ __('Minimum Answer Length') }} <x-info-tooltip>{{ __('Shortest allowed word length in the grid.') }}</x-info-tooltip></span>
+                </flux:label>
                 <flux:input type="number" wire:model="minAnswerLength" min="1" max="15"/>
-                <flux:description>{{ __('Shortest allowed word length in the grid.') }}</flux:description>
                 <flux:error name="minAnswerLength"/>
             </flux:field>
 
@@ -203,13 +226,15 @@
                     x-effect="$el.checked = symmetry"
                     x-on:change="symmetry = $event.target.checked"
                 />
-                <flux:label>{{ __('Rotational symmetry') }}</flux:label>
-                <flux:description>{{ __('Placing or removing a block does the same to its mirror cell across the centre of the grid.') }}</flux:description>
+                <flux:label>
+                    <span>{{ __('Rotational symmetry') }} <x-info-tooltip>{{ __('Placing or removing a block does the same to its mirror cell across the centre of the grid.') }}</x-info-tooltip></span>
+                </flux:label>
             </flux:field>
 
             <flux:field>
-                <flux:label>{{ __('Layout') }}</flux:label>
-                <flux:description>{{ __('How the grid and clues are arranged on screen.') }}</flux:description>
+                <flux:label>
+                    <span>{{ __('Layout') }} <x-info-tooltip>{{ __('How the grid and clues are arranged on screen.') }}</x-info-tooltip></span>
+                </flux:label>
                 @php $selectedLayout = $this->layout ?? \App\Enums\CrosswordLayout::auto($this->width); @endphp
                 <div class="mt-2 grid grid-cols-3 gap-2 @sm:grid-cols-4 @lg:grid-cols-5">
                     @foreach (\App\Enums\CrosswordLayout::ordered() as $case)
@@ -235,8 +260,9 @@
             </flux:field>
 
             <flux:field>
-                <flux:label>{{ __('Default Colors') }}</flux:label>
-                <flux:description>{{ __('Default colors for the whole grid. Colors set on individual cells via right-click take precedence.') }}</flux:description>
+                <flux:label>
+                    <span>{{ __('Default Colors') }} <x-info-tooltip>{{ __('Default colors for the whole grid. Colors set on individual cells via right-click take precedence.') }}</x-info-tooltip></span>
+                </flux:label>
                 <div class="mt-2 grid grid-cols-1 gap-2 @sm:grid-cols-2">
                     @foreach ([
                         'cellColor' => __('Cells'),
@@ -279,9 +305,9 @@
             <flux:separator/>
 
             <div>
-                <flux:heading size="sm">{{ __('Grid Size') }}</flux:heading>
-                <flux:text size="sm"
-                           class="mt-1">{{ __('Existing content will be preserved where dimensions overlap. Clues will be reset.') }}</flux:text>
+                <flux:heading size="sm">
+                    {{ __('Grid Size') }} <x-info-tooltip>{{ __('Existing content will be preserved where dimensions overlap. Clues will be reset.') }}</x-info-tooltip>
+                </flux:heading>
 
                 <div class="mt-3 grid grid-cols-2 gap-4">
                     <flux:field>
@@ -314,11 +340,12 @@
             data-test="settings-panel-theme"
         >
             <flux:field>
-                <flux:label>{{ __('Secret Theme') }}</flux:label>
+                <flux:label>
+                    <span>{{ __('Secret Theme') }} <x-info-tooltip>{{ __('Only used by AI Autofill to pick the best fill. Never shown to solvers.') }}</x-info-tooltip></span>
+                </flux:label>
                 <flux:textarea wire:model="secretTheme"
                                placeholder="{{ __('A theme hint only used to guide AI Autofill (e.g. 80s movies, things that fly). Not shown to solvers.') }}"
                                rows="2"/>
-                <flux:description>{{ __('Only used by AI Autofill to pick the best fill. Never shown to solvers.') }}</flux:description>
                 <flux:error name="secretTheme"/>
             </flux:field>
 
@@ -326,10 +353,9 @@
 
             {{-- Meta Answer Section --}}
             <div class="space-y-4">
-                <div>
-                    <flux:heading size="sm">{{ __('Meta Answer') }}</flux:heading>
-                    <flux:text size="sm" class="mt-1">{{ __('Add a meta answer prompt that solvers see after completing the puzzle. Great for themed puzzles with a hidden message.') }}</flux:text>
-                </div>
+                <flux:heading size="sm">
+                    {{ __('Meta Answer') }} <x-info-tooltip>{{ __('Add a meta answer prompt that solvers see after completing the puzzle. Great for themed puzzles with a hidden message.') }}</x-info-tooltip>
+                </flux:heading>
 
                 <flux:field>
                     <flux:label>{{ __('Prompt') }}</flux:label>
@@ -340,8 +366,9 @@
                 </flux:field>
 
                 <flux:field>
-                    <flux:label>{{ __('Accepted Answers') }}</flux:label>
-                    <flux:description>{{ __('Add one or more correct answers. Matching is case-insensitive.') }}</flux:description>
+                    <flux:label>
+                        <span>{{ __('Accepted Answers') }} <x-info-tooltip>{{ __('Add one or more correct answers. Matching is case-insensitive.') }}</x-info-tooltip></span>
+                    </flux:label>
 
                     @if(count($metaAnswers) > 0)
                         <div class="mt-2 space-y-2">
@@ -369,11 +396,18 @@
                     <flux:error name="metaAnswers"/>
                 </flux:field>
 
-                <flux:field>
-                    <flux:checkbox wire:model="metaAnswerReveal" label="{{ __('Show solvers whether their answer is correct') }}" />
-                    <flux:description>{{ __('When enabled, solvers get instant feedback after submitting their answer.') }}</flux:description>
+                <flux:field variant="inline">
+                    <flux:checkbox wire:model="metaAnswerReveal" />
+                    <flux:label>
+                        <span>{{ __('Show solvers whether their answer is correct') }} <x-info-tooltip>{{ __('When enabled, solvers get instant feedback after submitting their answer.') }}</x-info-tooltip></span>
+                    </flux:label>
                 </flux:field>
             </div>
         </div>
+
+        {{-- Suggestions: desktop sidebar only --}}
+        @if ($settingsSurface === 'pane')
+            @include('partials.editor-suggestions-pane')
+        @endif
     </div>
 </div>

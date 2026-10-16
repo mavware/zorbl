@@ -1,6 +1,5 @@
 {{-- SplitGridLeftAcrossRightDown: grid on the left; right column split into
-     Across (top-right) and Down (bottom-right), each in its own panel, with the
-     suggestions pane outside them. --}}
+     Across (top-right) and Down (bottom-right), each in its own panel. --}}
 <div class="flex flex-1 gap-4 overflow-hidden max-lg:flex-col lg:max-h-[calc(100dvh-8rem)]">
     @include('partials.editor-grid')
 
@@ -13,7 +12,6 @@
         </div>
     </div>
 
-    @include('partials.editor-suggestions-pane')
 
     @include('partials.editor-mobile-clues')
 </div>

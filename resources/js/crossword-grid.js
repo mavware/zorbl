@@ -84,7 +84,7 @@ export function crosswordGrid({
         // a persistent pane beside the grid; below `lg` a bottom sheet with a
         // peek strip takes over. Both share the lists, tab and lookups below.
         suggestionsPaneMounted: false,
-        suggestionsPaneCollapsed: false,
+        suggestionsPaneEl: null,
         suggestionsSheetOpen: false,
         suggestionsTab: 'words',
         suggestionsIndex: -1,
@@ -119,7 +119,6 @@ export function crosswordGrid({
         _clueSuggestSeq: 0,
         _clueQualityTimer: null,
         _clueQualitySeq: 0,
-        _paneMedia: null,
         _onPaneMediaChange: null,
         _highlightTimer: null,
         _cellsFlashTimer: null,
@@ -216,10 +215,7 @@ export function crosswordGrid({
             this._onDocClick = this._onDocMousedown = this._onBeforeUnload = this._onLivewireNavigating = null;
 
             this._autosave?.destroy();
-            if (this._paneMedia && this._onPaneMediaChange) {
-                this._paneMedia.removeEventListener('change', this._onPaneMediaChange);
-            }
-            this._paneMedia = this._onPaneMediaChange = null;
+            this.suggestionsPaneEl = null;
             clearTimeout(this._longPressTimer);
             clearTimeout(this._wordSuggestTimer);
             clearTimeout(this._highlightTimer);
@@ -473,7 +469,7 @@ export function crosswordGrid({
             const grid = this.$refs.gridContainer;
             const across = this.$refs.acrossPanel;
             const down = this.$refs.downPanel;
-            const pane = this.$refs.suggestionsPane;
+            const pane = this.suggestionsPaneEl;
             const sheet = this.$refs.suggestionsSheet;
 
             // The suggestions pane and mobile sheet act on the selection, so
@@ -536,6 +532,7 @@ export function crosswordGrid({
 
             this.scrollActiveClueIntoView();
             this.$refs.gridContainer?.focus();
+            this.revealSuggestions('words');
         },
 
         // Double-click toggles a cell between black and white. Not for void
@@ -563,6 +560,9 @@ export function crosswordGrid({
                         this.selectedRow = row;
                         this.selectedCol = col;
                         if (!clickedInput) this.$refs.gridContainer?.focus();
+                        // Writing a clue wants the clue library; picking the
+                        // slot by its number is like picking a cell.
+                        this.revealSuggestions(clickedInput ? 'clues' : 'words');
                         return;
                     }
                 }
@@ -1566,25 +1566,23 @@ export function crosswordGrid({
         },
 
         // --- Suggestions pane ------------------------------------------------
-        // The pane partial calls this from x-init. Below the 2xl breakpoint the
-        // pane starts collapsed so it never squeezes the grid; the user can
-        // still expand it by hand.
-        mountSuggestionsPane() {
+        // The pane is the Suggestions tab of the desktop settings sidebar
+        // (editor-suggestions-pane), which calls this from x-init with its
+        // own element. It sits inside the settings form's nested Alpine scope,
+        // so it cannot be reached through this component's $refs; the element
+        // is kept here instead.
+        mountSuggestionsPane(el = null) {
             this.suggestionsPaneMounted = true;
-            if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
-                this._paneMedia = window.matchMedia('(min-width: 96rem)');
-                this._onPaneMediaChange = (e) => { this.suggestionsPaneCollapsed = !e.matches; };
-                this.suggestionsPaneCollapsed = !this._paneMedia.matches;
-                this._paneMedia.addEventListener('change', this._onPaneMediaChange);
-            }
+            this.suggestionsPaneEl = el;
             this.refreshSuggestionsPane();
         },
 
-        // True when the pane is rendered, expanded and actually visible (the
-        // layout hides it below `lg`, where the mobile sheet takes over).
+        // True when the pane is rendered and actually visible: its tab is
+        // selected and the sidebar is shown (the sidebar hides below `lg`,
+        // where the mobile sheet takes over).
         isSuggestionsPaneActive() {
-            if (!this.suggestionsPaneMounted || this.suggestionsPaneCollapsed) return false;
-            const el = this.$refs?.suggestionsPane;
+            if (!this.suggestionsPaneMounted) return false;
+            const el = this.suggestionsPaneEl;
             return !el || el.offsetParent !== null;
         },
 
@@ -1627,11 +1625,34 @@ export function crosswordGrid({
             }
         },
 
-        toggleSuggestionsPane() {
-            this.suggestionsPaneCollapsed = !this.suggestionsPaneCollapsed;
+        // The Suggestions tab was just selected: the panel is only visible
+        // after Alpine applies x-show, so the lookups run on the next tick.
+        showSuggestionsPane() {
             this.suggestionsIndex = -1;
             this.clearSuggestionPreview();
-            if (!this.suggestionsPaneCollapsed) this.refreshSuggestionsPane();
+            this.$nextTick(() => this.refreshSuggestionsPane());
+        },
+
+        // Desktop only: selecting a cell or focusing a clue brings the
+        // sidebar's Suggestions tab forward on the matching sub-tab. The tab
+        // state lives in the settings form's own Alpine scope, so it is
+        // switched by an event the form listens for (editor-settings-form);
+        // the lookups follow once the panel is visible. Below `lg` the
+        // sidebar is hidden and the mobile sheet is left as it is.
+        revealSuggestions(tab) {
+            if (!this.isDesktopLayout()) return;
+            this.suggestionsTab = tab;
+            this.suggestionsIndex = -1;
+            this.clearSuggestionPreview();
+            this.$dispatch?.('editor-reveal-suggestions');
+            this.showSuggestionsPane();
+        },
+
+        // Tailwind's `lg` breakpoint, where the editor switches from the
+        // stacked mobile layout to the sidebar-and-workspace grid.
+        isDesktopLayout() {
+            if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false;
+            return window.matchMedia('(min-width: 64rem)').matches;
         },
 
         setSuggestionsTab(tab) {
@@ -1730,7 +1751,7 @@ export function crosswordGrid({
                 this.clearSuggestionPreview();
             }
             this.$nextTick(() => {
-                this.$refs?.suggestionsPane
+                this.suggestionsPaneEl
                     ?.querySelector?.('[data-suggestion-index="' + index + '"]')
                     ?.scrollIntoView?.({ block: 'nearest' });
             });
@@ -1779,7 +1800,7 @@ export function crosswordGrid({
         },
 
         onSuggestionsPaneBlur(event) {
-            const pane = this.$refs?.suggestionsPane;
+            const pane = this.suggestionsPaneEl;
             if (pane && event?.relatedTarget && pane.contains(event.relatedTarget)) return;
             this.suggestionsIndex = -1;
             this.clearSuggestionPreview();

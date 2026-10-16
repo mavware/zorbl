@@ -30,7 +30,6 @@ it('shows the existing title in the settings sidebar', function () {
     $this->actingAs($user);
 
     visit(route('crosswords.editor', $crossword))
-        ->click('[data-test="settings-pane-open"]')
         ->assertVisible('[data-test="settings-pane"] input[placeholder="Puzzle title"]')
         ->assertValue('[data-test="settings-pane"] input[placeholder="Puzzle title"]', 'My Sunday Grid')
         ->assertNoJavaScriptErrors();
@@ -62,7 +61,7 @@ it('clears cell selection when clicking outside the grid and clue panels', funct
     $page->script("(() => { const d = {$gridData}; d.selectedRow = 0; d.selectedCol = 0; })()");
     $page->assertScript("{$gridData}.selectedRow", 0);
 
-    $page->click('[data-test="editor-progress"]');
+    $page->click('[data-test="settings-pane"] [data-test="settings-tabs"]');
 
     $page->assertScript("{$gridData}.selectedRow", -1);
     $page->assertScript("{$gridData}.selectedCol", -1);

@@ -248,14 +248,29 @@ describe('suggestions pane lookups', () => {
         expect(g.$wire.suggestWords).toHaveBeenCalledTimes(1);
     });
 
-    it('stays quiet while collapsed or before the pane is mounted', () => {
+    it('stays quiet while its tab is hidden or before the pane is mounted', () => {
         const g = makeGrid();
         g.selectedRow = 1; g.selectedCol = 0; g.direction = 'across';
         g.refreshSuggestionsPane();
-        g.suggestionsPaneMounted = true;
-        g.suggestionsPaneCollapsed = true;
+        // A hidden tab panel has no offsetParent.
+        g.mountSuggestionsPane({ offsetParent: null });
         g.refreshSuggestionsPane();
         expect(g.$wire.suggestWords).not.toHaveBeenCalled();
+    });
+
+    it('picking the Suggestions tab runs the lookups once the panel is shown', () => {
+        const g = makeGrid();
+        const el = { offsetParent: null };
+        g.mountSuggestionsPane(el);
+        g.selectedRow = 1; g.selectedCol = 0; g.direction = 'across';
+        let tick;
+        g.$nextTick = (fn) => { tick = fn; };
+        g.showSuggestionsPane();
+        expect(g.$wire.suggestWords).not.toHaveBeenCalled();
+        el.offsetParent = {};
+        tick();
+        expect(g.$wire.suggestWords).toHaveBeenCalledTimes(1);
+        expect(g.$wire.suggestWords).toHaveBeenLastCalledWith('S_L', 3);
     });
 
     it('switching to the clue library looks up the filled answer', async () => {
@@ -291,6 +306,59 @@ describe('suggestions pane lookups', () => {
     });
 });
 
+describe('revealing the suggestions tab', () => {
+    function desktopGrid(matches = true) {
+        const g = makeGrid();
+        g.mountSuggestionsPane({ offsetParent: null });
+        g.$dispatch = vi.fn();
+        g.$nextTick = (fn) => fn();
+        vi.stubGlobal('window', { matchMedia: () => ({ matches }) });
+        // selectCell scrolls the active clue into view on the next tick.
+        vi.stubGlobal('document', { getElementById: () => null, activeElement: null });
+        return g;
+    }
+
+    afterEach(() => { vi.unstubAllGlobals(); });
+
+    it('selecting a cell asks the sidebar for the Words sub-tab', () => {
+        const g = desktopGrid();
+        g.suggestionsTab = 'clues';
+        g.selectCell(1, 1);
+        expect(g.suggestionsTab).toBe('words');
+        expect(g.$dispatch).toHaveBeenCalledWith('editor-reveal-suggestions');
+    });
+
+    it('focusing a clue input asks for the Clue library sub-tab', () => {
+        const g = desktopGrid();
+        g.selectClue('across', 3, { target: { tagName: 'TEXTAREA' } });
+        expect(g.suggestionsTab).toBe('clues');
+        expect(g.$dispatch).toHaveBeenCalledWith('editor-reveal-suggestions');
+        expect(g.selectedRow).toBe(1);
+        expect(g.selectedCol).toBe(0);
+    });
+
+    it('picking a clue by its number behaves like picking a cell', () => {
+        const g = desktopGrid();
+        g.suggestionsTab = 'clues';
+        g.selectClue('down', 2, { target: { tagName: 'SPAN', closest: () => null } });
+        expect(g.suggestionsTab).toBe('words');
+    });
+
+    it('does nothing below the desktop breakpoint, where the sheet serves suggestions', () => {
+        const g = desktopGrid(false);
+        g.suggestionsTab = 'clues';
+        g.selectCell(1, 1);
+        expect(g.suggestionsTab).toBe('clues');
+        expect(g.$dispatch).not.toHaveBeenCalled();
+    });
+
+    it('a block cell is not a selection and leaves the tab alone', () => {
+        const g = desktopGrid();
+        g.selectCell(0, 2);
+        expect(g.$dispatch).not.toHaveBeenCalled();
+    });
+});
+
 describe('suggestion score colour', () => {
     it('maps score bands to emerald, amber and muted', () => {
         const g = makeGrid();
@@ -305,7 +373,7 @@ describe('suggestions pane focus', () => {
         const g = makeGrid();
         const target = {};
         g.$refs.gridContainer = { focus: vi.fn(), contains: () => false };
-        g.$refs.suggestionsPane = { contains: (el) => el === target, offsetParent: {} };
+        g.mountSuggestionsPane({ contains: (el) => el === target, offsetParent: {} });
         g.selectedRow = 1; g.selectedCol = 0;
         g.handleClickOutside({ target });
         expect(g.selectedRow).toBe(1);

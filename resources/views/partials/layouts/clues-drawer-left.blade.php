@@ -1,5 +1,4 @@
-{{-- CluesDrawerLeft: slide-out clue drawer on the left of the grid; the
-     suggestions pane sits on the right, clear of the drawer. --}}
+{{-- CluesDrawerLeft: slide-out clue drawer on the left of the grid. --}}
 <div
     class="relative flex flex-1 overflow-hidden lg:max-h-[calc(100dvh-8rem)]"
     x-data="{ drawerOpen: true }"
@@ -34,7 +33,6 @@
     <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
         <div class="flex min-h-0 flex-1 gap-4 overflow-hidden">
             @include('partials.editor-grid')
-            @include('partials.editor-suggestions-pane')
         </div>
         @include('partials.editor-mobile-clues')
     </div>

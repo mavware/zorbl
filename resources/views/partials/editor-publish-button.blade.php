@@ -2,9 +2,9 @@
      amber so the finished puzzle invites publishing. A published puzzle
      shows a quiet Unpublish instead, and an anonymous builder is sent to
      sign up. Rendered twice: in the toolbar for desktop, and beside the
-     Across / Down tabs on mobile (editor-mobile-clues), where it also
-     carries the total completion ring that replaces the toolbar's two
-     progress meters.
+     Across / Down tabs on mobile (editor-mobile-clues). Both carry the
+     total completion ring (editor-publish-progress-ring), the editor's only
+     progress indicator.
 
      $testId   data-test for the button, distinct per surface.
      $withRing whether to show the completion ring inside the button. --}}

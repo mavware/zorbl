@@ -1,5 +1,6 @@
 {{-- Mobile suggestions bottom sheet. Hidden at `lg` and above, where the
-     persistent pane lives beside the grid. Whenever a cell is selected a peek
+     settings sidebar's Suggestions tab (editor-suggestions-pane) serves the
+     same lists. Whenever a cell is selected a peek
      strip sits at the bottom of the screen naming the slot; tapping it slides
      the sheet up to half the viewport with the same Words / Clue library
      tabs as the pane. The grid above stays interactive, so changing the

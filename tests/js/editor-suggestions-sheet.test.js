@@ -176,12 +176,12 @@ describe('suggestions sheet choosing', () => {
         expect(g.suggestionsSheetOpen).toBe(false);
     });
 
-    it('leaves the desktop pane open when a word is placed there', () => {
+    it('leaves the desktop pane mounted when a word is placed there', () => {
         const g = makeGrid();
-        g.suggestionsPaneMounted = true;
+        g.mountSuggestionsPane({ offsetParent: {} });
         g.selectedRow = 1; g.selectedCol = 0; g.direction = 'across';
         g.applyWordSuggestion('SOL');
-        expect(g.suggestionsPaneCollapsed).toBe(false);
+        expect(g.suggestionsPaneMounted).toBe(true);
         expect(g.suggestionsSheetOpen).toBe(false);
     });
 

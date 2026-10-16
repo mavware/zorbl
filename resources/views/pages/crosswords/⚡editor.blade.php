@@ -960,9 +960,19 @@ class extends Component {
     {{-- Full height only from `lg`, where the layouts cap themselves to the
          viewport and scroll internally. Below that the page scrolls, and a
          stretched root would push the stacked clue list away from the grid
-         by whatever viewport height a small grid leaves over. --}}
-    class="flex flex-col lg:h-full"
+         by whatever viewport height a small grid leaves over.
+
+         From `lg` the root is a two-column grid: the settings sidebar
+         (editor-settings-pane) takes the first column across both rows, and
+         the toolbar and workspace stack in the second. The first track is
+         2rem narrower than the sidebar looks because the sidebar pulls
+         itself out through main's 2rem start gutter to sit flush against
+         the page edge. --}}
+    class="flex flex-col lg:grid lg:h-full lg:grid-cols-[18rem_minmax(0,1fr)] lg:grid-rows-[auto_minmax(0,1fr)] lg:gap-x-6"
 >
+    {{-- Desktop settings sidebar, first so it fills the first grid column. --}}
+    @include('partials.editor-settings-pane')
+
     {{-- Toolbar --}}
     <div class="mb-4 flex flex-wrap items-center gap-2">
         {{-- The puzzle title and settings cog are not part of the toolbar: on
@@ -1127,61 +1137,36 @@ class extends Component {
                 </template>
             </div>
 
-            <div class="hidden h-8 items-center divide-x divide-line rounded-lg border border-line bg-elevated text-xs lg:flex" data-test="editor-progress">
-                @foreach ([
-                    'cells' => ['label' => __('Cells'), 'tooltip' => __('Cells with a letter / total playable cells')],
-                    'clues' => ['label' => __('Clues'), 'tooltip' => __('Clues with text / total clue slots')],
-                ] as $metric => $meter)
-                    <flux:tooltip content="{{ $meter['tooltip'] }}">
-                        <div class="flex h-full items-center gap-1.5 px-2.5" data-test="editor-progress-{{ $metric }}">
-                            <svg class="size-4 shrink-0 -rotate-90" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                                <circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="2.5" class="text-line"/>
-                                <circle
-                                    cx="8" cy="8" r="6.5"
-                                    stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-                                    pathLength="100" stroke-dasharray="100"
-                                    class="transition-[stroke-dashoffset] duration-300"
-                                    :class="{{ $metric }}FillColorClass"
-                                    :stroke-dashoffset="100 - {{ $metric }}FillPercent"
-                                    x-show="{{ $metric }}FillPercent > 0"
-                                />
-                            </svg>
-                            <span class="text-fg-muted max-sm:sr-only">{{ $meter['label'] }}</span>
-                            <span class="font-mono tabular-nums text-fg" x-text="{{ $metric }}Filled + '/' + {{ $metric }}Total"></span>
-                        </div>
-                    </flux:tooltip>
-                @endforeach
-            </div>
-
-            {{-- Publish toggle (editor-publish-button). Desktop only whenever
-                 the mobile clue tabs render, since they carry their own copy
-                 with the completion ring; an unlocked freestyle grid has no
-                 tabs yet, so the toolbar button stays on every width. --}}
+            {{-- Publish toggle (editor-publish-button), carrying the pooled
+                 cells-and-clues completion ring: the toolbar has no separate
+                 progress meters. Desktop only whenever the mobile clue tabs
+                 render, since they carry their own copy; an unlocked
+                 freestyle grid has no tabs yet, so the toolbar button stays
+                 on every width. --}}
             @php
                 $mobileTabsRender = ! ($puzzleType === PuzzleType::Freestyle && ! $freestyleLocked);
             @endphp
             <div class="{{ $mobileTabsRender ? 'hidden lg:contents' : 'contents' }}" data-test="editor-toolbar-publish">
-                @include('partials.editor-publish-button', ['testId' => 'editor-publish-button', 'withRing' => false])
+                @include('partials.editor-publish-button', ['testId' => 'editor-publish-button', 'withRing' => true])
             </div>
         </div>
     </div>
 
-    {{-- Desktop: the puzzle layout and the settings sidebar share one row, so
-         the sidebar sits beside whichever layout is active without each
-         layout partial having to include it. Below `lg` the wrapper drops
-         out of the box tree (display: contents) and the layout stacks under
-         the toolbar exactly as before; settings move to the modal. --}}
-    <div class="max-lg:contents lg:flex lg:min-h-0 lg:flex-1 lg:gap-4" data-test="editor-workspace">
+    {{-- Desktop: the workspace is the second row of the root grid, beside the
+         settings sidebar and under the toolbar, holding whichever puzzle
+         layout is active. Below `lg` the wrapper drops out of the box tree
+         (display: contents) and the layout stacks under the toolbar exactly
+         as before; settings move to the modal. --}}
+    <div class="max-lg:contents lg:flex lg:min-h-0 lg:min-w-0" data-test="editor-workspace">
         {{-- The enum owns both the explicit mapping and the fallback. If no
              layout is picked, CrosswordLayout::auto() picks the best-fit case for
              the current grid width. --}}
         @include(($this->layout ?? CrosswordLayout::auto($this->width))->partial())
-
-        @include('partials.editor-settings-pane')
     </div>
 
-    {{-- Mobile suggestions bottom sheet (hidden at lg and above). It sits on
-         top of the title bar below. --}}
+    {{-- Mobile suggestions bottom sheet (hidden at lg and above, where the
+         settings sidebar's Suggestions tab takes over). It sits on top of
+         the title bar below. --}}
     @include('partials.editor-suggestions-sheet')
 
     {{-- Mobile title + settings bar, fixed to the foot of the screen. --}}

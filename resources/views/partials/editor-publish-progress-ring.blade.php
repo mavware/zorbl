@@ -1,4 +1,4 @@
-{{-- Total completion ring for the mobile Publish / Unpublish button. One
+{{-- Total completion ring for the Publish / Unpublish button. One
      SVG circle with pathLength="100", so the pooled cells-and-clues
      percentage is its dash offset directly. The track is the button's own
      text colour at low opacity; the arc takes the fill colour until the
