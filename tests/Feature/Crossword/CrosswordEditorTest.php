@@ -232,51 +232,47 @@ test('settings modal saves all metadata fields', function () {
         ->and($crossword->metadata['min_answer_length'])->toBe(4);
 });
 
-test('the title and settings cog sit on a fixed bar under the suggestions strip on mobile', function () {
+test('the title and settings cog sit in a row above the toolbar on mobile', function () {
     $user = User::factory()->create();
     $crossword = Crossword::factory()->for($user)->create();
 
     $this->actingAs($user);
 
     $html = Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
-        ->assertSeeInOrder(['Saving...', 'Publish', 'Puzzle title', 'Puzzle settings'])
+        ->assertSeeInOrder(['Puzzle title', 'Puzzle settings', 'Edit', 'Saving...', 'Publish'])
         ->html();
 
-    // The toolbar no longer carries the title or the cog.
+    // The toolbar itself no longer carries the title or the cog.
     preg_match('/<div[^>]*data-test="editor-toolbar"[^>]*>.*?wire:click="attemptPublish"/s', $html, $toolbar);
     expect($toolbar)->not->toBeEmpty()
         ->and($toolbar[0])->not->toContain('Puzzle title')
-        ->not->toContain('editor-settings-button')
-        ->and($html)->not->toContain('data-test="editor-title-row"');
+        ->not->toContain('editor-settings-button');
 
-    // One bar, pinned to the bottom edge below `lg`, holding the title input
-    // and the cog that opens the settings modal.
-    preg_match('/<div[^>]*data-test="editor-title-bar"[^>]*>.*?<\/flux:tooltip>|<div[^>]*data-test="editor-title-bar"[^>]*>/s', $html, $bar);
-    expect(substr_count($html, 'data-test="editor-title-bar"'))->toBe(1)
-        ->and($bar[0])->toContain('fixed')
-        ->toContain('inset-x-0')
-        ->toContain('bottom-0')
+    // One ordinary in-flow row below `lg`, directly above the toolbar,
+    // holding the title input and the cog that opens the settings modal.
+    preg_match('/<div[^>]*data-test="editor-title-row"[^>]*>/', $html, $row);
+    expect(substr_count($html, 'data-test="editor-title-row"'))->toBe(1)
+        ->and($row[0])->not->toContain('fixed')
+        ->not->toContain('sticky')
         ->toContain('lg:hidden');
 
-    $barStart = strpos($html, 'data-test="editor-title-bar"');
-    $barHtml = substr($html, $barStart);
-    expect($barHtml)->toContain('wire:model.blur="title"')
+    $rowStart = strpos($html, 'data-test="editor-title-row"');
+    $toolbarStart = strpos($html, 'data-test="editor-toolbar"');
+    $rowHtml = substr($html, $rowStart, $toolbarStart - $rowStart);
+    expect($rowStart)->toBeLessThan($toolbarStart)
+        ->and($rowHtml)->toContain('wire:model.blur="title"')
         ->toContain('wire:change="saveMetadata"')
         ->toContain("wire:click=\"\$set('showSettingsModal', true)\"")
         ->and(substr_count($html, 'data-test="editor-settings-button"'))->toBe(1)
-        ->and(strpos($html, 'data-test="editor-settings-button"'))->toBeGreaterThan($barStart);
+        ->and($html)->not->toContain('data-test="editor-title-bar"');
 
-    // The suggestions sheet stacks on top of the bar rather than sharing the
-    // bottom edge, and the page reserves room for the bar.
+    // The suggestions sheet owns the bottom edge of the screen.
     preg_match('/<div[^>]*x-ref="suggestionsSheet"[^>]*>/', $html, $sheet);
     expect($sheet)->not->toBeEmpty()
-        ->and($sheet[0])->toContain('bottom-12')
-        ->not->toContain('bottom-0')
-        ->and(strpos($html, 'x-ref="suggestionsSheet"'))->toBeLessThan($barStart)
-        ->and($html)->toContain('<div class="h-12 shrink-0 lg:hidden" aria-hidden="true"></div>');
+        ->and($sheet[0])->toContain('bottom-0');
 });
 
-test('the editor tools take their own row on mobile', function () {
+test('the editor tools share a row with the mode toggle on mobile', function () {
     $user = User::factory()->create();
     $crossword = Crossword::factory()->for($user)->create();
 
@@ -288,10 +284,13 @@ test('the editor tools take their own row on mobile', function () {
 
     preg_match('/<div[^>]*data-test="editor-tools-row"[^>]*>/', $html, $row);
 
+    // Below `sm` the tools row is not full-width, so Edit / Solve, Undo,
+    // Redo, Clear and Auto-Fill all sit on one centred line.
+    preg_match('/<div[^>]*data-test="editor-toolbar"[^>]*>/', $html, $toolbarRow);
     expect($row)->not->toBeEmpty()
-        ->and($row[0])->toContain('w-full')
-        ->and($row[0])->toContain('sm:w-auto')
-        ->and($row[0])->toContain('justify-center')
+        ->and($row[0])->not->toContain('w-full')
+        ->and($row[0])->toContain('sm:justify-center')
+        ->and($toolbarRow[0])->toContain('justify-center')
         ->and(substr_count($html, 'data-test="editor-undo-button"'))->toBe(1)
         ->and(substr_count($html, 'data-test="editor-redo-button"'))->toBe(1)
         ->and($html)->toContain('x-on:keydown.window="handleShortcutKeydown($event)"');
@@ -307,7 +306,7 @@ test('the editor tools take their own row on mobile', function () {
         ->and($modeToggle[0])->toContain('sm:justify-self-start')
         ->and(strpos($html, 'data-test="editor-mode-toggle"'))->toBeLessThan(strpos($html, 'data-test="editor-tools-row"'))
         ->and(strpos($html, 'data-test="editor-tools-row"'))->toBeLessThan(strpos($html, 'data-test="editor-save-status"'))
-        ->and($html)->toContain('ml-auto flex shrink-0 items-center gap-2 sm:justify-self-end');
+        ->and($html)->toContain('<div class="flex shrink-0 items-center gap-2 sm:justify-self-end">');
 
     preg_match('/data-test="editor-tools-row".*?data-test="editor-save-status"/s', $html, $tools);
     expect($tools)->not->toBeEmpty()
@@ -373,6 +372,12 @@ test('settings modal shows the export menu at the top', function () {
         ->and(strpos($pane, 'data-suggestions-pane'))->toBeLessThan(strpos($pane, 'data-test="settings-pane-actions"'))
         ->and(strpos($pane, "attemptExport('ipuz')"))->toBeLessThan(strpos($pane, 'wire:click="saveMetadata"'))
         ->and(substr_count($pane, 'data-test="settings-pane-actions"'))->toBe(1);
+
+    // The row is hidden while the Ideas tab is showing: nothing there to
+    // save or export.
+    preg_match('/<div[^>]*data-test="settings-pane-actions"[^>]*>/s', $pane, $actions);
+    expect($actions)->not->toBeEmpty()
+        ->and($actions[0])->toContain('x-show="settingsTab !== \'suggestions\'"');
 
     // The actions row is part of the form body, not a footer after it.
     preg_match('/<div[^>]*data-test="settings-form".*?data-test="settings-pane-actions"/s', $pane, $inForm);
@@ -1197,6 +1202,7 @@ test('settings render in a permanent flush sidebar column down the left of the e
         ->toContain('data-suggestions-pane')
         ->toContain('x-init="mountSuggestionsPane($el)"')
         ->toContain('showSuggestionsPane()')
+        ->not->toContain('back to grid')
         ->toContain('wire:model="title"')
         ->toContain('wire:click="resizeGrid"')
         ->toContain('wire:click="saveMetadata"')

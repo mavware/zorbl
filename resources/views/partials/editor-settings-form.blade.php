@@ -427,10 +427,16 @@
         @if ($settingsSurface === 'pane')
             @include('partials.editor-suggestions-pane')
 
-            {{-- Export and Save sit right under whichever panel is showing,
-                 so they are always in reach without scrolling past the whole
-                 form. The flyout has its own sticky Save / Cancel footer. --}}
-            <div class="border-line mt-6 flex shrink-0 items-center justify-between gap-2 border-t pt-4" data-test="settings-pane-actions">
+            {{-- Export and Save sit right under whichever settings panel is
+                 showing, so they are always in reach without scrolling past
+                 the whole form. The Ideas tab has nothing to save or export,
+                 so the row hides there. The flyout has its own sticky Save /
+                 Cancel footer. --}}
+            <div
+                x-show="settingsTab !== 'suggestions'"
+                class="border-line mt-6 flex shrink-0 items-center justify-between gap-2 border-t pt-4"
+                data-test="settings-pane-actions"
+            >
                 {{-- Export --}}
                 <flux:dropdown position="top" align="start">
                     <flux:button variant="ghost" size="sm" icon="arrow-down-tray">

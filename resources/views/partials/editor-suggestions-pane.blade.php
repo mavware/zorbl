@@ -10,7 +10,8 @@
      visible; the tab button triggers them when it is picked.
 
      Focus the panel (click or Tab), then ↑/↓ highlight and preview a
-     candidate in the grid, Enter places it and Esc returns to the grid. --}}
+     candidate in the grid, Enter places it and Esc returns to the grid.
+     The shortcuts are deliberately not spelled out in the panel. --}}
 <div
     id="{{ $settingsSurface }}-settings-panel-suggestions"
     role="tabpanel"
@@ -51,13 +52,4 @@
     </div>
 
     @include('partials.editor-suggestions-list')
-
-    {{-- Keyboard hint --}}
-    <div class="border-line text-fg-subtle flex shrink-0 items-center gap-2 border-t pt-1.5 text-[11px]">
-        <span><kbd class="font-sans">↑↓</kbd> {{ __('preview') }}</span>
-        <span aria-hidden="true">·</span>
-        <span><kbd class="font-sans">Enter</kbd> {{ __('place') }}</span>
-        <span aria-hidden="true">·</span>
-        <span><kbd class="font-sans">Esc</kbd> {{ __('back to grid') }}</span>
-    </div>
 </div>

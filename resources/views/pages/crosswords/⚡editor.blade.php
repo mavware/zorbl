@@ -1024,11 +1024,13 @@ class extends Component {
          the left edge of the builder, the editing tools centred, and the save
          status with Publish at the right edge. Below `sm` the three wrap as
          flex rows. --}}
-    <div class="mb-4 flex flex-wrap items-center gap-2 sm:grid sm:grid-cols-[1fr_auto_1fr]" data-test="editor-toolbar">
+    {{-- Mobile title + settings row, in flow above the toolbar. --}}
+    @include('partials.editor-mobile-title-row')
+
+    <div class="mb-4 flex flex-wrap items-center justify-center gap-1.5 sm:grid sm:grid-cols-[1fr_auto_1fr] sm:gap-2" data-test="editor-toolbar">
         {{-- The puzzle title and settings cog are not part of the toolbar: on
              desktop they live in the settings sidebar beside the grid, and on
-             mobile in a fixed bar at the foot of the screen
-             (editor-mobile-title-bar). --}}
+             mobile in their own row just above (editor-mobile-title-row). --}}
         {{-- Mode toggle, on the left. --}}
         <div class="flex rounded-lg border border-line sm:justify-self-start" data-test="editor-mode-toggle">
             <span
@@ -1040,9 +1042,11 @@ class extends Component {
             >{{ __('Solve') }}</a>
         </div>
 
-        {{-- Tools (undo/redo, clear, fill), centred. Below `sm` this cluster
-             takes its own row. --}}
-        <div class="flex w-full flex-wrap items-center justify-center gap-2 sm:w-auto" data-test="editor-tools-row">
+        {{-- Tools (undo/redo, clear, fill), centred from `sm`. Below `sm`
+             the cluster sits on the same row as Edit / Solve, the whole row
+             centred with tighter gaps; anything that does not fit wraps
+             beneath. --}}
+        <div class="flex flex-wrap items-center gap-0.5 sm:justify-center sm:gap-2" data-test="editor-tools-row">
             {{-- Undo / Redo --}}
             <div class="flex items-center">
                 <flux:tooltip content="{{ __('Undo') }}" kbd="Ctrl+Z">
@@ -1085,7 +1089,7 @@ class extends Component {
                         {{-- Clear dropdown --}}
             <flux:dropdown position="bottom" align="end">
                 <flux:tooltip content="{{ __('Clear Options') }}">
-                    <flux:button variant="ghost" size="sm">
+                    <flux:button variant="ghost" size="sm" class="max-sm:px-2!">
                         {{ __('Clear') }}
                     </flux:button>
                 </flux:tooltip>
@@ -1171,7 +1175,7 @@ class extends Component {
              fill percentage is its dash offset directly. Desktop only: on
              mobile the Publish button beside the clue tabs carries a single
              pooled ring instead. --}}
-        <div class="ml-auto flex shrink-0 items-center gap-2 sm:justify-self-end">
+        <div class="flex shrink-0 items-center gap-2 sm:justify-self-end">
             {{-- Save status. Hidden while idle so it takes no room; when shown
                  it sits right before the progress pill so save state and
                  fill state read as one status group. --}}
@@ -1215,12 +1219,8 @@ class extends Component {
     </div>
 
     {{-- Mobile suggestions bottom sheet (hidden at lg and above, where the
-         settings sidebar's Suggestions tab takes over). It sits on top of
-         the title bar below. --}}
+         settings sidebar's Suggestions tab takes over). --}}
     @include('partials.editor-suggestions-sheet')
-
-    {{-- Mobile title + settings bar, fixed to the foot of the screen. --}}
-    @include('partials.editor-mobile-title-bar')
 
     {{-- Publish Warning Modal --}}
     <flux:modal wire:model="showPublishWarning">
