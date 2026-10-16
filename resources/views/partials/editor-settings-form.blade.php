@@ -106,26 +106,38 @@
         >
             <flux:field>
                 <flux:label>{{ __('Title') }}</flux:label>
-                <flux:input wire:model="title" placeholder="{{ __('Puzzle title') }}"/>
+                <div class="relative">
+                    <flux:input wire:model.live.debounce.750ms="title" placeholder="{{ __('Puzzle title') }}"/>
+                    <x-saved-check property="title" />
+                </div>
                 <flux:error name="title"/>
             </flux:field>
 
             <flux:field>
                 <flux:label>{{ __('Constructor') }}</flux:label>
-                <flux:input wire:model="author" placeholder="{{ __('Constructor name') }}"/>
+                <div class="relative">
+                    <flux:input wire:model.live.debounce.750ms="author" placeholder="{{ __('Constructor name') }}"/>
+                    <x-saved-check property="author" />
+                </div>
                 <flux:error name="author"/>
             </flux:field>
 
             <flux:field>
                 <flux:label>{{ __('Copyright') }}</flux:label>
-                <flux:input wire:model="copyright" placeholder="{{ copyright(__('Your Name')) }}"/>
+                <div class="relative">
+                    <flux:input wire:model.live.debounce.750ms="copyright" placeholder="{{ copyright(__('Your Name')) }}"/>
+                    <x-saved-check property="copyright" />
+                </div>
                 <flux:error name="copyright"/>
             </flux:field>
 
             <flux:field>
                 <flux:label>{{ __('Notes') }}</flux:label>
-                <flux:textarea wire:model="notes" placeholder="{{ __('Notes for solvers (shown before solving)') }}"
-                               rows="3"/>
+                <div class="relative">
+                    <flux:textarea wire:model.live.debounce.750ms="notes" placeholder="{{ __('Notes for solvers (shown before solving)') }}"
+                                   rows="3"/>
+                    <x-saved-check property="notes" align="top" />
+                </div>
                 <flux:error name="notes"/>
             </flux:field>
 
@@ -233,7 +245,10 @@
                 <flux:label>
                     <span>{{ __('Minimum Answer Length') }} <x-info-tooltip>{{ __('Shortest allowed word length in the grid.') }}</x-info-tooltip></span>
                 </flux:label>
-                <flux:input type="number" wire:model="minAnswerLength" min="1" max="15"/>
+                <div class="relative">
+                    <flux:input type="number" wire:model.live.debounce.750ms="minAnswerLength" min="1" max="15"/>
+                    <x-saved-check property="minAnswerLength" />
+                </div>
                 <flux:error name="minAnswerLength"/>
             </flux:field>
 
@@ -367,9 +382,12 @@
 
                 <flux:field>
                     <flux:label>{{ __('Prompt') }}</flux:label>
-                    <flux:input wire:model="metaAnswerPrompt"
-                                placeholder="{{ __('e.g. What is the hidden theme? or Unscramble the circled letters') }}"
-                                maxlength="500" />
+                    <div class="relative">
+                        <flux:input wire:model.live.debounce.750ms="metaAnswerPrompt"
+                                    placeholder="{{ __('e.g. What is the hidden theme? or Unscramble the circled letters') }}"
+                                    maxlength="500" />
+                        <x-saved-check property="metaAnswerPrompt" />
+                    </div>
                     <flux:error name="metaAnswerPrompt"/>
                 </flux:field>
 
@@ -405,7 +423,7 @@
                 </flux:field>
 
                 <flux:field variant="inline">
-                    <flux:checkbox wire:model="metaAnswerReveal" />
+                    <flux:checkbox wire:model.live="metaAnswerReveal" />
                     <flux:label>
                         <span>{{ __('Show solvers whether their answer is correct') }} <x-info-tooltip>{{ __('When enabled, solvers get instant feedback after submitting their answer.') }}</x-info-tooltip></span>
                     </flux:label>
@@ -418,9 +436,12 @@
                 <flux:label>
                     <span>{{ __('AI Theme Hint') }} <x-info-tooltip>{{ __('Only used by AI Autofill to pick the best fill (e.g. 80s movies, things that fly). Never shown to solvers.') }}</x-info-tooltip></span>
                 </flux:label>
-                <flux:textarea wire:model="secretTheme"
-                               placeholder="{{ __('Theme hint used to guide AI Autofill.') }}"
-                               rows="2"/>
+                <div class="relative">
+                    <flux:textarea wire:model.live.debounce.750ms="secretTheme"
+                                   placeholder="{{ __('Theme hint used to guide AI Autofill.') }}"
+                                   rows="2"/>
+                    <x-saved-check property="secretTheme" align="top" />
+                </div>
                 <flux:error name="secretTheme"/>
             </flux:field>
 
@@ -432,9 +453,12 @@
 
             {{-- Export and Save sit right under whichever settings panel is
                  showing, so they are always in reach without scrolling past
-                 the whole form. The Ideas tab has nothing to save or export,
-                 so the row hides there. The flyout has its own sticky Save /
-                 Cancel footer. --}}
+                 the whole form. Every field except the grid dimensions
+                 already saves itself (the component's updated() hook: text
+                 fields a short debounce after typing, the rest on change);
+                 Save remains as an explicit confirmation. The Ideas
+                 tab has nothing to save or export, so the row hides there.
+                 The flyout has its own sticky Save / Cancel footer. --}}
             <div
                 x-show="settingsTab !== 'suggestions'"
                 class="border-line mt-6 flex shrink-0 items-center justify-between gap-2 border-t pt-4"

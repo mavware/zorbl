@@ -94,7 +94,7 @@
                     class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-zinc-800 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700"
                 >
                     <span
-                        x-text="isBlock(contextMenu.row, contextMenu.col) ? '{{ __('Make white') }}' : '{{ __('Make black') }}'"></span>
+                        x-text="isBlock(contextMenu.row, contextMenu.col) ? '{{ __('Remove block') }}' : '{{ __('Place block') }}'"></span>
                 </button>
 
                 <button

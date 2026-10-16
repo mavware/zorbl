@@ -201,7 +201,49 @@ class extends Component {
         $this->dispatch('prefilled-saved');
     }
 
+    /**
+     * Settings that persist the moment they change, so the sidebar and modal
+     * need no explicit Save. Grid dimensions (resizeWidth / resizeHeight) are
+     * deliberately absent: they only apply through the Resize Grid button.
+     *
+     * @var list<string>
+     */
+    private const AUTOSAVED_SETTINGS = [
+        'title',
+        'author',
+        'copyright',
+        'notes',
+        'allowEmbed',
+        'minAnswerLength',
+        'layout',
+        'cellColor',
+        'blockColor',
+        'circleColor',
+        'letterColor',
+        'lineColor',
+        'metaAnswerPrompt',
+        'metaAnswerReveal',
+        'secretTheme',
+    ];
+
+    public function updated(string $property): void
+    {
+        if (in_array($property, self::AUTOSAVED_SETTINGS, true)) {
+            $this->persistMetadata();
+            $this->dispatch('setting-saved', property: $property);
+        }
+    }
+
+    /** The explicit Save button: persist everything and close the modal. */
     public function saveMetadata(): void
+    {
+        $this->persistMetadata();
+
+        $this->showSettingsModal = false;
+    }
+
+    /** Validate and write every settings field, then tell the grid. */
+    private function persistMetadata(): void
     {
         $this->validate([
             'title'            => ['nullable', 'string', 'max:255'],
@@ -260,7 +302,6 @@ class extends Component {
 
         $crossword->tags()->sync($this->tagIds);
 
-        $this->showSettingsModal = false;
         $this->dispatch('settings-updated');
         $this->dispatch('saved');
     }
@@ -274,12 +315,14 @@ class extends Component {
 
         $this->metaAnswers[] = $answer;
         $this->newMetaAnswer = '';
+        $this->persistMetadata();
     }
 
     public function removeMetaAnswer(int $index): void
     {
         unset($this->metaAnswers[$index]);
         $this->metaAnswers = array_values($this->metaAnswers);
+        $this->persistMetadata();
     }
 
     /** @return array<int, array{id: int, name: string}> */
@@ -313,12 +356,14 @@ class extends Component {
         }
         $this->tagSearch = '';
         unset($this->availableTags, $this->selectedTags);
+        $this->persistMetadata();
     }
 
     public function removeTag(int $tagId): void
     {
         $this->tagIds = array_values(array_filter($this->tagIds, fn (int $id) => $id !== $tagId));
         unset($this->availableTags, $this->selectedTags);
+        $this->persistMetadata();
     }
 
     public function createTag(): void
@@ -338,6 +383,7 @@ class extends Component {
         }
         $this->tagSearch = '';
         unset($this->availableTags, $this->selectedTags, $this->suggestedStandardTags);
+        $this->persistMetadata();
     }
 
     public function addStandardTag(string $name): void
@@ -356,6 +402,7 @@ class extends Component {
         }
         $this->tagSearch = '';
         unset($this->availableTags, $this->selectedTags, $this->suggestedStandardTags);
+        $this->persistMetadata();
     }
 
     /** @return array<int, string> */
@@ -1003,6 +1050,7 @@ class extends Component {
     x-on:prefilled-saved.window="onSaved()"
     x-on:grid-resized.window="onGridResized()"
     x-on:settings-updated.window="onSettingsUpdated()"
+    x-on:setting-saved.window="flashSettingSaved($event.detail.property)"
     x-on:highlight-incomplete.window="highlightIncomplete($event.detail.checks)"
     {{-- Full height only from `lg`, where the layouts cap themselves to the
          viewport and scroll internally. Below that the page scrolls, and a

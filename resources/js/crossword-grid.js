@@ -37,6 +37,12 @@ function serializeHistory({ grid, solution, styles, cluesAcross, cluesDown, pref
     return JSON.stringify({ grid, solution, styles, cluesAcross, cluesDown, prefilled });
 }
 
+/** How long a just-saved settings field shows its green check. */
+export const SETTING_FLASH_MS = 800;
+
+/** Pending flash timeouts keyed by settings property name. */
+const settingFlashTimers = new Map();
+
 export function crosswordGrid({
     width, height, grid, solution, styles, cluesAcross, cluesDown,
     minAnswerLength, prefilled, gridLocked, puzzleType, defaultColors,
@@ -74,6 +80,7 @@ export function crosswordGrid({
         isDirty: false,
         saving: false,
         showSaved: false,
+        settingFlashes: {},
         clueSuggestions: [],
         clueSuggestionsLoading: false,
         clueSuggestionsWord: '',
@@ -1286,6 +1293,22 @@ export function crosswordGrid({
 
         onSaved() {
             this._autosave?.acknowledge();
+        },
+
+        // A settings field the server has just persisted (the component's
+        // `setting-saved` event) shows a green check where its live-update
+        // spinner sat, for SETTING_FLASH_MS. Another save of the same field
+        // restarts the clock.
+        flashSettingSaved(property) {
+            clearTimeout(settingFlashTimers.get(property));
+            this.settingFlashes = { ...this.settingFlashes, [property]: true };
+            settingFlashTimers.set(property, setTimeout(() => {
+                this.settingFlashes = { ...this.settingFlashes, [property]: false };
+            }, SETTING_FLASH_MS));
+        },
+
+        isSettingFlashing(property) {
+            return this.settingFlashes[property] === true;
         },
 
         isPrefilled(row, col) {

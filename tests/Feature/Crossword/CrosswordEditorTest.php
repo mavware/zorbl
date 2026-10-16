@@ -2,6 +2,7 @@
 
 use App\Enums\CrosswordLayout;
 use App\Models\Crossword;
+use App\Models\Tag;
 use App\Models\User;
 use Livewire\Livewire;
 
@@ -232,6 +233,88 @@ test('settings modal saves all metadata fields', function () {
         ->and($crossword->metadata['min_answer_length'])->toBe(4);
 });
 
+test('settings fields autosave as they change and keep the modal open', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create(['title' => 'Before']);
+    $tag = Tag::factory()->create();
+
+    $this->actingAs($user);
+
+    $component = Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->set('showSettingsModal', true)
+        ->assertNotDispatched('saved')
+        ->set('title', 'Autosaved')
+        ->assertDispatched('saved')
+        // Names the field so its green check can flash where the spinner was.
+        ->assertDispatched('setting-saved', property: 'title')
+        ->assertSet('showSettingsModal', true);
+
+    expect($crossword->fresh()->title)->toBe('Autosaved');
+
+    $component->set('minAnswerLength', 5);
+    expect($crossword->fresh()->metadata['min_answer_length'])->toBe(5);
+
+    $component->set('metaAnswerReveal', false);
+    expect($crossword->fresh()->meta_answer_reveal)->toBeFalse();
+
+    $component->set('layout', CrosswordLayout::CluesLeft->value);
+    expect($crossword->fresh()->layout)->toBe(CrosswordLayout::CluesLeft);
+
+    $component->set('newMetaAnswer', 'OWLS')->call('addMetaAnswer');
+    expect($crossword->fresh()->meta_answers)->toBe(['OWLS']);
+
+    $component->call('removeMetaAnswer', 0);
+    expect($crossword->fresh()->meta_answers)->toBeNull();
+
+    $component->call('addTag', $tag->id);
+    expect($crossword->fresh()->tags->pluck('id')->all())->toBe([$tag->id]);
+
+    $component->call('removeTag', $tag->id);
+    expect($crossword->fresh()->tags)->toHaveCount(0);
+});
+
+test('grid dimensions do not autosave until Resize Grid is pressed', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create(['width' => 15, 'height' => 15]);
+
+    $this->actingAs($user);
+
+    $html = Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->set('resizeWidth', 9)
+        ->set('resizeHeight', 9)
+        ->assertNotDispatched('saved')
+        ->html();
+
+    expect($crossword->fresh()->width)->toBe(15)
+        ->and($crossword->fresh()->height)->toBe(15);
+
+    // Each autosaving text or number control carries a saved check over its
+    // end edge, in both surfaces plus the mobile title row; the dimension
+    // inputs do not.
+    foreach (['title', 'author', 'copyright', 'notes', 'minAnswerLength', 'metaAnswerPrompt', 'secretTheme'] as $property) {
+        expect(preg_match_all(sprintf('/data-test="saved-check"\s+data-property="%s"/', $property), $html))
+            ->toBe($property === 'title' ? 3 : 2, $property);
+    }
+    expect($html)->not->toContain('data-property="resizeWidth"')
+        ->not->toContain('data-property="resizeHeight"')
+        ->toContain('x-on:setting-saved.window="flashSettingSaved($event.detail.property)"');
+
+    // The dimension inputs stay deferred; every other settings field is live,
+    // text and number fields a short debounce after typing.
+    $form = editorSettingsPaneHtml($html);
+    expect($form)->toContain('wire:model="resizeWidth"')
+        ->toContain('wire:model="resizeHeight"')
+        ->toContain('wire:model.live.debounce.750ms="title"')
+        ->toContain('wire:model.live.debounce.750ms="author"')
+        ->toContain('wire:model.live.debounce.750ms="copyright"')
+        ->toContain('wire:model.live.debounce.750ms="notes"')
+        ->toContain('wire:model.live.debounce.750ms="minAnswerLength"')
+        ->toContain('wire:model.live.debounce.750ms="metaAnswerPrompt"')
+        ->toContain('wire:model.live.debounce.750ms="secretTheme"')
+        ->toContain('wire:model.live="metaAnswerReveal"')
+        ->toContain('wire:click="saveMetadata"');
+});
+
 test('the title and settings cog sit in a row above the toolbar on mobile', function () {
     $user = User::factory()->create();
     $crossword = Crossword::factory()->for($user)->create();
@@ -260,8 +343,8 @@ test('the title and settings cog sit in a row above the toolbar on mobile', func
     $toolbarStart = strpos($html, 'data-test="editor-toolbar"');
     $rowHtml = substr($html, $rowStart, $toolbarStart - $rowStart);
     expect($rowStart)->toBeLessThan($toolbarStart)
-        ->and($rowHtml)->toContain('wire:model.blur="title"')
-        ->toContain('wire:change="saveMetadata"')
+        ->and($rowHtml)->toContain('wire:model.live.debounce.750ms="title"')
+        ->not->toContain('wire:change=')
         ->toContain("wire:click=\"\$set('showSettingsModal', true)\"")
         ->and(substr_count($html, 'data-test="editor-settings-button"'))->toBe(1)
         ->and($html)->not->toContain('data-test="editor-title-bar"');
@@ -362,13 +445,13 @@ test('settings modal shows the export menu at the top', function () {
     // Once in the sidebar footer, once in the flyout header.
     expect(substr_count($html, "attemptExport('ipuz')"))->toBe(2);
     expect(strpos(editorSettingsFlyoutHtml($html), "attemptExport('ipuz')"))
-        ->toBeLessThan(strpos(editorSettingsFlyoutHtml($html), 'wire:model="title"'));
+        ->toBeLessThan(strpos(editorSettingsFlyoutHtml($html), 'wire:model.live.debounce.750ms="title"'));
 
     // The sidebar has no heading; Export and Save follow the panels inside
     // the form's scrolling body, after the Suggestions panel, Export first.
     $pane = editorSettingsPaneHtml($html);
     expect($pane)->not->toContain('Puzzle Settings')
-        ->and(strpos($pane, 'wire:model="title"'))->toBeLessThan(strpos($pane, "attemptExport('ipuz')"))
+        ->and(strpos($pane, 'wire:model.live.debounce.750ms="title"'))->toBeLessThan(strpos($pane, "attemptExport('ipuz')"))
         ->and(strpos($pane, 'data-suggestions-pane'))->toBeLessThan(strpos($pane, 'data-test="settings-pane-actions"'))
         ->and(strpos($pane, "attemptExport('ipuz')"))->toBeLessThan(strpos($pane, 'wire:click="saveMetadata"'))
         ->and(substr_count($pane, 'data-test="settings-pane-actions"'))->toBe(1);
@@ -407,8 +490,8 @@ test('settings modal renders the AI theme hint and meta answer prompt as real in
     // tag, which leaks a literal <flux:...> element to the browser and leaves
     // the field label with no input beneath it.
     expect($html)->not->toContain('<flux:');
-    expect($html)->toMatch('/<textarea[^>]*wire:model="secretTheme"/');
-    expect($html)->toMatch('/<input[^>]*wire:model="metaAnswerPrompt"/');
+    expect($html)->toMatch('/<textarea[^>]*wire:model.live.debounce.750ms="secretTheme"/');
+    expect($html)->toMatch('/<input[^>]*wire:model.live.debounce.750ms="metaAnswerPrompt"/');
 });
 
 test('settings modal loads existing metadata on mount', function () {
@@ -1120,27 +1203,27 @@ test('settings flyout groups its fields into details, grid and theme tabs', func
     expect(strpos($flyout, "attemptExport('ipuz')"))->toBeLessThan($detailsStart);
 
     expect($details)->toContain('x-show="settingsTab === \'details\'"')
-        ->toContain('wire:model="title"')
-        ->toContain('wire:model="author"')
-        ->toContain('wire:model="copyright"')
-        ->toContain('wire:model="notes"')
+        ->toContain('wire:model.live.debounce.750ms="title"')
+        ->toContain('wire:model.live.debounce.750ms="author"')
+        ->toContain('wire:model.live.debounce.750ms="copyright"')
+        ->toContain('wire:model.live.debounce.750ms="notes"')
         ->toContain('wire:model.live="allowEmbed"')
         ->toContain('wire:model.live.debounce.300ms="tagSearch"')
-        ->not->toContain('wire:model="minAnswerLength"')
-        ->not->toContain('wire:model="secretTheme"');
+        ->not->toContain('wire:model.live.debounce.750ms="minAnswerLength"')
+        ->not->toContain('wire:model.live.debounce.750ms="secretTheme"');
 
     expect($grid)->toContain('x-show="settingsTab === \'grid\'"')
-        ->toContain('wire:model="minAnswerLength"')
+        ->toContain('wire:model.live.debounce.750ms="minAnswerLength"')
         ->toContain('data-test="symmetry-toggle"')
         ->toContain('Layout')
         ->toContain('Default Colors')
         ->toContain('wire:click="resizeGrid"')
-        ->not->toContain('wire:model="title"');
+        ->not->toContain('wire:model.live.debounce.750ms="title"');
 
     expect($theme)->toContain('x-show="settingsTab === \'theme\'"')
-        ->toContain('wire:model="secretTheme"')
+        ->toContain('wire:model.live.debounce.750ms="secretTheme"')
         ->toContain('Meta Answer')
-        ->toContain('wire:model="metaAnswerPrompt"')
+        ->toContain('wire:model.live.debounce.750ms="metaAnswerPrompt"')
         ->not->toContain('wire:click="resizeGrid"');
 });
 
@@ -1213,7 +1296,7 @@ test('settings render in a permanent flush sidebar column down the left of the e
         ->toContain('x-init="mountSuggestionsPane($el)"')
         ->toContain('showSuggestionsPane()')
         ->not->toContain('back to grid')
-        ->toContain('wire:model="title"')
+        ->toContain('wire:model.live.debounce.750ms="title"')
         ->toContain('wire:click="resizeGrid"')
         ->toContain('wire:click="saveMetadata"')
         ->and(substr_count($pane, 'role="tab"'))->toBe(6);
@@ -1483,4 +1566,17 @@ test('the editor root only stretches to full height on desktop', function () {
     expect($root)->not->toBeEmpty()
         ->and($root[1])->toContain('lg:h-full')
         ->and(preg_split('/\s+/', $root[1]))->not->toContain('h-full');
+});
+
+test('the cell context menu offers Place block and Remove block', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create();
+
+    $this->actingAs($user);
+
+    $html = Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])->html();
+
+    expect($html)->toContain("'Remove block' : 'Place block'")
+        ->not->toContain('Make white')
+        ->not->toContain('Make black');
 });
