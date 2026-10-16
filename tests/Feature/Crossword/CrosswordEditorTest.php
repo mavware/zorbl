@@ -5,6 +5,27 @@ use App\Models\Crossword;
 use App\Models\User;
 use Livewire\Livewire;
 
+/**
+ * The settings form renders once per surface: the desktop sidebar and the
+ * mobile flyout. These pull one surface out of the full editor render so a
+ * test can count within it.
+ */
+function editorSettingsFlyoutHtml(string $html): string
+{
+    preg_match('/<ui-modal[^>]*data-test="settings-flyout".*?<\/ui-modal>/s', $html, $flyout);
+    expect($flyout)->not->toBeEmpty();
+
+    return $flyout[0];
+}
+
+function editorSettingsPaneHtml(string $html): string
+{
+    preg_match('/<aside[^>]*data-test="settings-pane".*?<\/aside>/s', $html, $pane);
+    expect($pane)->not->toBeEmpty();
+
+    return $pane[0];
+}
+
 test('guests cannot access the editor', function () {
     $crossword = Crossword::factory()->create();
 
@@ -201,22 +222,48 @@ test('settings modal saves all metadata fields', function () {
         ->and($crossword->metadata['min_answer_length'])->toBe(4);
 });
 
-test('the settings button sits beside the puzzle title on its own row', function () {
+test('the title and settings cog sit on a fixed bar under the suggestions strip on mobile', function () {
     $user = User::factory()->create();
     $crossword = Crossword::factory()->for($user)->create();
 
     $this->actingAs($user);
 
     $html = Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
-        ->assertSeeInOrder(['Puzzle title', 'Puzzle settings', 'Saving...'])
+        ->assertSeeInOrder(['Saving...', 'Publish', 'Puzzle title', 'Puzzle settings'])
         ->html();
 
-    preg_match('/<div[^>]*data-test="editor-title-row"[^>]*>/', $html, $row);
+    // The toolbar no longer carries the title or the cog.
+    preg_match('/<div class="mb-4 flex flex-wrap items-center gap-2">.*?wire:click="attemptPublish"/s', $html, $toolbar);
+    expect($toolbar)->not->toBeEmpty()
+        ->and($toolbar[0])->not->toContain('Puzzle title')
+        ->not->toContain('editor-settings-button')
+        ->and($html)->not->toContain('data-test="editor-title-row"');
 
-    expect($row)->not->toBeEmpty()
-        ->and($row[0])->toContain('w-full')
-        ->and($row[0])->toContain('sm:w-auto')
-        ->and(substr_count($html, 'data-test="editor-settings-button"'))->toBe(1);
+    // One bar, pinned to the bottom edge below `lg`, holding the title input
+    // and the cog that opens the settings modal.
+    preg_match('/<div[^>]*data-test="editor-title-bar"[^>]*>.*?<\/flux:tooltip>|<div[^>]*data-test="editor-title-bar"[^>]*>/s', $html, $bar);
+    expect(substr_count($html, 'data-test="editor-title-bar"'))->toBe(1)
+        ->and($bar[0])->toContain('fixed')
+        ->toContain('inset-x-0')
+        ->toContain('bottom-0')
+        ->toContain('lg:hidden');
+
+    $barStart = strpos($html, 'data-test="editor-title-bar"');
+    $barHtml = substr($html, $barStart);
+    expect($barHtml)->toContain('wire:model.blur="title"')
+        ->toContain('wire:change="saveMetadata"')
+        ->toContain("wire:click=\"\$set('showSettingsModal', true)\"")
+        ->and(substr_count($html, 'data-test="editor-settings-button"'))->toBe(1)
+        ->and(strpos($html, 'data-test="editor-settings-button"'))->toBeGreaterThan($barStart);
+
+    // The suggestions sheet stacks on top of the bar rather than sharing the
+    // bottom edge, and the page reserves room for the bar.
+    preg_match('/<div[^>]*x-ref="suggestionsSheet"[^>]*>/', $html, $sheet);
+    expect($sheet)->not->toBeEmpty()
+        ->and($sheet[0])->toContain('bottom-12')
+        ->not->toContain('bottom-0')
+        ->and(strpos($html, 'x-ref="suggestionsSheet"'))->toBeLessThan($barStart)
+        ->and($html)->toContain('<div class="h-12 shrink-0 lg:hidden" aria-hidden="true"></div>');
 });
 
 test('the editor tools take their own row on mobile', function () {
@@ -226,7 +273,7 @@ test('the editor tools take their own row on mobile', function () {
     $this->actingAs($user);
 
     $html = Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
-        ->assertSeeInOrder(['Puzzle settings', 'Edit', 'Undo', 'Redo', 'Auto-fill grid', 'Cells', 'Publish'])
+        ->assertSeeInOrder(['Edit', 'Undo', 'Redo', 'Auto-fill grid', 'Cells', 'Publish'])
         ->html();
 
     preg_match('/<div[^>]*data-test="editor-tools-row"[^>]*>/', $html, $row);
@@ -283,7 +330,10 @@ test('settings modal shows the export menu at the top', function () {
         ->assertSeeInOrder(['Puzzle Settings', 'Export', '.ipuz', '.puz (Across Lite)', '.jpz (Crossword Compiler)', '.pdf (Print-Ready)', 'Title'])
         ->html();
 
-    expect(substr_count($html, "attemptExport('ipuz')"))->toBe(1);
+    // Once in the sidebar header, once in the flyout header.
+    expect(substr_count($html, "attemptExport('ipuz')"))->toBe(2);
+    expect(strpos(editorSettingsFlyoutHtml($html), "attemptExport('ipuz')"))
+        ->toBeLessThan(strpos(editorSettingsFlyoutHtml($html), 'wire:model="title"'));
 });
 
 test('settings modal renders the secret theme and meta answer prompt as real inputs', function () {
@@ -642,8 +692,12 @@ test('layout picker renders exactly one SVG preview card per CrosswordLayout cas
 
     $html = Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])->html();
 
+    // The picker is part of the shared settings form, so each surface
+    // (sidebar and flyout) carries one card per case.
     $expected = count(CrosswordLayout::cases());
-    expect(substr_count($html, '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 24"'))->toBe($expected);
+    foreach ([editorSettingsPaneHtml($html), editorSettingsFlyoutHtml($html)] as $surface) {
+        expect(substr_count($surface, '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 24"'))->toBe($expected);
+    }
 
     foreach (CrosswordLayout::cases() as $case) {
         expect($html)->toContain($case->label());
@@ -665,8 +719,9 @@ test('when no layout is set, the width-based auto default card is marked pressed
 
     $html = Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])->html();
 
-    // Exactly one card is pressed, and it's the auto-resolved default for this grid width.
-    expect(substr_count($html, 'aria-pressed="true"'))->toBe(1)
+    // Exactly one card is pressed in each surface, and it's the auto-resolved default for this grid width.
+    expect(substr_count(editorSettingsPaneHtml($html), 'aria-pressed="true"'))->toBe(1)
+        ->and(substr_count(editorSettingsFlyoutHtml($html), 'aria-pressed="true"'))->toBe(1)
         ->and(CrosswordLayout::auto(15))->toBe(CrosswordLayout::AcrossLeftDownRight)
         ->and($html)->toContain(sprintf(
             'wire:click="$set(\'layout\', %d)"',
@@ -686,7 +741,8 @@ test('wide grids with no layout set mark the stacked default card pressed', func
 
     $html = Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])->html();
 
-    expect(substr_count($html, 'aria-pressed="true"'))->toBe(1)
+    expect(substr_count(editorSettingsPaneHtml($html), 'aria-pressed="true"'))->toBe(1)
+        ->and(substr_count(editorSettingsFlyoutHtml($html), 'aria-pressed="true"'))->toBe(1)
         ->and(CrosswordLayout::auto(21))->toBe(CrosswordLayout::CluesRight);
 });
 
@@ -700,7 +756,8 @@ test('the selected layout card is marked pressed and the others are not', functi
 
     $html = Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])->html();
 
-    expect(substr_count($html, 'aria-pressed="true"'))->toBe(1);
+    expect(substr_count(editorSettingsPaneHtml($html), 'aria-pressed="true"'))->toBe(1)
+        ->and(substr_count(editorSettingsFlyoutHtml($html), 'aria-pressed="true"'))->toBe(1);
 });
 
 test('users can save cell background colors via styles', function () {
@@ -903,7 +960,7 @@ test('every desktop layout renders the suggestions pane exactly once', function 
     array_map(fn (CrosswordLayout $case) => [$case], CrosswordLayout::cases()),
 ));
 
-test('clue rows open the mobile sheet instead of inline popovers', function () {
+test('clue rows carry no suggestion shortcuts or inline popovers', function () {
     $user = User::factory()->create();
     $crossword = Crossword::factory()->for($user)->create([
         'width' => 15,
@@ -914,11 +971,12 @@ test('clue rows open the mobile sheet instead of inline popovers', function () {
 
     $html = Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])->html();
 
-    // Only the mobile clue list (one Across row template, one Down) carries
-    // the shortcut buttons, and they open the sheet on the matching tab.
-    // The desktop clue rows defer to the pane. No inline popovers remain.
-    expect(substr_count($html, "openSuggestionsSheet('words')"))->toBe(2);
-    expect(substr_count($html, "openSuggestionsSheet('clues')"))->toBe(2);
+    // No clue row carries a suggestions shortcut any more: on mobile the
+    // peek strip at the bottom of the screen opens the sheet for the
+    // selected slot, and desktop rows defer to the pane. No inline popovers
+    // remain either.
+    expect($html)->not->toContain("openSuggestionsSheet('words')")
+        ->not->toContain("openSuggestionsSheet('clues')");
     expect($html)
         ->not->toContain('toggleWordSuggestions()')
         ->not->toContain('showWordSuggestions')
@@ -972,12 +1030,10 @@ test('settings flyout groups its fields into details, grid and theme tabs', func
 
     $html = Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])->html();
 
-    preg_match('/<ui-modal[^>]*data-test="settings-flyout".*?<\/ui-modal>/s', $html, $flyout);
-    expect($flyout)->not->toBeEmpty();
-    $flyout = $flyout[0];
+    $flyout = editorSettingsFlyoutHtml($html);
 
     $tabsStart = strpos($flyout, 'role="tablist"');
-    $detailsStart = strpos($flyout, 'id="settings-panel-details"');
+    $detailsStart = strpos($flyout, 'id="modal-settings-panel-details"');
     $tabs = substr($flyout, $tabsStart, $detailsStart - $tabsStart);
 
     expect($tabs)->toContain('role="tablist"')
@@ -987,8 +1043,8 @@ test('settings flyout groups its fields into details, grid and theme tabs', func
         ->and($tabs)->toContain('x-on:click="settingsTab = \'theme\'"')
         ->and($tabs)->not->toContain('data-test="settings-tab-error-');
 
-    $gridStart = strpos($flyout, 'id="settings-panel-grid"');
-    $themeStart = strpos($flyout, 'id="settings-panel-theme"');
+    $gridStart = strpos($flyout, 'id="modal-settings-panel-grid"');
+    $themeStart = strpos($flyout, 'id="modal-settings-panel-theme"');
     $footerStart = strpos($flyout, 'wire:click="saveMetadata"');
 
     expect($detailsStart)->toBeLessThan($gridStart)
@@ -1044,6 +1100,96 @@ test('settings tabs flag the tab whose fields failed validation', function () {
         ->not->toContain('data-test="settings-tab-error-theme"');
 });
 
+test('settings render in a collapsible sidebar beside the layout on desktop', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create(['title' => 'Sidebar Puzzle']);
+
+    $this->actingAs($user);
+
+    $html = Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])->html();
+
+    // One strip, desktop only, capped to the same height as the layouts. The
+    // open panel overlays the editor from the strip's edge instead of
+    // pushing the grid, so the strip keeps a fixed width.
+    preg_match('/<aside[^>]*data-test="settings-pane"[^>]*>/', $html, $aside);
+    expect(substr_count($html, 'data-test="settings-pane"'))->toBe(1)
+        ->and($aside[0])->toContain('hidden')
+        ->toContain('lg:flex')
+        ->toContain('w-10')
+        ->toContain('relative')
+        ->toContain('lg:max-h-[calc(100dvh-8rem)]')
+        ->toContain('x-data="{ settingsPaneOpen: false }"');
+
+    preg_match('/<div[^>]*data-test="settings-pane-panel"[^>]*>/s', $html, $panel);
+    expect($panel)->not->toBeEmpty()
+        ->and($panel[0])->toContain('x-show="settingsPaneOpen"')
+        ->toContain('absolute')
+        ->toContain('inset-y-0')
+        ->toContain('right-0')
+        ->toContain('w-80');
+
+    // Collapsed strip opens it; the header closes it. The same export menu,
+    // tabs and Save as the flyout sit inside.
+    $pane = editorSettingsPaneHtml($html);
+    expect($pane)->toContain('data-test="settings-pane-open"')
+        ->toContain('x-on:click="settingsPaneOpen = true"')
+        ->toContain('data-test="settings-pane-close"')
+        ->toContain('x-on:click="settingsPaneOpen = false"')
+        ->toContain("attemptExport('ipuz')")
+        ->toContain('id="pane-settings-panel-details"')
+        ->toContain('id="pane-settings-panel-grid"')
+        ->toContain('id="pane-settings-panel-theme"')
+        ->toContain('wire:model="title"')
+        ->toContain('wire:click="resizeGrid"')
+        ->toContain('wire:click="saveMetadata"')
+        ->and(substr_count($pane, 'role="tab"'))->toBe(3);
+
+    // The sidebar shares a row with the active layout, after it, inside a
+    // wrapper that only exists as a box from `lg`.
+    preg_match('/<div[^>]*data-test="editor-workspace"[^>]*>/', $html, $workspace);
+    expect($workspace)->not->toBeEmpty()
+        ->and($workspace[0])->toContain('max-lg:contents')
+        ->toContain('lg:flex')
+        ->and(strpos($html, 'data-test="editor-workspace"'))->toBeLessThan(strpos($html, 'lg:max-h-[calc(100dvh-8rem)]'))
+        ->and(strpos($html, 'data-suggestions-pane'))->toBeLessThan(strpos($html, 'data-test="settings-pane"'))
+        ->and(strpos($html, 'data-test="settings-pane"'))->toBeLessThan(strpos($html, 'x-ref="suggestionsSheet"'));
+
+    // The flyout is the mobile surface only.
+    preg_match('/<ui-modal[^>]*data-test="settings-flyout"[^>]*>\s*<dialog[^>]*>/s', $html, $dialog);
+    expect($dialog)->not->toBeEmpty()
+        ->and($dialog[0])->toContain('lg:hidden');
+});
+
+test('the settings form renders once per surface with distinct tab and panel ids', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create();
+
+    $this->actingAs($user);
+
+    $html = Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])->html();
+
+    expect(substr_count($html, 'data-test="settings-form"'))->toBe(2)
+        ->and(substr_count($html, 'role="tablist"'))->toBe(2)
+        ->and(substr_count($html, 'data-test="symmetry-toggle"'))->toBe(2);
+
+    foreach (['details', 'grid', 'theme'] as $tab) {
+        foreach (['pane', 'modal'] as $surface) {
+            expect(substr_count($html, sprintf('id="%s-settings-tab-%s"', $surface, $tab)))->toBe(1)
+                ->and(substr_count($html, sprintf('aria-controls="%s-settings-panel-%s"', $surface, $tab)))->toBe(1)
+                ->and(substr_count($html, sprintf('id="%s-settings-panel-%s"', $surface, $tab)))->toBe(1)
+                ->and(substr_count($html, sprintf('aria-labelledby="%s-settings-tab-%s"', $surface, $tab)))->toBe(1);
+        }
+    }
+
+    // No unprefixed ids survive, so the two copies can never collide.
+    expect($html)->not->toContain('id="settings-tab-')
+        ->not->toContain('id="settings-panel-');
+
+    // The form is a container, so its grids size to the surface, not the viewport.
+    expect(substr_count($html, 'grid-cols-3 gap-2 @sm:grid-cols-4 @lg:grid-cols-5'))->toBe(2)
+        ->and(substr_count($html, 'grid-cols-1 gap-2 @sm:grid-cols-2'))->toBe(2);
+});
+
 test('the toolbar shows cell and clue progress as rings beside the publish button', function () {
     $user = User::factory()->create();
     $crossword = Crossword::factory()->for($user)->create();
@@ -1070,6 +1216,95 @@ test('the toolbar shows cell and clue progress as rings beside the publish butto
         ->toContain(':class="cluesFillColorClass"')
         ->toContain('x-bind:class="isReadyToPublish ? \'btn-amber-solid\' : \'btn-amber-outline\'"')
         ->toContain('max-sm:sr-only');
+});
+
+test('on mobile the publish button sits beside the clue tabs and carries a pooled completion ring', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create();
+
+    $this->actingAs($user);
+
+    $html = Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])->html();
+
+    // The toolbar meters and its publish button are desktop only.
+    preg_match('/<div[^>]*data-test="editor-progress"[^>]*>/', $html, $meters);
+    preg_match('/<div[^>]*data-test="editor-toolbar-publish"[^>]*>/', $html, $toolbarPublish);
+    expect($meters)->not->toBeEmpty()
+        ->and($meters[0])->toContain('hidden')
+        ->toContain('lg:flex')
+        ->and($toolbarPublish)->not->toBeEmpty()
+        ->and($toolbarPublish[0])->toContain('hidden lg:contents');
+
+    // The mobile tab row holds Across, Down, then Publish with the ring.
+    preg_match('/<div[^>]*data-test="editor-mobile-clue-tabs"[^>]*>.*?data-test="editor-publish-button-mobile".*?<\/flux:tooltip>|<div[^>]*data-test="editor-mobile-clue-tabs"[^>]*>/s', $html, $tabs);
+    $tabsStart = strpos($html, 'data-test="editor-mobile-clue-tabs"');
+    $mobileButton = strpos($html, 'data-test="editor-publish-button-mobile"');
+    $ring = strpos($html, 'data-test="editor-publish-progress"');
+    expect($tabsStart)->not->toBeFalse()
+        ->and(strpos($html, '>Across<', $tabsStart))->toBeLessThan(strpos($html, '>Down<', $tabsStart))
+        ->and(strpos($html, '>Down<', $tabsStart))->toBeLessThan($mobileButton)
+        ->and($ring)->toBeGreaterThan($tabsStart)
+        ->and(substr_count($html, 'data-test="editor-publish-button-mobile"'))->toBe(1)
+        ->and(substr_count($html, 'data-test="editor-publish-button"'))->toBe(1)
+        // Only the mobile button carries the ring.
+        ->and(substr_count($html, 'data-test="editor-publish-progress"'))->toBe(1)
+        ->and($ring)->toBeGreaterThan(strpos($html, 'data-test="editor-publish-button"'));
+
+    $ringHtml = substr($html, $ring, 1200);
+    expect($ringHtml)->toContain(':stroke-dashoffset="100 - totalFillPercent"')
+        ->toContain(":class=\"isReadyToPublish ? '' : totalFillColorClass\"")
+        ->toContain('x-show="totalFillPercent > 0"')
+        ->toContain("x-text=\"totalFillPercent + '% complete'\"");
+});
+
+test('a published puzzle shows Unpublish beside the mobile clue tabs', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->published()->create();
+
+    $this->actingAs($user);
+
+    $html = Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])->html();
+
+    $tabsStart = strpos($html, 'data-test="editor-mobile-clue-tabs"');
+    $mobile = substr($html, $tabsStart, strpos($html, 'data-test="editor-publish-button-mobile"') - $tabsStart + 2000);
+
+    expect($mobile)->toContain('Unpublish')
+        ->toContain('data-test="editor-publish-progress"')
+        ->toContain('btn-muted-outline');
+});
+
+test('an unlocked freestyle grid keeps the toolbar publish button on every width', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->freestyle()->create();
+
+    $this->actingAs($user);
+
+    $html = Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->assertSet('freestyleLocked', false)
+        ->html();
+
+    preg_match('/<div[^>]*data-test="editor-toolbar-publish"[^>]*>/', $html, $toolbarPublish);
+
+    // No clue tabs render yet, so there is no mobile copy to hand off to.
+    expect($toolbarPublish)->not->toBeEmpty()
+        ->and($toolbarPublish[0])->not->toContain('hidden')
+        ->and($html)->not->toContain('data-test="editor-mobile-clue-tabs"')
+        ->and($html)->not->toContain('data-test="editor-publish-button-mobile"');
+});
+
+test('clue numbers share a fixed-width column so the clue inputs align', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create(['width' => 15, 'height' => 15]);
+
+    $this->actingAs($user);
+
+    $html = Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])->html();
+
+    // Two desktop panels plus the Across and Down mobile lists, every number
+    // in the same fixed, right-aligned slot regardless of its digit count.
+    $sized = '<span class="mt-px w-6 shrink-0 text-right text-xs font-bold tabular-nums text-zinc-600" x-text="clue.displayNumber"></span>';
+    expect(substr_count($html, $sized))->toBe(4)
+        ->and($html)->not->toContain('<span class="mt-px text-xs font-bold text-zinc-600" x-text="clue.displayNumber">');
 });
 
 test('the editor root only stretches to full height on desktop', function () {

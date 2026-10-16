@@ -4,7 +4,11 @@
      the sheet up to half the viewport with the same Words / Clue library
      tabs as the pane. The grid above stays interactive, so changing the
      selection updates the sheet in place. Picking a word or clue collapses
-     it back to the strip. Included once by the editor page, after the layout. --}}
+     it back to the strip. Included once by the editor page, after the layout.
+
+     It is pinned just above the mobile title bar (editor-mobile-title-bar),
+     which owns the very bottom of the screen; the two read as one stack of
+     strips, suggestions on top. --}}
 @php
     $freestyleUnlocked = $this->puzzleType === \App\Enums\PuzzleType::Freestyle && ! $this->freestyleLocked;
 @endphp
@@ -20,7 +24,7 @@
         aria-label="{{ __('Suggestions') }}"
         data-suggestions-sheet
         :class="suggestionsSheetOpen ? 'h-[50dvh]' : 'h-12'"
-        class="border-line bg-surface fixed inset-x-0 bottom-0 z-30 flex flex-col overflow-hidden rounded-t-xl border-t shadow-[0_-4px_16px_rgba(0,0,0,0.15)] transition-[height] duration-200 lg:hidden"
+        class="border-line bg-surface fixed inset-x-0 bottom-12 z-30 flex flex-col overflow-hidden rounded-t-xl border-t shadow-[0_-4px_16px_rgba(0,0,0,0.15)] transition-[height] duration-200 lg:hidden"
     >
         {{-- Peek strip / header. Always visible; tap to expand or collapse. --}}
         <button

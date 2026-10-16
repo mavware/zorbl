@@ -1859,6 +1859,16 @@ export function crosswordGrid({
             return this._fillColorClass(this.cluesFilled, this.cluesTotal);
         },
 
+        // Cells and clues pooled into one figure for the single ring the
+        // mobile Publish button carries, where there is no room for two.
+        get totalFillPercent() {
+            return this._fillPercent(this.cellsFilled + this.cluesFilled, this.cellsTotal + this.cluesTotal);
+        },
+
+        get totalFillColorClass() {
+            return this._fillColorClass(this.cellsFilled + this.cluesFilled, this.cellsTotal + this.cluesTotal);
+        },
+
         // Colour for the progress ring: darker shades on the light theme,
         // lighter ones on dark so the ring keeps contrast against its track.
         _fillColorClass(filled, total) {

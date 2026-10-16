@@ -16,11 +16,11 @@ it('owner can load the editor and sees the toolbar, grid, and clue panels', func
         ->assertSee('Across')
         ->assertSee('Down')
         ->assertPresent('[role="grid"]')
-        ->assertPresent('input[placeholder="Puzzle title"][wire\\:change="saveMetadata"]')
+        ->assertPresent('[data-test="settings-pane"]')
         ->assertNoJavaScriptErrors();
 });
 
-it('shows the existing title in the toolbar', function () {
+it('shows the existing title in the settings sidebar', function () {
     $user = User::factory()->create();
     $crossword = Crossword::factory()
         ->for($user)
@@ -30,7 +30,9 @@ it('shows the existing title in the toolbar', function () {
     $this->actingAs($user);
 
     visit(route('crosswords.editor', $crossword))
-        ->assertValue('input[placeholder="Puzzle title"][wire\\:change="saveMetadata"]', 'My Sunday Grid')
+        ->click('[data-test="settings-pane-open"]')
+        ->assertVisible('[data-test="settings-pane"] input[placeholder="Puzzle title"]')
+        ->assertValue('[data-test="settings-pane"] input[placeholder="Puzzle title"]', 'My Sunday Grid')
         ->assertNoJavaScriptErrors();
 });
 
@@ -60,7 +62,7 @@ it('clears cell selection when clicking outside the grid and clue panels', funct
     $page->script("(() => { const d = {$gridData}; d.selectedRow = 0; d.selectedCol = 0; })()");
     $page->assertScript("{$gridData}.selectedRow", 0);
 
-    $page->click('input[placeholder="Puzzle title"][wire\\:change="saveMetadata"]');
+    $page->click('[data-test="editor-progress"]');
 
     $page->assertScript("{$gridData}.selectedRow", -1);
     $page->assertScript("{$gridData}.selectedCol", -1);

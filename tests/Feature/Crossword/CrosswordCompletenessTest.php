@@ -185,3 +185,151 @@ test('cancel publish dispatches highlight event', function () {
         ->assertSet('showPublishWarning', false)
         ->assertDispatched('highlight-incomplete');
 });
+
+test('publish warning lists exactly which answers and clues are missing', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create([
+        'author' => 'Author',
+        'width' => 3,
+        'height' => 3,
+        'grid' => [[1, 2, 3], [4, 0, 0], [5, 0, 0]],
+        'solution' => [['C', 'A', 'T'], ['O', '', 'X'], ['W', '', '']],
+        'clues_across' => [
+            ['number' => 1, 'clue' => 'Pet'],
+            ['number' => 4, 'clue' => ''],
+            ['number' => 5, 'clue' => 'Last row'],
+        ],
+        'clues_down' => [
+            ['number' => 1, 'clue' => 'Moo'],
+            ['number' => 2, 'clue' => '   '],
+            ['number' => 3, 'clue' => 'Last column'],
+        ],
+    ]);
+
+    $this->actingAs($user);
+
+    $component = Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->call('attemptPublish')
+        ->assertSet('showPublishWarning', true)
+        ->assertSet('incompleteChecks', ['fill', 'clues_across', 'clues_down'])
+        ->assertSet('incompleteDetails', [
+            'answers' => [
+                ['direction' => 'across', 'number' => 4, 'pattern' => 'O?X'],
+                ['direction' => 'across', 'number' => 5, 'pattern' => 'W??'],
+                ['direction' => 'down', 'number' => 2, 'pattern' => 'A??'],
+                ['direction' => 'down', 'number' => 3, 'pattern' => 'TX?'],
+            ],
+            'clues' => [
+                ['direction' => 'across', 'number' => 4, 'pattern' => 'O?X'],
+                ['direction' => 'down', 'number' => 2, 'pattern' => 'A??'],
+            ],
+        ])
+        ->assertSeeInOrder([
+            'Publish Incomplete Puzzle?',
+            'See details',
+            'Answers with missing letters',
+            '4 Across', 'O?X',
+            '5 Across', 'W??',
+            '2 Down', 'A??',
+            '3 Down', 'TX?',
+            'Clues without text',
+            '4 Across', 'O?X',
+            '2 Down', 'A??',
+            'Publish Anyway',
+        ]);
+
+    $html = $component->html();
+    expect(substr_count($html, 'data-test="publish-warning-details"'))->toBe(1)
+        ->and($html)->toContain('data-test="publish-warning-answers"')
+        ->toContain('data-test="publish-warning-clues"');
+});
+
+test('publish warning details only cover the checks that failed', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create([
+        'author' => '',
+        'width' => 3,
+        'height' => 3,
+        'grid' => [[1, 2, 3], [4, 0, 0], [5, 0, 0]],
+        'solution' => [['C', 'A', 'T'], ['O', 'N', 'E'], ['W', 'E', 'D']],
+        'clues_across' => [
+            ['number' => 1, 'clue' => 'Pet'],
+            ['number' => 4, 'clue' => 'Single'],
+            ['number' => 5, 'clue' => 'Married'],
+        ],
+        'clues_down' => [
+            ['number' => 1, 'clue' => 'Moo'],
+            ['number' => 2, 'clue' => ''],
+            ['number' => 3, 'clue' => 'Pulled'],
+        ],
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->call('attemptPublish')
+        ->assertSet('incompleteChecks', ['author', 'clues_down'])
+        ->assertSet('incompleteDetails', [
+            'answers' => [],
+            'clues' => [
+                ['direction' => 'down', 'number' => 2, 'pattern' => 'ANE'],
+            ],
+        ])
+        ->assertSee('Clues without text')
+        ->assertDontSee('Answers with missing letters');
+});
+
+test('publish warning hides the details section when only the constructor name is missing', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create([
+        'author' => '',
+        'width' => 3,
+        'height' => 3,
+        'grid' => [[1, 2, 3], [4, 0, 0], [5, 0, 0]],
+        'solution' => [['C', 'A', 'T'], ['O', 'N', 'E'], ['W', 'E', 'D']],
+        'clues_across' => [
+            ['number' => 1, 'clue' => 'Pet'],
+            ['number' => 4, 'clue' => 'Single'],
+            ['number' => 5, 'clue' => 'Married'],
+        ],
+        'clues_down' => [
+            ['number' => 1, 'clue' => 'Moo'],
+            ['number' => 2, 'clue' => 'Birth name'],
+            ['number' => 3, 'clue' => 'Pulled'],
+        ],
+    ]);
+
+    $this->actingAs($user);
+
+    $html = Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->call('attemptPublish')
+        ->assertSet('incompleteChecks', ['author'])
+        ->assertSet('incompleteDetails', ['answers' => [], 'clues' => []])
+        ->html();
+
+    expect($html)->not->toContain('data-test="publish-warning-details"');
+});
+
+test('publishing anyway clears the incomplete details', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create([
+        'author' => 'Author',
+        'width' => 3,
+        'height' => 3,
+        'grid' => [[1, 2, 3], [4, 0, 0], [5, 0, 0]],
+        'solution' => [['C', 'A', 'T'], ['O', '', 'X'], ['W', '', '']],
+        'clues_across' => [['number' => 1, 'clue' => 'Pet']],
+        'clues_down' => [['number' => 1, 'clue' => 'Moo']],
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->call('attemptPublish')
+        ->assertSet('showPublishWarning', true)
+        ->call('togglePublished')
+        ->assertSet('isPublished', true)
+        ->assertSet('showPublishWarning', false)
+        ->assertSet('incompleteChecks', [])
+        ->assertSet('incompleteDetails', ['answers' => [], 'clues' => []]);
+});

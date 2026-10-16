@@ -151,6 +151,37 @@ describe('fill percentages', () => {
         });
         expect(g.cellsFillPercent).toBe(0);
         expect(g.cluesFillPercent).toBe(0);
+        expect(g.totalFillPercent).toBe(0);
+        expect(g.totalFillColorClass).toBe('text-zinc-400 dark:text-zinc-500');
+    });
+
+    it('pools cells and clues into one total for the mobile publish ring', () => {
+        const g = makeGrid();
+        // (5 cells + 3 clues) / (8 cells + 6 clues).
+        expect(g.totalFillPercent).toBe(57);
+        expect(g.totalFillColorClass).toBe('text-amber-500 dark:text-amber-400');
+    });
+
+    it('reports the total as complete only when both halves are', () => {
+        const g = makeGrid({
+            solution: [
+                ['A', 'B', '#'],
+                ['C', 'D', 'E'],
+                ['F', 'G', 'H'],
+            ],
+            cluesAcross: [
+                { number: 1, clue: 'First' },
+                { number: 3, clue: 'Second' },
+                { number: 5, clue: 'Third' },
+            ],
+            cluesDown: [
+                { number: 1, clue: 'Down 1' },
+                { number: 2, clue: 'Down 2' },
+                { number: 4, clue: 'Down 4' },
+            ],
+        });
+        expect(g.totalFillPercent).toBe(100);
+        expect(g.totalFillColorClass).toBe('text-green-600 dark:text-green-400');
     });
 });
 

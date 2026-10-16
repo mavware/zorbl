@@ -4,7 +4,10 @@
         @endphp
         @if (! $freestyleUnlocked)
         <div class="lg:hidden" :class="{ 'editor-complete-flash': cluesCompleteFlash }">
-            <div class="flex border-b border-line">
+            {{-- Tabs, with Publish at the far end of the same row. The button
+                 carries the pooled completion ring, standing in for the
+                 toolbar's progress meters that are hidden below `lg`. --}}
+            <div class="flex items-center border-b border-line" data-test="editor-mobile-clue-tabs">
                 <button
                     x-on:click="direction = 'across'"
                     :class="['text-fg', direction === 'across' ? 'border-zinc-800 dark:border-zinc-200' : 'border-transparent text-zinc-600']"
@@ -15,6 +18,10 @@
                     :class="['text-fg', direction === 'down' ? 'border-zinc-800 dark:border-zinc-200' : 'border-transparent text-zinc-600']"
                     class="border-b-2 px-4 py-2 text-sm font-medium"
                 >{{ __('Down') }}</button>
+
+                <div class="ml-auto pb-1.5 pl-2">
+                    @include('partials.editor-publish-button', ['testId' => 'editor-publish-button-mobile', 'withRing' => true])
+                </div>
             </div>
             <div class="max-h-48 space-y-0.5 overflow-y-auto py-2">
                 <template x-if="direction === 'across'">
@@ -33,7 +40,7 @@ isClueIncomplete('across') && !clue.clue?.trim() ? 'ring-2 ring-amber-400 dark:r
                                 class="cursor-pointer rounded px-2 py-1"
                             >
                                 <div class="flex items-start gap-1.5">
-                                    <span class="mt-px text-xs font-bold text-zinc-600" x-text="clue.displayNumber"></span>
+                                    <span class="mt-px w-6 shrink-0 text-right text-xs font-bold tabular-nums text-zinc-600" x-text="clue.displayNumber"></span>
                                     <div class="flex-1">
                                         <textarea
                                             rows="1"
@@ -48,31 +55,6 @@ isClueIncomplete('across') && !clue.clue?.trim() ? 'ring-2 ring-amber-400 dark:r
                                         ></textarea>
                                         <div class="flex items-center gap-1">
                                             @include('partials.clue-quality-icon', ['dir' => 'across'])
-                                            <flux:tooltip content="{{ __('Clue library') }}" x-show="activeClueNumber === clue.number && direction === 'across'">
-                                                <button
-                                                    type="button"
-                                                    x-on:click.stop="openSuggestionsSheet('clues')"
-                                                    class="inline-flex items-center rounded px-1 py-0.5 text-amber-500 transition-colors hover:bg-amber-50 hover:text-amber-600 dark:text-amber-400 dark:hover:bg-amber-900/20 dark:hover:text-amber-300 cursor-pointer"
-                                                >
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="size-3.5"
-                                                         viewBox="0 0 20 20" fill="currentColor">
-                                                        <path
-                                                            d="M9 4.804A7.968 7.968 0 0 0 5.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 0 1 5.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0 1 14.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0 0 14.5 4c-1.669 0-3.218.51-4.5 1.385V15"/>
-                                                    </svg>
-                                                </button>
-                                            </flux:tooltip>
-                                            <flux:tooltip content="{{ __('Suggest words') }}" x-show="activeClueNumber === clue.number && direction === 'across'">
-                                                <button
-                                                    type="button"
-                                                    x-on:click.stop="openSuggestionsSheet('words')"
-                                                    class="inline-flex items-center rounded px-1 py-0.5 text-blue-500 transition-colors hover:bg-blue-50 hover:text-blue-600 dark:text-blue-400 dark:hover:bg-blue-900/20 dark:hover:text-blue-300 cursor-pointer"
-                                                >
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="size-3.5"
-                                                         viewBox="0 0 20 20" fill="currentColor">
-                                                        <path d="M10 1a6 6 0 0 0-3.815 10.631C7.237 12.5 8 13.443 8 14.456v.044a2 2 0 0 0 2 2h0a2 2 0 0 0 2-2v-.044c0-1.013.762-1.957 1.815-2.825A6 6 0 0 0 10 1ZM8 18a2 2 0 1 0 4 0H8Z"/>
-                                                    </svg>
-                                                </button>
-                                            </flux:tooltip>
                                         </div>
                                     </div>
                                 </div>
@@ -96,7 +78,7 @@ isClueIncomplete('down') && !clue.clue?.trim() ? 'ring-2 ring-amber-400 dark:rin
                                 class="cursor-pointer rounded px-2 py-1"
                             >
                                 <div class="flex items-start gap-1.5">
-                                    <span class="mt-px text-xs font-bold text-zinc-600" x-text="clue.displayNumber"></span>
+                                    <span class="mt-px w-6 shrink-0 text-right text-xs font-bold tabular-nums text-zinc-600" x-text="clue.displayNumber"></span>
                                     <div class="flex-1">
                                         <textarea
                                             rows="1"
@@ -111,31 +93,6 @@ isClueIncomplete('down') && !clue.clue?.trim() ? 'ring-2 ring-amber-400 dark:rin
                                         ></textarea>
                                         <div class="flex items-center gap-1">
                                             @include('partials.clue-quality-icon', ['dir' => 'down'])
-                                            <flux:tooltip content="{{ __('Clue library') }}" x-show="activeClueNumber === clue.number && direction === 'down'">
-                                                <button
-                                                    type="button"
-                                                    x-on:click.stop="openSuggestionsSheet('clues')"
-                                                    class="inline-flex items-center rounded px-1 py-0.5 text-amber-500 transition-colors hover:bg-amber-50 hover:text-amber-600 dark:text-amber-400 dark:hover:bg-amber-900/20 dark:hover:text-amber-300 cursor-pointer"
-                                                >
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="size-3.5"
-                                                         viewBox="0 0 20 20" fill="currentColor">
-                                                        <path
-                                                            d="M9 4.804A7.968 7.968 0 0 0 5.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 0 1 5.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0 1 14.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0 0 14.5 4c-1.669 0-3.218.51-4.5 1.385V15"/>
-                                                    </svg>
-                                                </button>
-                                            </flux:tooltip>
-                                            <flux:tooltip content="{{ __('Suggest words') }}" x-show="activeClueNumber === clue.number && direction === 'down'">
-                                                <button
-                                                    type="button"
-                                                    x-on:click.stop="openSuggestionsSheet('words')"
-                                                    class="inline-flex items-center rounded px-1 py-0.5 text-blue-500 transition-colors hover:bg-blue-50 hover:text-blue-600 dark:text-blue-400 dark:hover:bg-blue-900/20 dark:hover:text-blue-300 cursor-pointer"
-                                                >
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="size-3.5"
-                                                         viewBox="0 0 20 20" fill="currentColor">
-                                                        <path d="M10 1a6 6 0 0 0-3.815 10.631C7.237 12.5 8 13.443 8 14.456v.044a2 2 0 0 0 2 2h0a2 2 0 0 0 2-2v-.044c0-1.013.762-1.957 1.815-2.825A6 6 0 0 0 10 1ZM8 18a2 2 0 1 0 4 0H8Z"/>
-                                                    </svg>
-                                                </button>
-                                            </flux:tooltip>
                                         </div>
                                     </div>
                                 </div>

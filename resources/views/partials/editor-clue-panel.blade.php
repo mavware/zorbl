@@ -29,7 +29,7 @@ isClueIncomplete('{{ $direction }}') && !clue.clue?.trim() ? 'ring-2 ring-amber-
             :id="'clue-{{ $direction }}-' + clue.number"
         >
             <div class="flex items-start gap-1.5">
-                <span class="mt-px text-xs font-bold text-zinc-600" x-text="clue.displayNumber"></span>
+                <span class="mt-px w-6 shrink-0 text-right text-xs font-bold tabular-nums text-zinc-600" x-text="clue.displayNumber"></span>
                 <div class="clue-content flex-1">
                     <textarea
                         rows="1"
