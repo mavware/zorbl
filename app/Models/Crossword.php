@@ -483,17 +483,70 @@ class Crossword extends Model
         return filled($this->meta_answer_prompt) && ! empty($this->meta_answers);
     }
 
+    /**
+     * The answer the builder set: the first stored answer. Older puzzles may
+     * still hold alternates behind it, which isMetaAnswerCorrect keeps
+     * honouring, but the editor and the solvers' letter slots work from this
+     * one.
+     */
+    public function metaAnswer(): ?string
+    {
+        foreach ($this->meta_answers ?? [] as $answer) {
+            if (trim((string) $answer) !== '') {
+                return trim((string) $answer);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * The shape solvers type into: one blank per letter or digit of the
+     * answer, with spaces and punctuation shown as they are, e.g.
+     * "ROCK 'N' ROLL" becomes "____ '_' ____". It gives away the length
+     * and word breaks, nothing more.
+     */
+    public function metaAnswerPattern(): ?string
+    {
+        $answer = $this->metaAnswer();
+
+        if ($answer === null) {
+            return null;
+        }
+
+        return self::metaAnswerPatternFor($answer);
+    }
+
+    /** Blank out every letter and digit of an answer, keeping its spaces and punctuation. */
+    public static function metaAnswerPatternFor(string $answer): string
+    {
+        return (string) preg_replace('/[\p{L}\p{N}]/u', '_', $answer);
+    }
+
     public function isMetaAnswerCorrect(string $submission): bool
     {
-        $normalized = mb_strtolower(trim($submission));
+        $normalized = self::normalizeMetaAnswer($submission);
+
+        if ($normalized === '') {
+            return false;
+        }
 
         foreach ($this->meta_answers ?? [] as $answer) {
-            if (mb_strtolower(trim($answer)) === $normalized) {
+            if (self::normalizeMetaAnswer((string) $answer) === $normalized) {
                 return true;
             }
         }
 
         return false;
+    }
+
+    /**
+     * Case, spacing and punctuation never decide a meta answer: only the
+     * letters and digits are compared, so "Rock 'n' roll" matches "ROCKNROLL".
+     */
+    public static function normalizeMetaAnswer(string $answer): string
+    {
+        return mb_strtolower((string) preg_replace('/[^\p{L}\p{N}]+/u', '', $answer));
     }
 
     /**

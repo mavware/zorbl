@@ -30,6 +30,19 @@ class extends Component {
     public ?float $avgRating = null;
     public int $ratingCount = 0;
 
+    /**
+     * The meta answer, shown beneath the grid while solving. Guests have no
+     * attempt row, so a submission is checked but never stored; the page
+     * only ever holds the answer's blank pattern, not the answer.
+     */
+    public bool $hasMetaAnswer = false;
+    public string $metaAnswerPrompt = '';
+    public string $metaAnswerPattern = '';
+    public bool $metaAnswerReveal = false;
+    public string $metaAnswerSubmission = '';
+    public bool $metaAnswerSubmitted = false;
+    public ?bool $metaAnswerCorrect = null;
+
     public function mount(Crossword $crossword): void
     {
         abort_unless($crossword->is_published, 404);
@@ -71,6 +84,11 @@ class extends Component {
 
         $this->solveCount = (int) $crossword->cached_completed_count;
 
+        $this->hasMetaAnswer = $crossword->hasMetaAnswer();
+        $this->metaAnswerPrompt = $crossword->meta_answer_prompt ?? '';
+        $this->metaAnswerPattern = $crossword->metaAnswerPattern() ?? '';
+        $this->metaAnswerReveal = (bool) $crossword->meta_answer_reveal;
+
         $ratings = $crossword->comments()
             ->whereNotNull('rating')
             ->selectRaw('avg(rating) as avg_rating, count(*) as rating_count')
@@ -80,6 +98,26 @@ class extends Component {
             $this->avgRating = round((float) $ratings->avg_rating, 1);
             $this->ratingCount = (int) $ratings->rating_count;
         }
+    }
+
+    public function submitMetaAnswer(): void
+    {
+        $this->validate([
+            'metaAnswerSubmission' => ['required', 'string', 'max:500'],
+        ]);
+
+        $crossword = Crossword::findOrFail($this->crosswordId);
+        abort_unless($crossword->is_published, 404);
+
+        if (! $crossword->hasMetaAnswer()) {
+            return;
+        }
+
+        $this->metaAnswerSubmission = trim($this->metaAnswerSubmission);
+        $this->metaAnswerSubmitted = true;
+        $this->metaAnswerCorrect = $this->metaAnswerReveal
+            ? $crossword->isMetaAnswerCorrect($this->metaAnswerSubmission)
+            : null;
     }
 
     public function render(): \Illuminate\View\View
@@ -567,6 +605,12 @@ class extends Component {
                 </div>
             </div>
         </div>
+
+        {{-- Meta Answer: beneath the puzzle the whole time; it checks itself
+             once every blank is filled. --}}
+        @if($hasMetaAnswer)
+            @include('partials.meta-answer-entry')
+        @endif
 
         {{-- Signup banner --}}
         <div class="mt-4 flex items-center justify-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 dark:border-amber-800/50 dark:bg-amber-900/20">

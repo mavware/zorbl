@@ -66,10 +66,9 @@ class extends Component {
     public string $secretTheme = '';
 
     public string $metaAnswerPrompt = '';
-    /** @var list<string> */
-    public array $metaAnswers = [];
+    /** The one answer solvers type into letter slots; stored as meta_answers[0]. */
+    public string $metaAnswer = '';
     public bool $metaAnswerReveal = true;
-    public string $newMetaAnswer = '';
     public ?CrosswordLayout $layout = null;
     public int $minAnswerLength = 3;
 
@@ -126,7 +125,7 @@ class extends Component {
         $this->notes = $crossword->notes ?? '';
         $this->secretTheme = $crossword->secret_theme ?? '';
         $this->metaAnswerPrompt = $crossword->meta_answer_prompt ?? '';
-        $this->metaAnswers = $crossword->meta_answers ?? [];
+        $this->metaAnswer = $crossword->metaAnswer() ?? '';
         $this->metaAnswerReveal = $crossword->meta_answer_reveal ?? true;
         $this->layout = $crossword->layout;
         $this->minAnswerLength = $crossword->metadata['min_answer_length'] ?? 3;
@@ -222,6 +221,7 @@ class extends Component {
         'letterColor',
         'lineColor',
         'metaAnswerPrompt',
+        'metaAnswer',
         'metaAnswerReveal',
         'secretTheme',
     ];
@@ -252,8 +252,7 @@ class extends Component {
             'notes'            => ['nullable', 'string', 'max:1000'],
             'secretTheme'      => ['nullable', 'string', 'max:500'],
             'metaAnswerPrompt' => ['nullable', 'string', 'max:500'],
-            'metaAnswers'      => ['nullable', 'array', 'max:10'],
-            'metaAnswers.*'    => ['required', 'string', 'max:255'],
+            'metaAnswer'       => ['nullable', 'string', 'max:255'],
             'minAnswerLength'  => ['required', 'integer', 'min:1', 'max:15'],
             'cellColor'        => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'blockColor'       => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
@@ -281,10 +280,15 @@ class extends Component {
             unset($metadata['colors']);
         }
 
-        $filteredMetaAnswers = array_values(array_filter(
-            array_map('trim', $this->metaAnswers),
-            fn (string $a) => $a !== '',
-        ));
+        // Puzzles saved before the answer became a single field may still
+        // hold alternates behind the first answer; they stay until the
+        // builder actually changes the answer, not just another setting.
+        $metaAnswer = trim($this->metaAnswer);
+        $metaAnswers = match (true) {
+            $metaAnswer === '' => null,
+            $metaAnswer === $crossword->metaAnswer() => $crossword->meta_answers,
+            default => [$metaAnswer],
+        };
 
         $crossword->update([
             'title'               => $this->title,
@@ -293,7 +297,7 @@ class extends Component {
             'notes'               => $this->notes,
             'secret_theme'        => $this->secretTheme !== '' ? $this->secretTheme : null,
             'meta_answer_prompt'  => $this->metaAnswerPrompt !== '' ? $this->metaAnswerPrompt : null,
-            'meta_answers'        => ! empty($filteredMetaAnswers) ? $filteredMetaAnswers : null,
+            'meta_answers'        => $metaAnswers,
             'meta_answer_reveal'  => $this->metaAnswerReveal,
             'layout'              => $this->layout,
             'metadata'            => $metadata,
@@ -304,25 +308,6 @@ class extends Component {
 
         $this->dispatch('settings-updated');
         $this->dispatch('saved');
-    }
-
-    public function addMetaAnswer(): void
-    {
-        $answer = trim($this->newMetaAnswer);
-        if ($answer === '' || count($this->metaAnswers) >= 10) {
-            return;
-        }
-
-        $this->metaAnswers[] = $answer;
-        $this->newMetaAnswer = '';
-        $this->persistMetadata();
-    }
-
-    public function removeMetaAnswer(int $index): void
-    {
-        unset($this->metaAnswers[$index]);
-        $this->metaAnswers = array_values($this->metaAnswers);
-        $this->persistMetadata();
     }
 
     /** @return array<int, array{id: int, name: string}> */
@@ -1062,8 +1047,11 @@ class extends Component {
          the toolbar and workspace stack in the second. The first track is
          2rem narrower than the sidebar looks because the sidebar pulls
          itself out through main's 2rem start gutter to sit flush against
-         the page edge. --}}
+         the page edge. The root opts out of the centred page column
+         (data-full-width, app.css) so sidebar and workspace use the whole
+         window. --}}
     class="flex flex-col lg:grid lg:h-full lg:grid-cols-[18rem_minmax(0,1fr)] lg:grid-rows-[auto_minmax(0,1fr)] lg:gap-x-6"
+    data-full-width
 >
     {{-- Desktop settings sidebar, first so it fills the first grid column. --}}
     @include('partials.editor-settings-pane')

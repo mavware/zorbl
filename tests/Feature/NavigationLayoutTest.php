@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\Navigation;
+use App\Models\Crossword;
 use App\Models\HelpArticle;
 use App\Models\User;
 use App\Services\AnonymousUserManager;
@@ -430,6 +431,48 @@ test('both chromes let the main area fill the available width', function (string
         ->not->toContain('mx-auto')
         ->not->toContain('max-w-');
 })->with(['sidebar', 'header']);
+
+test('page roots centre themselves in a column while viewport-sized pages use the whole width', function () {
+    config(['crosswordbuilder.navigation' => 'header']);
+
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create();
+
+    // The column comes from app.css, keyed on the roots' data attributes:
+    // ordinary pages carry neither opt-out...
+    $index = $this->actingAs($user)->get(route('crosswords.index'))->assertOk()->getContent();
+    preg_match('/<div[^>]*data-flux-main[^>]*>\s*(<div[^>]*>)/', $index, $root);
+    expect($root[1])->not->toContain('data-full-width')
+        ->not->toContain('data-banner');
+
+    // ...while the editor, whose sidebar sits against the window edge and
+    // whose workspace sizes itself to the viewport, opts out.
+    $editor = $this->actingAs($user)->get(route('crosswords.editor', $crossword))->assertOk()->getContent();
+    preg_match('/<div[^>]*x-data="crosswordGrid\(/', $editor, $gridRoot, PREG_OFFSET_CAPTURE);
+    $gridOpenTag = substr($editor, $gridRoot[0][1], strpos($editor, '>', $gridRoot[0][1]) - $gridRoot[0][1]);
+    expect($gridOpenTag)->toContain('data-full-width');
+
+    // The solver stays in the column like any other page.
+    $solver = $this->actingAs($user)->get(route('crosswords.solver', $crossword))->assertOk()->getContent();
+    preg_match('/<div[^>]*x-data="crosswordSolver\(/', $solver, $solverRoot, PREG_OFFSET_CAPTURE);
+    $solverOpenTag = substr($solver, $solverRoot[0][1], strpos($solver, '>', $solverRoot[0][1]) - $solverRoot[0][1]);
+    expect($solverOpenTag)->not->toContain('data-full-width');
+});
+
+test('the guest banner spans the window and centres its content to the page column', function () {
+    config(['crosswordbuilder.navigation' => 'header']);
+
+    $html = $this->actingAs(app(AnonymousUserManager::class)->create())
+        ->get(route('crosswords.index'))
+        ->assertOk()
+        ->getContent();
+
+    preg_match('/<div[^>]*data-banner[^>]*>\s*<div[^>]*data-banner-content[^>]*>/', $html, $banner);
+    expect($banner)->not->toBeEmpty()
+        ->and($banner[0])->toContain('data-full-bleed')
+        ->toContain('mx-auto')
+        ->toContain('max-w-7xl');
+});
 
 test('the sidebar chrome can collapse to an icon rail on desktop', function () {
     config(['crosswordbuilder.navigation' => 'sidebar']);

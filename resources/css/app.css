@@ -106,6 +106,15 @@ select:focus[data-flux-control] {
     @apply px-6 lg:px-8;
 }
 
+/* With the navigation in a top bar nothing narrows the window, so each page
+   root also centres itself in a readable column. A page whose layout sizes
+   itself to the viewport (the editor with its sidebar and workspace, the
+   solver) opts out with `data-full-width` on its root. A banner spans the
+   window and centres its own content to the same column instead. */
+[data-flux-main] > :not([data-full-width]):not([data-banner]) {
+    @apply mx-auto w-full max-w-7xl;
+}
+
 /* Main has no top padding so a banner can sit flush. When nothing is rendered
    above the page root, the root supplies the top gutter itself — unless the
    page opens with an <x-page-header>, which carries its own 34px top padding. */

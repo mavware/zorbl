@@ -39,7 +39,7 @@
         $settingsTabErrors = [
             'details' => $errors->hasAny(['title', 'author', 'copyright', 'notes', 'allowEmbed', 'tagIds']),
             'grid' => $errors->hasAny(['minAnswerLength', 'layout', 'cellColor', 'blockColor', 'circleColor', 'letterColor', 'lineColor', 'resizeWidth', 'resizeHeight']),
-            'theme' => $errors->hasAny(['secretTheme', 'metaAnswerPrompt', 'metaAnswers', 'metaAnswers.*', 'metaAnswerReveal']),
+            'theme' => $errors->hasAny(['secretTheme', 'metaAnswerPrompt', 'metaAnswer', 'metaAnswerReveal']),
             'suggestions' => false,
         ];
     @endphp
@@ -377,7 +377,7 @@
             {{-- Meta Answer Section --}}
             <div class="space-y-4">
                 <flux:heading size="sm">
-                    {{ __('Meta Answer') }} <x-info-tooltip>{{ __('Add a meta answer prompt that solvers see after completing the puzzle. Great for themed puzzles with a hidden message.') }}</x-info-tooltip>
+                    {{ __('Meta Answer') }} <x-info-tooltip>{{ __('Give the puzzle one final answer. Solvers see your prompt and a blank for each letter beneath the grid while they solve, and the answer is checked as soon as every blank is filled. Great for themed puzzles with a hidden message.') }}</x-info-tooltip>
                 </flux:heading>
 
                 <flux:field>
@@ -393,33 +393,20 @@
 
                 <flux:field>
                     <flux:label>
-                        <span>{{ __('Accepted Answers') }} <x-info-tooltip>{{ __('Add one or more correct answers. Matching is case-insensitive.') }}</x-info-tooltip></span>
+                        <span>{{ __('Answer') }} <x-info-tooltip>{{ __('Solvers get one blank per letter or digit; spaces and punctuation are shown. Case, spacing and punctuation are ignored when checking.') }}</x-info-tooltip></span>
                     </flux:label>
-
-                    @if(count($metaAnswers) > 0)
-                        <div class="mt-2 space-y-2">
-                            @foreach($metaAnswers as $index => $answer)
-                                <div class="flex items-center gap-2">
-                                    <flux:badge>{{ $answer }}</flux:badge>
-                                    <flux:button size="xs" variant="ghost" wire:click="removeMetaAnswer({{ $index }})">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="size-3.5" viewBox="0 0 20 20" fill="currentColor"><path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z"/></svg>
-                                    </flux:button>
-                                </div>
-                            @endforeach
-                        </div>
+                    <div class="relative">
+                        <flux:input wire:model.live.debounce.750ms="metaAnswer"
+                                    placeholder="{{ __('e.g. HIDDEN MESSAGE') }}"
+                                    maxlength="255"
+                                    autocapitalize="characters" />
+                        <x-saved-check property="metaAnswer" />
+                    </div>
+                    @if(trim($metaAnswer) !== '')
+                        {{-- The blanks exactly as the solver will see them. --}}
+                        <flux:description class="font-mono tracking-[0.2em]" data-test="meta-answer-pattern-preview">{{ \App\Models\Crossword::metaAnswerPatternFor(trim($metaAnswer)) }}</flux:description>
                     @endif
-
-                    @if(count($metaAnswers) < 10)
-                        <div class="mt-2 flex items-center gap-2">
-                            <flux:input wire:model="newMetaAnswer"
-                                        wire:keydown.enter.prevent="addMetaAnswer"
-                                        placeholder="{{ __('Type an answer and press Enter') }}"
-                                        size="sm" />
-                            <flux:button size="sm" wire:click="addMetaAnswer">{{ __('Add') }}</flux:button>
-                        </div>
-                    @endif
-
-                    <flux:error name="metaAnswers"/>
+                    <flux:error name="metaAnswer"/>
                 </flux:field>
 
                 <flux:field variant="inline">

@@ -1,11 +1,13 @@
 import { crosswordGrid } from './crossword-grid.js';
 import { crosswordSolver } from './crossword-solver.js';
+import { metaAnswerEntry } from './meta-answer-entry.js';
 import { passkeyConfirm, passkeyLogin, passkeyManager } from './passkeys.js';
 import './pwa.js';
 
 document.addEventListener('alpine:init', () => {
     Alpine.data('crosswordGrid', crosswordGrid);
     Alpine.data('crosswordSolver', crosswordSolver);
+    Alpine.data('metaAnswerEntry', metaAnswerEntry);
     Alpine.data('passkeyLogin', passkeyLogin);
     Alpine.data('passkeyConfirm', passkeyConfirm);
     Alpine.data('passkeyManager', passkeyManager);

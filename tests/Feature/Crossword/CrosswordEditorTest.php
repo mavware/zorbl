@@ -260,10 +260,10 @@ test('settings fields autosave as they change and keep the modal open', function
     $component->set('layout', CrosswordLayout::CluesLeft->value);
     expect($crossword->fresh()->layout)->toBe(CrosswordLayout::CluesLeft);
 
-    $component->set('newMetaAnswer', 'OWLS')->call('addMetaAnswer');
+    $component->set('metaAnswer', 'OWLS');
     expect($crossword->fresh()->meta_answers)->toBe(['OWLS']);
 
-    $component->call('removeMetaAnswer', 0);
+    $component->set('metaAnswer', '');
     expect($crossword->fresh()->meta_answers)->toBeNull();
 
     $component->call('addTag', $tag->id);
@@ -291,7 +291,7 @@ test('grid dimensions do not autosave until Resize Grid is pressed', function ()
     // Each autosaving text or number control carries a saved check over its
     // end edge, in both surfaces plus the mobile title row; the dimension
     // inputs do not.
-    foreach (['title', 'author', 'copyright', 'notes', 'minAnswerLength', 'metaAnswerPrompt', 'secretTheme'] as $property) {
+    foreach (['title', 'author', 'copyright', 'notes', 'minAnswerLength', 'metaAnswerPrompt', 'metaAnswer', 'secretTheme'] as $property) {
         expect(preg_match_all(sprintf('/data-test="saved-check"\s+data-property="%s"/', $property), $html))
             ->toBe($property === 'title' ? 3 : 2, $property);
     }
@@ -310,6 +310,7 @@ test('grid dimensions do not autosave until Resize Grid is pressed', function ()
         ->toContain('wire:model.live.debounce.750ms="notes"')
         ->toContain('wire:model.live.debounce.750ms="minAnswerLength"')
         ->toContain('wire:model.live.debounce.750ms="metaAnswerPrompt"')
+        ->toContain('wire:model.live.debounce.750ms="metaAnswer"')
         ->toContain('wire:model.live.debounce.750ms="secretTheme"')
         ->toContain('wire:model.live="metaAnswerReveal"')
         ->toContain('wire:click="saveMetadata"');
@@ -483,7 +484,7 @@ test('settings modal renders the AI theme hint and meta answer prompt as real in
     $this->actingAs($user);
 
     $html = Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
-        ->assertSeeInOrder(['AI Theme Hint', 'Meta Answer', 'Prompt', 'Accepted Answers'])
+        ->assertSeeInOrder(['AI Theme Hint', 'Meta Answer', 'Prompt', 'Answer'])
         ->html();
 
     // A double quote inside a component attribute stops Blade compiling the
