@@ -721,3 +721,52 @@ test('editor has upgrade modal properties', function () {
         ->assertSet('showUpgradeModal', true)
         ->assertSet('upgradeFeature', 'grid_fill');
 });
+
+test('heuristic fill caps every attempt with an explicit timeout', function () {
+    $user = User::factory()->create();
+    $crossword = makeSmallCrossword($user);
+    $solution = [['', '', ''], ['', '', ''], ['', '', '']];
+
+    $failed = ['success' => false, 'fills' => [], 'message' => 'nope', 'timed_out' => false];
+
+    $this->mock(GridFiller::class, function ($mock) use ($failed) {
+        $mock->shouldReceive('fill')
+            ->times(3)
+            ->withArgs(function (...$args) {
+                $timeout = $args[6] ?? $args['timeout'] ?? null;
+
+                return is_int($timeout) && $timeout >= 1 && $timeout <= 10;
+            })
+            ->andReturn($failed);
+    });
+
+    Livewire::actingAs($user)
+        ->test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->call('heuristicFill', $solution)
+        ->assertNoRedirect();
+});
+
+test('ai fill caps every candidate attempt with an explicit timeout', function () {
+    $user = createProUserForAutofill();
+    $crossword = makeSmallCrossword($user);
+    $solution = [['', '', ''], ['', '', ''], ['', '', '']];
+
+    $failed = ['success' => false, 'fills' => [], 'message' => 'nope', 'timed_out' => false];
+
+    $this->mock(GridFiller::class, function ($mock) use ($failed) {
+        $mock->shouldReceive('fill')
+            ->times(4)
+            ->withArgs(function (...$args) {
+                $timeout = $args[6] ?? $args['timeout'] ?? null;
+
+                return is_int($timeout) && $timeout >= 1 && $timeout <= 5;
+            })
+            ->andReturn($failed);
+    });
+
+    Livewire::actingAs($user)
+        ->test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->set('title', 'Budgeted')
+        ->call('aiFill', $solution)
+        ->assertNoRedirect();
+});

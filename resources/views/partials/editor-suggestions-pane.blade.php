@@ -44,7 +44,7 @@
         </template>
         <template x-if="!suggestionsSlot">
             <div>
-                <div class="text-fg text-sm font-medium">{{ __('Suggestions') }}</div>
+                <div class="text-fg text-sm font-medium">{{ __('Ideas') }}</div>
                 <div class="text-fg-subtle text-xs">{{ __('Select a cell to see candidates') }}</div>
             </div>
         </template>

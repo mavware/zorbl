@@ -311,3 +311,68 @@ it('same seed produces the same fill', function () {
         ->and($second['success'])->toBeTrue()
         ->and($first['fills'])->toEqual($second['fills']);
 });
+
+it('reports a timeout instead of searching once the deadline has passed', function () {
+    $filler = app(GridFiller::class);
+    $grid = [[1, 2, 3], [4, 0, 0], [5, 0, 0]];
+    $empty = [['', '', ''], ['', '', ''], ['', '', '']];
+
+    $result = $filler->fill($grid, $empty, 3, 3, [], 3, timeout: 0);
+
+    expect($result['success'])->toBeFalse()
+        ->and($result['timed_out'])->toBeTrue()
+        ->and($result['fills'])->toBe([])
+        ->and($result['message'])->toContain('Ran out of time');
+});
+
+it('flags a successful fill as not timed out', function () {
+    $filler = app(GridFiller::class);
+    $grid = [[1, 2, 3], [4, 0, 0], [5, 0, 0]];
+    $empty = [['', '', ''], ['', '', ''], ['', '', '']];
+
+    $result = $filler->fill($grid, $empty, 3, 3, [], 3);
+
+    expect($result['success'])->toBeTrue()
+        ->and($result['timed_out'])->toBeFalse();
+});
+
+it('returns promptly after the timeout on a grid with a huge, unsolvable search space', function () {
+    Word::query()->delete();
+
+    // Random 5-letter strings over a small alphabet, so every partial pattern
+    // has candidates and the solver keeps descending. Position 3 is always one
+    // of ABC and position 4 one of DEF, so the cell shared by 4-Across (pos 4)
+    // and 5-Down (pos 3) can never agree: no complete fill exists, and the
+    // solver only discovers that after exhausting a tree of tens of thousands
+    // of placements. Without a hard stop this search runs for minutes.
+    mt_srand(42);
+    $words = [];
+    while (count($words) < 400) {
+        $word = '';
+        for ($i = 0; $i < 3; $i++) {
+            $word .= 'ABCDEF'[mt_rand(0, 5)];
+        }
+        $word .= 'ABC'[mt_rand(0, 2)].'DEF'[mt_rand(0, 2)];
+        $words[$word] = true;
+    }
+    Word::insert(array_map(fn (string $word): array => [
+        'word' => $word, 'length' => 5, 'score' => 50.0, 'created_at' => now(), 'updated_at' => now(),
+    ], array_keys($words)));
+
+    $grid = [
+        [1, 2, 3, 4, 5],
+        [6, 0, 0, 0, 0],
+        [7, 0, 0, 0, 0],
+        [8, 0, 0, 0, 0],
+        [9, 0, 0, 0, 0],
+    ];
+    $empty = array_fill(0, 5, array_fill(0, 5, ''));
+
+    $start = microtime(true);
+    $result = app(GridFiller::class)->fill($grid, $empty, 5, 5, [], 3, timeout: 1, seed: 1);
+    $elapsed = microtime(true) - $start;
+
+    expect($result['success'])->toBeFalse()
+        ->and($result['timed_out'])->toBeTrue()
+        ->and($elapsed)->toBeLessThan(2.5);
+});

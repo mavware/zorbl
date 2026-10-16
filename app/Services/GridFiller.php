@@ -17,6 +17,8 @@ class GridFiller
 
     private float $deadline;
 
+    private bool $timedOut = false;
+
     private ?Randomizer $randomizer = null;
 
     public function __construct(
@@ -30,7 +32,7 @@ class GridFiller
      * @param  array<int, array<int, string>>  $solution  Current solution letters
      * @param  array<string, array{bars?: list<string>}>  $styles
      * @param  int|null  $seed  When non-null, randomizes candidate order and slot tie-breaks for this run. Different seeds produce different valid fills; null keeps the deterministic "highest score first" behavior.
-     * @return array{success: bool, fills: list<array{direction: string, number: int, word: string}>, message: string}
+     * @return array{success: bool, fills: list<array{direction: string, number: int, word: string}>, message: string, timed_out: bool}
      */
     public function fill(
         array $grid,
@@ -43,7 +45,7 @@ class GridFiller
         ?int $seed = null,
     ): array {
         $this->deadline = microtime(true) + $timeout;
-        $this->candidateCache = [];
+        $this->timedOut = false;
         $this->usedWords = [];
         $this->randomizer = $seed !== null ? new Randomizer(new Mt19937($seed)) : null;
 
@@ -75,6 +77,7 @@ class GridFiller
                 'success' => true,
                 'fills' => [],
                 'message' => 'Grid is already fully filled.',
+                'timed_out' => false,
             ];
         }
 
@@ -87,6 +90,7 @@ class GridFiller
                 'success' => true,
                 'fills' => $fills,
                 'message' => 'Filled '.count($fills).' '.str('word')->plural(count($fills)).'.',
+                'timed_out' => false,
             ];
         }
 
@@ -95,14 +99,20 @@ class GridFiller
             return [
                 'success' => false,
                 'fills' => $fills,
-                'message' => 'Partially filled '.count($fills).' '.str('word')->plural(count($fills)).'. Some slots could not be filled.',
+                'message' => $this->timedOut
+                    ? 'Ran out of time after filling '.count($fills).' '.str('word')->plural(count($fills)).'. Try filling some letters manually first.'
+                    : 'Partially filled '.count($fills).' '.str('word')->plural(count($fills)).'. Some slots could not be filled.',
+                'timed_out' => $this->timedOut,
             ];
         }
 
         return [
             'success' => false,
             'fills' => [],
-            'message' => 'Could not find valid words to fill the grid. Try filling some letters manually first.',
+            'message' => $this->timedOut
+                ? 'Ran out of time before finding a fill. Try filling some letters manually first.'
+                : 'Could not find valid words to fill the grid. Try filling some letters manually first.',
+            'timed_out' => $this->timedOut,
         ];
     }
 
@@ -122,7 +132,7 @@ class GridFiller
         int $minLength,
         array &$fills,
     ): bool {
-        if (microtime(true) > $this->deadline) {
+        if ($this->hasTimedOut()) {
             return false;
         }
 
@@ -143,6 +153,10 @@ class GridFiller
         // Get candidates for each unfilled slot, sort by fewest candidates (most constrained first)
         $withCandidates = [];
         foreach ($unfilled as $slot) {
+            if ($this->hasTimedOut()) {
+                return false;
+            }
+
             $candidates = array_values(array_filter(
                 $this->getCandidates($slot['pattern'], $slot['length']),
                 fn (string $w) => ! isset($this->usedWords[$w]),
@@ -168,6 +182,12 @@ class GridFiller
         $target = $withCandidates[0];
 
         foreach ($target['candidates'] as $word) {
+            // Once the deadline passes, stop trying alternatives at every level of
+            // the stack — each one costs a database query per open crossing slot.
+            if ($this->hasTimedOut()) {
+                return false;
+            }
+
             // Place word in solution
             $newSolution = $solution;
             $this->placeWord($newSolution, $target, $word);
@@ -254,6 +274,10 @@ class GridFiller
                 continue;
             }
 
+            if ($this->hasTimedOut()) {
+                return false;
+            }
+
             $pattern = self::getPattern($solution, $slot, $slot['direction']);
 
             if (! str_contains($pattern, '_')) {
@@ -283,6 +307,19 @@ class GridFiller
         return $completed;
     }
 
+    /**
+     * Whether the current fill has exceeded its deadline. Latches once tripped so
+     * every pending loop unwinds without re-checking the clock.
+     */
+    private function hasTimedOut(): bool
+    {
+        if (! $this->timedOut && microtime(true) > $this->deadline) {
+            $this->timedOut = true;
+        }
+
+        return $this->timedOut;
+    }
+
     private function isWord(string $word): bool
     {
         return in_array($word, $this->getCandidates($word, strlen($word)), true);
@@ -290,6 +327,10 @@ class GridFiller
 
     /**
      * Get candidate words for a pattern, using cache.
+     *
+     * The cache is intentionally kept across fill() calls on the same instance:
+     * candidates depend only on the pattern and the dictionary, so retries with a
+     * different seed on the same grid skip most of their database queries.
      *
      * @return list<string>
      */

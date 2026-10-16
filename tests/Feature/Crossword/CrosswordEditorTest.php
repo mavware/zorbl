@@ -243,7 +243,7 @@ test('the title and settings cog sit on a fixed bar under the suggestions strip 
         ->html();
 
     // The toolbar no longer carries the title or the cog.
-    preg_match('/<div class="mb-4 flex flex-wrap items-center gap-2">.*?wire:click="attemptPublish"/s', $html, $toolbar);
+    preg_match('/<div[^>]*data-test="editor-toolbar"[^>]*>.*?wire:click="attemptPublish"/s', $html, $toolbar);
     expect($toolbar)->not->toBeEmpty()
         ->and($toolbar[0])->not->toContain('Puzzle title')
         ->not->toContain('editor-settings-button')
@@ -291,9 +291,29 @@ test('the editor tools take their own row on mobile', function () {
     expect($row)->not->toBeEmpty()
         ->and($row[0])->toContain('w-full')
         ->and($row[0])->toContain('sm:w-auto')
+        ->and($row[0])->toContain('justify-center')
         ->and(substr_count($html, 'data-test="editor-undo-button"'))->toBe(1)
         ->and(substr_count($html, 'data-test="editor-redo-button"'))->toBe(1)
         ->and($html)->toContain('x-on:keydown.window="handleShortcutKeydown($event)"');
+
+    // From `sm` the toolbar is a three-column grid: Edit / Solve at the left
+    // edge, the tools centred in the middle track, save status and Publish
+    // at the right edge. The mode toggle is no longer part of the tools row.
+    preg_match('/<div[^>]*data-test="editor-toolbar"[^>]*>/', $html, $toolbar);
+    preg_match('/<div[^>]*data-test="editor-mode-toggle"[^>]*>/', $html, $modeToggle);
+    expect($toolbar)->not->toBeEmpty()
+        ->and($toolbar[0])->toContain('sm:grid sm:grid-cols-[1fr_auto_1fr]')
+        ->and($modeToggle)->not->toBeEmpty()
+        ->and($modeToggle[0])->toContain('sm:justify-self-start')
+        ->and(strpos($html, 'data-test="editor-mode-toggle"'))->toBeLessThan(strpos($html, 'data-test="editor-tools-row"'))
+        ->and(strpos($html, 'data-test="editor-tools-row"'))->toBeLessThan(strpos($html, 'data-test="editor-save-status"'))
+        ->and($html)->toContain('ml-auto flex shrink-0 items-center gap-2 sm:justify-self-end');
+
+    preg_match('/data-test="editor-tools-row".*?data-test="editor-save-status"/s', $html, $tools);
+    expect($tools)->not->toBeEmpty()
+        ->and($tools[0])->not->toContain('>Edit<')
+        ->and($tools[0])->toContain('data-test="editor-undo-button"')
+        ->and($tools[0])->toContain('Auto-fill grid');
 });
 
 test('the rotational symmetry toggle lives in the settings flyout, not the toolbar', function () {
@@ -345,21 +365,29 @@ test('settings modal shows the export menu at the top', function () {
     expect(strpos(editorSettingsFlyoutHtml($html), "attemptExport('ipuz')"))
         ->toBeLessThan(strpos(editorSettingsFlyoutHtml($html), 'wire:model="title"'));
 
-    // The sidebar has no heading; Export sits in its footer, before Save.
+    // The sidebar has no heading; Export and Save follow the panels inside
+    // the form's scrolling body, after the Suggestions panel, Export first.
     $pane = editorSettingsPaneHtml($html);
     expect($pane)->not->toContain('Puzzle Settings')
         ->and(strpos($pane, 'wire:model="title"'))->toBeLessThan(strpos($pane, "attemptExport('ipuz')"))
-        ->and(strpos($pane, "attemptExport('ipuz')"))->toBeLessThan(strpos($pane, 'wire:click="saveMetadata"'));
+        ->and(strpos($pane, 'data-suggestions-pane'))->toBeLessThan(strpos($pane, 'data-test="settings-pane-actions"'))
+        ->and(strpos($pane, "attemptExport('ipuz')"))->toBeLessThan(strpos($pane, 'wire:click="saveMetadata"'))
+        ->and(substr_count($pane, 'data-test="settings-pane-actions"'))->toBe(1);
+
+    // The actions row is part of the form body, not a footer after it.
+    preg_match('/<div[^>]*data-test="settings-form".*?data-test="settings-pane-actions"/s', $pane, $inForm);
+    expect($inForm)->not->toBeEmpty();
+    expect(editorSettingsFlyoutHtml($html))->not->toContain('data-test="settings-pane-actions"');
 });
 
-test('settings modal renders the secret theme and meta answer prompt as real inputs', function () {
+test('settings modal renders the AI theme hint and meta answer prompt as real inputs', function () {
     $user = User::factory()->create();
     $crossword = Crossword::factory()->for($user)->create();
 
     $this->actingAs($user);
 
     $html = Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
-        ->assertSeeInOrder(['Secret Theme', 'Meta Answer', 'Prompt', 'Accepted Answers'])
+        ->assertSeeInOrder(['AI Theme Hint', 'Meta Answer', 'Prompt', 'Accepted Answers'])
         ->html();
 
     // A double quote inside a component attribute stops Blade compiling the
@@ -1174,6 +1202,11 @@ test('settings render in a permanent flush sidebar column down the left of the e
         ->toContain('wire:click="saveMetadata"')
         ->and(substr_count($pane, 'role="tab"'))->toBe(6);
 
+    // The tab is labelled Ideas; the panel's idle heading matches.
+    preg_match('/<button[^>]*id="pane-settings-tab-suggestions"[^>]*>\s*Ideas/s', $pane, $ideasTab);
+    expect($ideasTab)->not->toBeEmpty()
+        ->and($pane)->not->toContain('>Suggestions<');
+
     // The flyout keeps its three tabs; mobile suggestions stay in the sheet.
     expect($html)->not->toContain('id="modal-settings-tab-suggestions"')
         ->not->toContain('id="modal-settings-panel-suggestions"');
@@ -1234,15 +1267,26 @@ test('the settings form renders once per surface with distinct tab and panel ids
     expect($html)->not->toContain('id="settings-tab-')
         ->not->toContain('id="settings-panel-');
 
-    // The sidebar's tabs spread across the pane; the flyout's stay packed.
+    // The sidebar's tabs are a full-bleed segmented row of equal-width
+    // buttons with hairlines between them and a filled active state; the
+    // flyout keeps underline tabs packed to the start.
     preg_match_all('/<div[^>]*data-test="settings-tabs"[^>]*>/', $html, $tabBars);
     expect($tabBars[0])->toHaveCount(2);
-    [$paneTabs, $flyoutTabs] = strpos($tabBars[0][0], 'justify-between') !== false
+    [$paneTabs, $flyoutTabs] = strpos($tabBars[0][0], 'divide-x') !== false
         ? [$tabBars[0][0], $tabBars[0][1]]
         : [$tabBars[0][1], $tabBars[0][0]];
-    expect($paneTabs)->toContain('justify-between')
-        ->and($flyoutTabs)->not->toContain('justify-between')
-        ->and(editorSettingsPaneHtml($html))->toContain('justify-between');
+    expect($paneTabs)->toContain('divide-x')
+        ->toContain('-mx-4')
+        ->and($flyoutTabs)->not->toContain('divide-x')
+        ->not->toContain('-mx-4');
+
+    $paneForm = editorSettingsFormHtml($html, 'pane');
+    $flyoutForm = editorSettingsFormHtml($html, 'modal');
+    expect(substr_count($paneForm, 'flex min-w-0 flex-1 items-center justify-center'))->toBe(4)
+        ->and($paneForm)->toContain("'bg-zinc-800 text-white dark:bg-zinc-200 dark:text-zinc-900'")
+        ->and($flyoutForm)->not->toContain('flex-1 items-center justify-center')
+        ->and(substr_count($flyoutForm, 'border-b-2 px-3 py-2 text-sm font-medium'))->toBe(3)
+        ->and($flyoutForm)->toContain("'border-zinc-800 dark:border-zinc-200'");
 
     // The form is a container, so its grids size to the surface, not the viewport.
     expect(substr_count($html, 'grid-cols-3 gap-2 @sm:grid-cols-4 @lg:grid-cols-5'))->toBe(2)

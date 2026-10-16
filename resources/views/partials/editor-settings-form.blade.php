@@ -34,7 +34,7 @@
             'theme' => __('Theme'),
         ];
         if ($settingsSurface === 'pane') {
-            $settingsTabs['suggestions'] = __('Suggestions');
+            $settingsTabs['suggestions'] = __('Ideas');
         }
         $settingsTabErrors = [
             'details' => $errors->hasAny(['title', 'author', 'copyright', 'notes', 'allowEmbed', 'tagIds']),
@@ -43,11 +43,28 @@
             'suggestions' => false,
         ];
     @endphp
-    {{-- In the desktop sidebar the tabs spread across the full width of the
-         pane with slimmer padding so all four fit; in the wider flyout they
-         stay packed to the start. Picking Suggestions also starts its
-         lookups, which only run while that panel is visible. --}}
-    <div class="border-line flex shrink-0 border-b {{ $settingsSurface === 'pane' ? 'justify-between' : '' }}" role="tablist" aria-label="{{ __('Settings sections') }}" data-test="settings-tabs">
+    {{-- In the desktop sidebar the tabs are a full-bleed segmented row: each
+         takes an equal share of the width, hairlines separate them and the
+         active one is filled, like the toolbar's Edit / Solve toggle, so they
+         read as buttons. In the wider flyout they are underline tabs packed
+         to the start. Picking Suggestions also starts its lookups, which only
+         run while that panel is visible. --}}
+    @php
+        $isPane = $settingsSurface === 'pane';
+        $tabBarClasses = $isPane
+            ? 'border-line -mx-4 flex shrink-0 divide-x divide-line border-b'
+            : 'border-line flex shrink-0 border-b';
+        $tabClasses = $isPane
+            ? 'flex min-w-0 flex-1 items-center justify-center gap-1 px-1 py-2.5 text-xs font-semibold transition-colors'
+            : 'text-fg -mb-px inline-flex items-center gap-1.5 border-b-2 px-3 py-2 text-sm font-medium';
+        $tabActiveClasses = $isPane
+            ? 'bg-zinc-800 text-white dark:bg-zinc-200 dark:text-zinc-900'
+            : 'border-zinc-800 dark:border-zinc-200';
+        $tabInactiveClasses = $isPane
+            ? 'text-fg-muted hover:bg-zinc-100 hover:text-fg dark:hover:bg-zinc-700/50'
+            : 'border-transparent text-zinc-600 dark:text-zinc-400';
+    @endphp
+    <div class="{{ $tabBarClasses }}" role="tablist" aria-label="{{ __('Settings sections') }}" data-test="settings-tabs">
         @foreach ($settingsTabs as $tabKey => $tabLabel)
             <button
                 type="button"
@@ -58,8 +75,8 @@
                 x-on:click="settingsTab = '{{ $tabKey }}'{{ $tabKey === 'suggestions' ? '; showSuggestionsPane()' : '' }}"
                 :aria-selected="settingsTab === '{{ $tabKey }}'"
                 :tabindex="settingsTab === '{{ $tabKey }}' ? 0 : -1"
-                :class="settingsTab === '{{ $tabKey }}' ? 'border-zinc-800 dark:border-zinc-200' : 'border-transparent text-zinc-600 dark:text-zinc-400'"
-                class="text-fg -mb-px inline-flex items-center gap-1.5 border-b-2 py-2 text-sm font-medium {{ $settingsSurface === 'pane' ? 'px-1.5' : 'px-3' }}"
+                :class="settingsTab === '{{ $tabKey }}' ? '{{ $tabActiveClasses }}' : '{{ $tabInactiveClasses }}'"
+                class="{{ $tabClasses }}"
             >
                 {{ $tabLabel }}
                 @if ($settingsTabErrors[$tabKey])
@@ -339,18 +356,6 @@
             class="space-y-6"
             data-test="settings-panel-theme"
         >
-            <flux:field>
-                <flux:label>
-                    <span>{{ __('Secret Theme') }} <x-info-tooltip>{{ __('Only used by AI Autofill to pick the best fill. Never shown to solvers.') }}</x-info-tooltip></span>
-                </flux:label>
-                <flux:textarea wire:model="secretTheme"
-                               placeholder="{{ __('A theme hint only used to guide AI Autofill (e.g. 80s movies, things that fly). Not shown to solvers.') }}"
-                               rows="2"/>
-                <flux:error name="secretTheme"/>
-            </flux:field>
-
-            <flux:separator/>
-
             {{-- Meta Answer Section --}}
             <div class="space-y-4">
                 <flux:heading size="sm">
@@ -403,11 +408,44 @@
                     </flux:label>
                 </flux:field>
             </div>
+
+            <flux:separator/>
+
+            <flux:field>
+                <flux:label>
+                    <span>{{ __('AI Theme Hint') }} <x-info-tooltip>{{ __('Only used by AI Autofill to pick the best fill (e.g. 80s movies, things that fly). Never shown to solvers.') }}</x-info-tooltip></span>
+                </flux:label>
+                <flux:textarea wire:model="secretTheme"
+                               placeholder="{{ __('Theme hint used to guide AI Autofill.') }}"
+                               rows="2"/>
+                <flux:error name="secretTheme"/>
+            </flux:field>
+
         </div>
 
         {{-- Suggestions: desktop sidebar only --}}
         @if ($settingsSurface === 'pane')
             @include('partials.editor-suggestions-pane')
+
+            {{-- Export and Save sit right under whichever panel is showing,
+                 so they are always in reach without scrolling past the whole
+                 form. The flyout has its own sticky Save / Cancel footer. --}}
+            <div class="border-line mt-6 flex shrink-0 items-center justify-between gap-2 border-t pt-4" data-test="settings-pane-actions">
+                {{-- Export --}}
+                <flux:dropdown position="top" align="start">
+                    <flux:button variant="ghost" size="sm" icon="arrow-down-tray">
+                        {{ __('Export') }}
+                    </flux:button>
+                    <flux:menu>
+                        <flux:menu.item wire:click="attemptExport('ipuz')">{{ __('.ipuz') }}</flux:menu.item>
+                        <flux:menu.item wire:click="attemptExport('puz')">{{ __('.puz (Across Lite)') }}</flux:menu.item>
+                        <flux:menu.item wire:click="attemptExport('jpz')">{{ __('.jpz (Crossword Compiler)') }}</flux:menu.item>
+                        <flux:menu.item wire:click="attemptExport('pdf')">{{ __('.pdf (Print-Ready)') }}</flux:menu.item>
+                    </flux:menu>
+                </flux:dropdown>
+
+                <flux:button variant="primary" size="sm" wire:click="saveMetadata">{{ __('Save') }}</flux:button>
+            </div>
         @endif
     </div>
 </div>

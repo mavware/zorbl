@@ -30,6 +30,18 @@ class extends Component {
     use ExportsCrossword;
     use WithFileUploads;
 
+    /** Wall-clock budget shared by all Quick Fill attempts in one request. */
+    private const int HEURISTIC_FILL_BUDGET_SECONDS = 18;
+
+    /** Wall-clock budget shared by all candidate-generation attempts in one AI fill request. */
+    private const int AI_FILL_CANDIDATE_BUDGET_SECONDS = 15;
+
+    /** Cap on any single GridFiller attempt. */
+    private const int FILL_ATTEMPT_TIMEOUT_SECONDS = 10;
+
+    /** Raised max_execution_time for fill requests; headroom only, the budgets above bound the work. */
+    private const int FILL_EXECUTION_TIME_LIMIT_SECONDS = 90;
+
     #[Locked]
     public int $crosswordId;
 
@@ -621,6 +633,9 @@ class extends Component {
      * attempt fails (or only partially fills), retry up to 2 more times and
      * keep the best result.
      *
+     * All attempts share a single wall-clock budget so the request stays well
+     * inside PHP's max_execution_time regardless of how many retries run.
+     *
      * `$grid` / `$styles` come straight from the Alpine state — `$this->grid`
      * is only refreshed on mount/resize, so it can be stale relative to the
      * user's most recent block/void/bar edits.
@@ -632,12 +647,20 @@ class extends Component {
         $crossword = $this->crossword;
         $this->authorize('update', $crossword);
 
+        $this->extendExecutionTimeForFill();
+
         $filler = app(GridFiller::class);
         $best = null;
         $effectiveGrid = $grid ?? $this->grid;
         $effectiveStyles = $styles ?? $this->styles ?? [];
+        $deadline = microtime(true) + self::HEURISTIC_FILL_BUDGET_SECONDS;
 
         for ($attempt = 0; $attempt < 3; $attempt++) {
+            $remaining = (int) floor($deadline - microtime(true));
+            if ($remaining < 1) {
+                break;
+            }
+
             $result = $filler->fill(
                 $effectiveGrid,
                 $solution,
@@ -645,6 +668,7 @@ class extends Component {
                 $this->height,
                 $effectiveStyles,
                 $this->minAnswerLength,
+                timeout: min(self::FILL_ATTEMPT_TIMEOUT_SECONDS, $remaining),
                 seed: random_int(1, PHP_INT_MAX),
             );
 
@@ -658,6 +682,21 @@ class extends Component {
         }
 
         return $best;
+    }
+
+    /**
+     * Give fill requests headroom beyond the default 30s max_execution_time.
+     * The fill budgets below are what actually bound the work; this only stops
+     * a slow database or AI round-trip from turning into a fatal error.
+     *
+     * Skipped on the CLI so the test runner's own (unlimited) time limit is
+     * left alone.
+     */
+    private function extendExecutionTimeForFill(): void
+    {
+        if (PHP_SAPI !== 'cli') {
+            set_time_limit(self::FILL_EXECUTION_TIME_LIMIT_SECONDS);
+        }
     }
 
     /**
@@ -690,20 +729,28 @@ class extends Component {
             return [
                 'success' => false,
                 'fills' => [],
-                'message' => __('Add a puzzle title or a secret theme in Settings so AI Autofill knows what to aim for.'),
+                'message' => __('Add a puzzle title or an AI Theme Hint in Settings so AI Autofill knows what to aim for.'),
                 'needs_theme' => true,
             ];
         }
+
+        $this->extendExecutionTimeForFill();
 
         $filler = app(GridFiller::class);
         $attempts = 4;
         $perAttemptTimeout = 5;
         $effectiveGrid = $grid ?? $this->grid;
         $effectiveStyles = $styles ?? $this->styles ?? [];
+        $deadline = microtime(true) + self::AI_FILL_CANDIDATE_BUDGET_SECONDS;
 
         $candidates = [];
         $seen = [];
         for ($i = 0; $i < $attempts; $i++) {
+            $remaining = (int) floor($deadline - microtime(true));
+            if ($remaining < 1) {
+                break;
+            }
+
             $result = $filler->fill(
                 $effectiveGrid,
                 $solution,
@@ -711,7 +758,7 @@ class extends Component {
                 $this->height,
                 $effectiveStyles,
                 $this->minAnswerLength,
-                timeout: $perAttemptTimeout,
+                timeout: min($perAttemptTimeout, $remaining),
                 seed: $i + 1,
             );
 
@@ -973,26 +1020,29 @@ class extends Component {
     {{-- Desktop settings sidebar, first so it fills the first grid column. --}}
     @include('partials.editor-settings-pane')
 
-    {{-- Toolbar --}}
-    <div class="mb-4 flex flex-wrap items-center gap-2">
+    {{-- Toolbar. From `sm` a three-column grid: the Edit / Solve toggle at
+         the left edge of the builder, the editing tools centred, and the save
+         status with Publish at the right edge. Below `sm` the three wrap as
+         flex rows. --}}
+    <div class="mb-4 flex flex-wrap items-center gap-2 sm:grid sm:grid-cols-[1fr_auto_1fr]" data-test="editor-toolbar">
         {{-- The puzzle title and settings cog are not part of the toolbar: on
              desktop they live in the settings sidebar beside the grid, and on
              mobile in a fixed bar at the foot of the screen
              (editor-mobile-title-bar). --}}
-        {{-- Tools. Below `sm` this cluster (mode toggle, undo/redo, fill, clear)
-             takes its own row, leaving progress and publish to a third row. --}}
-        <div class="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-1 sm:justify-center" data-test="editor-tools-row">
-            {{-- Mode toggle --}}
-            <div class="flex rounded-lg border border-line">
-                <span
-                    class="rounded-l-lg bg-zinc-800 px-3 py-1 text-sm font-medium text-white dark:bg-zinc-200 dark:text-zinc-900">{{ __('Edit') }}</span>
-                <a
-                    href="{{ route('crosswords.solver', $crosswordId) }}"
-                    wire:navigate
-                    class="rounded-r-lg px-3 py-1 text-sm font-medium text-zinc-700 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
-                >{{ __('Solve') }}</a>
-            </div>
+        {{-- Mode toggle, on the left. --}}
+        <div class="flex rounded-lg border border-line sm:justify-self-start" data-test="editor-mode-toggle">
+            <span
+                class="rounded-l-lg bg-zinc-800 px-3 py-1 text-sm font-medium text-white dark:bg-zinc-200 dark:text-zinc-900">{{ __('Edit') }}</span>
+            <a
+                href="{{ route('crosswords.solver', $crosswordId) }}"
+                wire:navigate
+                class="rounded-r-lg px-3 py-1 text-sm font-medium text-zinc-700 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+            >{{ __('Solve') }}</a>
+        </div>
 
+        {{-- Tools (undo/redo, clear, fill), centred. Below `sm` this cluster
+             takes its own row. --}}
+        <div class="flex w-full flex-wrap items-center justify-center gap-2 sm:w-auto" data-test="editor-tools-row">
             {{-- Undo / Redo --}}
             <div class="flex items-center">
                 <flux:tooltip content="{{ __('Undo') }}" kbd="Ctrl+Z">
@@ -1121,7 +1171,7 @@ class extends Component {
              fill percentage is its dash offset directly. Desktop only: on
              mobile the Publish button beside the clue tabs carries a single
              pooled ring instead. --}}
-        <div class="ml-auto flex shrink-0 items-center gap-2">
+        <div class="ml-auto flex shrink-0 items-center gap-2 sm:justify-self-end">
             {{-- Save status. Hidden while idle so it takes no room; when shown
                  it sits right before the progress pill so save state and
                  fill state read as one status group. --}}

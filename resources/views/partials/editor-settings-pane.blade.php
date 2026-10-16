@@ -3,7 +3,8 @@
      row and the workspace row, so it runs from the top of the page content
      to its foot beside whichever puzzle layout is active. It holds the
      shared settings form (editor-settings-form) with no heading of its own:
-     the tab bar sits at the top and Export and Save share the footer.
+     the tab bar sits at the top, and Export and Save follow the active
+     tab's fields inside the form rather than pinning to the pane's foot.
      Rendered from `lg` up only; below that the toolbar cog opens the modal
      (editor-settings-modal) instead.
 
@@ -24,20 +25,4 @@
         @include('partials.editor-settings-form', ['settingsSurface' => 'pane'])
     </div>
 
-    <div class="border-line flex shrink-0 items-center justify-between gap-2 border-t px-4 py-2">
-        {{-- Export --}}
-        <flux:dropdown position="top" align="start">
-            <flux:button variant="ghost" size="sm" icon="arrow-down-tray">
-                {{ __('Export') }}
-            </flux:button>
-            <flux:menu>
-                <flux:menu.item wire:click="attemptExport('ipuz')">{{ __('.ipuz') }}</flux:menu.item>
-                <flux:menu.item wire:click="attemptExport('puz')">{{ __('.puz (Across Lite)') }}</flux:menu.item>
-                <flux:menu.item wire:click="attemptExport('jpz')">{{ __('.jpz (Crossword Compiler)') }}</flux:menu.item>
-                <flux:menu.item wire:click="attemptExport('pdf')">{{ __('.pdf (Print-Ready)') }}</flux:menu.item>
-            </flux:menu>
-        </flux:dropdown>
-
-        <flux:button variant="primary" size="sm" wire:click="saveMetadata">{{ __('Save') }}</flux:button>
-    </div>
 </aside>
