@@ -370,14 +370,15 @@ new #[Title('Build')] class extends Component {
             <x-header-button icon="plus" wire:click="$set('showNewModal', true)">
                 {{ __('New Puzzle') }}
             </x-header-button>
-            <x-header-button variant="secondary" icon="arrow-up-tray" wire:click="$set('showImportModal', true)">
-                {{ __('Import Puzzle') }}
+            {{-- Phones get the short label so the header buttons stay on one row. --}}
+            <x-header-button variant="secondary" icon="arrow-up-tray" wire:click="$set('showImportModal', true)" data-test="build-import-button">
+                {{ __('Import') }}<span class="max-sm:hidden"> {{ __('Puzzle') }}</span>
             </x-header-button>
             {{-- The analytics page needs a registered account (see routes/web.php),
                  so guest builders don't get a button that would bounce them. --}}
             @unless (auth()->user()->isAnonymous())
                 <x-header-button variant="secondary" icon="chart-bar" :href="route('crosswords.analytics')" wire:navigate data-test="build-analytics-button">
-                    {{ __('Analytics') }}
+                    {{ __('Stats') }}
                 </x-header-button>
             @endunless
         </x-page-header>

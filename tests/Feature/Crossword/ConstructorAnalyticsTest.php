@@ -38,14 +38,14 @@ test('the puzzle analytics table has a title', function () {
     $this->actingAs($user)
         ->get(route('crosswords.analytics'))
         ->assertOk()
-        ->assertSeeInOrder(['Puzzle Analytics', 'Attempts', 'Completion Rate']);
+        ->assertSeeInOrder(['Puzzle Stats', 'Attempts', 'Completion Rate']);
 });
 
 test('the puzzle analytics title shows above the empty state too', function () {
     $this->actingAs(makeAnalyticsProUser())
         ->get(route('crosswords.analytics'))
         ->assertOk()
-        ->assertSeeInOrder(['Puzzle Analytics', 'Publish puzzles to see analytics']);
+        ->assertSeeInOrder(['Puzzle Stats', 'Publish puzzles to see analytics']);
 });
 
 test('analytics page shows empty state without published puzzles', function () {
@@ -787,6 +787,7 @@ test('the build page links to the analytics page instead of rendering it inline'
         ->get(route('crosswords.index'))
         ->assertOk()
         ->assertSee('data-test="build-analytics-button"', false)
+        ->assertSeeInOrder(['data-test="build-analytics-button"', 'Stats', '</a>'], false)
         ->assertSee(route('crosswords.analytics', absolute: false))
         ->assertDontSeeLivewire('constructor-analytics')
         ->assertDontSee('Completion Rate');
@@ -805,4 +806,13 @@ test('the analytics page links back to the build page', function () {
         ->assertOk()
         ->assertSee('Back to Build')
         ->assertSee(route('crosswords.index', absolute: false));
+});
+
+test('the analytics page is titled Stats', function () {
+    $this->actingAs(makeAnalyticsProUser())
+        ->get(route('crosswords.analytics'))
+        ->assertOk()
+        ->assertSee('Puzzle Stats')
+        ->assertDontSee('Puzzle Analytics')
+        ->assertSeeInOrder(['data-test="page-header-kicker"', 'Stats'], false);
 });

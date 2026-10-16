@@ -53,6 +53,31 @@ test('the top bar chrome is rendered when configured', function () {
         ->assertDontSee('data-test="sidebar-menu-button"', false);
 });
 
+test('the top bar lists the main destinations inline on phones instead of a drawer', function () {
+    config(['crosswordbuilder.navigation' => 'header']);
+
+    $html = $this->actingAs(User::factory()->create())
+        ->get(route('crosswords.index'))
+        ->assertOk()
+        ->assertSee('data-test="header-nav-mobile"', false)
+        ->getContent();
+
+    expect($html)->not->toContain('<ui-sidebar');
+
+    preg_match('/data-test="header-nav-mobile".*?<\/nav>/s', $html, $mobileNav);
+
+    expect($mobileNav[0])
+        ->toContain('href="'.route('crosswords.index').'"')
+        ->toContain('href="'.route('crosswords.solving').'"')
+        ->toContain('href="'.route('clues.index').'"')
+        ->not->toContain('data-flux-icon');
+
+    // The legal links no longer live in a drawer, so the footer stays on phones.
+    preg_match('/<div[^>]*data-flux-footer[^>]*>/', $html, $footer);
+
+    expect($footer[0])->not->toContain('max-lg:hidden');
+});
+
 test('the top bar offers a registered user favorites, constructors, help, and support from the user menu', function () {
     config(['crosswordbuilder.navigation' => 'header']);
 

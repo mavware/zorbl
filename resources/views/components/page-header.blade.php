@@ -62,7 +62,7 @@
     </div>
 
     @if($slot->isNotEmpty())
-        <div class="flex flex-wrap items-center gap-3">
+        <div class="flex flex-wrap items-center gap-3 max-sm:w-full max-sm:flex-nowrap max-sm:gap-2" data-test="page-header-actions">
             {{ $slot }}
         </div>
     @endif

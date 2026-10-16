@@ -176,7 +176,7 @@ new class extends Component {
 <div>
     {{-- Puzzle Performance Table --}}
     <div class="py-6">
-        <h2 class="font-classical text-ink text-[22px] leading-tight font-medium">{{ __('Puzzle Analytics') }}</h2>
+        <h2 class="font-classical text-ink text-[22px] leading-tight font-medium">{{ __('Puzzle Stats') }}</h2>
         <p class="text-ink-muted mt-1 mb-5 text-sm">{{ __('How solvers are getting on with each of your published puzzles.') }}</p>
 
         @if($this->publishedPuzzles->isEmpty())

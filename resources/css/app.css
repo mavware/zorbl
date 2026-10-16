@@ -158,10 +158,22 @@ select:focus[data-flux-control] {
 .btn-header {
     @apply font-classical inline-flex items-center justify-center gap-2 rounded-sm border px-5 py-[11px] text-[15px] leading-none font-semibold whitespace-nowrap transition-colors;
     @apply focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400;
+    /* On phones the header actions share one row (see page-header), so each
+       button shrinks, drops its icon, and takes an equal share of the width. */
+    @apply max-sm:flex-1 max-sm:gap-1.5 max-sm:px-2 max-sm:text-[13px];
+}
+
+@media (width < 40rem) {
+    .btn-header > svg,
+    .btn-header > [data-flux-icon] {
+        display: none;
+    }
 }
 
 .btn-header-primary {
     @apply border-amber-400 text-amber-400 hover:border-amber-300 hover:text-amber-300;
+    /* The primary action takes the larger share of the phone row. */
+    @apply max-sm:flex-[1.6] max-sm:text-[14px];
 }
 
 .btn-header-secondary {

@@ -129,3 +129,32 @@ test('the page header kicker is hidden on phones', function () {
         ->and($kicker[0])->toContain('hidden')
         ->and($kicker[0])->toContain('sm:block');
 });
+
+test('the build page import button shortens its label on phones', function () {
+    $html = $this->actingAs(User::factory()->create())
+        ->get(route('crosswords.index'))
+        ->assertOk()
+        ->getContent();
+
+    preg_match('/<button[^>]*data-test="build-import-button"[^>]*>.*?<\/button>/s', $html, $button);
+
+    expect($button)->not->toBeEmpty()
+        ->and(preg_replace('/\s+/', ' ', $button[0]))
+        ->toContain('Import<span class="max-sm:hidden"> Puzzle</span>');
+});
+
+test('the build page header actions stay on one row on phones', function () {
+    $this->actingAs(User::factory()->create())
+        ->get(route('crosswords.index'))
+        ->assertOk()
+        ->assertSeeInOrder([
+            'data-test="page-header-actions"',
+            'New Puzzle',
+            'data-test="build-import-button"',
+            'data-test="build-analytics-button"',
+        ], false);
+
+    preg_match('/<div[^>]*data-test="page-header-actions"[^>]*>/', $this->get(route('crosswords.index'))->getContent(), $actions);
+
+    expect($actions[0])->toContain('max-sm:flex-nowrap')->toContain('max-sm:w-full');
+});
