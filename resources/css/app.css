@@ -113,6 +113,14 @@ select:focus[data-flux-control] {
     @apply pt-6 lg:pt-8;
 }
 
+/* The editor's settings sidebar (editor-settings-pane) pulls itself up through
+   the page root's 2rem top gutter to meet the header. Under a banner the root
+   has no gutter, only the banner's 0.75rem bottom margin, so the sidebar pulls
+   up by that much instead and butts against the banner rather than under it. */
+[data-flux-main] > [data-banner] + * [data-settings-pane] {
+    @apply lg:-mt-3;
+}
+
 /* Amber outline button — transparent ground, amber border and text, soft amber
    wash on hover. Pair with `variant="ghost"` on a Flux button so Flux doesn't
    paint its own background. Un-layered so it beats Flux's variant utilities. */

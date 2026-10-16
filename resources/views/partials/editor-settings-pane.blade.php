@@ -12,6 +12,9 @@
      main's 2rem gutters on the start, top and bottom, so it butts up to the
      window edge and the header with no gap, and it takes the page colour
      rather than a card surface, with only a hairline on its content side.
+     When the guest banner sits above the page root there is no top gutter,
+     so app.css (keyed on data-settings-pane) trims the upward pull to the
+     banner's own bottom margin.
      Because a stretched grid item grows by its negative margins, the pane
      is 2rem wider and 4rem taller than its grid area. The pane never pushes
      or overlays the layout: the grid track reserves its room up front, so
@@ -19,6 +22,7 @@
 <aside
     aria-label="{{ __('Puzzle settings') }}"
     data-test="settings-pane"
+    data-settings-pane
     class="border-line hidden min-h-0 flex-col overflow-hidden border-e lg:col-start-1 lg:row-span-2 lg:row-start-1 lg:-ms-8 lg:-mt-8 lg:-mb-8 lg:flex"
 >
     <div class="flex min-h-0 flex-1 flex-col px-4">

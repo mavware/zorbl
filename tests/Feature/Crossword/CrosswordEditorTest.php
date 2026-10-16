@@ -1185,6 +1185,8 @@ test('settings render in a permanent flush sidebar column down the left of the e
         ->toContain('lg:-ms-8')
         ->toContain('lg:-mt-8')
         ->toContain('lg:-mb-8')
+        // The hook app.css uses to trim the upward pull under the guest banner.
+        ->toContain('data-settings-pane')
         ->toContain('border-e')
         ->not->toContain('bg-surface')
         ->not->toContain('rounded')
