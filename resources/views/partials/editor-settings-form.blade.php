@@ -90,8 +90,11 @@
 
 
     {{-- Panels. A flex column so the Suggestions panel can fill the height
-         and scroll its own list; the other panels scroll the container. --}}
-    <div class="flex min-h-0 flex-1 flex-col overflow-y-auto pt-5 pb-6">
+         and scroll its own list; the other panels scroll the container.
+         A scrolling box also clips sideways, which would cut the focus ring
+         off full-width inputs, so it bleeds 1.5 units past the content on
+         each side and pads the same amount back. --}}
+    <div class="-mx-1.5 flex min-h-0 flex-1 flex-col overflow-y-auto px-1.5 pt-5 pb-6" data-test="settings-panels">
         {{-- Details: what solvers see on the puzzle page --}}
         <div
             id="{{ $settingsSurface }}-settings-panel-details"

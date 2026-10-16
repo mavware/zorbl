@@ -373,6 +373,14 @@ test('settings modal shows the export menu at the top', function () {
         ->and(strpos($pane, "attemptExport('ipuz')"))->toBeLessThan(strpos($pane, 'wire:click="saveMetadata"'))
         ->and(substr_count($pane, 'data-test="settings-pane-actions"'))->toBe(1);
 
+    // The panels' scroll box bleeds past the content and pads back by the
+    // same amount, so full-width inputs' focus rings are not clipped.
+    preg_match('/<div[^>]*data-test="settings-panels"[^>]*>/', $pane, $panels);
+    expect($panels)->not->toBeEmpty()
+        ->and($panels[0])->toContain('overflow-y-auto')
+        ->toContain('-mx-1.5')
+        ->toContain('px-1.5');
+
     // The row is hidden while the Ideas tab is showing: nothing there to
     // save or export.
     preg_match('/<div[^>]*data-test="settings-pane-actions"[^>]*>/s', $pane, $actions);
