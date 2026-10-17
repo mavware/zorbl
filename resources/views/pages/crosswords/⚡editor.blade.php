@@ -1008,7 +1008,15 @@ class extends Component {
 }
 ?>
 
+{{-- wire:ignore.self: the x-data below seeds Alpine from the component's
+     properties, which save() keeps at the last persisted grid. Without it,
+     the first re-render after a save (a settings autosave, a word lookup)
+     sees a changed x-data attribute, re-creates the Alpine component, and
+     the grid snaps back to that last save: unsaved edits vanish, the dirty
+     flag resets so they are never sent, and undo history is lost. Children
+     still morph normally. --}}
 <div
+    wire:ignore.self
     x-data="crosswordGrid({
             width: @js($width),
             height: @js($height),

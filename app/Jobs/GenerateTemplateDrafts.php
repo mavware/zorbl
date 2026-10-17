@@ -43,12 +43,14 @@ class GenerateTemplateDrafts implements ShouldQueue
         public array $targetOverrides,
         public TemplateSearchOptions $search,
         public array $seedWords,
+        /** Rows, for a rectangular grid; null makes a square of $size. */
+        public ?int $height = null,
     ) {}
 
     public function handle(ProceduralTemplateGenerator $generator, TemplateDraftSaver $drafts): void
     {
         $candidates = $generator->generate(
-            size: $this->size,
+            width: $this->size,
             style: $this->style,
             count: $this->count,
             seed: $this->seed,
@@ -56,17 +58,18 @@ class GenerateTemplateDrafts implements ShouldQueue
             targetOverrides: $this->targetOverrides,
             search: $this->search,
             seedWords: $this->seedWords,
+            height: $this->height,
         );
 
         $savedIds = $drafts->save($candidates);
 
         $notification = $savedIds === []
             ? Notification::make()
-                ->title("No {$this->size}×{$this->size} templates generated")
+                ->title("No {$this->sizeLabel()} templates generated")
                 ->body('No valid new grid was found. Try a different seed or loosen the settings.')
                 ->warning()
             : Notification::make()
-                ->title("{$this->size}×{$this->size} templates ready")
+                ->title("{$this->sizeLabel()} templates ready")
                 ->body(sprintf('Saved %d template(s) as inactive drafts.', count($savedIds)))
                 ->success();
 
@@ -77,10 +80,15 @@ class GenerateTemplateDrafts implements ShouldQueue
     {
         $this->notify(
             Notification::make()
-                ->title("{$this->size}×{$this->size} template generation failed")
+                ->title("{$this->sizeLabel()} template generation failed")
                 ->body($exception?->getMessage() ?? 'The job stopped before finishing.')
                 ->danger(),
         );
+    }
+
+    private function sizeLabel(): string
+    {
+        return sprintf('%d×%d', $this->size, $this->height ?? $this->size);
     }
 
     private function notify(Notification $notification): void

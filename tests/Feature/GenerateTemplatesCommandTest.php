@@ -52,3 +52,24 @@ test('it rejects a size the style does not support', function () {
         ->expectsOutputToContain('Themed templates need a grid of at least 11×11.')
         ->assertFailed();
 });
+
+test('a size given as width x height makes rectangular templates', function () {
+    $this->artisan('templates:generate', ['size' => '7x9', '--count' => 1, '--seed' => 5])
+        ->assertSuccessful();
+
+    $template = Template::sole();
+
+    expect($template->width)->toBe(7)
+        ->and($template->height)->toBe(9)
+        ->and($template->name)->toStartWith('Standard 7×9 #')
+        ->and(count($template->grid))->toBe(9)
+        ->and(count($template->grid[0]))->toBe(7);
+});
+
+test('it rejects a size that is not a number or width x height', function () {
+    $this->artisan('templates:generate', ['size' => 'big'])
+        ->expectsOutputToContain('width×height')
+        ->assertFailed();
+
+    expect(Template::count())->toBe(0);
+});

@@ -12,7 +12,7 @@ use Illuminate\Console\Command;
 use InvalidArgumentException;
 
 #[Signature('templates:generate
-    {size : Square grid size, 5 to 27}
+    {size : Grid size, 5 to 35: one number for a square (15) or width×height for a rectangle (15x21)}
     {--style=standard : standard, themed or themeless}
     {--count=3 : Number of templates to generate}
     {--seed= : Seed for reproducible output}
@@ -38,7 +38,14 @@ class GenerateTemplates extends Command
             return self::FAILURE;
         }
 
-        $size = (int) $this->argument('size');
+        if (preg_match('/^(\d+)(?:[x×](\d+))?$/u', trim((string) $this->argument('size')), $dimensions) !== 1) {
+            $this->error('Give the size as one number for a square grid (15) or as width×height for a rectangle (15x21).');
+
+            return self::FAILURE;
+        }
+
+        $width = (int) $dimensions[1];
+        $height = isset($dimensions[2]) ? (int) $dimensions[2] : $width;
         $seed = $this->option('seed') !== null ? (int) $this->option('seed') : null;
         $themeLengths = array_map('intval', array_filter(explode(',', (string) $this->option('theme-lengths')), 'strlen'));
 
@@ -49,7 +56,7 @@ class GenerateTemplates extends Command
         }, (array) $this->option('word'));
 
         try {
-            $candidates = $generator->generate($size, $style, max(1, (int) $this->option('count')), $seed, $themeLengths, seedWords: $seedWords);
+            $candidates = $generator->generate($width, $style, max(1, (int) $this->option('count')), $seed, $themeLengths, seedWords: $seedWords, height: $height);
         } catch (InvalidArgumentException $e) {
             $this->error($e->getMessage());
 

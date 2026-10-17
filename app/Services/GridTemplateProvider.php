@@ -15,8 +15,8 @@ class GridTemplateProvider
      */
     public function getTemplates(int $width, int $height): array
     {
-        // Only support square grids from 3x3 to 35x35
-        if ($width !== $height || $width < 3 || $width > 35) {
+        // Any shape from 3x3 to 35x35, rectangles included.
+        if (min($width, $height) < 3 || max($width, $height) > 35) {
             return [];
         }
 

@@ -34,7 +34,28 @@ test('template picker offers only a blank grid for sizes without templates', fun
         ->set('newHeight', 2)
         ->assertSee('Grid Template')
         ->assertSee('Blank')
-        ->assertSee('Templates are available for square grids');
+        ->assertSee('Templates are available for grids from 3×3 to 35×35.');
+});
+
+test('rectangular templates are offered for their own width and height', function () {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    Template::factory()->create([
+        'name' => 'Wide Template',
+        'width' => 10,
+        'height' => 8,
+        'grid' => TemplateFactory::openGrid(10, 8),
+    ]);
+
+    Livewire\Livewire::test('pages::crosswords.index')
+        ->set('showNewModal', true)
+        ->set('newWidth', 10)
+        ->set('newHeight', 8)
+        ->assertSee('Wide Template')
+        ->assertDontSee('No templates for this size yet.')
+        ->set('newHeight', 10)
+        ->assertDontSee('Wide Template');
 });
 
 test('freestyle puzzles do not show the template picker', function () {
@@ -249,7 +270,7 @@ test('admin templates respect sort_order', function () {
     expect($firstIndex)->toBeLessThan($secondIndex);
 });
 
-test('non-square dimensions offer a blank grid with an informational note', function () {
+test('non-square dimensions with no templates offer a blank grid and say so', function () {
     $user = User::factory()->create();
     $this->actingAs($user);
 
@@ -259,7 +280,8 @@ test('non-square dimensions offer a blank grid with an informational note', func
         ->set('newHeight', 8)
         ->assertSee('Grid Template')
         ->assertSee('Blank')
-        ->assertSee('Templates are available for square grids');
+        ->assertSee('No templates for this size yet.')
+        ->assertDontSee('Templates are available for grids');
 });
 
 test('square dimensions within range show templates not informational message', function () {
@@ -273,7 +295,8 @@ test('square dimensions within range show templates not informational message', 
         ->set('newWidth', 11)
         ->set('newHeight', 11)
         ->assertSee('Grid Template')
-        ->assertDontSee('Templates are available for square grids');
+        ->assertDontSee('No templates for this size yet.')
+        ->assertDontSee('Templates are available for grids');
 });
 
 test('switching from square to non-square dimensions keeps template section stable', function () {
@@ -291,7 +314,7 @@ test('switching from square to non-square dimensions keeps template section stab
         ->assertSet('selectedTemplate', null)
         ->assertSee('Grid Template')
         ->assertSee('Blank')
-        ->assertSee('Templates are available for square grids');
+        ->assertSee('No templates for this size yet.');
 });
 
 test('a supported square size with no templates still offers a blank grid and says so', function () {

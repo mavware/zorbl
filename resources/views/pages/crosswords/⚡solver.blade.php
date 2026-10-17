@@ -572,7 +572,12 @@ new #[Title('Solve Crossword')] class extends Component {
 }
 ?>
 
+{{-- wire:ignore.self: the x-data seeds Alpine from properties that
+     saveProgress() moves on with every save, so a later re-render (liking,
+     a comment, a meta answer) would otherwise re-create the component and
+     snap the grid and timer back to the last save. See the editor root. --}}
 <div
+    wire:ignore.self
     x-data="crosswordSolver({
         width: @js($width),
         height: @js($height),

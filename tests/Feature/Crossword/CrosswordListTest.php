@@ -165,3 +165,25 @@ test('build page shows draft puzzle count', function () {
 
     expect($component->get('draftCount'))->toBe(3);
 });
+
+test('the new puzzle dimension inputs are owned by Alpine so a re-render cannot swallow a spinner click', function () {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    $html = Livewire\Livewire::test('pages::crosswords.index')
+        ->set('showNewModal', true)
+        ->html();
+
+    expect($html)->toContain('x-data="newPuzzleDimensions({ oddSizeTypes: JSON.parse(')
+        ->toContain('diamond')
+        ->toContain('x-model.number="width"')
+        ->toContain('x-model.number="height"')
+        ->toContain('x-on:input="onInput(\'width\')"')
+        ->toContain('x-on:blur="settle(\'height\')"')
+        ->not->toContain('wire:model.live.debounce.300ms="newWidth"')
+        ->not->toContain('wire:model.live.debounce.300ms="newHeight"');
+
+    // The inputs sit under wire:ignore, and the odd-size step comes from Alpine.
+    expect(preg_match_all('/<div wire:ignore>/', $html))->toBe(2);
+    expect($html)->toContain('x-bind:step="step()"');
+});

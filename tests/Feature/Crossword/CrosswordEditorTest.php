@@ -1569,6 +1569,24 @@ test('the editor root only stretches to full height on desktop', function () {
         ->and(preg_split('/\s+/', $root[1]))->not->toContain('h-full');
 });
 
+test('the editor root is ignored by Livewire morphs so a re-render cannot reset the grid to the last save', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create(['width' => 5, 'height' => 5]);
+
+    $this->actingAs($user);
+
+    $html = Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])->html();
+
+    preg_match('/<div([^>]*)x-data="crosswordGrid\(/s', $html, $root);
+
+    // save() moves the component's grid properties on with every autosave,
+    // so the x-data attribute changes on the next re-render; without
+    // wire:ignore.self the morph re-created the Alpine component from it
+    // and every edit since that save was lost, unsaved and unmarked.
+    expect($root)->not->toBeEmpty()
+        ->and($root[1])->toContain('wire:ignore.self');
+});
+
 test('the cell context menu offers Place block and Remove block', function () {
     $user = User::factory()->create();
     $crossword = Crossword::factory()->for($user)->create();

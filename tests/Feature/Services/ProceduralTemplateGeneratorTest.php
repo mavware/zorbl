@@ -10,7 +10,7 @@ use App\Support\TemplateTargets;
 
 test('generated templates follow the construction rules and size targets', function (int $size) {
     $candidates = app(ProceduralTemplateGenerator::class)->generate($size, TemplateGeneratorStyle::Standard, count: 1, seed: 7);
-    $targets = TemplateTargets::for($size, TemplateGeneratorStyle::Standard);
+    $targets = TemplateTargets::for($size, $size, TemplateGeneratorStyle::Standard);
 
     expect($candidates)->toHaveCount(1);
 
@@ -31,6 +31,31 @@ test('generated templates follow the construction rules and size targets', funct
         ->and($score->cheaterCount)->toBe(0)
         ->and($score->lonelyBlockCount)->toBe(0);
 })->with([11, 13, 17]);
+
+test('rectangular templates follow the same rules with their own width and height', function () {
+    $candidates = app(ProceduralTemplateGenerator::class)->generate(9, TemplateGeneratorStyle::Standard, count: 1, seed: 7, height: 13);
+    $targets = TemplateTargets::for(9, 13, TemplateGeneratorStyle::Standard);
+
+    expect($candidates)->toHaveCount(1);
+
+    $candidate = $candidates[0];
+    $score = app(TemplateGridScorer::class)->score($candidate->grid, $targets);
+
+    expect($candidate->isValid())->toBeTrue()
+        ->and($candidate->width)->toBe(9)
+        ->and($candidate->height)->toBe(13)
+        ->and($candidate->name)->toStartWith('Standard 9×13 #')
+        ->and(count($candidate->grid))->toBe(13)
+        ->and(count($candidate->grid[0]))->toBe(9)
+        ->and($candidate->stats->isRotationallySymmetric)->toBeTrue()
+        ->and($candidate->stats->isConnected)->toBeTrue()
+        ->and($candidate->stats->isFullyChecked)->toBeTrue()
+        ->and($candidate->stats->minWordLength)->toBeGreaterThanOrEqual(3)
+        ->and($score->hardViolations)->toBe([])
+        ->and($score->blockCount)->toBeBetween($targets->minBlocks, $targets->maxBlocks)
+        ->and($score->cheaterCount)->toBe(0)
+        ->and($score->lonelyBlockCount)->toBe(0);
+});
 
 test('the same seed produces the same template and a different seed a different one', function () {
     $generator = app(ProceduralTemplateGenerator::class);

@@ -4,6 +4,9 @@ namespace App\Filament\Pages;
 
 use App\Enums\ClueSource;
 use App\Enums\PuzzlePublication;
+use App\Enums\TemplateGeneratorStyle;
+use App\Jobs\GenerateTemplateDrafts;
+use App\Support\TemplateTargets;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
@@ -36,6 +39,16 @@ class Commands extends Page
      * Most puzzles per publication one scrape run may read; each is a separate request.
      */
     public const int MAX_SCRAPE_PUZZLES = 5;
+
+    /**
+     * Most templates one generation run may build; annealing takes several seconds each at the larger sizes.
+     */
+    public const int MAX_GENERATE_TEMPLATES = 3;
+
+    /**
+     * Largest side a grid generated inside the request may have; the Templates page queues anything bigger.
+     */
+    public const int MAX_GENERATE_SIZE = GenerateTemplateDrafts::QUEUE_ABOVE_SIZE;
 
     protected string $view = 'filament.pages.commands';
 
@@ -153,6 +166,68 @@ class Commands extends Page
                 '--puzzles' => (int) $data['puzzles'],
                 '--approve' => (bool) $data['approve'],
             ], fn (mixed $value): bool => $value !== null)));
+    }
+
+    public function generateTemplatesAction(): Action
+    {
+        $side = fn (string $name): TextInput => TextInput::make($name)
+            ->numeric()
+            ->integer()
+            ->minValue(TemplateTargets::MIN_SIZE)
+            ->maxValue(self::MAX_GENERATE_SIZE);
+
+        return Action::make('generateTemplates')
+            ->label('Run templates:generate')
+            ->icon(Heroicon::OutlinedSquares2x2)
+            ->modalDescription('Build symmetric grid templates procedurally, square or rectangular, and save them as inactive drafts or activate them straight away. The Templates page has the full set of levers.')
+            ->modalSubmitActionLabel('Run')
+            ->fillForm(['width' => 15, 'height' => null, 'style' => TemplateGeneratorStyle::Standard->value, 'count' => 1, 'seed' => null, 'activate' => false])
+            ->schema([
+                $side('width')
+                    ->label('Width')
+                    ->required(),
+                $side('height')
+                    ->label('Height')
+                    ->placeholder('Same as width')
+                    ->helperText('Leave blank for a square grid.'),
+                Select::make('style')
+                    ->options(collect(TemplateGeneratorStyle::cases())
+                        ->mapWithKeys(fn (TemplateGeneratorStyle $style): array => [$style->value => $style->label()])
+                        ->all())
+                    ->helperText('Themed and themeless need at least 11 on each side.')
+                    ->required(),
+                TextInput::make('count')
+                    ->label('Templates to generate')
+                    ->numeric()
+                    ->integer()
+                    ->minValue(1)
+                    ->maxValue(self::MAX_GENERATE_TEMPLATES)
+                    ->required(),
+                TextInput::make('seed')
+                    ->label('Seed')
+                    ->numeric()
+                    ->integer()
+                    ->minValue(1)
+                    ->helperText('Optional. The same size, style and seed always produce the same grids.'),
+                Toggle::make('activate')
+                    ->label('Activate immediately')
+                    ->helperText('Off saves them as inactive drafts to review on the Templates page.'),
+            ])
+            ->action(function (array $data): void {
+                $width = (int) $data['width'];
+                $height = filled($data['height'] ?? null) ? (int) $data['height'] : $width;
+
+                // Annealing a 21-wide grid takes around half a minute per template.
+                set_time_limit(360);
+
+                $this->runCommand('templates:generate', array_filter([
+                    'size' => $width === $height ? (string) $width : "{$width}x{$height}",
+                    '--style' => (string) $data['style'],
+                    '--count' => (int) $data['count'],
+                    '--seed' => filled($data['seed'] ?? null) ? (int) $data['seed'] : null,
+                    '--activate' => (bool) $data['activate'],
+                ], fn (mixed $value): bool => $value !== null));
+            });
     }
 
     /**

@@ -11,6 +11,8 @@ use InvalidArgumentException;
  * Bands for 15x15 and 21x21 come from published grids (word limits of 78 and
  * 140, block density around 17%). Other sizes are interpolated from those two
  * anchors; sizes below 11 follow the curated 5x5, 7x7 and 9x9 template sets.
+ * A rectangle takes the bands of the square with the same area, scaled to
+ * its own cell count and edges.
  */
 readonly class TemplateTargets
 {
@@ -28,7 +30,8 @@ readonly class TemplateTargets
      * @param  array<int, float>  $lengthShares  Target share of entries by length, keyed 3-8 where 8 means eight or longer
      */
     public function __construct(
-        public int $size,
+        public int $width,
+        public int $height,
         public TemplateGeneratorStyle $style,
         public int $minBlocks,
         public int $maxBlocks,
@@ -50,18 +53,19 @@ readonly class TemplateTargets
     /**
      * @param  int  $reservedFullWidthEntries  Full-width entries deliberately reserved as theme slots
      */
-    public static function for(int $size, TemplateGeneratorStyle $style, int $reservedFullWidthEntries = 0): self
+    public static function for(int $width, int $height, TemplateGeneratorStyle $style, int $reservedFullWidthEntries = 0): self
     {
-        if ($size < self::MIN_SIZE || $size > self::MAX_SIZE) {
+        if (min($width, $height) < self::MIN_SIZE || max($width, $height) > self::MAX_SIZE) {
             throw new InvalidArgumentException(sprintf(
-                'Templates can be generated for sizes %d to %d, got %d.',
+                'Templates can be generated for sizes %d to %d, got %d×%d.',
                 self::MIN_SIZE,
                 self::MAX_SIZE,
-                $size,
+                $width,
+                $height,
             ));
         }
 
-        if ($size < $style->minimumSize()) {
+        if (min($width, $height) < $style->minimumSize()) {
             throw new InvalidArgumentException(sprintf(
                 '%s templates need a grid of at least %d×%d.',
                 $style->label(),
@@ -70,8 +74,9 @@ readonly class TemplateTargets
             ));
         }
 
-        $cells = $size * $size;
-        $wordLimit = self::maxWordCount($size);
+        $size = self::effectiveSize($width, $height);
+        $cells = $width * $height;
+        $wordLimit = self::maxWordCount($width, $height);
         $themeless = $style === TemplateGeneratorStyle::Themeless;
 
         [$minDensity, $maxDensity] = match (true) {
@@ -91,7 +96,8 @@ readonly class TemplateTargets
         };
 
         return new self(
-            size: $size,
+            width: $width,
+            height: $height,
             style: $style,
             minBlocks: (int) ceil($minDensity * $cells),
             maxBlocks: (int) floor($maxDensity * $cells),
@@ -99,7 +105,7 @@ readonly class TemplateTargets
             maxWords: (int) floor($maxWordShare * $wordLimit),
             lengthShares: self::lengthShares($size, $themeless),
             maxBlackRun: $size <= 15 ? 4 : 5,
-            maxEntryLength: min($size, self::MAX_ENTRY_LENGTH),
+            maxEntryLength: min(max($width, $height), self::MAX_ENTRY_LENGTH),
             openWindowSize: match (true) {
                 $themeless, $size <= 8 => 6,
                 default => 5,
@@ -113,8 +119,23 @@ readonly class TemplateTargets
             maxCheaters: $size <= 9 ? 4 : 0,
             // Published grids put blocks on the border in proportion to the
             // border's share of the grid; allow a quarter more than that.
-            maxBorderShare: 1.25 * (4 * ($size - 1)) / $cells,
+            maxBorderShare: 1.25 * (2 * ($width - 1) + 2 * ($height - 1)) / $cells,
         );
+    }
+
+    /**
+     * The side of the square with the same area, which picks the size bands
+     * for a rectangle: a 9×13 grid is treated like an 11×11.
+     */
+    public static function effectiveSize(int $width, int $height): int
+    {
+        return (int) round(sqrt($width * $height));
+    }
+
+    /** "15" for a square, "15×21" otherwise. */
+    public function sizeLabel(): string
+    {
+        return $this->width === $this->height ? (string) $this->width : "{$this->width}×{$this->height}";
     }
 
     /**
@@ -125,7 +146,7 @@ readonly class TemplateTargets
     public function with(array $overrides): self
     {
         $values = get_object_vars($this);
-        $unknown = array_diff(array_keys($overrides), array_diff(array_keys($values), ['size', 'style']));
+        $unknown = array_diff(array_keys($overrides), array_diff(array_keys($values), ['width', 'height', 'style']));
 
         if ($unknown !== []) {
             throw new InvalidArgumentException('Unknown template setting: '.implode(', ', $unknown).'.');
@@ -152,10 +173,10 @@ readonly class TemplateTargets
             throw new InvalidArgumentException('Minimum word count cannot be negative or above the maximum.');
         }
 
-        if ($targets->minEntryLength < 2 || $targets->minEntryLength > $targets->maxEntryLength || $targets->maxEntryLength > $targets->size) {
+        if ($targets->minEntryLength < 2 || $targets->minEntryLength > $targets->maxEntryLength || $targets->maxEntryLength > max($targets->width, $targets->height)) {
             throw new InvalidArgumentException(sprintf(
                 'Entry lengths must run from at least 2 up to the grid size of %d, with the shortest no longer than the longest.',
-                $targets->size,
+                max($targets->width, $targets->height),
             ));
         }
 
@@ -176,13 +197,16 @@ readonly class TemplateTargets
     }
 
     /**
-     * Maximum word count for a square grid, fitted through the published
-     * 15x15 (78) and 21x21 (140) limits.
+     * Maximum word count for a grid, fitted through the published 15x15 (78)
+     * and 21x21 (140) limits: a term per cell plus a term per mean side.
      */
-    public static function maxWordCount(int $size): int
+    public static function maxWordCount(int $width, int $height): int
     {
-        return self::PUBLISHED_MAX_WORDS[$size]
-            ?? 2 * (int) round((0.2444 * $size * $size + 1.533 * $size) / 2);
+        if ($width === $height && isset(self::PUBLISHED_MAX_WORDS[$width])) {
+            return self::PUBLISHED_MAX_WORDS[$width];
+        }
+
+        return 2 * (int) round((0.2444 * $width * $height + 1.533 * ($width + $height) / 2) / 2);
     }
 
     /**

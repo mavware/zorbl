@@ -50,3 +50,18 @@ test('the job reports a failure to the admin', function () {
         ->and($notification->data['body'])->toBe('Out of memory')
         ->and($notification->data['status'])->toBe('danger');
 });
+
+test('the job can build a rectangular grid and names it by both sides', function () {
+    $user = User::factory()->create();
+    $job = templateDraftsJob($user);
+    $job->size = 7;
+    $job->height = 9;
+
+    app()->call([$job, 'handle']);
+
+    $draft = Template::sole();
+
+    expect($draft->width)->toBe(7)
+        ->and($draft->height)->toBe(9)
+        ->and($user->notifications()->sole()->data['title'])->toBe('7×9 templates ready');
+});

@@ -21,6 +21,23 @@ test('owner can solve their own puzzle', function () {
     expect(PuzzleAttempt::where('user_id', $user->id)->where('crossword_id', $crossword->id)->exists())->toBeTrue();
 });
 
+test('the solver root is ignored by Livewire morphs so a re-render cannot reset progress to the last save', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create();
+
+    $this->actingAs($user);
+
+    $html = Livewire::test('pages::crosswords.solver', ['crossword' => $crossword])->html();
+
+    preg_match('/<div([^>]*)x-data="crosswordSolver\(/s', $html, $root);
+
+    // saveProgress() updates the progress properties the x-data is seeded
+    // from, so a later re-render (a like, a comment, a meta answer) would
+    // otherwise re-create the Alpine component at the last saved state.
+    expect($root)->not->toBeEmpty()
+        ->and($root[1])->toContain('wire:ignore.self');
+});
+
 test('user can solve a published puzzle by another creator', function () {
     $user = User::factory()->create();
     $creator = User::factory()->create();

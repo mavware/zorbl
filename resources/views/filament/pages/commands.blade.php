@@ -39,6 +39,18 @@
 
             {{ $this->scrapePublishedCluesAction }}
         </x-filament::section>
+
+        <x-filament::section>
+            <x-slot name="heading">Generate grid templates</x-slot>
+            <x-slot name="description">
+                Builds symmetric grid templates procedurally, square or rectangular, up to
+                {{ \App\Filament\Pages\Commands::MAX_GENERATE_TEMPLATES }} per run and
+                {{ \App\Filament\Pages\Commands::MAX_GENERATE_SIZE }} squares a side. Drafts land on the Templates page,
+                which also offers every generation lever and background runs for larger grids.
+            </x-slot>
+
+            {{ $this->generateTemplatesAction }}
+        </x-filament::section>
     </div>
 
     @if ($output !== null)

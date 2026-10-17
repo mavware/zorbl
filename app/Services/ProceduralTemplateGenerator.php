@@ -26,13 +26,15 @@ class ProceduralTemplateGenerator
     ) {}
 
     /**
-     * @param  list<int>  $themeLengths  Themed style only: slot lengths from the top row down (row 4, row 8 on 19+ grids, then the centre row on odd sizes)
+     * @param  int  $width  Columns; also the rows unless $height is given
+     * @param  list<int>  $themeLengths  Themed style only: slot lengths from the top row down (row 4, row 8 on grids 19+ rows tall, then the centre row when the row count is odd)
      * @param  list<array{word: string, direction?: string}>  $seedWords  Words the grid must have slots for; these replace the themed slots
      * @param  array<string, mixed>  $targetOverrides  Replacements for the size's default targets, keyed by TemplateTargets property name
+     * @param  int|null  $height  Rows, for a rectangular grid; null makes a square
      * @return list<GenerationCandidate> Best candidates first; may be fewer than $count
      */
     public function generate(
-        int $size,
+        int $width,
         TemplateGeneratorStyle $style = TemplateGeneratorStyle::Standard,
         int $count = 3,
         ?int $seed = null,
@@ -40,19 +42,21 @@ class ProceduralTemplateGenerator
         array $targetOverrides = [],
         ?TemplateSearchOptions $search = null,
         array $seedWords = [],
+        ?int $height = null,
     ): array {
+        $height ??= $width;
         $search ??= new TemplateSearchOptions;
         $slots = match (true) {
-            $seedWords !== [] => $this->planner->forWords($size, $seedWords),
-            $style === TemplateGeneratorStyle::Themed => $this->planner->forThemeLengths($size, $themeLengths),
+            $seedWords !== [] => $this->planner->forWords($width, $height, $seedWords),
+            $style === TemplateGeneratorStyle::Themed => $this->planner->forThemeLengths($width, $height, $themeLengths),
             default => new SlotPlan,
         };
 
-        $defaults = TemplateTargets::for($size, $style, $slots->fullWidthEntries);
+        $defaults = TemplateTargets::for($width, $height, $style, $slots->fullWidthEntries);
         $targets = $defaults->with($targetOverrides);
         $customSettings = $this->customSettings($defaults, $targets, $search);
         $seed ??= random_int(1, 2_000_000_000);
-        $taken = $this->existingFingerprints($size);
+        $taken = $this->existingFingerprints($width, $height);
         $found = [];
 
         for ($attempt = 0; $attempt < $search->attemptsPerTemplate * $count; $attempt++) {
@@ -66,7 +70,7 @@ class ProceduralTemplateGenerator
                 continue;
             }
 
-            $grid = TemplateGridScorer::toGrid($cells, $size);
+            $grid = TemplateGridScorer::toGrid($cells, $width, $height);
             $fingerprint = self::fingerprint($grid);
 
             if (isset($taken[$fingerprint])) {
@@ -114,12 +118,14 @@ class ProceduralTemplateGenerator
      */
     private function anneal(TemplateTargets $targets, TemplateSearchOptions $search, array $locked, int $seed): array
     {
-        $size = $targets->size;
-        $stride = $size + 2;
-        $last = $stride * $stride - 1;
+        $width = $targets->width;
+        $height = $targets->height;
+        $stride = $width + 2;
+        // The rotational twin of padded index i is $last - i, for any rectangle.
+        $last = $stride * ($height + 2) - 1;
         $random = new Randomizer(new Mt19937($seed));
 
-        $cells = TemplateGridScorer::toCells(array_fill(0, $size, array_fill(0, $size, 0)), $size);
+        $cells = TemplateGridScorer::toCells(array_fill(0, $height, array_fill(0, $width, 0)), $width, $height);
         foreach ($locked as $index => $value) {
             $cells[$index] = $value;
         }
@@ -127,7 +133,7 @@ class ProceduralTemplateGenerator
         $energy = $this->scorer->measure($cells, $targets)['energy'];
         $best = $cells;
         $bestEnergy = $energy;
-        $iterations = $search->iterationsPerCell * $size * $size;
+        $iterations = $search->iterationsPerCell * $width * $height;
         $cooling = $search->endTemperature / $search->startTemperature;
         $moveTotal = $search->flipWeight + $search->paintWeight + $search->eraseWeight + $search->slideWeight;
         $flipBelow = $search->flipWeight / $moveTotal;
@@ -136,7 +142,7 @@ class ProceduralTemplateGenerator
 
         for ($iteration = 0; $iteration < $iterations; $iteration++) {
             $previous = $cells;
-            $index = $random->getInt(1, $size) * $stride + $random->getInt(1, $size);
+            $index = $random->getInt(1, $height) * $stride + $random->getInt(1, $width);
             $move = $random->nextFloat();
 
             if ($move < $flipBelow) {
@@ -170,7 +176,7 @@ class ProceduralTemplateGenerator
             } else {
                 // Slide an existing block one cell.
                 for ($tries = 0; $tries < 20 && $cells[$index] !== TemplateGridScorer::BLOCK; $tries++) {
-                    $index = $random->getInt(1, $size) * $stride + $random->getInt(1, $size);
+                    $index = $random->getInt(1, $height) * $stride + $random->getInt(1, $width);
                 }
 
                 $target = $index + [-1, 1, -$stride, $stride][$random->getInt(0, 3)];
@@ -210,13 +216,13 @@ class ProceduralTemplateGenerator
      *
      * @return array<string, true>
      */
-    private function existingFingerprints(int $size): array
+    private function existingFingerprints(int $width, int $height): array
     {
         $fingerprints = [];
 
         Template::withTrashed()
-            ->where('width', $size)
-            ->where('height', $size)
+            ->where('width', $width)
+            ->where('height', $height)
             ->pluck('grid')
             ->each(function (array $grid) use (&$fingerprints): void {
                 $fingerprints[self::fingerprint($grid)] = true;
@@ -273,11 +279,12 @@ class ProceduralTemplateGenerator
      */
     private function toCandidate(array $grid, TemplateScore $score, TemplateTargets $targets, int $seed, SlotPlan $slots, array $customSettings): GenerationCandidate
     {
-        $size = $targets->size;
+        $width = $targets->width;
+        $height = $targets->height;
         $style = $targets->style;
 
         $strengths = [
-            sprintf('%d words against a maximum of %d for this size', $score->wordCount, TemplateTargets::maxWordCount($size)),
+            sprintf('%d words against a maximum of %d for this size', $score->wordCount, TemplateTargets::maxWordCount($width, $height)),
             sprintf('Largest open area is %d×%d', $score->largestOpenSquare, $score->largestOpenSquare),
             sprintf('3-letter entries are %d%% of the fill', round(100 * $score->threeLetterShare)),
         ];
@@ -316,9 +323,9 @@ class ProceduralTemplateGenerator
         }
 
         return new GenerationCandidate(
-            name: sprintf('%s %d #%d', $style->label(), $size, $seed),
-            width: $size,
-            height: $size,
+            name: sprintf('%s %s #%d', $style->label(), $targets->sizeLabel(), $seed),
+            width: $width,
+            height: $height,
             grid: $grid,
             philosophy: sprintf(
                 'Procedurally generated %s grid (seed %d): %d blocks (%.1f%%), %d words, average entry %.2f letters.%s',
@@ -338,7 +345,7 @@ class ProceduralTemplateGenerator
                 default => 'General-purpose puzzles at this size.',
             },
             avoidWhen: null,
-            stats: $this->stats->forGrid($grid, $size, $size),
+            stats: $this->stats->forGrid($grid, $width, $height),
             validationErrors: $score->hardViolations,
         );
     }

@@ -94,14 +94,24 @@ class ListTemplates extends ListRecords
             ->modalDescription(sprintf('Builds symmetric grids without AI, scored against published word-count, block-density and entry-length standards. Each result is saved as an inactive draft for you to review. Grids larger than %d×%d are generated in the background and you are notified when they are ready.', GenerateTemplateDrafts::QUEUE_ABOVE_SIZE, GenerateTemplateDrafts::QUEUE_ABOVE_SIZE))
             ->modalSubmitActionLabel('Generate')
             ->schema([
-                Select::make('size')
-                    ->label('Size')
-                    ->options(collect(range(TemplateTargets::MIN_SIZE, TemplateTargets::MAX_SIZE))->mapWithKeys(
-                        fn (int $size) => [$size => "{$size}×{$size}"]
-                    )->all())
-                    ->default(13)
-                    ->live()
-                    ->required(),
+                Grid::make(2)->schema([
+                    Select::make('size')
+                        ->label('Width')
+                        ->options(collect(range(TemplateTargets::MIN_SIZE, TemplateTargets::MAX_SIZE))->mapWithKeys(
+                            fn (int $size) => [$size => (string) $size]
+                        )->all())
+                        ->default(13)
+                        ->live()
+                        ->required(),
+                    Select::make('height')
+                        ->label('Height')
+                        ->options(collect(range(TemplateTargets::MIN_SIZE, TemplateTargets::MAX_SIZE))->mapWithKeys(
+                            fn (int $size) => [$size => (string) $size]
+                        )->all())
+                        ->placeholder('Same as width')
+                        ->helperText('Leave blank for a square grid.')
+                        ->live(),
+                ]),
                 Select::make('style')
                     ->label('Style')
                     ->options(collect(TemplateGeneratorStyle::cases())->mapWithKeys(
@@ -173,6 +183,7 @@ class ListTemplates extends ListRecords
             ])
             ->action(function (array $data): void {
                 $size = (int) $data['size'];
+                $height = filled($data['height'] ?? null) ? (int) $data['height'] : $size;
                 $style = TemplateGeneratorStyle::from($data['style']);
                 $count = (int) $data['candidate_count'];
                 $seed = filled($data['seed'] ?? null) ? (int) $data['seed'] : null;
@@ -186,20 +197,20 @@ class ListTemplates extends ListRecords
                     $targetOverrides = $this->targetOverrides($data);
                     $search = new TemplateSearchOptions(...$this->filledLevers($data, self::SEARCH_LEVERS));
 
-                    if ($size > GenerateTemplateDrafts::QUEUE_ABOVE_SIZE) {
+                    if (max($size, $height) > GenerateTemplateDrafts::QUEUE_ABOVE_SIZE) {
                         // Check the settings now so mistakes surface here, not in the queue.
-                        TemplateTargets::for($size, $style)->with($targetOverrides);
+                        TemplateTargets::for($size, $height, $style)->with($targetOverrides);
                         if ($seedWords !== []) {
-                            app(TemplateSlotPlanner::class)->forWords($size, $seedWords);
+                            app(TemplateSlotPlanner::class)->forWords($size, $height, $seedWords);
                         } elseif ($style === TemplateGeneratorStyle::Themed) {
-                            app(TemplateSlotPlanner::class)->forThemeLengths($size, $themeLengths);
+                            app(TemplateSlotPlanner::class)->forThemeLengths($size, $height, $themeLengths);
                         }
 
-                        GenerateTemplateDrafts::dispatch(auth()->id(), $size, $style, $count, $seed, $themeLengths, $targetOverrides, $search, $seedWords);
+                        GenerateTemplateDrafts::dispatch(auth()->id(), $size, $style, $count, $seed, $themeLengths, $targetOverrides, $search, $seedWords, $height);
 
                         Notification::make()
                             ->title('Generation queued')
-                            ->body(sprintf('%d %d×%d template(s) are being generated in the background. You will be notified when the drafts are ready.', $count, $size, $size))
+                            ->body(sprintf('%d %d×%d template(s) are being generated in the background. You will be notified when the drafts are ready.', $count, $size, $height))
                             ->info()
                             ->send();
 
@@ -210,7 +221,7 @@ class ListTemplates extends ListRecords
                     set_time_limit(360);
 
                     $candidates = app(ProceduralTemplateGenerator::class)->generate(
-                        size: $size,
+                        width: $size,
                         style: $style,
                         count: $count,
                         seed: $seed,
@@ -218,6 +229,7 @@ class ListTemplates extends ListRecords
                         targetOverrides: $targetOverrides,
                         search: $search,
                         seedWords: $seedWords,
+                        height: $height,
                     );
                 } catch (InvalidArgumentException $e) {
                     Notification::make()
@@ -273,9 +285,9 @@ class ListTemplates extends ListRecords
             ->compact()
             ->columns(2)
             ->schema([
-                $this->lever('min_density', 'Minimum block density (%)', $default(fn (TemplateTargets $t) => round(100 * $t->minBlocks / $t->size ** 2, 1)))
+                $this->lever('min_density', 'Minimum block density (%)', $default(fn (TemplateTargets $t) => round(100 * $t->minBlocks / ($t->width * $t->height), 1)))
                     ->maxValue(100),
-                $this->lever('max_density', 'Maximum block density (%)', $default(fn (TemplateTargets $t) => round(100 * $t->maxBlocks / $t->size ** 2, 1)))
+                $this->lever('max_density', 'Maximum block density (%)', $default(fn (TemplateTargets $t) => round(100 * $t->maxBlocks / ($t->width * $t->height), 1)))
                     ->maxValue(100),
                 $this->lever('min_words', 'Minimum word count', $default(fn (TemplateTargets $t) => $t->minWords)),
                 $this->lever('max_words', 'Maximum word count', $default(fn (TemplateTargets $t) => $t->maxWords)),
@@ -400,8 +412,11 @@ class ListTemplates extends ListRecords
             return null;
         }
 
+        $width = (int) $get('size');
+        $height = filled($get('height')) ? (int) $get('height') : $width;
+
         try {
-            return TemplateTargets::for((int) $get('size'), $style);
+            return TemplateTargets::for($width, $height, $style);
         } catch (InvalidArgumentException) {
             return null;
         }
@@ -413,7 +428,7 @@ class ListTemplates extends ListRecords
      */
     private function targetOverrides(array $data): array
     {
-        $cells = ((int) $data['size']) ** 2;
+        $cells = ((int) $data['size']) * (filled($data['height'] ?? null) ? (int) $data['height'] : (int) $data['size']);
         $overrides = array_map('intval', $this->filledLevers($data, self::TARGET_LEVERS));
 
         if (filled($data['min_density'] ?? null)) {

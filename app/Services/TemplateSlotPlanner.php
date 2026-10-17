@@ -11,7 +11,9 @@ use InvalidArgumentException;
  *
  * A slot flush against one edge is mirrored flush against the opposite edge
  * in the twin line, so two entries of the same length share one slot pair.
- * On odd sizes the centre line can hold one self-symmetric slot.
+ * When there is an odd number of lines the centre line can hold one
+ * self-symmetric slot. Across slots run the width and pick from the rows;
+ * down slots run the height and pick from the columns.
  */
 class TemplateSlotPlanner
 {
@@ -27,7 +29,7 @@ class TemplateSlotPlanner
      *
      * @param  list<array{word: string, direction?: string}>  $words
      */
-    public function forWords(int $size, array $words): SlotPlan
+    public function forWords(int $width, int $height, array $words): SlotPlan
     {
         $byDirection = [self::ACROSS => [], self::DOWN => []];
 
@@ -43,7 +45,7 @@ class TemplateSlotPlanner
                 throw new InvalidArgumentException("Direction for {$word} must be across or down.");
             }
 
-            $this->assertPlaceable($size, $word);
+            $this->assertPlaceable($width, $height, $direction, $word);
             $byDirection[$direction][] = $word;
         }
 
@@ -54,7 +56,7 @@ class TemplateSlotPlanner
                 continue;
             }
 
-            $plan = $this->merge($plan, $this->planDirection($size, $direction, $directionWords));
+            $plan = $this->merge($plan, $this->planDirection($width, $height, $direction, $directionWords));
         }
 
         return $plan;
@@ -62,61 +64,64 @@ class TemplateSlotPlanner
 
     /**
      * Reserve across slots of the given lengths in the classic theme rows: row 4,
-     * row 8 on 19x19 and larger, then the centre row on odd sizes.
+     * row 8 on grids 19 or more rows tall, then the centre row when the row
+     * count is odd. Lengths are measured against the width.
      *
      * @param  list<int>  $lengths  Slot lengths from the top row down; missing ones use defaults
      */
-    public function forThemeLengths(int $size, array $lengths): SlotPlan
+    public function forThemeLengths(int $width, int $height, array $lengths): SlotPlan
     {
-        $longest = min($size, TemplateTargets::MAX_ENTRY_LENGTH);
+        $longest = min($width, TemplateTargets::MAX_ENTRY_LENGTH);
         $lengths = array_values($lengths);
-        $edgeRows = $size >= 19 ? [3 => 'start', 7 => 'end'] : [3 => 'start'];
+        $edgeRows = $height >= 19 ? [3 => 'start', 7 => 'end'] : [3 => 'start'];
         $slots = [];
         $position = 0;
 
         foreach ($edgeRows as $row => $side) {
-            $length = $lengths[$position++] ?? min($size - 4, $longest);
+            $length = $lengths[$position++] ?? min($width - 4, $longest);
 
-            if ($length > $longest || ($length !== $size && ($length < 3 || $length > $size - 4))) {
+            if ($length > $longest || ($length !== $width && ($length < 3 || $length > $width - 4))) {
                 throw new InvalidArgumentException(sprintf(
                     'A theme slot on row %d of a %d×%d grid must be %d letters or between 3 and %d, and no longer than %d.',
-                    $row + 1, $size, $size, $size, $size - 4, $longest,
+                    $row + 1, $width, $height, $width, $width - 4, $longest,
                 ));
             }
 
             $slots[] = ['line' => $row, 'length' => $length, 'side' => $side, 'label' => "{$length}-letter slot"];
         }
 
-        if ($size % 2 === 1) {
-            $length = $lengths[$position] ?? ($size <= $longest ? $size : $size - 8);
+        if ($height % 2 === 1) {
+            $length = $lengths[$position] ?? ($width <= $longest ? $width : $width - 8);
 
-            if ($length > $longest || ! $this->fitsCentred($size, $length)) {
+            if ($length > $longest || ! $this->fitsCentred($width, $length)) {
                 throw new InvalidArgumentException(sprintf(
                     'The centre theme slot of a %d×%d grid must be %d letters or leave at least 4 squares on each side, and be no longer than %d.',
-                    $size, $size, $size, $longest,
+                    $width, $height, $width, $longest,
                 ));
             }
 
-            $slots[] = ['line' => intdiv($size, 2), 'length' => $length, 'side' => 'centre', 'label' => "{$length}-letter slot"];
+            $slots[] = ['line' => intdiv($height, 2), 'length' => $length, 'side' => 'centre', 'label' => "{$length}-letter slot"];
         }
 
-        return $this->build($size, self::ACROSS, $slots);
+        return $this->build($width, $height, self::ACROSS, $slots);
     }
 
     /**
      * @param  list<string>  $words
      */
-    private function planDirection(int $size, string $direction, array $words): SlotPlan
+    private function planDirection(int $width, int $height, string $direction, array $words): SlotPlan
     {
         usort($words, fn (string $a, string $b): int => strlen($b) <=> strlen($a));
 
-        $mid = intdiv($size, 2);
+        // Across slots run the width and choose among the rows; down slots the reverse.
+        [$lineLength, $lineCount] = $direction === self::ACROSS ? [$width, $height] : [$height, $width];
+        $mid = intdiv($lineCount, 2);
         $slots = [];
 
         // The longest word that can sit on the centre line takes it.
-        if ($size % 2 === 1) {
+        if ($lineCount % 2 === 1) {
             foreach ($words as $i => $word) {
-                if ($this->fitsCentred($size, strlen($word))) {
+                if ($this->fitsCentred($lineLength, strlen($word))) {
                     $slots[] = ['line' => $mid, 'length' => strlen($word), 'side' => 'centre', 'label' => $word];
                     unset($words[$i]);
                     break;
@@ -129,11 +134,8 @@ class TemplateSlotPlanner
         foreach ($words as $word) {
             $length = strlen($word);
 
-            if (! $this->fitsFlush($size, $length)) {
-                throw new InvalidArgumentException(sprintf(
-                    '%s (%d letters) cannot be placed in a %d×%d grid. Words of up to %d letters or exactly %d letters fit.',
-                    $word, $length, $size, $size, $size - 4, $size,
-                ));
+            if (! $this->fitsFlush($lineLength, $length)) {
+                throw new InvalidArgumentException(self::cannotPlace($word, $direction, $width, $height, $lineLength));
             }
 
             $open = array_search(true, array_map(fn (array $pair): bool => $pair['length'] === $length && $pair['twin'] === null, $pairs), true);
@@ -150,11 +152,11 @@ class TemplateSlotPlanner
         if (count($pairs) > count($available)) {
             throw new InvalidArgumentException(sprintf(
                 'Too many %s words for a %d×%d grid: at most %d can be placed.',
-                $direction, $size, $size, count($available) * 2 + ($size % 2),
+                $direction, $width, $height, count($available) * 2 + ($lineCount % 2),
             ));
         }
 
-        $lines = $this->chooseLines($size, $available, count($pairs), $slots !== []);
+        $lines = $this->chooseLines($lineCount, $available, count($pairs), $slots !== []);
 
         // Longer words sit nearer the centre; alternate the side for a staggered look.
         foreach ($pairs as $i => $pair) {
@@ -166,30 +168,31 @@ class TemplateSlotPlanner
             ];
         }
 
-        return $this->build($size, $direction, $slots);
+        return $this->build($width, $height, $direction, $slots);
     }
 
     /**
      * Pick the rows (or columns) for the slot pairs: as far apart as possible,
      * then as close to the classic third row as possible.
      *
+     * @param  int  $lineCount  Rows for across slots, columns for down slots
      * @param  list<int>  $available
      * @return list<int> One line per pair, nearest the centre first
      */
-    private function chooseLines(int $size, array $available, int $count, bool $centreUsed): array
+    private function chooseLines(int $lineCount, array $available, int $count, bool $centreUsed): array
     {
         if ($count === 0) {
             return [];
         }
 
-        $mid = intdiv($size, 2);
+        $mid = intdiv($lineCount, 2);
         $best = null;
         $bestScore = null;
 
         foreach ($this->combinations($available, $count) as $lines) {
             $occupied = $lines;
             foreach ($lines as $line) {
-                $occupied[] = $size - 1 - $line;
+                $occupied[] = $lineCount - 1 - $line;
             }
             if ($centreUsed) {
                 $occupied[] = $mid;
@@ -245,10 +248,11 @@ class TemplateSlotPlanner
      *
      * @param  list<array{line: int, length: int, side: string, label: string}>  $slots
      */
-    private function build(int $size, string $direction, array $slots): SlotPlan
+    private function build(int $width, int $height, string $direction, array $slots): SlotPlan
     {
-        $stride = $size + 2;
-        $last = $stride * $stride - 1;
+        $stride = $width + 2;
+        $last = $stride * ($height + 2) - 1;
+        $lineLength = $direction === self::ACROSS ? $width : $height;
         $locked = [];
         $owners = [];
         $lengths = [];
@@ -275,21 +279,21 @@ class TemplateSlotPlanner
             $length = $slot['length'];
             $start = match ($slot['side']) {
                 'start' => 0,
-                'end' => $size - $length,
-                default => intdiv($size - $length, 2),
+                'end' => $lineLength - $length,
+                default => intdiv($lineLength - $length, 2),
             };
 
             for ($position = $start; $position < $start + $length; $position++) {
                 $lock($slot['line'], $position, TemplateGridScorer::WHITE, $slot['label']);
             }
 
-            if ($length === $size) {
+            if ($length === $lineLength) {
                 $fullWidth += $slot['side'] === 'centre' ? 1 : 2;
             } else {
                 if ($start > 0) {
                     $lock($slot['line'], $start - 1, TemplateGridScorer::BLOCK, $slot['label']);
                 }
-                if ($start + $length < $size) {
+                if ($start + $length < $lineLength) {
                     $lock($slot['line'], $start + $length, TemplateGridScorer::BLOCK, $slot['label']);
                 }
             }
@@ -317,25 +321,32 @@ class TemplateSlotPlanner
         );
     }
 
-    private function assertPlaceable(int $size, string $word): void
+    private function assertPlaceable(int $width, int $height, string $direction, string $word): void
     {
+        [$lineLength, $lineCount] = $direction === self::ACROSS ? [$width, $height] : [$height, $width];
         $length = strlen($word);
 
-        if (! $this->fitsFlush($size, $length) && ! ($size % 2 === 1 && $this->fitsCentred($size, $length))) {
-            throw new InvalidArgumentException(sprintf(
-                '%s (%d letters) cannot be placed in a %d×%d grid. Words of up to %d letters or exactly %d letters fit.',
-                $word, $length, $size, $size, $size - 4, $size,
-            ));
+        if (! $this->fitsFlush($lineLength, $length) && ! ($lineCount % 2 === 1 && $this->fitsCentred($lineLength, $length))) {
+            throw new InvalidArgumentException(self::cannotPlace($word, $direction, $width, $height, $lineLength));
         }
     }
 
-    private function fitsFlush(int $size, int $length): bool
+    private static function cannotPlace(string $word, string $direction, int $width, int $height, int $lineLength): string
     {
-        return $length === $size || ($length >= 3 && $length <= $size - 4);
+        return sprintf(
+            '%s (%d letters) cannot be placed %s in a %d×%d grid. Words of up to %d letters or exactly %d letters fit.',
+            $word, strlen($word), $direction, $width, $height, $lineLength - 4, $lineLength,
+        );
     }
 
-    private function fitsCentred(int $size, int $length): bool
+    /** Along a line of this length, a slot flush to one edge leaves room for its end cap and a twin. */
+    private function fitsFlush(int $lineLength, int $length): bool
     {
-        return $length === $size || ($length >= 3 && ($size - $length) % 2 === 0 && intdiv($size - $length, 2) >= 4);
+        return $length === $lineLength || ($length >= 3 && $length <= $lineLength - 4);
+    }
+
+    private function fitsCentred(int $lineLength, int $length): bool
+    {
+        return $length === $lineLength || ($length >= 3 && ($lineLength - $length) % 2 === 0 && intdiv($lineLength - $length, 2) >= 4);
     }
 }

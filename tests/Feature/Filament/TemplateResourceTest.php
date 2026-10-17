@@ -381,10 +381,13 @@ test('settings that cannot work are reported before a large grid is queued', fun
     Queue::assertNothingPushed();
 });
 
-test('the largest size offered is 35x35', function () {
+test('the generate form offers widths and heights up to 35 and a height left blank means square', function () {
     Livewire::test(ListTemplates::class)
         ->mountAction('generateProcedural')
-        ->assertMountedActionModalSee('35×35');
+        ->assertMountedActionModalSee('Width')
+        ->assertMountedActionModalSee('Height')
+        ->assertMountedActionModalSee('Same as width')
+        ->assertMountedActionModalSee('Leave blank for a square grid.');
 });
 
 test('the fill check reports a template the word list can fill', function () {

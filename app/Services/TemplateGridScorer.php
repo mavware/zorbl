@@ -6,12 +6,12 @@ use App\Support\TemplateScore;
 use App\Support\TemplateTargets;
 
 /**
- * Scores a square block pattern against construction rules and size-scaled
+ * Scores a block pattern against construction rules and size-scaled
  * targets. Lower energy is better; any hard violation makes a grid unusable.
  *
- * Grids are scored in a padded flat form: a (size + 2) square where 0 is a
- * white cell, 1 a block and 2 the surrounding border, so neighbour lookups
- * never need bounds checks.
+ * Grids are scored in a padded flat form: (width + 2) by (height + 2) cells
+ * where 0 is a white cell, 1 a block and 2 the surrounding border, so
+ * neighbour lookups never need bounds checks.
  */
 class TemplateGridScorer
 {
@@ -36,8 +36,7 @@ class TemplateGridScorer
      */
     public function score(array $grid, TemplateTargets $targets): TemplateScore
     {
-        $size = $targets->size;
-        $measured = $this->measure(self::toCells($grid, $size), $targets);
+        $measured = $this->measure(self::toCells($grid, $targets->width, $targets->height), $targets);
 
         $violations = [];
 
@@ -64,7 +63,7 @@ class TemplateGridScorer
             energy: $measured['energy'],
             hardViolations: $violations,
             blockCount: $blocks,
-            blockDensity: $blocks / ($size * $size),
+            blockDensity: $blocks / ($targets->width * $targets->height),
             wordCount: $words,
             averageLength: $words > 0 ? $measured['letters'] / $words : 0.0,
             lengthCounts: $measured['lengthCounts'],
@@ -92,8 +91,9 @@ class TemplateGridScorer
      */
     public function measure(array $cells, TemplateTargets $targets): array
     {
-        $size = $targets->size;
-        $stride = $size + 2;
+        $width = $targets->width;
+        $height = $targets->height;
+        $stride = $width + 2;
         $maxRun = $targets->maxBlackRun;
         $minLength = $targets->minEntryLength;
         $maxLength = $targets->maxEntryLength;
@@ -110,14 +110,15 @@ class TemplateGridScorer
         $letters = 0;
         $fullWidth = 0;
 
-        // Entries and black runs, across (step 1) then down (step $stride).
-        foreach ([[1, $stride], [$stride, 1]] as [$step, $lineStep]) {
-            for ($line = 0; $line < $size; $line++) {
+        // Entries and black runs: across (step 1) along each of the rows, then
+        // down (step $stride) along each of the columns.
+        foreach ([[1, $stride, $height, $width], [$stride, 1, $width, $height]] as [$step, $lineStep, $lineCount, $lineLength]) {
+            for ($line = 0; $line < $lineCount; $line++) {
                 $index = $stride + 1 + $line * $lineStep;
                 $length = 0;
                 $run = 0;
 
-                for ($k = 0; $k <= $size; $k++, $index += $step) {
+                for ($k = 0; $k <= $lineLength; $k++, $index += $step) {
                     $cell = $cells[$index];
 
                     if ($cell === self::WHITE) {
@@ -146,7 +147,7 @@ class TemplateGridScorer
                             $longEntries++;
                             $longOver += $length - $maxLength;
                         }
-                        if ($length === $size) {
+                        if ($length === $lineLength) {
                             $fullWidth++;
                         }
                         $length = 0;
@@ -164,7 +165,7 @@ class TemplateGridScorer
             }
         }
 
-        [$components, $chokepoints] = $this->connectivity($cells, $size);
+        [$components, $chokepoints] = $this->connectivity($cells, $width, $height);
 
         $blocks = 0;
         $borderBlocks = 0;
@@ -179,13 +180,13 @@ class TemplateGridScorer
         $minTouching = $targets->minTouchingBlocks;
         $touchingDeficit = 0;
         $lonelyBlocks = 0;
-        $openSquare = array_fill(0, $stride * $stride, 0);
+        $openSquare = array_fill(0, $stride * ($height + 2), 0);
         $seenBlocks = [];
 
-        for ($row = 1; $row <= $size; $row++) {
+        for ($row = 1; $row <= $height; $row++) {
             $index = $row * $stride + 1;
 
-            for ($col = 1; $col <= $size; $col++, $index++) {
+            for ($col = 1; $col <= $width; $col++, $index++) {
                 if ($cells[$index] === self::WHITE) {
                     $side = 1 + min($openSquare[$index - 1], $openSquare[$index - $stride], $openSquare[$index - $stride - 1]);
                     $openSquare[$index] = $side;
@@ -201,7 +202,7 @@ class TemplateGridScorer
 
                 $blocks++;
 
-                if ($row === 1 || $row === $size || $col === 1 || $col === $size) {
+                if ($row === 1 || $row === $height || $col === 1 || $col === $width) {
                     $borderBlocks++;
                 }
 
@@ -330,13 +331,13 @@ class TemplateGridScorer
      * @param  array<int, array<int, int|string|null>>  $grid
      * @return array<int, int>
      */
-    public static function toCells(array $grid, int $size): array
+    public static function toCells(array $grid, int $width, int $height): array
     {
-        $stride = $size + 2;
-        $cells = array_fill(0, $stride * $stride, self::BORDER);
+        $stride = $width + 2;
+        $cells = array_fill(0, $stride * ($height + 2), self::BORDER);
 
-        for ($row = 0; $row < $size; $row++) {
-            for ($col = 0; $col < $size; $col++) {
+        for ($row = 0; $row < $height; $row++) {
+            for ($col = 0; $col < $width; $col++) {
                 $cell = $grid[$row][$col] ?? null;
                 $cells[($row + 1) * $stride + $col + 1] = ($cell === '#' || $cell === null) ? self::BLOCK : self::WHITE;
             }
@@ -351,14 +352,14 @@ class TemplateGridScorer
      * @param  array<int, int>  $cells
      * @return array<int, array<int, int|string>>
      */
-    public static function toGrid(array $cells, int $size): array
+    public static function toGrid(array $cells, int $width, int $height): array
     {
-        $stride = $size + 2;
+        $stride = $width + 2;
         $grid = [];
 
-        for ($row = 0; $row < $size; $row++) {
+        for ($row = 0; $row < $height; $row++) {
             $gridRow = [];
-            for ($col = 0; $col < $size; $col++) {
+            for ($col = 0; $col < $width; $col++) {
                 $gridRow[] = $cells[($row + 1) * $stride + $col + 1] === self::BLOCK ? '#' : 0;
             }
             $grid[] = $gridRow;
@@ -374,9 +375,9 @@ class TemplateGridScorer
      * @param  array<int, int>  $cells
      * @return array{int, int}
      */
-    private function connectivity(array $cells, int $size): array
+    private function connectivity(array $cells, int $width, int $height): array
     {
-        $stride = $size + 2;
+        $stride = $width + 2;
         $offsets = [-1, 1, -$stride, $stride];
         $discovered = [];
         $lowest = [];
@@ -386,10 +387,10 @@ class TemplateGridScorer
         $components = 0;
         $timer = 0;
 
-        for ($row = 1; $row <= $size; $row++) {
+        for ($row = 1; $row <= $height; $row++) {
             $root = $row * $stride + 1;
 
-            for ($col = 1; $col <= $size; $col++, $root++) {
+            for ($col = 1; $col <= $width; $col++, $root++) {
                 if ($cells[$root] !== self::WHITE || isset($discovered[$root])) {
                     continue;
                 }

@@ -2,6 +2,7 @@
 
 use App\Filament\Pages\Commands;
 use App\Models\ClueEntry;
+use App\Models\Template;
 use App\Models\User;
 use App\Models\Word;
 use Illuminate\Support\Facades\Http;
@@ -21,7 +22,8 @@ test('admin can load the commands page', function (): void {
         ->assertSee('Run words:export-json')
         ->assertSee('Run clues:backfill')
         ->assertSee('Run words:import-wiktionary')
-        ->assertSee('Run clues:scrape-published');
+        ->assertSee('Run clues:scrape-published')
+        ->assertSee('Run templates:generate');
 });
 
 test('non-admins cannot load the commands page', function (): void {
@@ -121,4 +123,27 @@ test('the scrape action caps how many puzzles one run can read', function (): vo
     Livewire::test(Commands::class)
         ->callAction('scrapePublishedClues', ['publication' => 'all', 'puzzles' => Commands::MAX_SCRAPE_PUZZLES + 1, 'approve' => false])
         ->assertHasFormErrors(['puzzles' => 'max']);
+});
+
+test('the generate templates action builds a rectangular grid through the command', function (): void {
+    Livewire::test(Commands::class)
+        ->callAction('generateTemplates', ['width' => 7, 'height' => 9, 'style' => 'standard', 'count' => 1, 'seed' => 5, 'activate' => true])
+        ->assertHasNoFormErrors()
+        ->assertNotified('templates:generate finished')
+        ->assertSet('lastCommand', 'templates:generate')
+        ->assertSee('Saved 1 active template(s).');
+
+    $template = Template::sole();
+
+    expect($template->width)->toBe(7)
+        ->and($template->height)->toBe(9)
+        ->and($template->is_active)->toBeTrue();
+});
+
+test('the generate templates action caps the count and the size', function (): void {
+    Livewire::test(Commands::class)
+        ->callAction('generateTemplates', ['width' => Commands::MAX_GENERATE_SIZE + 1, 'style' => 'standard', 'count' => Commands::MAX_GENERATE_TEMPLATES + 1])
+        ->assertHasFormErrors(['width' => 'max', 'count' => 'max']);
+
+    expect(Template::count())->toBe(0);
 });

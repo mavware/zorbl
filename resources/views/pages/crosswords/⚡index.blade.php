@@ -529,6 +529,7 @@ new #[Title('Build')] class extends Component {
         @endif
 
         {{-- New Puzzle Modal --}}
+    @php($oddSizeTypes = array_values(array_map(fn (PuzzleType $type): string => $type->value, array_filter(PuzzleType::cases(), fn (PuzzleType $type): bool => $type->requiresOdd()))))
     <flux:modal wire:model="showNewModal" class="w-full max-w-lg">
         <div class="space-y-6">
             <flux:heading size="lg">{{ __('New Puzzle') }}</flux:heading>
@@ -563,24 +564,42 @@ new #[Title('Build')] class extends Component {
                 </div>
             </div>
 
-            {{-- Grid Dimensions --}}
-            <div class="grid grid-cols-2 gap-4">
+            {{-- Grid Dimensions. The inputs belong to Alpine (newPuzzleDimensions)
+                 rather than wire:model, and sit under wire:ignore, so the
+                 re-render that loads the thumbnails can never write the
+                 server's value over a spinner click made meanwhile. --}}
+            <div class="grid grid-cols-2 gap-4" x-data="newPuzzleDimensions({ oddSizeTypes: @js($oddSizeTypes) })" data-test="new-puzzle-dimensions">
                 <flux:field>
                     <flux:label>{{ $this->selectedPuzzleType->requiresSquare() ? __('Size') : __('Width') }}</flux:label>
-                    <flux:input
-                        type="number"
-                        wire:model.live.debounce.300ms="newWidth"
-                        min="3"
-                        max="40"
-                        :step="$this->selectedPuzzleType->requiresOdd() ? 2 : 1"
-                    />
+                    <div wire:ignore>
+                        <flux:input
+                            type="number"
+                            x-model.number="width"
+                            x-on:input="onInput('width')"
+                            x-on:blur="settle('width')"
+                            min="3"
+                            max="40"
+                            x-bind:step="step()"
+                            data-test="new-puzzle-width"
+                        />
+                    </div>
                     <flux:error name="newWidth" />
                 </flux:field>
 
                 @if (! $this->selectedPuzzleType->requiresSquare())
                     <flux:field>
                         <flux:label>{{ __('Height') }}</flux:label>
-                        <flux:input type="number" wire:model.live.debounce.300ms="newHeight" min="3" max="40" />
+                        <div wire:ignore>
+                            <flux:input
+                                type="number"
+                                x-model.number="height"
+                                x-on:input="onInput('height')"
+                                x-on:blur="settle('height')"
+                                min="3"
+                                max="40"
+                                data-test="new-puzzle-height"
+                            />
+                        </div>
                         <flux:error name="newHeight" />
                     </flux:field>
                 @endif
@@ -636,10 +655,10 @@ new #[Title('Build')] class extends Component {
                         @endforeach
                     </div>
                     @if (count($this->templates) === 0)
-                        @if ($newWidth === $newHeight && $newWidth >= 3 && $newWidth <= 35)
+                        @if ($newWidth >= 3 && $newWidth <= 35 && $newHeight >= 3 && $newHeight <= 35)
                             <flux:text size="sm" class="text-zinc-500">{{ __('No templates for this size yet.') }}</flux:text>
                         @else
-                            <flux:text size="sm" class="text-zinc-500">{{ __('Templates are available for square grids (3×3 to 35×35).') }}</flux:text>
+                            <flux:text size="sm" class="text-zinc-500">{{ __('Templates are available for grids from 3×3 to 35×35.') }}</flux:text>
                         @endif
                     @endif
                 </div>

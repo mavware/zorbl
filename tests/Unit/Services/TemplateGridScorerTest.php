@@ -25,7 +25,7 @@ beforeEach(function () {
 it('accepts an open grid and measures it', function () {
     $score = $this->scorer->score(
         scorerGrid(['.....', '.....', '.....', '.....', '.....']),
-        TemplateTargets::for(5, TemplateGeneratorStyle::Standard),
+        TemplateTargets::for(5, 5, TemplateGeneratorStyle::Standard),
     );
 
     expect($score->isValid())->toBeTrue()
@@ -37,10 +37,48 @@ it('accepts an open grid and measures it', function () {
         ->and($score->chokepointCount)->toBe(0);
 });
 
+it('measures a rectangular grid along its own rows and columns', function () {
+    $score = $this->scorer->score(
+        scorerGrid(['.......', '.......', '.......', '.......', '.......']),
+        TemplateTargets::for(7, 5, TemplateGeneratorStyle::Standard),
+    );
+
+    // Five 7-letter rows and seven 5-letter columns, every one full length.
+    expect($score->isValid())->toBeTrue()
+        ->and($score->wordCount)->toBe(12)
+        ->and($score->fullWidthEntryCount)->toBe(12)
+        ->and($score->averageLength)->toEqualWithDelta(70 / 12, 0.0001)
+        ->and($score->largestOpenSquare)->toBe(5)
+        ->and($score->blockDensity)->toBe(0.0);
+
+    $blocked = $this->scorer->score(
+        scorerGrid(['...#...', '.......', '.......', '.......', '...#...']),
+        TemplateTargets::for(7, 5, TemplateGeneratorStyle::Standard)->with(['minTouchingBlocks' => 0]),
+    );
+
+    expect($blocked->blockCount)->toBe(2)
+        ->and($blocked->blockDensity)->toEqualWithDelta(2 / 35, 0.0001)
+        ->and($blocked->fullWidthEntryCount)->toBe(9)
+        ->and($blocked->wordCount)->toBe(14);
+});
+
+it('scales the word limit and bands to a rectangle', function () {
+    $targets = TemplateTargets::for(15, 21, TemplateGeneratorStyle::Standard);
+
+    expect(TemplateTargets::effectiveSize(15, 21))->toBe(18)
+        ->and(TemplateTargets::maxWordCount(15, 21))->toBe(2 * (int) round((0.2444 * 315 + 1.533 * 18) / 2))
+        ->and($targets->maxEntryLength)->toBe(21)
+        ->and($targets->maxBlocks)->toBe((int) floor(0.185 * 315))
+        ->and($targets->sizeLabel())->toBe('15×21')
+        ->and(TemplateTargets::for(9, 9, TemplateGeneratorStyle::Standard)->sizeLabel())->toBe('9')
+        ->and(fn () => TemplateTargets::for(9, 36, TemplateGeneratorStyle::Standard))->toThrow(InvalidArgumentException::class, '9×36')
+        ->and(fn () => TemplateTargets::for(15, 9, TemplateGeneratorStyle::Themeless))->toThrow(InvalidArgumentException::class);
+});
+
 it('flags squares left in only one entry', function () {
     $score = $this->scorer->score(
         scorerGrid(['.#...', '.....', '.....', '.....', '...#.']),
-        TemplateTargets::for(5, TemplateGeneratorStyle::Standard)->with(['minTouchingBlocks' => 0]),
+        TemplateTargets::for(5, 5, TemplateGeneratorStyle::Standard)->with(['minTouchingBlocks' => 0]),
     );
 
     expect($score->isValid())->toBeFalse()
@@ -49,7 +87,7 @@ it('flags squares left in only one entry', function () {
 
 it('penalises entries outside the wanted lengths without rejecting the grid', function () {
     $grid = scorerGrid(['..#....', '.......', '.......', '.......', '.......', '.......', '....#..']);
-    $targets = TemplateTargets::for(7, TemplateGeneratorStyle::Standard)->with(['minTouchingBlocks' => 0]);
+    $targets = TemplateTargets::for(7, 7, TemplateGeneratorStyle::Standard)->with(['minTouchingBlocks' => 0]);
 
     $score = $this->scorer->score($grid, $targets);
     $ignored = $this->scorer->score($grid, $targets->with(['weights' => new TemplateScoringWeights(shortEntry: 0.0)]));
@@ -74,7 +112,7 @@ it('penalises entries outside the wanted lengths without rejecting the grid', fu
 it('flags white squares that are not all connected', function () {
     $score = $this->scorer->score(
         scorerGrid(['.......', '.......', '.......', '#######', '.......', '.......', '.......']),
-        TemplateTargets::for(7, TemplateGeneratorStyle::Standard),
+        TemplateTargets::for(7, 7, TemplateGeneratorStyle::Standard),
     );
 
     expect($score->hardViolations)->toContain('white squares are split into 2 separate areas');
@@ -83,7 +121,7 @@ it('flags white squares that are not all connected', function () {
 it('flags a 2x2 clump of blocks', function () {
     $score = $this->scorer->score(
         scorerGrid(['##.....', '##.....', '.......', '.......', '.......', '.....##', '.....##']),
-        TemplateTargets::for(7, TemplateGeneratorStyle::Standard),
+        TemplateTargets::for(7, 7, TemplateGeneratorStyle::Standard),
     );
 
     expect($score->hardViolations)->toContain('2 2×2 clump(s) of blocks');
@@ -96,7 +134,7 @@ it('flags a run of blocks longer than the limit', function () {
             '#####.#####',
             '...........', '...........', '...........', '...........', '...........',
         ]),
-        TemplateTargets::for(11, TemplateGeneratorStyle::Standard),
+        TemplateTargets::for(11, 11, TemplateGeneratorStyle::Standard),
     );
 
     expect($score->hardViolations)->toContain('a run of more than 4 blocks in a row');
@@ -105,7 +143,7 @@ it('flags a run of blocks longer than the limit', function () {
 it('counts corner blocks as cheater squares', function () {
     $score = $this->scorer->score(
         scorerGrid(['#...#', '.....', '.....', '.....', '#...#']),
-        TemplateTargets::for(5, TemplateGeneratorStyle::Standard)->with(['minTouchingBlocks' => 0]),
+        TemplateTargets::for(5, 5, TemplateGeneratorStyle::Standard)->with(['minTouchingBlocks' => 0]),
     );
 
     expect($score->isValid())->toBeTrue()
@@ -116,7 +154,7 @@ it('counts corner blocks as cheater squares', function () {
 it('does not count a block that separates two entries as a cheater', function () {
     $score = $this->scorer->score(
         scorerGrid(['.......', '.......', '.......', '...#...', '.......', '.......', '.......']),
-        TemplateTargets::for(7, TemplateGeneratorStyle::Standard)->with(['minTouchingBlocks' => 0]),
+        TemplateTargets::for(7, 7, TemplateGeneratorStyle::Standard)->with(['minTouchingBlocks' => 0]),
     );
 
     expect($score->cheaterCount)->toBe(0);
@@ -125,7 +163,7 @@ it('does not count a block that separates two entries as a cheater', function ()
 it('counts chokepoints where one cell links two sections', function () {
     $score = $this->scorer->score(
         scorerGrid(['..#..', '..#..', '.....', '..#..', '..#..']),
-        TemplateTargets::for(5, TemplateGeneratorStyle::Standard),
+        TemplateTargets::for(5, 5, TemplateGeneratorStyle::Standard),
     );
 
     // The centre cell and its two row neighbours each split the grid if removed.
@@ -152,7 +190,7 @@ it('scores a curated 15x15 template with no hard violations', function () {
             '....#....#.....',
             '....#....#.....',
         ]),
-        TemplateTargets::for(15, TemplateGeneratorStyle::Standard)->with(['minTouchingBlocks' => 0]),
+        TemplateTargets::for(15, 15, TemplateGeneratorStyle::Standard)->with(['minTouchingBlocks' => 0]),
     );
 
     expect($score->isValid())->toBeTrue()
@@ -162,22 +200,22 @@ it('scores a curated 15x15 template with no hard violations', function () {
 });
 
 it('scales the word limit through the published 15x15 and 21x21 limits', function () {
-    expect(TemplateTargets::maxWordCount(15))->toBe(78)
-        ->and(TemplateTargets::maxWordCount(21))->toBe(140)
-        ->and(TemplateTargets::maxWordCount(23))->toBe(168)
-        ->and(TemplateTargets::maxWordCount(13))->toBe(62)
-        ->and(TemplateTargets::maxWordCount(17))->toBe(96);
+    expect(TemplateTargets::maxWordCount(15, 15))->toBe(78)
+        ->and(TemplateTargets::maxWordCount(21, 21))->toBe(140)
+        ->and(TemplateTargets::maxWordCount(23, 23))->toBe(168)
+        ->and(TemplateTargets::maxWordCount(13, 13))->toBe(62)
+        ->and(TemplateTargets::maxWordCount(17, 17))->toBe(96);
 });
 
 it('rejects sizes and styles it cannot generate', function () {
-    expect(fn () => TemplateTargets::for(4, TemplateGeneratorStyle::Standard))->toThrow(InvalidArgumentException::class)
-        ->and(fn () => TemplateTargets::for(36, TemplateGeneratorStyle::Standard))->toThrow(InvalidArgumentException::class)
-        ->and(fn () => TemplateTargets::for(9, TemplateGeneratorStyle::Themeless))->toThrow(InvalidArgumentException::class);
+    expect(fn () => TemplateTargets::for(4, 4, TemplateGeneratorStyle::Standard))->toThrow(InvalidArgumentException::class)
+        ->and(fn () => TemplateTargets::for(36, 36, TemplateGeneratorStyle::Standard))->toThrow(InvalidArgumentException::class)
+        ->and(fn () => TemplateTargets::for(9, 9, TemplateGeneratorStyle::Themeless))->toThrow(InvalidArgumentException::class);
 });
 
 it('flags blocks that touch too few other blocks, which is the default', function () {
     $grid = scorerGrid(['.......', '.......', '.......', '...#...', '.......', '.......', '.......']);
-    $targets = TemplateTargets::for(7, TemplateGeneratorStyle::Standard);
+    $targets = TemplateTargets::for(7, 7, TemplateGeneratorStyle::Standard);
     $relaxed = $targets->with(['minTouchingBlocks' => 0]);
 
     expect($targets->minTouchingBlocks)->toBe(1)
@@ -192,12 +230,12 @@ it('flags blocks that touch too few other blocks, which is the default', functio
 });
 
 it('counts diagonal neighbours as touching but not the grid edge', function () {
-    $targets = TemplateTargets::for(7, TemplateGeneratorStyle::Standard);
+    $targets = TemplateTargets::for(7, 7, TemplateGeneratorStyle::Standard);
 
     // Two diagonal pairs: each block has exactly one neighbour, on the diagonal.
     $diagonal = $this->scorer->score(
         scorerGrid(['.......', '.......', '.......', '...#...', '..#.#..', '...#...', '.......']),
-        TemplateTargets::for(7, TemplateGeneratorStyle::Standard)->with(['minTouchingBlocks' => 2]),
+        TemplateTargets::for(7, 7, TemplateGeneratorStyle::Standard)->with(['minTouchingBlocks' => 2]),
     );
 
     // Corner blocks sit against the edge but touch no other block.
@@ -208,7 +246,7 @@ it('counts diagonal neighbours as touching but not the grid edge', function () {
 });
 
 it('applies overrides to the default targets', function () {
-    $targets = TemplateTargets::for(15, TemplateGeneratorStyle::Standard)->with([
+    $targets = TemplateTargets::for(15, 15, TemplateGeneratorStyle::Standard)->with([
         'minBlocks' => 40,
         'maxBlocks' => 44,
         'maxCheaters' => 2,
@@ -230,7 +268,7 @@ it('applies overrides to the default targets', function () {
 });
 
 it('rejects overrides that contradict each other or name an unknown setting', function (array $overrides) {
-    TemplateTargets::for(15, TemplateGeneratorStyle::Standard)->with($overrides);
+    TemplateTargets::for(15, 15, TemplateGeneratorStyle::Standard)->with($overrides);
 })->with([
     'minimum blocks above maximum' => [['minBlocks' => 50, 'maxBlocks' => 40]],
     'minimum words above maximum' => [['minWords' => 90]],
