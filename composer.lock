@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "a853e019dbfb8e90c72753b2f4647e88",
+    "content-hash": "78e7085fc548d836b01f3cf7e7b4cce6",
     "packages": [
         {
             "name": "anourvalar/eloquent-serialize",
@@ -718,7 +718,7 @@
         },
         {
             "name": "crosswordbuilder/crossword-io",
-            "version": "dev-main",
+            "version": "dev-claude/fix-fortify-passkeys-dependency",
             "dist": {
                 "type": "path",
                 "url": "packages/crossword-io",
@@ -16802,5 +16802,5 @@
         "ext-zlib": "*"
     },
     "platform-dev": {},
-    "plugin-api-version": "2.9.0"
+    "plugin-api-version": "2.6.0"
 }
