@@ -30,14 +30,20 @@ class extends Component {
     use ExportsCrossword;
     use WithFileUploads;
 
-    /** Wall-clock budget shared by all Quick Fill attempts in one request. */
-    private const int HEURISTIC_FILL_BUDGET_SECONDS = 18;
+    /** Wall-clock budget shared by all Quick Fill attempts in one request: the quality attempt plus the two whole-dictionary attempts. */
+    private const int HEURISTIC_FILL_BUDGET_SECONDS = 26;
 
     /** Wall-clock budget shared by all candidate-generation attempts in one AI fill request. */
-    private const int AI_FILL_CANDIDATE_BUDGET_SECONDS = 15;
+    private const int AI_FILL_CANDIDATE_BUDGET_SECONDS = 20;
 
     /** Cap on any single GridFiller attempt. */
     private const int FILL_ATTEMPT_TIMEOUT_SECONDS = 10;
+
+    /** Cap on the opening Quick Fill attempt, which uses acceptable words only; most grids it can fill, it fills well inside this. */
+    private const int FILL_QUALITY_ATTEMPT_TIMEOUT_SECONDS = 8;
+
+    /** Cap on a Quick Fill attempt made only to improve on a fill already found. */
+    private const int FILL_IMPROVEMENT_TIMEOUT_SECONDS = 3;
 
     /** Raised max_execution_time for fill requests; headroom only, the budgets above bound the work. */
     private const int FILL_EXECUTION_TIME_LIMIT_SECONDS = 90;
@@ -660,13 +666,18 @@ class extends Component {
     }
 
     /**
-     * Fill empty grid slots using heuristic backtracking. Each attempt uses a
-     * fresh random seed so the search explores different orderings; if one
-     * attempt fails (or only partially fills), retry up to 2 more times and
-     * keep the best result.
+     * Fill empty grid slots using heuristic backtracking. The first attempt
+     * uses only acceptable words; if it fails, later attempts fall back to the
+     * whole dictionary so a hard grid still gets filled. Each attempt uses a
+     * fresh random seed so the search explores different orderings; up to 3
+     * attempts run and the best result is kept: a complete fill beats a
+     * partial one, a complete fill with livelier words beats one with duller
+     * words, and among partial fills the one that placed the most words wins.
      *
      * All attempts share a single wall-clock budget so the request stays well
-     * inside PHP's max_execution_time regardless of how many retries run.
+     * inside PHP's max_execution_time regardless of how many retries run, and
+     * once a complete fill is in hand the remaining attempts get a short cap
+     * so looking for a better one stays cheap.
      *
      * `$grid` / `$styles` come straight from the Alpine state — `$this->grid`
      * is only refreshed on mount/resize, so it can be stale relative to the
@@ -686,12 +697,19 @@ class extends Component {
         $effectiveGrid = $grid ?? $this->grid;
         $effectiveStyles = $styles ?? $this->styles ?? [];
         $deadline = microtime(true) + self::HEURISTIC_FILL_BUDGET_SECONDS;
+        $minScore = GridFiller::QUALITY_THRESHOLD;
 
         for ($attempt = 0; $attempt < 3; $attempt++) {
             $remaining = (int) floor($deadline - microtime(true));
             if ($remaining < 1) {
                 break;
             }
+
+            $cap = match (true) {
+                $best !== null && $best['success'] => self::FILL_IMPROVEMENT_TIMEOUT_SECONDS,
+                $minScore > 0 => self::FILL_QUALITY_ATTEMPT_TIMEOUT_SECONDS,
+                default => self::FILL_ATTEMPT_TIMEOUT_SECONDS,
+            };
 
             $result = $filler->fill(
                 $effectiveGrid,
@@ -700,20 +718,38 @@ class extends Component {
                 $this->height,
                 $effectiveStyles,
                 $this->minAnswerLength,
-                timeout: min(self::FILL_ATTEMPT_TIMEOUT_SECONDS, $remaining),
+                timeout: min($cap, $remaining),
                 seed: random_int(1, PHP_INT_MAX),
+                minScore: $minScore,
             );
 
-            if ($result['success']) {
-                return $result;
+            if ($best === null || self::isBetterFill($result, $best)) {
+                $best = $result;
             }
 
-            if ($best === null || count($result['fills']) > count($best['fills'])) {
-                $best = $result;
+            if (! $result['success']) {
+                $minScore = 0.0;
             }
         }
 
         return $best;
+    }
+
+    /**
+     * @param  array{success: bool, fills: list<array<string, mixed>>, score: float}  $candidate
+     * @param  array{success: bool, fills: list<array<string, mixed>>, score: float}  $incumbent
+     */
+    private static function isBetterFill(array $candidate, array $incumbent): bool
+    {
+        if ($candidate['success'] !== $incumbent['success']) {
+            return $candidate['success'];
+        }
+
+        if (! $candidate['success'] && count($candidate['fills']) !== count($incumbent['fills'])) {
+            return count($candidate['fills']) > count($incumbent['fills']);
+        }
+
+        return $candidate['score'] > $incumbent['score'];
     }
 
     /**
@@ -777,6 +813,7 @@ class extends Component {
 
         $candidates = [];
         $seen = [];
+        $minScore = GridFiller::QUALITY_THRESHOLD;
         for ($i = 0; $i < $attempts; $i++) {
             $remaining = (int) floor($deadline - microtime(true));
             if ($remaining < 1) {
@@ -792,9 +829,13 @@ class extends Component {
                 $this->minAnswerLength,
                 timeout: min($perAttemptTimeout, $remaining),
                 seed: $i + 1,
+                minScore: $minScore,
             );
 
             if (! $result['success'] || empty($result['fills'])) {
+                // Acceptable words alone couldn't fill this grid; let the rest of the attempts use the whole dictionary.
+                $minScore = 0.0;
+
                 continue;
             }
 

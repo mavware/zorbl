@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Console\Commands\GenerateWordList;
 use App\Enums\PuzzlePublication;
 use App\Models\ClueEntry;
 use App\Models\User;
@@ -32,7 +31,11 @@ class PublishedClueScraper
 
     public const int MIN_WORD_LENGTH = 3;
 
-    public const float SCORE_BONUS = 5.0;
+    /**
+     * An answer a professional publication ran is good fill, so words start
+     * at this floor and are raised to it; better scores are left alone.
+     */
+    public const float SCORE_FLOOR = Word::SCORE_PUBLISHED;
 
     /**
      * @return array{fetched: int, inserted: int, skipped: int, caught_up: bool}
@@ -147,24 +150,25 @@ class PublishedClueScraper
     private function syncWords(array $answers): void
     {
         $answers = array_values(array_unique($answers));
-        $existing = Word::query()->whereIn('word', $answers)->pluck('word')->flip();
+
+        if ($answers === []) {
+            return;
+        }
+
         $now = now();
 
-        $rows = collect($answers)
-            ->reject(fn (string $word): bool => $existing->has($word))
-            ->map(fn (string $word): array => [
-                'word' => $word,
-                'length' => strlen($word),
-                'score' => round(GenerateWordList::calculateScore($word) + self::SCORE_BONUS, 2),
-                'created_at' => $now,
-                'updated_at' => $now,
-            ])
-            ->values()
-            ->all();
+        Word::insertOrIgnore(array_map(fn (string $word): array => [
+            'word' => $word,
+            'length' => strlen($word),
+            'score' => self::SCORE_FLOOR,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ], $answers));
 
-        if ($rows !== []) {
-            Word::insertOrIgnore($rows);
-        }
+        Word::query()
+            ->whereIn('word', $answers)
+            ->where('score', '<', self::SCORE_FLOOR)
+            ->update(['score' => self::SCORE_FLOOR]);
     }
 
     private function feed(PuzzlePublication $publication): PuzzleFeed

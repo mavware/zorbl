@@ -727,7 +727,7 @@ test('heuristic fill caps every attempt with an explicit timeout', function () {
     $crossword = makeSmallCrossword($user);
     $solution = [['', '', ''], ['', '', ''], ['', '', '']];
 
-    $failed = ['success' => false, 'fills' => [], 'message' => 'nope', 'timed_out' => false];
+    $failed = ['success' => false, 'fills' => [], 'score' => 0.0, 'message' => 'nope', 'timed_out' => false];
 
     $this->mock(GridFiller::class, function ($mock) use ($failed) {
         $mock->shouldReceive('fill')
@@ -769,4 +769,129 @@ test('ai fill caps every candidate attempt with an explicit timeout', function (
         ->set('title', 'Budgeted')
         ->call('aiFill', $solution)
         ->assertNoRedirect();
+});
+
+/**
+ * @param  list<array{direction: string, number: int, word: string}>  $fills
+ * @return array{success: bool, fills: list<array{direction: string, number: int, word: string}>, score: float, message: string, timed_out: bool}
+ */
+function fillResult(bool $success, array $fills, float $score): array
+{
+    return ['success' => $success, 'fills' => $fills, 'score' => $score, 'message' => 'x', 'timed_out' => false];
+}
+
+test('heuristic fill keeps the complete fill with the liveliest words and caps the attempts after a success', function () {
+    $user = User::factory()->create();
+    $crossword = makeSmallCrossword($user);
+    $solution = [['', '', ''], ['', '', ''], ['', '', '']];
+
+    $dull = fillResult(true, [['direction' => 'across', 'number' => 1, 'word' => 'ORT']], 45.0);
+    $lively = fillResult(true, [['direction' => 'across', 'number' => 1, 'word' => 'CAT']], 55.0);
+    $middling = fillResult(true, [['direction' => 'across', 'number' => 1, 'word' => 'TEA']], 50.0);
+
+    $results = [$dull, $lively, $middling];
+    $timeouts = [];
+
+    $this->mock(GridFiller::class, function ($mock) use (&$results, &$timeouts) {
+        $mock->shouldReceive('fill')
+            ->times(3)
+            ->andReturnUsing(function (...$args) use (&$results, &$timeouts) {
+                $timeouts[] = $args[6] ?? $args['timeout'];
+
+                return array_shift($results);
+            });
+    });
+
+    Livewire::actingAs($user)
+        ->test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->call('heuristicFill', $solution)
+        ->assertReturned($lively);
+
+    expect($timeouts)->toBe([8, 3, 3]);
+});
+
+test('heuristic fill prefers a complete fill over a partial one that placed more words', function () {
+    $user = User::factory()->create();
+    $crossword = makeSmallCrossword($user);
+    $solution = [['', '', ''], ['', '', ''], ['', '', '']];
+
+    $partial = fillResult(false, [
+        ['direction' => 'across', 'number' => 1, 'word' => 'CAT'],
+        ['direction' => 'across', 'number' => 4, 'word' => 'ATE'],
+        ['direction' => 'down', 'number' => 1, 'word' => 'CAR'],
+    ], 55.0);
+    $complete = fillResult(true, [['direction' => 'across', 'number' => 1, 'word' => 'TEA']], 45.0);
+    $smallerPartial = fillResult(false, [['direction' => 'across', 'number' => 1, 'word' => 'TEA']], 55.0);
+
+    $results = [$partial, $complete, $smallerPartial];
+
+    $this->mock(GridFiller::class, function ($mock) use (&$results) {
+        $mock->shouldReceive('fill')
+            ->times(3)
+            ->andReturnUsing(function () use (&$results) {
+                return array_shift($results);
+            });
+    });
+
+    Livewire::actingAs($user)
+        ->test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->call('heuristicFill', $solution)
+        ->assertReturned($complete);
+});
+
+test('heuristic fill starts with acceptable words and falls back to the whole dictionary once that fails', function () {
+    $user = User::factory()->create();
+    $crossword = makeSmallCrossword($user);
+    $solution = [['', '', ''], ['', '', ''], ['', '', '']];
+
+    $results = [
+        fillResult(false, [], 0.0),
+        fillResult(true, [['direction' => 'across', 'number' => 1, 'word' => 'ZAX']], 20.0),
+        fillResult(true, [['direction' => 'across', 'number' => 1, 'word' => 'ORT']], 40.0),
+    ];
+    $floors = [];
+    $timeouts = [];
+
+    $this->mock(GridFiller::class, function ($mock) use (&$results, &$floors, &$timeouts) {
+        $mock->shouldReceive('fill')
+            ->times(3)
+            ->andReturnUsing(function (...$args) use (&$results, &$floors, &$timeouts) {
+                $floors[] = $args[8] ?? $args['minScore'];
+                $timeouts[] = $args[6] ?? $args['timeout'];
+
+                return array_shift($results);
+            });
+    });
+
+    Livewire::actingAs($user)
+        ->test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->call('heuristicFill', $solution)
+        ->assertReturned(fillResult(true, [['direction' => 'across', 'number' => 1, 'word' => 'ORT']], 40.0));
+
+    expect($floors)->toBe([GridFiller::QUALITY_THRESHOLD, 0.0, 0.0])
+        ->and($timeouts)->toBe([8, 10, 3]);
+});
+
+test('heuristic fill keeps to acceptable words while they keep succeeding', function () {
+    $user = User::factory()->create();
+    $crossword = makeSmallCrossword($user);
+    $solution = [['', '', ''], ['', '', ''], ['', '', '']];
+
+    $floors = [];
+
+    $this->mock(GridFiller::class, function ($mock) use (&$floors) {
+        $mock->shouldReceive('fill')
+            ->times(3)
+            ->andReturnUsing(function (...$args) use (&$floors) {
+                $floors[] = $args[8] ?? $args['minScore'];
+
+                return fillResult(true, [['direction' => 'across', 'number' => 1, 'word' => 'CAT']], 55.0);
+            });
+    });
+
+    Livewire::actingAs($user)
+        ->test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->call('heuristicFill', $solution);
+
+    expect($floors)->toBe([GridFiller::QUALITY_THRESHOLD, GridFiller::QUALITY_THRESHOLD, GridFiller::QUALITY_THRESHOLD]);
 });

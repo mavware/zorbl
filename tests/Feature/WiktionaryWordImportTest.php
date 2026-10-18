@@ -1,6 +1,5 @@
 <?php
 
-use App\Console\Commands\GenerateWordList;
 use App\Models\Word;
 use App\Services\WiktionaryWordImporter;
 use Illuminate\Console\Scheduling\Schedule;
@@ -51,7 +50,7 @@ test('it adds only new usable words, scored below vetted words', function () {
         ->and(Word::where('word', 'OCEAN')->value('score'))->toEqual(80)
         ->and(Word::where('word', 'ZEBRA')->first())
         ->length->toBe(5)
-        ->score->toEqual(round(GenerateWordList::calculateScore('ZEBRA') - WiktionaryWordImporter::SCORE_PENALTY, 2));
+        ->score->toEqual(WiktionaryWordImporter::SCORE);
 });
 
 test('each run continues from where the last one stopped', function () {

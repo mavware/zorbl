@@ -56,7 +56,12 @@
 
         <footer class="border-line mt-8 border-t py-6">
             <div class="text-fg-muted mx-auto flex max-w-6xl flex-col items-center gap-2 px-6 text-center text-xs sm:flex-row sm:justify-between">
-                <p>&copy; {{ date('Y') }} {{ config('app.name') }}.</p>
+                <p>
+                    &copy; {{ date('Y') }} {{ config('app.name') }}.
+                    {{ __('Fill scores from') }}
+                    <a href="https://www.spreadthewordlist.com/" rel="license noopener" target="_blank" class="hover:text-zinc-700 dark:hover:text-zinc-300">Spread the Wordlist</a>
+                    (<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="license noopener" target="_blank" class="hover:text-zinc-700 dark:hover:text-zinc-300">CC BY-NC-SA 4.0</a>).
+                </p>
                 <div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
                     <a href="{{ route('words.index') }}" wire:navigate class="hover:text-zinc-700 dark:hover:text-zinc-300">{{ __('Words') }}</a>
                     <a href="{{ route('clues.index') }}" wire:navigate class="hover:text-zinc-700 dark:hover:text-zinc-300">{{ __('Clues') }}</a>

@@ -110,6 +110,20 @@ class Commands extends Page
             ]));
     }
 
+    public function importSpreadWordlistAction(): Action
+    {
+        return Action::make('importSpreadWordlist')
+            ->label('Run words:import-spread-wordlist')
+            ->icon(Heroicon::OutlinedStar)
+            ->requiresConfirmation()
+            ->modalDescription('Rescore every word from Spread the Wordlist. Words it does not list are kept but scored as unvetted, so Quick Fill only reaches for them when nothing better fits. This rewrites every row in the words table and can take a minute.')
+            ->action(function (): void {
+                set_time_limit(600);
+
+                $this->runCommand('words:import-spread-wordlist');
+            });
+    }
+
     public function importWordsAction(): Action
     {
         return Action::make('importWords')

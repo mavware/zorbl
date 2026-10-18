@@ -5,6 +5,7 @@ use App\Models\ClueEntry;
 use App\Models\Template;
 use App\Models\User;
 use App\Models\Word;
+use App\Services\SpreadWordlistImporter;
 use Illuminate\Support\Facades\Http;
 use Livewire\Livewire;
 use Spatie\Permission\Models\Role;
@@ -21,6 +22,7 @@ test('admin can load the commands page', function (): void {
         ->assertSuccessful()
         ->assertSee('Run words:export-json')
         ->assertSee('Run clues:backfill')
+        ->assertSee('Run words:import-spread-wordlist')
         ->assertSee('Run words:import-wiktionary')
         ->assertSee('Run clues:scrape-published')
         ->assertSee('Run templates:generate');
@@ -40,6 +42,21 @@ test('the export action rebuilds the word list and shows the output', function (
         ->assertNotified('words:export-json finished')
         ->assertSet('lastCommand', 'words:export-json')
         ->assertSee('Cached 1 words and 0 approved clues across 1 shards.');
+});
+
+test('the spread wordlist action rescores the word list and shows the output', function (): void {
+    $this->mock(SpreadWordlistImporter::class)
+        ->shouldReceive('import')
+        ->once()
+        ->with(null)
+        ->andReturn(['entries' => 304410, 'imported' => 302409, 'skipped' => 2001, 'unlisted' => 168763]);
+
+    Livewire::test(Commands::class)
+        ->callAction('importSpreadWordlist')
+        ->assertNotified('words:import-spread-wordlist finished')
+        ->assertSet('lastCommand', 'words:import-spread-wordlist')
+        ->assertSee('Read 304410 entries: scored 302409 word(s), skipped 2001')
+        ->assertSee('168763 word(s) not in the list are kept at the unvetted score.');
 });
 
 test('the backfill action passes its options to the command', function (): void {

@@ -1,6 +1,5 @@
 <?php
 
-use App\Console\Commands\GenerateWordList;
 use App\Enums\PuzzlePublication;
 use App\Models\ClueEntry;
 use App\Models\User;
@@ -108,7 +107,7 @@ test('newsday puzzles are filed as pending clues and new words, then the feed is
         ->and($entries->first()->sourceLabel())->toBe('Newsday, 12 Oct 2026');
 
     expect(Word::where('word', 'BAT')->value('score'))->toBe(80.0)
-        ->and(Word::where('word', 'DOG')->value('score'))->toBe(round(GenerateWordList::calculateScore('DOG') + PublishedClueScraper::SCORE_BONUS, 2))
+        ->and(Word::where('word', 'DOG')->value('score'))->toBe(PublishedClueScraper::SCORE_FLOOR)
         ->and(Word::whereIn('word', ['ORE', 'WED', 'BOW', 'ARE', 'DOG', 'ONE', 'GET'])->count())->toBe(7)
         ->and(Word::where('word', 'TED')->exists())->toBeFalse()
         ->and(Cache::get('published-clue-scrape:cursor:newsday'))->toBe('2026-10-14');

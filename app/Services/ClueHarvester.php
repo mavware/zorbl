@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Console\Commands\GenerateWordList;
 use App\Models\ClueEntry;
 use App\Models\Crossword;
 use App\Models\Word;
@@ -64,26 +63,34 @@ class ClueHarvester
     }
 
     /**
-     * Sync harvested words into the words table with a library bonus score.
+     * Sync harvested words into the words table. A constructor publishing an
+     * answer vouches for it as acceptable fill, so new words start at that
+     * floor and known words are raised to it; better scores are left alone.
      *
      * @param  array<int, array{answer: string}>  $entries
      */
     private function syncWords(array $entries): void
     {
-        $words = collect($entries)
-            ->pluck('answer')
-            ->unique()
-            ->map(fn (string $answer) => [
-                'word' => $answer,
-                'length' => strlen($answer),
-                'score' => GenerateWordList::calculateScore($answer) + 5.0,
-            ])
-            ->values()
-            ->all();
+        $answers = collect($entries)->pluck('answer')->unique()->values();
 
-        if (count($words) > 0) {
-            Word::upsert($words, ['word'], ['score']);
+        if ($answers->isEmpty()) {
+            return;
         }
+
+        $now = now();
+
+        Word::insertOrIgnore($answers->map(fn (string $answer): array => [
+            'word' => $answer,
+            'length' => strlen($answer),
+            'score' => Word::SCORE_ACCEPTABLE,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ])->all());
+
+        Word::query()
+            ->whereIn('word', $answers->all())
+            ->where('score', '<', Word::SCORE_ACCEPTABLE)
+            ->update(['score' => Word::SCORE_ACCEPTABLE]);
     }
 
     /**

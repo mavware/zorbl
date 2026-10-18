@@ -21,6 +21,16 @@
         </x-filament::section>
 
         <x-filament::section>
+            <x-slot name="heading">Rescore words from Spread the Wordlist</x-slot>
+            <x-slot name="description">
+                Gives every word its Spread the Wordlist score (55 lively, 40–45 acceptable, 30 and below poor)
+                from the bundled list, and keeps words the list doesn't know at the unvetted score.
+            </x-slot>
+
+            {{ $this->importSpreadWordlistAction }}
+        </x-filament::section>
+
+        <x-filament::section>
             <x-slot name="heading">Import words from Wiktionary</x-slot>
             <x-slot name="description">
                 Adds dictionary words and phrases that aren't in the word list yet, up to

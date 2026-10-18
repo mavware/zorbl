@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Console\Commands\GenerateWordList;
 use App\Models\Word;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
@@ -37,10 +36,10 @@ class WiktionaryWordImporter
     public const int MAX_PHRASE_WORDS = 3;
 
     /**
-     * Imported entries are unvetted, so they score below words from published
-     * puzzles and the original list and autofill prefers those.
+     * Imported entries are unvetted, so they take the unvetted score and
+     * autofill prefers words with a vetted source.
      */
-    public const float SCORE_PENALTY = 10.0;
+    public const float SCORE = Word::SCORE_UNVETTED;
 
     /**
      * @return array{pages: int, scanned: int, added: int, finished: bool}
@@ -149,7 +148,7 @@ class WiktionaryWordImporter
             ->map(fn (string $word): array => [
                 'word' => $word,
                 'length' => strlen($word),
-                'score' => max(0.0, round(GenerateWordList::calculateScore($word) - self::SCORE_PENALTY, 2)),
+                'score' => self::SCORE,
                 'created_at' => $now,
                 'updated_at' => $now,
             ])

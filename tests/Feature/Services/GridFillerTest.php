@@ -368,11 +368,111 @@ it('returns promptly after the timeout on a grid with a huge, unsolvable search 
     ];
     $empty = array_fill(0, 5, array_fill(0, 5, ''));
 
+    // Some slot orders stumble on the contradiction within a few hundred placements and finish
+    // early, so the seed is one whose order explores the big tree and has to be stopped.
     $start = microtime(true);
-    $result = app(GridFiller::class)->fill($grid, $empty, 5, 5, [], 3, timeout: 1, seed: 1);
+    $result = app(GridFiller::class)->fill($grid, $empty, 5, 5, [], 3, timeout: 1, seed: 3);
     $elapsed = microtime(true) - $start;
 
     expect($result['success'])->toBeFalse()
         ->and($result['timed_out'])->toBeTrue()
         ->and($elapsed)->toBeLessThan(2.5);
+});
+
+it('tries acceptable words before poor ones whatever the seed', function () {
+    Word::query()->delete();
+
+    $rows = [['word' => 'ACE', 'length' => 3, 'score' => GridFiller::QUALITY_THRESHOLD, 'created_at' => now(), 'updated_at' => now()]];
+    foreach (['ZAX', 'QIS', 'XIS', 'JUS', 'KEX', 'ZZZ', 'QQQ', 'XXX', 'JJJ', 'KKK', 'VAV', 'WUZ'] as $poor) {
+        $rows[] = ['word' => $poor, 'length' => 3, 'score' => Word::SCORE_UNVETTED, 'created_at' => now(), 'updated_at' => now()];
+    }
+    Word::insert($rows);
+
+    $filler = app(GridFiller::class);
+
+    // A single across slot with no crossings, so the first candidate always wins.
+    $grid = [[1, 0, 0]];
+    $empty = [['', '', '']];
+
+    foreach (range(1, 15) as $seed) {
+        $result = $filler->fill($grid, $empty, 3, 1, [], 3, seed: $seed);
+
+        expect($result['success'])->toBeTrue()
+            ->and($result['fills'])->toBe([['direction' => 'across', 'number' => 1, 'word' => 'ACE']])
+            ->and($result['score'])->toBe(GridFiller::QUALITY_THRESHOLD);
+    }
+});
+
+it('still places poor words when nothing acceptable fits', function () {
+    Word::query()->delete();
+    Word::insert([
+        ['word' => 'ZAX', 'length' => 3, 'score' => Word::SCORE_UNVETTED, 'created_at' => now(), 'updated_at' => now()],
+    ]);
+
+    $result = app(GridFiller::class)->fill([[1, 0, 0]], [['', '', '']], 3, 1, [], 3, seed: 7);
+
+    expect($result['success'])->toBeTrue()
+        ->and($result['fills'])->toBe([['direction' => 'across', 'number' => 1, 'word' => 'ZAX']])
+        ->and($result['score'])->toBe(Word::SCORE_UNVETTED);
+});
+
+it('favors higher-scoring words within the acceptable tier without fixing the order', function () {
+    Word::query()->delete();
+    Word::insert([
+        ['word' => 'ACE', 'length' => 3, 'score' => 55.0, 'created_at' => now(), 'updated_at' => now()],
+        ['word' => 'ORT', 'length' => 3, 'score' => 40.0, 'created_at' => now(), 'updated_at' => now()],
+    ]);
+
+    $filler = app(GridFiller::class);
+    $picked = ['ACE' => 0, 'ORT' => 0];
+
+    foreach (range(1, 60) as $seed) {
+        $result = $filler->fill([[1, 0, 0]], [['', '', '']], 3, 1, [], 3, seed: $seed);
+        $picked[$result['fills'][0]['word']]++;
+    }
+
+    // ACE is e^1.5 ≈ 4.5 times as likely as ORT, so both appear but ACE clearly more often.
+    expect($picked['ORT'])->toBeGreaterThan(0)
+        ->and($picked['ACE'])->toBeGreaterThan($picked['ORT'] * 2);
+});
+
+it('reports the average score of the words it placed', function () {
+    $result = app(GridFiller::class)->fill([[1, 2, 3], [4, 0, 0], [5, 0, 0]], [['', '', ''], ['', '', ''], ['', '', '']], 3, 3, [], 3, seed: 3);
+
+    expect($result['success'])->toBeTrue();
+
+    $words = array_column($result['fills'], 'word');
+    $expected = round(Word::whereIn('word', $words)->sum('score') / count($words), 1);
+
+    expect($result['score'])->toBe($expected);
+});
+
+it('picks the highest-scored candidate first when unseeded', function () {
+    Word::query()->delete();
+    Word::insert([
+        ['word' => 'ORT', 'length' => 3, 'score' => 40.0, 'created_at' => now(), 'updated_at' => now()],
+        ['word' => 'ACE', 'length' => 3, 'score' => 55.0, 'created_at' => now(), 'updated_at' => now()],
+    ]);
+
+    $result = app(GridFiller::class)->fill([[1, 0, 0]], [['', '', '']], 3, 1, [], 3);
+
+    expect($result['fills'][0]['word'])->toBe('ACE');
+});
+
+it('uses only words at or above the score floor, including words completed by crossings', function () {
+    Word::query()->delete();
+    Word::insert([
+        ['word' => 'ACE', 'length' => 3, 'score' => 55.0, 'created_at' => now(), 'updated_at' => now()],
+        ['word' => 'ZAX', 'length' => 3, 'score' => Word::SCORE_UNVETTED, 'created_at' => now(), 'updated_at' => now()],
+    ]);
+
+    $filler = app(GridFiller::class);
+
+    $strict = $filler->fill([[1, 0, 0]], [['Z', '', '']], 3, 1, [], 3, seed: 1, minScore: GridFiller::QUALITY_THRESHOLD);
+    $relaxed = $filler->fill([[1, 0, 0]], [['Z', '', '']], 3, 1, [], 3, seed: 1);
+
+    expect($strict['success'])->toBeFalse()
+        ->and($strict['fills'])->toBe([])
+        ->and($relaxed['success'])->toBeTrue()
+        ->and($relaxed['fills'][0]['word'])->toBe('ZAX');
 });

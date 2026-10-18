@@ -1,6 +1,5 @@
 <?php
 
-use App\Console\Commands\GenerateWordList;
 use App\Models\Word;
 use Database\Seeders\WordListSeeder;
 use Illuminate\Console\Command;
@@ -49,14 +48,14 @@ it('seeds idioms and sayings', function () {
     }
 });
 
-it('gives phrases a liveliness score bonus over their base score', function () {
+it('scores phrases as lively fill, above a plain dictionary word', function () {
+    Word::factory()->word('ONIT')->create(['score' => Word::SCORE_UNVETTED]);
+
     seedPhrases();
 
     $onit = Word::where('word', 'ONIT')->firstOrFail();
-    $base = GenerateWordList::calculateScore('ONIT');
 
-    expect($onit->score)->toBeGreaterThan($base);
-    expect($onit->score)->toBe(round($base + 25.0, 2));
+    expect($onit->score)->toBe(Word::SCORE_LIVELY);
 });
 
 it('is idempotent when run multiple times', function () {
