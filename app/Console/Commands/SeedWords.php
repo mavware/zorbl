@@ -14,7 +14,8 @@ class SeedWords extends Command
     public function handle(): int
     {
         $command = 'db:seed';
-        $args = ['--class' => WordListSeeder::class, '--no-interaction' => true];
+        // db:seed refuses to run in production without --force; the words table is safe to reload.
+        $args = ['--class' => WordListSeeder::class, '--force' => true, '--no-interaction' => true];
 
         if ($this->call($command, $args) !== self::SUCCESS) {
             $this->error("Failed at: {$command}");

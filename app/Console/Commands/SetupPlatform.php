@@ -17,7 +17,7 @@ class SetupPlatform extends Command
 
         $steps = [
             ['Step 1/3: Seeding clue library...', 'seed:clues', []],
-            ['Step 2/3: Seeding words table...', 'db:seed', ['--class' => WordListSeeder::class, '--no-interaction' => true]],
+            ['Step 2/3: Seeding words table...', 'db:seed', ['--class' => WordListSeeder::class, '--force' => true, '--no-interaction' => true]],
             ['Step 3/3: Seeding activity data...', 'seed:activity', []],
         ];
 

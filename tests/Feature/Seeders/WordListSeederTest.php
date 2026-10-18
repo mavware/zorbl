@@ -28,6 +28,24 @@ test('seed:words runs the seeder', function () {
         ->assertSuccessful();
 });
 
+test('seed:words runs in production without asking for confirmation', function () {
+    $this->mock(WordListImporter::class)
+        ->shouldReceive('import')
+        ->once()
+        ->andReturn(['entries' => 1, 'imported' => 1, 'skipped' => 0, 'unlisted' => 0]);
+
+    app()->instance('env', 'production');
+
+    try {
+        $this->artisan('seed:words')
+            ->doesntExpectOutputToContain('Command cancelled.')
+            ->expectsOutputToContain('Read 1 entries: scored 1 word(s), skipped 0')
+            ->assertSuccessful();
+    } finally {
+        app()->instance('env', 'testing');
+    }
+});
+
 test('a missing word list is reported without touching the table', function () {
     Word::factory()->word('WATER')->create(['score' => 55.0]);
 
