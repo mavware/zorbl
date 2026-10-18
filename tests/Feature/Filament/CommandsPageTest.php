@@ -5,7 +5,7 @@ use App\Models\ClueEntry;
 use App\Models\Template;
 use App\Models\User;
 use App\Models\Word;
-use App\Services\SpreadWordlistImporter;
+use App\Services\WordListImporter;
 use Illuminate\Support\Facades\Http;
 use Livewire\Livewire;
 use Spatie\Permission\Models\Role;
@@ -22,7 +22,7 @@ test('admin can load the commands page', function (): void {
         ->assertSuccessful()
         ->assertSee('Run words:export-json')
         ->assertSee('Run clues:backfill')
-        ->assertSee('Run words:import-spread-wordlist')
+        ->assertSee('Run seed:words')
         ->assertSee('Run words:import-wiktionary')
         ->assertSee('Run clues:scrape-published')
         ->assertSee('Run templates:generate');
@@ -44,19 +44,19 @@ test('the export action rebuilds the word list and shows the output', function (
         ->assertSee('Cached 1 words and 0 approved clues across 1 shards.');
 });
 
-test('the spread wordlist action rescores the word list and shows the output', function (): void {
-    $this->mock(SpreadWordlistImporter::class)
+test('the seed words action reloads the word list and shows the output', function (): void {
+    $this->mock(WordListImporter::class)
         ->shouldReceive('import')
         ->once()
-        ->with(null)
-        ->andReturn(['entries' => 304410, 'imported' => 302409, 'skipped' => 2001, 'unlisted' => 168763]);
+        ->with()
+        ->andReturn(['entries' => 471262, 'imported' => 471262, 'skipped' => 0, 'unlisted' => 1]);
 
     Livewire::test(Commands::class)
-        ->callAction('importSpreadWordlist')
-        ->assertNotified('words:import-spread-wordlist finished')
-        ->assertSet('lastCommand', 'words:import-spread-wordlist')
-        ->assertSee('Read 304410 entries: scored 302409 word(s), skipped 2001')
-        ->assertSee('168763 word(s) not in the list are kept at the unvetted score.');
+        ->callAction('seedWords')
+        ->assertNotified('seed:words finished')
+        ->assertSet('lastCommand', 'seed:words')
+        ->assertSee('Read 471262 entries: scored 471262 word(s), skipped 0')
+        ->assertSee('1 word(s) not in the list are kept at the unvetted score.');
 });
 
 test('the backfill action passes its options to the command', function (): void {

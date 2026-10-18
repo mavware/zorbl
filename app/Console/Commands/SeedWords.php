@@ -8,7 +8,7 @@ use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 
 #[Signature('seed:words')]
-#[Description('Seed a baseline of words from database/wordlist.txt')]
+#[Description('Load the words table from the bundled word list, database/data/wordlist.txt')]
 class SeedWords extends Command
 {
     public function handle(): int
@@ -21,8 +21,6 @@ class SeedWords extends Command
 
             return self::FAILURE;
         }
-
-        $this->info('Extraction complete.');
 
         return self::SUCCESS;
     }

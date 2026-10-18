@@ -21,13 +21,14 @@
         </x-filament::section>
 
         <x-filament::section>
-            <x-slot name="heading">Rescore words from Spread the Wordlist</x-slot>
+            <x-slot name="heading">Reload the word list</x-slot>
             <x-slot name="description">
-                Gives every word its Spread the Wordlist score (55 lively, 40–45 acceptable, 30 and below poor)
-                from the bundled list, and keeps words the list doesn't know at the unvetted score.
+                Loads every word and its score (55 lively, 40–45 acceptable, 30 and below poor) from the bundled
+                word list, which carries Spread the Wordlist's scores, and keeps words the list doesn't know at the
+                unvetted score.
             </x-slot>
 
-            {{ $this->importSpreadWordlistAction }}
+            {{ $this->seedWordsAction }}
         </x-filament::section>
 
         <x-filament::section>

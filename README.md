@@ -135,7 +135,7 @@ app/
   Services/                # Domain services (19 total)
   Filament/                # Admin panel resources & widgets
 database/
-  data/wordlist.txt        # 210K+ word dictionary
+  data/wordlist.txt        # 470K+ word dictionary scored by Spread the Wordlist
 resources/
   js/
     crossword-grid.js      # Grid editor (Alpine.js component)

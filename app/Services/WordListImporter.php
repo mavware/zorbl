@@ -4,21 +4,23 @@ namespace App\Services;
 
 use App\Models\ClueEntry;
 use App\Models\Word;
-use App\Support\CuratedPhraseList;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 /**
- * Rescores the word list from Spread the Wordlist (spreadthewordlist.com,
- * CC BY-NC-SA 4.0), a crossword word list scored by how lively each entry
- * is as fill: 55 is lively, 40 to 45 is acceptable, 30 and below is poor.
+ * Loads the bundled word list, database/data/wordlist.txt, into the words
+ * table. The list is the single source the grid filler's dictionary is built
+ * from: Spread the Wordlist (spreadthewordlist.com, CC BY-NC-SA 4.0) scored
+ * by how lively each entry is as fill (55 lively, 40 to 45 acceptable, 30 and
+ * below poor), with the original dictionary's words folded in at the unvetted
+ * score and the curated phrases at the lively score.
  *
- * Every listed entry takes its Spread score. Words the list doesn't know are
- * kept but scored as unvetted so the grid filler only reaches for them when
- * nothing better fits. Words with a vetted source of their own, published
- * puzzles and the curated phrase list, keep at least that source's floor.
+ * Every listed word takes its list score. Words already in the table that the
+ * list doesn't know are kept but scored as unvetted so the filler only reaches
+ * for them when nothing better fits. Words with a vetted source of their own,
+ * published puzzles and puzzles built here, keep at least that source's floor.
  */
-class SpreadWordlistImporter
+class WordListImporter
 {
     public const int MIN_WORD_LENGTH = 3;
 
@@ -28,7 +30,7 @@ class SpreadWordlistImporter
 
     public static function defaultPath(): string
     {
-        return database_path('data/spreadthewordlist.txt');
+        return database_path('data/wordlist.txt');
     }
 
     /**
@@ -41,7 +43,7 @@ class SpreadWordlistImporter
         $path ??= self::defaultPath();
 
         if (! is_readable($path)) {
-            throw new InvalidArgumentException("Spread the Wordlist file not found: {$path}");
+            throw new InvalidArgumentException("Word list file not found: {$path}");
         }
 
         return DB::transaction(function () use ($path): array {
@@ -53,7 +55,6 @@ class SpreadWordlistImporter
             $unlisted = Word::query()->where('score', Word::SCORE_UNVETTED)->count() - $counts['imported_unvetted'];
             unset($counts['imported_unvetted']);
 
-            $this->raiseFloor(CuratedPhraseList::words(), Word::SCORE_LIVELY, insertMissing: true);
             $this->raiseFloor($this->answersFromPublications(), Word::SCORE_PUBLISHED);
             $this->raiseFloor($this->answersFromUserPuzzles(), Word::SCORE_ACCEPTABLE);
 
@@ -62,10 +63,10 @@ class SpreadWordlistImporter
     }
 
     /**
-     * Each line is `WORD;score`. Entries outside the grid length range are
-     * skipped, as are entries scored 0, which the list marks as unusable.
+     * Each line is a tab-separated `WORD score`. Entries outside the grid
+     * length range or scored 0 are skipped.
      *
-     * @return array{entries: int, imported: int, skipped: int, imported_unvetted: int} `imported_unvetted` counts list entries that happen to share the unvetted score.
+     * @return array{entries: int, imported: int, skipped: int, imported_unvetted: int} `imported_unvetted` counts list entries at the unvetted score.
      */
     private function importList(string $path): array
     {
@@ -120,7 +121,7 @@ class SpreadWordlistImporter
      */
     public static function parseLine(string $line): ?array
     {
-        if (! preg_match('/^([A-Za-z]+);(\d+)$/', $line, $matches)) {
+        if (! preg_match('/^([A-Za-z]+)\t(\d+(?:\.\d+)?)$/', $line, $matches)) {
             return null;
         }
 
@@ -140,21 +141,9 @@ class SpreadWordlistImporter
      *
      * @param  list<string>  $words
      */
-    private function raiseFloor(array $words, float $floor, bool $insertMissing = false): void
+    private function raiseFloor(array $words, float $floor): void
     {
-        $now = now();
-
         foreach (array_chunk($words, self::BATCH_SIZE) as $chunk) {
-            if ($insertMissing) {
-                Word::insertOrIgnore(array_map(fn (string $word): array => [
-                    'word' => $word,
-                    'length' => strlen($word),
-                    'score' => $floor,
-                    'created_at' => $now,
-                    'updated_at' => $now,
-                ], $chunk));
-            }
-
             Word::query()
                 ->whereIn('word', $chunk)
                 ->where('score', '<', $floor)

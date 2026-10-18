@@ -1,68 +1,43 @@
 <?php
 
 use App\Models\Word;
+use App\Services\WordListImporter;
 use Database\Seeders\WordListSeeder;
-use Illuminate\Console\Command;
-use Illuminate\Console\OutputStyle;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Symfony\Component\Console\Input\ArrayInput;
-use Symfony\Component\Console\Output\BufferedOutput;
 
-uses(RefreshDatabase::class);
+test('the seeder loads the words table through the importer and reports what it did', function () {
+    $this->mock(WordListImporter::class)
+        ->shouldReceive('import')
+        ->once()
+        ->with()
+        ->andReturn(['entries' => 5, 'imported' => 3, 'skipped' => 2, 'unlisted' => 1]);
 
-/**
- * Invoke the seeder's private phrase-loading step in isolation so we don't have
- * to seed the full 210k-word base list to assert phrase behavior.
- */
-function seedPhrases(): void
-{
-    $command = new Command;
-    $command->setOutput(new OutputStyle(
-        new ArrayInput([]),
-        new BufferedOutput,
-    ));
-
-    $seeder = new WordListSeeder;
-    $seeder->setCommand($command);
-
-    $method = new ReflectionMethod(WordListSeeder::class, 'seedPhrases');
-    $method->invoke($seeder, now());
-}
-
-it('normalizes short-word combos to letters only', function () {
-    seedPhrases();
-
-    // "on it" -> ONIT, "it's a deal" -> ITSADEAL
-    expect(Word::where('word', 'ONIT')->exists())->toBeTrue();
-    expect(Word::where('word', 'ITSADEAL')->exists())->toBeTrue();
-
-    $onit = Word::where('word', 'ONIT')->firstOrFail();
-    expect($onit->length)->toBe(4);
+    $this->artisan('db:seed', ['--class' => WordListSeeder::class, '--no-interaction' => true])
+        ->expectsOutputToContain('Read 5 entries: scored 3 word(s), skipped 2')
+        ->expectsOutputToContain('1 word(s) not in the list are kept at the unvetted score.')
+        ->assertSuccessful();
 });
 
-it('seeds idioms and sayings', function () {
-    seedPhrases();
+test('seed:words runs the seeder', function () {
+    $this->mock(WordListImporter::class)
+        ->shouldReceive('import')
+        ->once()
+        ->andReturn(['entries' => 1, 'imported' => 1, 'skipped' => 0, 'unlisted' => 0]);
 
-    foreach (['PIECEOFCAKE', 'BREAKALEG', 'HITTHEROAD', 'BITETHEBULLET'] as $phrase) {
-        expect(Word::where('word', $phrase)->exists())->toBeTrue();
-    }
+    $this->artisan('seed:words')
+        ->expectsOutputToContain('Read 1 entries: scored 1 word(s), skipped 0')
+        ->assertSuccessful();
 });
 
-it('scores phrases as lively fill, above a plain dictionary word', function () {
-    Word::factory()->word('ONIT')->create(['score' => Word::SCORE_UNVETTED]);
+test('a missing word list is reported without touching the table', function () {
+    Word::factory()->word('WATER')->create(['score' => 55.0]);
 
-    seedPhrases();
+    $this->mock(WordListImporter::class)
+        ->shouldReceive('import')
+        ->once()
+        ->andThrow(new InvalidArgumentException('Word list file not found: /nowhere/wordlist.txt'));
 
-    $onit = Word::where('word', 'ONIT')->firstOrFail();
+    $this->artisan('db:seed', ['--class' => WordListSeeder::class, '--no-interaction' => true])
+        ->expectsOutputToContain('Word list file not found: /nowhere/wordlist.txt');
 
-    expect($onit->score)->toBe(Word::SCORE_LIVELY);
-});
-
-it('is idempotent when run multiple times', function () {
-    seedPhrases();
-    $count = Word::count();
-
-    seedPhrases();
-
-    expect(Word::count())->toBe($count);
+    expect(Word::where('word', 'WATER')->value('score'))->toBe(55.0);
 });

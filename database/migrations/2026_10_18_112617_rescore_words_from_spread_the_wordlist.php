@@ -1,16 +1,17 @@
 <?php
 
 use App\Models\Word;
-use App\Services\SpreadWordlistImporter;
+use App\Services\WordListImporter;
 use Illuminate\Database\Migrations\Migration;
 
 return new class extends Migration
 {
     /**
-     * Rescores the word list from Spread the Wordlist so Quick Fill prefers
-     * lively fill. Words the list doesn't know are kept at the unvetted score.
+     * Reloads the words table from the bundled word list, which carries Spread
+     * the Wordlist's scores, so Quick Fill prefers lively fill. Words the list
+     * doesn't know are kept at the unvetted score.
      *
-     * An empty words table has nothing to rescore and the seeder imports the
+     * An empty words table has nothing to rescore and the seeder loads the
      * list itself, so fresh installs and the test environment skip this.
      */
     public function up(): void
@@ -19,7 +20,7 @@ return new class extends Migration
             return;
         }
 
-        app(SpreadWordlistImporter::class)->import();
+        app(WordListImporter::class)->import();
     }
 
     /**

@@ -2,105 +2,29 @@
 
 namespace Database\Seeders;
 
-use App\Models\Word;
-use App\Services\SpreadWordlistImporter;
-use App\Support\CuratedPhraseList;
+use App\Services\WordListImporter;
 use Illuminate\Database\Seeder;
+use InvalidArgumentException;
 
 class WordListSeeder extends Seeder
 {
     /**
-     * Seed the words table from the generated word list file, then score it
-     * from Spread the Wordlist when that file is present. Without it, only the
-     * curated phrases are layered in so idioms, sayings, and short-word combos
-     * are still preferred over dull dictionary words.
+     * Load the words table from the bundled word list, the single source the
+     * grid filler's dictionary and scores come from.
      */
     public function run(): void
     {
-        $path = database_path('data/wordlist.txt');
+        $this->command->info('Seeding words table from the bundled word list...');
 
-        if (! file_exists($path)) {
-            $this->command->error('Word list file not found. Run: php artisan crossword:generate-wordlist');
-
-            return;
-        }
-
-        $this->command->info('Seeding words table...');
-
-        $handle = fopen($path, 'r');
-        $batch = [];
-        $count = 0;
-        $now = now();
-
-        while (($line = fgets($handle)) !== false) {
-            $line = trim($line);
-
-            if ($line === '') {
-                continue;
-            }
-
-            [$word, $score] = explode("\t", $line, 2);
-
-            $batch[] = [
-                'word' => $word,
-                'length' => strlen($word),
-                'score' => (float) $score,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ];
-
-            if (count($batch) >= 1000) {
-                Word::upsert($batch, ['word'], ['length', 'score', 'updated_at']);
-                $batch = [];
-                $count += 1000;
-            }
-        }
-
-        if (! empty($batch)) {
-            Word::upsert($batch, ['word'], ['length', 'score', 'updated_at']);
-            $count += count($batch);
-        }
-
-        fclose($handle);
-
-        $this->command->info("Seeded {$count} words.");
-
-        if (file_exists(SpreadWordlistImporter::defaultPath())) {
-            $this->command->info('Scoring words from Spread the Wordlist...');
-
-            $result = app(SpreadWordlistImporter::class)->import();
-
-            $this->command->info("Scored {$result['imported']} words; {$result['unlisted']} not in the list kept at the unvetted score.");
+        try {
+            $result = app(WordListImporter::class)->import();
+        } catch (InvalidArgumentException $e) {
+            $this->command->error($e->getMessage());
 
             return;
         }
 
-        $this->seedPhrases($now);
-    }
-
-    /**
-     * Seed curated phrases, sayings, idioms, and short-word combos at the
-     * lively score so the grid filler favors them. Upserted after the base
-     * word list so the lively score wins when a phrase collides with a plain word.
-     */
-    private function seedPhrases(\DateTimeInterface $now): void
-    {
-        $words = CuratedPhraseList::words();
-
-        if ($words === []) {
-            return;
-        }
-
-        $this->command->info('Seeding crossword phrases...');
-
-        Word::upsert(array_map(fn (string $word): array => [
-            'word' => $word,
-            'length' => strlen($word),
-            'score' => Word::SCORE_LIVELY,
-            'created_at' => $now,
-            'updated_at' => $now,
-        ], $words), ['word'], ['length', 'score', 'updated_at']);
-
-        $this->command->info('Seeded '.count($words).' phrases.');
+        $this->command->info("Read {$result['entries']} entries: scored {$result['imported']} word(s), skipped {$result['skipped']} (unusable or outside 3-21 letters).");
+        $this->command->line("{$result['unlisted']} word(s) not in the list are kept at the unvetted score.");
     }
 }
