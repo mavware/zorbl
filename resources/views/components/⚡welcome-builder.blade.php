@@ -12,9 +12,9 @@ use Livewire\Component;
 new class extends Component {
     public string $puzzleType = 'standard';
 
-    public int $newWidth = 15;
+    public int $newWidth = 7;
 
-    public int $newHeight = 15;
+    public int $newHeight = 7;
 
     public ?int $selectedTemplate = null;
 

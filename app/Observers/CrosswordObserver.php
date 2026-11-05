@@ -26,14 +26,6 @@ class CrosswordObserver
 
         $crossword->contains_profanity = $this->filter->contains((string) $crossword->title)
             || $this->filter->containsAny($clueText);
-
-        if (
-            $crossword->is_published
-            && $crossword->isDirty('is_published')
-            && $crossword->user?->isAnonymous()
-        ) {
-            throw new \RuntimeException('Anonymous users cannot publish puzzles.');
-        }
     }
 
     public function saved(Crossword $crossword): void

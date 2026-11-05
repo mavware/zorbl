@@ -29,6 +29,12 @@ class SimulateActivity extends Command
 
     public function handle(): int
     {
+        if (app()->isProduction()) {
+            $this->error('simulate:activity fabricates users and solves; it is disabled in production.');
+
+            return self::FAILURE;
+        }
+
         $this->faker = Faker::create();
         $solverCount = User::where('email', 'like', 'solver%@example.com')->count();
         $crosswordCount = Crossword::where('is_published', true)->count();

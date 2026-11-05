@@ -8,7 +8,9 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-Schedule::command('simulate:activity')->everyTenMinutes();
+// Fake solver traffic for demoing locally. Never on prod: it fabricates users,
+// attempts and comments that pollute real analytics and public solve counts.
+Schedule::command('simulate:activity')->everyTenMinutes()->environments(['local']);
 Schedule::command('contests:publish-scheduled')->everyMinute()->when(fn (): bool => (bool) config('crosswordbuilder.features.contests'));
 Schedule::command('contests:process-ended')->everyMinute()->when(fn (): bool => (bool) config('crosswordbuilder.features.contests'));
 Schedule::command('constructors:send-weekly-digest')->weeklyOn(1, '9:00');

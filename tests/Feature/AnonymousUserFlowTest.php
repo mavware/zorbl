@@ -113,19 +113,24 @@ test('registered user sees the user menu instead of a sign up button', function 
         ->assertDontSee('data-test="mobile-sign-up-button"', false);
 });
 
-test('publishing is blocked for anonymous users via observer', function () {
+test('anonymous owners can publish their own puzzle', function () {
     $anon = app(AnonymousUserManager::class)->create();
     $crossword = Crossword::factory()->for($anon)->create(['is_published' => false]);
 
-    expect(fn () => $crossword->update(['is_published' => true]))
-        ->toThrow(RuntimeException::class);
+    expect($anon->can('publish', $crossword))->toBeTrue();
+
+    $crossword->update(['is_published' => true]);
+
+    expect($crossword->fresh()->is_published)->toBeTrue();
 });
 
-test('publish policy denies anonymous users', function () {
+test('publish policy still denies anyone who is not the owner', function () {
     $anon = app(AnonymousUserManager::class)->create();
+    $otherAnon = app(AnonymousUserManager::class)->create();
     $crossword = Crossword::factory()->for($anon)->create();
 
-    expect($anon->can('publish', $crossword))->toBeFalse();
+    expect($otherAnon->can('publish', $crossword))->toBeFalse()
+        ->and(User::factory()->create()->can('publish', $crossword))->toBeFalse();
 });
 
 test('publish policy allows real owners', function () {

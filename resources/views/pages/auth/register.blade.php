@@ -5,7 +5,7 @@
         @auth
             @if(auth()->user()->isAnonymous())
                 <div class="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-900 dark:text-amber-200">
-                    {{ __('Finish signing up to publish your puzzle and keep it forever.') }}
+                    {{ __('Finish signing up to keep your puzzle forever and see who solves it.') }}
                     <span class="block text-xs text-amber-800/80 dark:text-amber-300/80 mt-1">
                         {{ __('Already have an account?') }}
                         <a href="{{ route('login') }}" class="font-semibold underline">{{ __('Log in instead') }}</a>

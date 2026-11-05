@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 
 #[Signature('users:prune-anonymous {--days=30 : Anonymous accounts not seen for this many days are deleted}')]
-#[Description('Delete idle anonymous "guest builder" accounts and cascade their puzzles and attempts')]
+#[Description('Delete idle anonymous "guest builder" accounts and cascade their puzzles and attempts; guests with a published puzzle are kept')]
 class PruneAnonymousUsers extends Command
 {
     public function handle(): int
@@ -24,6 +24,9 @@ class PruneAnonymousUsers extends Command
 
         User::query()
             ->where('is_anonymous', true)
+            // A published guest puzzle has a public link other people may be
+            // solving; deleting its owner would take the puzzle down with it.
+            ->whereDoesntHave('crosswords', fn (Builder $query) => $query->where('is_published', true))
             ->where(function (Builder $query) use ($cutoff): void {
                 $query->where('last_seen_at', '<', $cutoff)
                     // Rows that predate last-seen tracking fall back to their creation date.

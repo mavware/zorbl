@@ -90,6 +90,9 @@ class extends Component {
     public PuzzleType $puzzleType = PuzzleType::Standard;
 
     public bool $showPublishWarning = false;
+
+    /** Shown to a guest right after their puzzle goes live: the public link plus the account offer. */
+    public bool $showGuestShareModal = false;
     public array $incompleteChecks = [];
 
     /**
@@ -578,6 +581,10 @@ class extends Component {
             if ($followers->isNotEmpty()) {
                 Notification::send($followers, new NewPuzzlePublished($crossword, $user));
             }
+
+            // A guest's first publish is the one moment they have something to
+            // keep: hand them the link to share, then the account that saves it.
+            $this->showGuestShareModal = $user->isAnonymous();
         } else {
             $harvester->purge($crossword);
         }
@@ -1453,6 +1460,47 @@ class extends Component {
     </flux:modal>
 
     {{-- Upgrade Modal --}}
+    {{-- Guest just published: the public link to share, then the account that
+         keeps the puzzle and shows them who solved it. --}}
+    <flux:modal wire:model="showGuestShareModal" data-test="guest-share-modal">
+        <div
+            class="space-y-6"
+            x-data="{
+                url: @js(route('puzzles.solve', $this->crossword->id)),
+                copied: false,
+                copy() {
+                    navigator.clipboard?.writeText(this.url).then(() => {
+                        this.copied = true;
+                        setTimeout(() => this.copied = false, 2000);
+                    });
+                },
+            }"
+        >
+            <div>
+                <flux:heading size="lg">{{ __('Your puzzle is live') }}</flux:heading>
+                <flux:text class="mt-2">{{ __('Anyone with this link can solve it, no account needed.') }}</flux:text>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <flux:input x-model="url" readonly data-test="guest-share-url" />
+                <flux:button x-on:click="copy()" variant="primary" data-test="guest-share-copy">
+                    <span x-text="copied ? '{{ __('Copied!') }}' : '{{ __('Copy link') }}'"></span>
+                </flux:button>
+            </div>
+
+            <div class="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-900 dark:text-amber-200">
+                {{ __("You're publishing as a guest. Create a free account to keep this puzzle, see who solves it, and build more.") }}
+            </div>
+
+            <div class="flex justify-end gap-2">
+                <flux:button wire:click="$set('showGuestShareModal', false)">{{ __('Done') }}</flux:button>
+                <flux:button :href="route('register')" wire:navigate variant="primary" data-test="guest-share-register">
+                    {{ __('Create free account') }}
+                </flux:button>
+            </div>
+        </div>
+    </flux:modal>
+
     <flux:modal wire:model="showUpgradeModal">
         <div class="space-y-6">
             <div class="flex items-center gap-3">
@@ -1475,7 +1523,7 @@ class extends Component {
                     @if ($upgradeFeature === 'export')
                         {{ __('Export your puzzles to .puz, .jpz, and PDF formats for sharing and printing. Create a free account to unlock exports.') }}
                     @else
-                        {{ __('Create a free account to save your work, publish puzzles, and unlock more tools.') }}
+                        {{ __('Create a free account to keep your work, see who solves your puzzles, and unlock more tools.') }}
                     @endif
                 </flux:text>
 

@@ -25,8 +25,8 @@ new #[Title('Build')] class extends Component {
     public bool $showNewModal = false;
     public bool $showImportModal = false;
     public string $puzzleType = 'standard';
-    public int $newWidth = 15;
-    public int $newHeight = 15;
+    public int $newWidth = 7;
+    public int $newHeight = 7;
     public ?int $selectedTemplate = null;
     public $importFile;
     public string $importError = '';

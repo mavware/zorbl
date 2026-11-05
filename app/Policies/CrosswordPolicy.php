@@ -41,8 +41,12 @@ class CrosswordPolicy
         return $user->id === $crossword->user_id;
     }
 
+    /**
+     * Owners can publish, guests included: a guest's single puzzle going live
+     * is the moment they have something worth keeping an account for.
+     */
     public function publish(User $user, Crossword $crossword): bool
     {
-        return $user->id === $crossword->user_id && ! $user->isAnonymous();
+        return $user->id === $crossword->user_id;
     }
 }

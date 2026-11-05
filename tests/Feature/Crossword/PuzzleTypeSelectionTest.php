@@ -3,20 +3,21 @@
 use App\Enums\PuzzleType;
 use App\Models\User;
 
-test('users can create a standard puzzle', function () {
+test('users can create a standard puzzle, which defaults to a 7x7 mini', function () {
     $user = User::factory()->create();
     $this->actingAs($user);
 
     Livewire\Livewire::test('pages::crosswords.index')
+        ->assertSet('newWidth', 7)
+        ->assertSet('newHeight', 7)
         ->set('puzzleType', 'standard')
-        ->set('newWidth', 15)
         ->call('createPuzzle')
         ->assertRedirect();
 
     $crossword = $user->crosswords()->first();
     expect($crossword)->not->toBeNull()
-        ->and($crossword->width)->toBe(15)
-        ->and($crossword->height)->toBe(15)
+        ->and($crossword->width)->toBe(7)
+        ->and($crossword->height)->toBe(7)
         ->and($crossword->metadata['puzzle_type'])->toBe('standard');
 });
 
