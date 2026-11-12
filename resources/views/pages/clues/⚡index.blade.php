@@ -331,13 +331,9 @@ new class extends Component {
         <script type="application/ld+json">{!! json_encode($cluesJsonLd, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
     @endpush
 
-    <x-page-header :kicker="__('Reference')" :title="__('Clues')">
-        @auth
-            <x-header-button icon="plus" wire:click="$set('showAddModal', true)">
-                {{ __('Add Clue') }}
-            </x-header-button>
-        @endauth
+    <h1 class="sr-only">{{ __('Clues') }}</h1>
 
+    <x-page-header :kicker="__('Reference')" :rule="false">
         <x-slot:footer>
             <x-page-tabs :tabs="app(\App\Support\AppNavigation::class)->reference()" />
         </x-slot:footer>
@@ -368,6 +364,12 @@ new class extends Component {
             </select>
             <flux:icon name="chevron-down" class="text-ink-faint pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2" />
         </label>
+        @auth
+            <button type="button" class="btn-classical btn-amber-outline h-10" wire:click="$set('showAddModal', true)" data-test="add-clue-button">
+                <flux:icon name="plus" variant="outline" class="size-4" />
+                {{ __('Add Clue') }}
+            </button>
+        @endauth
     </div>
 
     {{-- Clue Table --}}

@@ -154,7 +154,9 @@ new class extends Component {
         <script type="application/ld+json">{!! json_encode($wordsJsonLd, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
     @endpush
 
-    <x-page-header :kicker="__('Reference')" :title="__('Words')">
+    <h1 class="sr-only">{{ __('Words') }}</h1>
+
+    <x-page-header :kicker="__('Reference')" :rule="false">
         <x-slot:footer>
             <x-page-tabs :tabs="app(\App\Support\AppNavigation::class)->reference()" />
         </x-slot:footer>

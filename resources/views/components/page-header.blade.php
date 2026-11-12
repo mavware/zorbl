@@ -1,6 +1,6 @@
 @props([
     'kicker' => null,
-    'title',
+    'title' => null,
     'subtitle' => null,
     'level' => 1,
     'size' => 'lg',
@@ -23,6 +23,9 @@
 
     $rowClasses = $size === 'md' ? 'pb-5' : 'pt-[34px] pb-6';
     $rowClasses = auth()->user()?->isAnonymous() ? 'pt-3 pb-6' : $rowClasses;
+    // Without a title the header is just the kicker sitting over the footer
+    // strip (e.g. section tabs), so the row closes up underneath it.
+    $rowClasses = filled($title) ? $rowClasses : 'pt-3 sm:pt-[34px]';
     $wrapperClasses = $bleed ? '-mx-6 px-6 lg:-mx-8 lg:px-8' : 'px-6 lg:px-8';
 
     $hasSlot = fn ($slot): bool => $slot instanceof \Illuminate\View\ComponentSlot ? $slot->isNotEmpty() : filled($slot);
@@ -49,7 +52,9 @@
                 <div class="label-classical font-classical mb-2 hidden text-[12px] font-semibold text-amber-400 sm:block [--label-tracking:0.14em]" data-test="page-header-kicker">{{ $kicker }}</div>
             @endif
 
-            <{{ $tag }} class="{{ $titleClasses }}">{{ $title }}</{{ $tag }}>
+            @if(filled($title))
+                <{{ $tag }} class="{{ $titleClasses }}">{{ $title }}</{{ $tag }}>
+            @endif
 
             @if($hasSlot($subtitle))
                 <p class="text-ink-muted mt-2.5 text-sm leading-[1.65]">{{ $subtitle }}</p>
