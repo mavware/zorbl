@@ -1409,9 +1409,9 @@ test('settings explanations render as info tooltips beside their labels instead 
         'How the grid and clues are arranged on screen.',
         'Default colors for the whole grid.',
         'Existing content will be preserved where dimensions overlap.',
-        'Only used by AI Autofill to pick the best fill.',
-        'Add a meta answer prompt that solvers see after completing the puzzle.',
-        'Add one or more correct answers. Matching is case-insensitive.',
+        'Only used by AI Autofill to pick the best fill (e.g. 80s movies, things that fly). Never shown to solvers.',
+        'Give the puzzle one final answer. Solvers see your prompt and a blank for each letter beneath the grid while they solve, and the answer is checked as soon as every blank is filled.',
+        'Solvers get one blank per letter or digit; spaces and punctuation are shown. Case, spacing and punctuation are ignored when checking.',
         'When enabled, solvers get instant feedback after submitting their answer.',
     ];
 

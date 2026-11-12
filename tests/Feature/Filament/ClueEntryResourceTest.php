@@ -118,3 +118,21 @@ test('editing a clue validates the answer and clue', function () {
         ])
         ->assertHasFormErrors(['answer' => 'regex', 'clue' => 'required']);
 });
+
+test('admin can sort clue entries by the number of quality issues', function () {
+    $clean = ClueEntry::factory()->create(['status' => ClueEntry::STATUS_PENDING]);
+    $oneIssue = ClueEntry::factory()->create(['status' => ClueEntry::STATUS_PENDING]);
+    $twoIssues = ClueEntry::factory()->create(['status' => ClueEntry::STATUS_PENDING]);
+
+    $issue = ['code' => 'answer_in_clue', 'severity' => 'error', 'message' => 'Clue contains the answer'];
+
+    ClueEntry::query()->whereKey($clean)->update(['quality_issues' => null]);
+    ClueEntry::query()->whereKey($oneIssue)->update(['quality_issues' => json_encode([$issue])]);
+    ClueEntry::query()->whereKey($twoIssues)->update(['quality_issues' => json_encode([$issue, $issue])]);
+
+    Livewire::test(ListClueEntries::class)
+        ->sortTable('quality_issues')
+        ->assertCanSeeTableRecords([$clean, $oneIssue, $twoIssues], inOrder: true)
+        ->sortTable('quality_issues', 'desc')
+        ->assertCanSeeTableRecords([$twoIssues, $oneIssue, $clean], inOrder: true);
+});

@@ -35,6 +35,9 @@ class ClueEntriesTable
                     ->wrap(),
                 TextColumn::make('quality_issues')
                     ->label('Quality')
+                    ->sortable(query: fn (Builder $query, string $direction): Builder => $query
+                        ->orderByRaw("COALESCE(json_array_length(quality_issues), 0) {$direction}")
+                        ->orderBy('created_at', 'desc'))
                     ->state(fn (ClueEntry $record): ?string => $record->quality_issues === null ? null : count($record->quality_issues).' '.str('issue')->plural(count($record->quality_issues)))
                     ->placeholder('OK')
                     ->badge()

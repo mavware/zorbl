@@ -20,6 +20,10 @@ pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
     ->beforeEach(function (): void {
         $this->withoutVite();
+
+        // Admin actions raise set_time_limit() for long web requests. Within the
+        // single test process that limit would persist and abort later tests.
+        set_time_limit(0);
     })
     ->in('Feature');
 

@@ -141,7 +141,7 @@ test('daily puzzle selector can be null', function () {
     expect($daily->selector)->toBeNull();
 });
 
-test('solving page shows daily puzzle when one exists', function () {
+test('solving page no longer shows the daily puzzle banner when a manual pick exists', function () {
     $crossword = Crossword::factory()->published()->create(['title' => 'Daily Highlight']);
     DailyPuzzle::create(['date' => today(), 'crossword_id' => $crossword->id]);
 
@@ -149,11 +149,12 @@ test('solving page shows daily puzzle when one exists', function () {
 
     Livewire::actingAs(User::factory()->create())
         ->test('pages::crosswords.solving')
-        ->assertSee('Puzzle of the Day')
-        ->assertSee('Daily Highlight');
+        ->assertOk()
+        ->assertDontSee('Puzzle of the Day')
+        ->assertDontSee('Daily Highlight');
 });
 
-test('solving page shows auto-selected daily puzzle when no manual pick exists', function () {
+test('solving page no longer shows the daily puzzle banner for an auto-selected pick', function () {
     $crossword = Crossword::factory()->published()->create(['title' => 'Auto Daily']);
     PuzzleAttempt::factory()->completed()->create(['crossword_id' => $crossword->id]);
 
@@ -161,8 +162,9 @@ test('solving page shows auto-selected daily puzzle when no manual pick exists',
 
     Livewire::actingAs(User::factory()->create())
         ->test('pages::crosswords.solving')
-        ->assertSee('Puzzle of the Day')
-        ->assertSee('Auto Daily');
+        ->assertOk()
+        ->assertDontSee('Puzzle of the Day')
+        ->assertDontSee('Auto Daily');
 });
 
 test('public puzzles page shows daily puzzle', function () {

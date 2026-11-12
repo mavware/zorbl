@@ -31,24 +31,24 @@ test('the Registered event triggers the WelcomeEmail listener once', function ()
     Notification::assertSentToTimes($user, WelcomeEmail::class, 1);
 });
 
-test('build page shows the welcome hero for a brand-new account', function () {
+test('build page shows the empty state for a brand-new account', function () {
     $user = User::factory()->create();
 
     $this->actingAs($user)->get(route('crosswords.index'))
         ->assertOk()
-        ->assertSee('dashboard-welcome-hero', false)
-        ->assertSee('Welcome to')
-        ->assertSee('Browse puzzles to solve')
-        ->assertSee('Build a puzzle');
+        ->assertSee('No puzzles yet')
+        ->assertSee('Create a new crossword or import an existing puzzle file.')
+        ->assertSee('New Puzzle')
+        ->assertSee('Import Puzzle');
 });
 
-test('build page hides the welcome hero once the user has activity', function () {
+test('build page hides the empty state once the user has a puzzle', function () {
     $user = User::factory()->create();
     Crossword::factory()->for($user)->create();
 
     $this->actingAs($user)->get(route('crosswords.index'))
         ->assertOk()
-        ->assertDontSee('dashboard-welcome-hero', false);
+        ->assertDontSee('No puzzles yet');
 });
 
 test('solving empty state shows a browse-puzzles CTA when no attempts exist', function () {
