@@ -13,16 +13,18 @@
     ],
     "sail": false,
     "skills": [
+        "infer-conventions",
         "cashier-stripe-development",
         "fortify-development",
         "laravel-best-practices",
+        "testing-best-practices",
         "configure-nightwatch",
         "pulse-development",
         "socialite-development",
         "fluxui-development",
         "livewire-development",
-        "pest-testing",
         "tailwindcss-development",
+        "filament-development",
         "laravel-permission-development",
         "laravel-query-builder"
     ]
