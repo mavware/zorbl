@@ -87,10 +87,9 @@
                         x-on:click="activeClue && useClue(activeClue, suggestion.clue)"
                         :class="suggestionsTab === 'clues' && suggestionsIndex === idx ? 'bg-amber-50 dark:bg-amber-900/30' : 'hover:bg-zinc-100 dark:hover:bg-zinc-700/50'"
                         class="cursor-pointer rounded px-2 py-1 text-sm in-data-suggestions-sheet:px-3 in-data-suggestions-sheet:py-2.5 in-data-suggestions-sheet:text-base"
-                        :title="suggestion.puzzle + ' — ' + suggestion.author"
+                        :title="suggestion.puzzle"
                     >
                         <span class="text-fg" x-text="suggestion.clue"></span>
-                        <span class="text-fg-subtle text-xs" x-text="' — ' + suggestion.author"></span>
                     </div>
                 </template>
             </div>
