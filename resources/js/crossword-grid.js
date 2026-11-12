@@ -1194,12 +1194,17 @@ export function crosswordGrid({
         },
 
         // --- Clear -----------------------------------------------------------
+        // Clues describe the letters, so they go with them. Both come back
+        // with a single undo.
         clearLetters() {
             if (this.gridLocked) return;
             for (let row = 0; row < this.height; row++) {
                 for (let col = 0; col < this.width; col++) {
                     if (!this.isBlock(row, col)) this.solution[row][col] = '';
                 }
+            }
+            for (const clue of [...this.cluesAcross, ...this.cluesDown]) {
+                clue.clue = '';
             }
             this.markDirty();
         },

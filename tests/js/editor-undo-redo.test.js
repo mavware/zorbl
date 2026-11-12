@@ -125,6 +125,31 @@ describe('editor undo/redo', () => {
         expect(g.solution[0][0]).toBe('B');
     });
 
+    it('clear letters also clears every clue, and one undo brings both back', () => {
+        g.solution[1][1] = 'Q';
+        g.cluesAcross[0].clue = 'An across clue';
+        g.cluesDown[0].clue = 'A down clue';
+        g.markDirty();
+
+        g.clearLetters();
+        expect(g.solution[1][1]).toBe('');
+        expect(g.cluesAcross.every(c => c.clue === '')).toBe(true);
+        expect(g.cluesDown.every(c => c.clue === '')).toBe(true);
+        expect(g.grid[0][2]).toBe('#');
+
+        g.undo();
+        expect(g.solution[1][1]).toBe('Q');
+        expect(g.cluesAcross[0].clue).toBe('An across clue');
+        expect(g.cluesDown[0].clue).toBe('A down clue');
+    });
+
+    it('clear letters leaves clues alone while the grid is locked', () => {
+        g.cluesAcross[0].clue = 'An across clue';
+        g.gridLocked = true;
+        g.clearLetters();
+        expect(g.cluesAcross[0].clue).toBe('An across clue');
+    });
+
     it('restores styles after clear all', () => {
         g.setCellColor(1, 1, '#ff0000');
         g.markDirty();
