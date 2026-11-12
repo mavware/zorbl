@@ -328,6 +328,30 @@ describe('revealing the suggestions tab', () => {
         expect(g.$dispatch).toHaveBeenCalledWith('editor-reveal-suggestions');
     });
 
+    it('selecting a cell in a fully filled word asks for the Clue library sub-tab', () => {
+        const g = desktopGrid();
+        g.solution[1][1] = 'a';
+        g.selectCell(1, 1);
+        expect(g.suggestionsTab).toBe('clues');
+        expect(g.$dispatch).toHaveBeenCalledWith('editor-reveal-suggestions');
+    });
+
+    it('toggling direction onto a word with blanks returns to the Words sub-tab', () => {
+        const g = desktopGrid();
+        g.solution[1][1] = 'a';
+        g.selectCell(1, 1);
+        g.selectCell(1, 1);
+        expect(g.direction).toBe('down');
+        expect(g.suggestionsTab).toBe('words');
+    });
+
+    it('picking a filled word by its clue number asks for the Clue library sub-tab', () => {
+        const g = desktopGrid();
+        g.solution[1][1] = 'a';
+        g.selectClue('across', 3, { target: { tagName: 'SPAN', closest: () => null } });
+        expect(g.suggestionsTab).toBe('clues');
+    });
+
     it('focusing a clue input asks for the Clue library sub-tab', () => {
         const g = desktopGrid();
         g.selectClue('across', 3, { target: { tagName: 'TEXTAREA' } });

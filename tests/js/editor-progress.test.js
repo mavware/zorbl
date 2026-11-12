@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { crosswordGrid } from '../../resources/js/crossword-grid.js';
 
 // 3x3 grid with one block at (0,2). 8 playable cells.
@@ -311,5 +311,42 @@ describe('clue-fill progress getters', () => {
         });
         expect(g.cluesTotal).toBe(2);
         expect(g.cluesFilled).toBe(1);
+    });
+});
+
+describe('completion flash', () => {
+    afterEach(() => {
+        vi.useRealTimers();
+        vi.unstubAllGlobals();
+    });
+
+    // Animation frames are held back while the tab is hidden; timers are not.
+    function stubHeldFrames() {
+        const frames = [];
+        vi.useFakeTimers();
+        vi.stubGlobal('requestAnimationFrame', (fn) => frames.push(fn));
+        vi.stubGlobal('cancelAnimationFrame', (id) => { frames[id - 1] = () => {}; });
+        return () => frames.splice(0).forEach((fn) => fn());
+    }
+
+    it('turns the flag on for the duration, then off', () => {
+        const runFrames = stubHeldFrames();
+        const g = makeGrid();
+        g.playCompleteFlash('cellsCompleteFlash', 800);
+        runFrames();
+        expect(g.cellsCompleteFlash).toBe(true);
+        vi.advanceTimersByTime(800);
+        expect(g.cellsCompleteFlash).toBe(false);
+    });
+
+    it('still clears the flag when the frame arrives long after the fill (hidden tab)', () => {
+        const runFrames = stubHeldFrames();
+        const g = makeGrid();
+        g.playCompleteFlash('cellsCompleteFlash', 800);
+        vi.advanceTimersByTime(5000);
+        runFrames();
+        expect(g.cellsCompleteFlash).toBe(true);
+        vi.advanceTimersByTime(800);
+        expect(g.cellsCompleteFlash).toBe(false);
     });
 });

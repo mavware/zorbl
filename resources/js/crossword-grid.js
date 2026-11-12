@@ -128,8 +128,6 @@ export function crosswordGrid({
         _clueQualitySeq: 0,
         _onPaneMediaChange: null,
         _highlightTimer: null,
-        _cellsFlashTimer: null,
-        _cluesFlashTimer: null,
         _onDocClick: null,
         _onDocMousedown: null,
         _onBeforeUnload: null,
@@ -193,24 +191,34 @@ export function crosswordGrid({
                 } else {
                     this.cellsCompleteRippleOrigin = [Math.floor(this.height / 2), Math.floor(this.width / 2)];
                 }
-                this.cellsCompleteFlash = false;
-                requestAnimationFrame(() => { this.cellsCompleteFlash = true; });
-                clearTimeout(this._cellsFlashTimer);
                 // Total duration ≈ (maxManhattan × 28ms) + 600ms ripple. For a
                 // 21×21 grid that's ~1.2s. Keep the class on a bit longer to
                 // make sure the last-arriving cell finishes its animation.
                 const maxManhattan = (this.width - 1) + (this.height - 1);
-                this._cellsFlashTimer = setTimeout(
-                    () => { this.cellsCompleteFlash = false; },
-                    maxManhattan * 28 + 700,
-                );
+                this.playCompleteFlash('cellsCompleteFlash', maxManhattan * 28 + 700);
             });
             this.$watch('isCluesComplete', (now) => {
                 if (!now) return;
-                this.cluesCompleteFlash = false;
-                requestAnimationFrame(() => { this.cluesCompleteFlash = true; });
-                clearTimeout(this._cluesFlashTimer);
-                this._cluesFlashTimer = setTimeout(() => { this.cluesCompleteFlash = false; }, 800);
+                this.playCompleteFlash('cluesCompleteFlash', 800);
+            });
+        },
+
+        // Turn a completion flash flag off, back on in the next frame (so the
+        // CSS animation restarts) and off again after `duration`. The off
+        // timer only starts once the frame has run: a hidden tab holds
+        // animation frames back but not timers, so arming both up front could
+        // clear the flag first and then leave it on for good. The cell ripple
+        // holds its cells transparent while the flag is set, which would hide
+        // the selection highlight until reload.
+        playCompleteFlash(flag, duration) {
+            this._flashFrames ??= {};
+            this._flashTimers ??= {};
+            cancelAnimationFrame(this._flashFrames[flag]);
+            clearTimeout(this._flashTimers[flag]);
+            this[flag] = false;
+            this._flashFrames[flag] = requestAnimationFrame(() => {
+                this[flag] = true;
+                this._flashTimers[flag] = setTimeout(() => { this[flag] = false; }, duration);
             });
         },
 
@@ -539,7 +547,7 @@ export function crosswordGrid({
 
             this.scrollActiveClueIntoView();
             this.$refs.gridContainer?.focus();
-            this.revealSuggestions('words');
+            this.revealSuggestions(this.suggestionsTabForActiveSlot());
         },
 
         // Double-click toggles a cell between black and white. Not for void
@@ -569,7 +577,7 @@ export function crosswordGrid({
                         if (!clickedInput) this.$refs.gridContainer?.focus();
                         // Writing a clue wants the clue library; picking the
                         // slot by its number is like picking a cell.
-                        this.revealSuggestions(clickedInput ? 'clues' : 'words');
+                        this.revealSuggestions(clickedInput ? 'clues' : this.suggestionsTabForActiveSlot());
                         return;
                     }
                 }
@@ -1669,6 +1677,12 @@ export function crosswordGrid({
             this.clearSuggestionPreview();
             this.$dispatch?.('editor-reveal-suggestions');
             this.showSuggestionsPane();
+        },
+
+        // The sub-tab a freshly picked slot wants: a slot with blanks still
+        // needs a word, a fully filled one is ready for a clue.
+        suggestionsTabForActiveSlot() {
+            return this.suggestionsSlot?.filled ? 'clues' : 'words';
         },
 
         // Tailwind's `lg` breakpoint, where the editor switches from the
