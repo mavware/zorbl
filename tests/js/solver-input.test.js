@@ -151,6 +151,53 @@ describe('typeCharacter', () => {
     });
 });
 
+describe('typing into a word with no empty cells left', () => {
+    let s;
+    beforeEach(() => { s = makeSolver(); s.direction = 'across'; });
+
+    it('jumps to the next empty cell when the typed letter completes the word mid-word', () => {
+        s.progress[0] = ['', 'A', 'T'];
+        s.progress[1] = ['D', '', ''];
+        s.selectedRow = 0; s.selectedCol = 0;
+        s.typeCharacter('C');
+        // 1-across is now full; 4-across's first empty cell is (1,1).
+        expect([s.selectedRow, s.selectedCol]).toEqual([1, 1]);
+    });
+
+    it('jumps away when overwriting a letter in an already full word', () => {
+        s.progress[0] = ['C', 'A', 'T'];
+        s.selectedRow = 0; s.selectedCol = 1;
+        s.typeCharacter('X');
+        expect(s.progress[0][1]).toBe('X');
+        expect([s.selectedRow, s.selectedCol]).toEqual([1, 0]);
+    });
+
+    it('steps to the adjacent cell while the word still has an empty cell', () => {
+        s.progress[0] = ['', 'A', ''];
+        s.selectedRow = 0; s.selectedCol = 0;
+        s.typeCharacter('C');
+        expect([s.selectedRow, s.selectedCol]).toEqual([0, 1]);
+    });
+
+    it('wraps around to an earlier word that still has an empty cell', () => {
+        s.progress[0] = ['C', '', 'T'];
+        s.progress[1] = ['D', 'O', 'G'];
+        s.progress[2] = ['', 'E', 'L'];
+        s.selectedRow = 2; s.selectedCol = 0;
+        s.typeCharacter('E');
+        expect([s.selectedRow, s.selectedCol]).toEqual([0, 1]);
+    });
+
+    it('steps to the adjacent cell when no word has an empty cell left', () => {
+        s.progress[0] = ['X', 'A', 'T'];
+        s.progress[1] = ['D', 'O', 'G'];
+        s.progress[2] = ['E', 'E', 'L'];
+        s.selectedRow = 0; s.selectedCol = 0;
+        s.typeCharacter('Z');
+        expect([s.selectedRow, s.selectedCol]).toEqual([0, 1]);
+    });
+});
+
 describe('advanceCursor across a black square', () => {
     it('jumps to the next across word when the cell to the right is a block', () => {
         // 3x3 grid with a block at (0,2): 1-across is two cells, then a block.

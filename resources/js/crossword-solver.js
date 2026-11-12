@@ -619,8 +619,15 @@ export function crosswordSolver({
             }
         },
 
+        // Step to the next cell of the active word. Once the word has no empty
+        // cells left (wherever in it the cursor is), or the cursor is on its
+        // last cell, jump to the next empty cell in clue order instead.
         advanceCursor() {
             const row = this.selectedRow, col = this.selectedCol;
+            const wordIsFull = this.getWordCells(row, col, this.direction)
+                .every(([r, c]) => !this.isEmptyCell(r, c));
+            if (wordIsFull && this.advanceToNextWord()) return;
+
             const atBoundary = this.direction === 'across'
                 ? this.hasRightBoundary(row, col)
                 : this.hasBottomBoundary(row, col);
@@ -634,13 +641,20 @@ export function crosswordSolver({
             this.advanceToNextWord();
         },
 
+        isEmptyCell(row, col) {
+            return !this.isPrefilled(row, col) && !this.progress[row]?.[col];
+        },
+
+        // Select the first empty cell of the next word (in the active
+        // direction, wrapping around) that still has one. Returns false, and
+        // leaves the selection alone, when every word is full.
         advanceToNextWord() {
             const clues = this.direction === 'across' ? this.cluesAcross : this.cluesDown;
-            if (clues.length === 0) return;
+            if (clues.length === 0) return false;
 
             const currentNum = this.activeClueNumber;
             const startIdx = clues.findIndex(c => c.number === currentNum);
-            if (startIdx < 0) return;
+            if (startIdx < 0) return false;
 
             for (let offset = 1; offset <= clues.length; offset++) {
                 const nextIdx = (startIdx + offset) % clues.length;
@@ -648,14 +662,15 @@ export function crosswordSolver({
                 if (!slot) continue;
 
                 const cells = this.getWordCells(slot.row, slot.col, this.direction);
-                const empty = cells.find(([r, c]) => !this.isPrefilled(r, c) && !this.progress[r]?.[c]);
+                const empty = cells.find(([r, c]) => this.isEmptyCell(r, c));
                 if (empty) {
                     this.selectedRow = empty[0];
                     this.selectedCol = empty[1];
                     this.scrollActiveClueIntoView?.();
-                    return;
+                    return true;
                 }
             }
+            return false;
         },
 
         handleBackspace() {
