@@ -64,20 +64,20 @@ class AppNavigation
      *
      * @return array<int, NavigationItem>
      */
-    public function reference(): array
+    public function reference(?string $currentTab = null): array
     {
         return [
             new NavigationItem(
                 label: __('Clues'),
                 icon: 'book-open',
                 href: route('clues.index'),
-                current: $this->request->routeIs('clues.index'),
+                current: $currentTab ? $currentTab === 'clues' : $this->request->routeIs('clues.index'),
             ),
             new NavigationItem(
                 label: __('Words'),
                 icon: 'language',
                 href: route('words.index'),
-                current: $this->request->routeIs('words.*'),
+                current: $currentTab ? $currentTab === 'words' : $this->request->routeIs('words.*'),
             ),
         ];
     }

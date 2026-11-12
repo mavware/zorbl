@@ -333,11 +333,12 @@ new class extends Component {
 
     <h1 class="sr-only">{{ __('Clues') }}</h1>
 
-    <x-page-header :kicker="__('Reference')" :rule="false">
-        <x-slot:footer>
-            <x-page-tabs :tabs="app(\App\Support\AppNavigation::class)->reference()" />
-        </x-slot:footer>
-    </x-page-header>
+    {{-- The current tab is named rather than read from the route: a search
+         re-renders through Livewire's update endpoint, where the route no
+         longer says which page this is. --}}
+    <div class="-mx-6 lg:-mx-8" data-test="reference-tabs">
+        <x-page-tabs :tabs="app(\App\Support\AppNavigation::class)->reference('clues')" />
+    </div>
 
     {{-- Search and Filters --}}
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center">

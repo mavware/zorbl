@@ -156,11 +156,12 @@ new class extends Component {
 
     <h1 class="sr-only">{{ __('Words') }}</h1>
 
-    <x-page-header :kicker="__('Reference')" :rule="false">
-        <x-slot:footer>
-            <x-page-tabs :tabs="app(\App\Support\AppNavigation::class)->reference()" />
-        </x-slot:footer>
-    </x-page-header>
+    {{-- The current tab is named rather than read from the route: a search
+         re-renders through Livewire's update endpoint, where the route no
+         longer says which page this is. --}}
+    <div class="-mx-6 lg:-mx-8" data-test="reference-tabs">
+        <x-page-tabs :tabs="app(\App\Support\AppNavigation::class)->reference('words')" />
+    </div>
 
     <p class="text-ink-muted text-sm leading-[1.65]" data-test="word-catalog-intro">
         {{ __('Browse :count crossword answers. Search by pattern — use ? for any single letter and * for any run of letters.', ['count' => number_format($this->totalWords)]) }}

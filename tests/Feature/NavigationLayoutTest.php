@@ -133,7 +133,7 @@ test('the clue library and word catalog are tabs of the Reference section', func
         ->get(route('clues.index'))
         ->assertOk()
         ->assertSeeInOrder([
-            'data-page-header-footer',
+            'data-test="reference-tabs"',
             'data-test="page-tabs"',
             'href="'.route('clues.index').'"',
             'aria-current="page"',
@@ -154,6 +154,17 @@ test('the clue library and word catalog are tabs of the Reference section', func
             'Words',
         ], false);
 });
+
+test('the current Reference tab stays highlighted after a search re-renders the page', function (string $page, string $currentHref, string $otherHref) {
+    $html = Livewire\Livewire::test($page)->set('search', 'ocean')->html();
+
+    expect($html)
+        ->toMatch('/href="'.preg_quote(route($currentHref), '/').'"[^>]*aria-current="page"/s')
+        ->not->toMatch('/href="'.preg_quote(route($otherHref), '/').'"[^>]*aria-current="page"/s');
+})->with([
+    'clues' => ['pages::clues.index', 'clues.index', 'words.index'],
+    'words' => ['pages::words.index', 'words.index', 'clues.index'],
+]);
 
 test('the top bar offers an admin the admin link from the user menu', function () {
     config(['crosswordbuilder.navigation' => 'header']);

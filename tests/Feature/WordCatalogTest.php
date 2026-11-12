@@ -28,7 +28,7 @@ test('the pattern search explanation sits in the body above the search bar', fun
     $this->get(route('words.index'))
         ->assertSuccessful()
         ->assertSeeInOrder([
-            'data-page-header-group',
+            'data-test="reference-tabs"',
             '<p class="text-ink-muted text-sm leading-[1.65]" data-test="word-catalog-intro">',
             'Browse 1 crossword answers.',
             'type="search"',
