@@ -9,7 +9,13 @@
                 role="grid"
                 :aria-label="'Crossword grid, ' + width + ' columns by ' + height + ' rows'"
             >
+                {{-- wire:ignore: the cells are rendered entirely by Alpine from
+                     nested x-for templates. Livewire's morph only skips past
+                     the outer template's last rendered element (the final
+                     row's inner template), so on any re-render it would treat
+                     the last row's cells as leftovers and remove them. --}}
                 <div
+                    wire:ignore
                     class="grid [--bar-color:var(--color-zinc-800)] dark:[--bar-color:var(--color-zinc-300)]"
                     :class="{ 'editor-complete-flash-border': cellsCompleteFlash, 'editor-grid-bounce': cellsCompleteFlash }"
                     :style="'grid-template-columns: repeat(' + width + ', minmax(0, 1fr));' + (defaultColors.line ? ' --bar-color: ' + defaultColors.line + '; --color-line-strong: ' + defaultColors.line + ';' : '')"

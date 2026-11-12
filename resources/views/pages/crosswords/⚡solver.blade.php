@@ -948,7 +948,13 @@ new #[Title('Solve Crossword')] class extends Component {
                 :aria-activedescendant="selectedRow >= 0 ? ('crossword-cell-' + selectedRow + '-' + selectedCol) : null"
                 aria-keyshortcuts="ArrowUp ArrowDown ArrowLeft ArrowRight Enter Tab Backspace"
             >
+                {{-- wire:ignore: the cells are rendered entirely by Alpine from
+                     nested x-for templates. Livewire's morph only skips past
+                     the outer template's last rendered element (the final
+                     row's inner template), so on any re-render it would treat
+                     the last row's cells as leftovers and remove them. --}}
                 <div
+                    wire:ignore
                     class="grid border border-zinc-800 dark:border-zinc-300 [--bar-color:var(--color-zinc-800)] dark:[--bar-color:var(--color-zinc-300)]"
                     :style="'grid-template-columns: repeat(' + width + ', minmax(0, 1fr));' + (defaultColors.line ? ' --bar-color: ' + defaultColors.line + '; --color-line-strong: ' + defaultColors.line + '; border-color: ' + defaultColors.line + ';' : '')"
                     role="presentation"
