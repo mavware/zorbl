@@ -198,6 +198,41 @@ describe('typing into a word with no empty cells left', () => {
     });
 });
 
+describe('jumpToNextClue (Tab)', () => {
+    let s;
+    beforeEach(() => {
+        s = makeSolver();
+        s.direction = 'across';
+        s.selectedRow = 0; s.selectedCol = 0;
+    });
+
+    it('skips a completed word and lands on the next one with an empty cell', () => {
+        s.progress[1] = ['D', 'O', 'G'];
+        s.jumpToNextClue(false);
+        expect([s.selectedRow, s.selectedCol]).toEqual([2, 0]);
+    });
+
+    it('lands on the first empty cell of the word', () => {
+        s.progress[1] = ['D', '', ''];
+        s.jumpToNextClue(false);
+        expect([s.selectedRow, s.selectedCol]).toEqual([1, 1]);
+    });
+
+    it('Shift+Tab skips completed words going backwards', () => {
+        s.progress[2] = ['E', 'E', 'L'];
+        s.jumpToNextClue(true);
+        expect([s.selectedRow, s.selectedCol]).toEqual([1, 0]);
+    });
+
+    it('moves to the neighbouring clue when every word is complete', () => {
+        s.progress[0] = ['C', 'A', 'X'];
+        s.progress[1] = ['D', 'O', 'G'];
+        s.progress[2] = ['E', 'E', 'L'];
+        s.jumpToNextClue(false);
+        expect([s.selectedRow, s.selectedCol]).toEqual([1, 0]);
+    });
+});
+
 describe('advanceCursor across a black square', () => {
     it('jumps to the next across word when the cell to the right is a block', () => {
         // 3x3 grid with a block at (0,2): 1-across is two cells, then a block.

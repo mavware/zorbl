@@ -646,9 +646,10 @@ export function crosswordSolver({
         },
 
         // Select the first empty cell of the next word (in the active
-        // direction, wrapping around) that still has one. Returns false, and
-        // leaves the selection alone, when every word is full.
-        advanceToNextWord() {
+        // direction, wrapping around; the previous one when `reverse`) that
+        // still has one. Returns false, and leaves the selection alone, when
+        // every word is full.
+        advanceToNextWord(reverse = false) {
             const clues = this.direction === 'across' ? this.cluesAcross : this.cluesDown;
             if (clues.length === 0) return false;
 
@@ -657,7 +658,8 @@ export function crosswordSolver({
             if (startIdx < 0) return false;
 
             for (let offset = 1; offset <= clues.length; offset++) {
-                const nextIdx = (startIdx + offset) % clues.length;
+                const step = reverse ? -offset : offset;
+                const nextIdx = (startIdx + step + clues.length) % clues.length;
                 const slot = this.findSlot(this.direction, clues[nextIdx].number);
                 if (!slot) continue;
 
@@ -734,9 +736,16 @@ export function crosswordSolver({
             this.jumpToNextClue(dx > 0);
         },
 
+        // Tab / swipe: go to the next word that still has an empty cell,
+        // skipping completed ones. With nothing left to fill, fall back to
+        // plain next/previous clue so the keys still move the cursor.
         jumpToNextClue(reverse) {
             const clues = this.direction === 'across' ? this.cluesAcross : this.cluesDown;
             if (clues.length === 0) return;
+            if (this.advanceToNextWord(reverse)) {
+                this.$refs.gridContainer?.focus();
+                return;
+            }
             const currentNum = this.activeClueNumber;
             const idx = clues.findIndex(c => c.number === currentNum);
             const nextIdx = reverse
