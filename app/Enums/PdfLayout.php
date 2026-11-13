@@ -6,11 +6,20 @@ use Illuminate\Contracts\View\View;
 
 enum PdfLayout: string
 {
-    case Standard = 'standard';
+    /* Declared in the order the layout picker shows them. */
     case GridTopLeft = 'grid-top-left';
     case GridTopRight = 'grid-top-right';
     case GridBottomLeft = 'grid-bottom-left';
     case GridBottomRight = 'grid-bottom-right';
+    case Standard = 'standard';
+
+    /**
+     * The layout the download modal starts on.
+     */
+    public static function default(): self
+    {
+        return self::GridBottomRight;
+    }
 
     public function label(): string
     {

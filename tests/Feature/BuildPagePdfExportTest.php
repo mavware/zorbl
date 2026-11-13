@@ -67,7 +67,7 @@ test('cancelling the PDF export modal on the Build page resets its settings', fu
         ->call('cancelPdfExport')
         ->assertSet('showPdfExportModal', false)
         ->assertSet('pdfOrientation', 'portrait')
-        ->assertSet('pdfLayout', PdfLayout::Standard->value)
+        ->assertSet('pdfLayout', PdfLayout::default()->value)
         ->assertSet('pdfNarrative', '');
 });
 
@@ -132,7 +132,7 @@ test('the PDF is rendered in the layout chosen in the export modal', function (s
 
     Livewire::test('pages::crosswords.index')
         ->call('choosePdfExportFor', $puzzle->id)
-        ->assertSet('pdfLayout', PdfLayout::Standard->value)
+        ->assertSet('pdfLayout', PdfLayout::default()->value)
         ->set('pdfLayout', $chosen)
         ->call('pdfPreview')
         ->assertReturned(base64_encode('%PDF-stub'));
@@ -232,4 +232,15 @@ test('a solver cannot get the answer key in a PDF by asking for it', function ()
     $component->set('pdfIncludeAnswerKey', true)
         ->call('pdfPreview')
         ->assertReturned(fn (string $encoded): bool => pdfPageCount($encoded) === $pagesWithoutKey);
+});
+
+it('offers the PDF layouts with grid lower right selected and grid above clues last', function () {
+    expect(PdfLayout::default())->toBe(PdfLayout::GridBottomRight)
+        ->and(array_map(fn (PdfLayout $layout): string => $layout->label(), PdfLayout::cases()))->toBe([
+            'Grid upper left',
+            'Grid upper right',
+            'Grid lower left',
+            'Grid lower right',
+            'Grid above clues',
+        ]);
 });

@@ -34,7 +34,7 @@ trait ExportsCrossword
     public string $pdfOrientation = 'portrait';
 
     /** A PdfLayout value: where the grid sits and how the clues are arranged around it. */
-    public string $pdfLayout = PdfLayout::Standard->value;
+    public string $pdfLayout = PdfLayout::GridBottomRight->value; // PdfLayout::default()
 
     public string $pdfNarrative = '';
 
@@ -287,7 +287,7 @@ trait ExportsCrossword
     private function resetPdfSettings(): void
     {
         $this->pdfOrientation = 'portrait';
-        $this->pdfLayout = PdfLayout::Standard->value;
+        $this->pdfLayout = PdfLayout::default()->value;
         $this->pdfNarrative = '';
         $this->pdfImage = null;
         $this->pdfRemoveImage = false;
