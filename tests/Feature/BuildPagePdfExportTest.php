@@ -3,6 +3,8 @@
 use App\Models\Crossword;
 use App\Models\User;
 use App\Services\AnonymousUserManager;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 
 function makePuzzle(User $user, array $overrides = []): Crossword
@@ -88,4 +90,72 @@ test('guest builders are prompted to sign up instead of exporting a PDF', functi
         ->assertSet('showPdfExportModal', false)
         ->assertSet('pdfExportPuzzleId', null)
         ->assertNoFileDownloaded();
+});
+
+test('the PDF preview renders the unsaved modal settings without saving them', function () {
+    $user = User::factory()->create();
+    $puzzle = makePuzzle($user, ['pdf_narrative' => 'Saved intro']);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::crosswords.index')
+        ->call('choosePdfExportFor', $puzzle->id)
+        ->set('pdfOrientation', 'landscape')
+        ->set('pdfNarrative', 'Unsaved intro')
+        ->call('pdfPreview')
+        ->assertReturned(function (?string $encoded): bool {
+            $pdf = base64_decode((string) $encoded);
+
+            return str_starts_with($pdf, '%PDF') && str_contains($pdf, '792.000 612.000');
+        })
+        ->assertSet('showPdfExportModal', true)
+        ->assertNoFileDownloaded();
+
+    expect($puzzle->fresh()->pdf_narrative)->toBe('Saved intro');
+});
+
+test('the PDF preview returns nothing when the export modal is not open', function () {
+    $user = User::factory()->create();
+    makePuzzle($user);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::crosswords.index')
+        ->call('pdfPreview')
+        ->assertReturned(null);
+});
+
+test('the PDF preview shows a newly uploaded header image before it is saved', function () {
+    Storage::fake('public');
+    $user = User::factory()->create();
+    $puzzle = makePuzzle($user);
+
+    $this->actingAs($user);
+
+    $component = Livewire::test('pages::crosswords.index')
+        ->call('choosePdfExportFor', $puzzle->id);
+
+    $withoutImage = strlen(base64_decode($component->call('pdfPreview')->effects['returns'][0]));
+
+    $component
+        ->set('pdfImage', UploadedFile::fake()->image('header.png', 200, 100))
+        ->assertHasNoErrors()
+        ->call('pdfPreview')
+        ->assertReturned(fn (string $encoded): bool => strlen(base64_decode($encoded)) > $withoutImage);
+
+    expect($puzzle->fresh()->pdf_image)->toBeNull();
+});
+
+test('uploading a header image that is not an image is rejected immediately', function () {
+    $user = User::factory()->create();
+    $puzzle = makePuzzle($user);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::crosswords.index')
+        ->call('choosePdfExportFor', $puzzle->id)
+        ->set('pdfImage', UploadedFile::fake()->create('notes.txt', 10, 'text/plain'))
+        ->assertHasErrors(['pdfImage' => 'image'])
+        ->call('pdfPreview')
+        ->assertReturned(fn (?string $encoded): bool => str_starts_with(base64_decode((string) $encoded), '%PDF'));
 });

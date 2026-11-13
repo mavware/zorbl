@@ -64,7 +64,7 @@ class SecurityHeaders
             "font-src 'self' data: https://fonts.bunny.net",
             "img-src 'self' data: blob: https:",
             "connect-src 'self' https://api.stripe.com".$viteConnect,
-            "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",
+            "frame-src 'self' blob: https://js.stripe.com https://hooks.stripe.com",
             'frame-ancestors '.($isEmbed ? '*' : "'self'"),
             "form-action 'self'",
             "base-uri 'self'",

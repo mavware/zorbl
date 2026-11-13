@@ -10,6 +10,8 @@ use CrosswordBuilder\CrosswordIO\Exporters\JpzExporter;
 use CrosswordBuilder\CrosswordIO\Exporters\PuzExporter;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
+use Livewire\Attributes\Renderless;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -194,9 +196,7 @@ trait ExportsCrossword
     public function confirmPdfExport(): ?StreamedResponse
     {
         if ($this->pdfImage instanceof TemporaryUploadedFile) {
-            $this->validate([
-                'pdfImage' => ['image', 'max:2048'],
-            ]);
+            $this->validate($this->pdfImageRules());
         }
 
         $this->showPdfExportModal = false;
@@ -234,35 +234,92 @@ trait ExportsCrossword
         $this->pdfRemoveImage = false;
     }
 
+    /**
+     * Reject an unusable header image as soon as it is uploaded, so the
+     * problem shows beside the field instead of only at export time.
+     */
+    public function updatedPdfImage(): void
+    {
+        $this->validate($this->pdfImageRules());
+    }
+
+    /**
+     * Render the PDF as it would be exported with the settings currently in
+     * the export modal, without saving any of them.
+     *
+     * @return string|null The base64-encoded PDF, or null when the export modal is not open.
+     */
+    #[Renderless]
+    public function pdfPreview(): ?string
+    {
+        if (! $this->showPdfExportModal) {
+            return null;
+        }
+
+        $crossword = $this->getExportableCrossword();
+
+        return base64_encode($this->renderPdf($crossword, $this->pendingPdfImagePath($crossword)));
+    }
+
     public function exportPdf(): StreamedResponse
+    {
+        $crossword = $this->getExportableCrossword();
+
+        $imagePath = $crossword->pdf_image ? Storage::disk('public')->path($crossword->pdf_image) : null;
+
+        $pdf = $this->renderPdf($crossword, $imagePath);
+        $filename = str($crossword->title ?: 'crossword')->slug()->append('.pdf')->toString();
+
+        return response()->streamDownload(function () use ($pdf) {
+            echo $pdf;
+        }, $filename, ['Content-Type' => 'application/pdf']);
+    }
+
+    /**
+     * @return string The raw PDF binary content.
+     */
+    private function renderPdf(Crossword $crossword, ?string $imagePath): string
     {
         $gate = $this->getExportPlanGates()['pdf'] ?? null;
         if ($gate) {
             abort_unless(Auth::user()->planLimits()->{$gate}(), 403, 'Upgrade to Pro to export PDF files.');
         }
 
-        $crossword = $this->getExportableCrossword();
-
         $orientation = in_array($this->pdfOrientation, ['portrait', 'landscape']) ? $this->pdfOrientation : 'portrait';
         $narrative = trim($this->pdfNarrative);
 
-        $imagePath = null;
-        if ($crossword->pdf_image) {
-            $imagePath = Storage::disk('public')->path($crossword->pdf_image);
-        }
-
-        $exporter = app(PdfExporter::class);
-        $pdf = $exporter->export(
+        return app(PdfExporter::class)->export(
             $crossword,
             includeSolution: $this->getPdfIncludeSolution(),
             orientation: $orientation,
             narrative: $narrative ?: null,
             imagePath: $imagePath,
         );
-        $filename = str($crossword->title ?: 'crossword')->slug()->append('.pdf')->toString();
+    }
 
-        return response()->streamDownload(function () use ($pdf) {
-            echo $pdf;
-        }, $filename, ['Content-Type' => 'application/pdf']);
+    /**
+     * The header image the export would use if confirmed now: a valid new
+     * upload, otherwise the saved image unless it is marked for removal.
+     */
+    private function pendingPdfImagePath(Crossword $crossword): ?string
+    {
+        if ($this->pdfRemoveImage) {
+            return null;
+        }
+
+        if ($this->pdfImage instanceof TemporaryUploadedFile
+            && Validator::make(['pdfImage' => $this->pdfImage], $this->pdfImageRules())->passes()) {
+            return $this->pdfImage->getRealPath();
+        }
+
+        return $crossword->pdf_image ? Storage::disk('public')->path($crossword->pdf_image) : null;
+    }
+
+    /**
+     * @return array<string, list<string>>
+     */
+    private function pdfImageRules(): array
+    {
+        return ['pdfImage' => ['nullable', 'image', 'max:2048']];
     }
 }

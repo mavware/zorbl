@@ -3,6 +3,7 @@ import { crosswordSolver } from './crossword-solver.js';
 import { metaAnswerEntry } from './meta-answer-entry.js';
 import { newPuzzleDimensions } from './new-puzzle-dimensions.js';
 import { passkeyConfirm, passkeyLogin, passkeyManager } from './passkeys.js';
+import { pdfPreview } from './pdf-preview.js';
 import './pwa.js';
 
 document.addEventListener('alpine:init', () => {
@@ -10,6 +11,7 @@ document.addEventListener('alpine:init', () => {
     Alpine.data('crosswordSolver', crosswordSolver);
     Alpine.data('metaAnswerEntry', metaAnswerEntry);
     Alpine.data('newPuzzleDimensions', newPuzzleDimensions);
+    Alpine.data('pdfPreview', pdfPreview);
     Alpine.data('passkeyLogin', passkeyLogin);
     Alpine.data('passkeyConfirm', passkeyConfirm);
     Alpine.data('passkeyManager', passkeyManager);

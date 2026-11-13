@@ -178,7 +178,8 @@
             <p class="meta">By {{ $author }}</p>
         @endif
         @if ($copyright)
-            <p class="meta">&copy; {{ $copyright }}</p>
+            {{-- The editor's default copyright line already starts with the symbol; typed or imported ones may not. --}}
+            <p class="meta">@unless (preg_match('/^\s*(©|\(c\)|copyright\b)/iu', $copyright))&copy; @endunless{{ trim($copyright) }}</p>
         @endif
         @if ($notes ?? null)
             <p class="notes">{{ $notes }}</p>

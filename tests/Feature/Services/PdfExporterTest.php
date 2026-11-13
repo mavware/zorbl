@@ -944,3 +944,27 @@ it('renders line breaks in clues and escapes clue html', function () {
         ->toContain('&lt;b&gt;Bold&lt;/b&gt; claim')
         ->not->toContain('<b>Bold</b>');
 });
+
+it('prints exactly one copyright symbol', function (string $copyright, string $expected) {
+    $html = view('exports.crossword-pdf', [
+        'title' => 'Test',
+        'author' => null,
+        'copyright' => $copyright,
+        'numberedGrid' => [[1, 2], [3, 0]],
+        'solution' => [['A', 'B'], ['C', 'D']],
+        'cluesAcross' => [['number' => 1, 'clue' => 'AB']],
+        'cluesDown' => [['number' => 1, 'clue' => 'AC']],
+        'includeSolution' => false,
+        'cellSize' => 0.33,
+        'numberFontSize' => 6,
+        'letterFontSize' => 9,
+        'numberHeight' => 0.12,
+        'forceCluePageBreak' => false,
+    ])->render();
+
+    expect(html_entity_decode($html))->toContain('<p class="meta">'.$expected.'</p>');
+})->with([
+    'line without a symbol' => ['2026 Ada Lovelace', '© 2026 Ada Lovelace'],
+    'line that already has the symbol' => ['© 2026 Ada Lovelace', '© 2026 Ada Lovelace'],
+    'line spelled out as Copyright' => ['Copyright 2026 Ada Lovelace', 'Copyright 2026 Ada Lovelace'],
+]);
