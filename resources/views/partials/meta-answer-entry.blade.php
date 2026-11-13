@@ -17,7 +17,7 @@
     $metaEntryState = $metaAnswerSubmitted ? ($metaAnswerCorrect === false ? 'retry' : 'done') : 'open';
 @endphp
 <div
-    class="mt-6 rounded-xl border border-purple-200 bg-purple-50/50 p-5 dark:border-purple-900/40 dark:bg-purple-950/20"
+    class="mt-4 rounded-xl border border-purple-200 bg-purple-50/50 p-5 dark:border-purple-900/40 dark:bg-purple-950/20"
     wire:key="meta-answer-section-{{ $metaEntryState }}"
     data-test="meta-answer-section"
     data-state="{{ $metaEntryState }}"

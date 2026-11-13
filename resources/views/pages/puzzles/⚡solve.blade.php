@@ -399,9 +399,13 @@ class extends Component {
         </div>
 
         {{-- Main solver layout --}}
-        <div class="flex flex-1 gap-4 overflow-hidden max-lg:flex-col lg:max-h-[calc(100dvh-8rem)]">
+        {{-- The row is capped to the viewport so the clue panels scroll inside it.
+             With a meta answer under the grid the cap moves to the panels alone:
+             the grid column may then run taller than the viewport, and the page
+             scrolls to the answer blanks instead of clipping them. --}}
+        <div @class(['flex flex-1 gap-4 overflow-hidden max-lg:flex-col', 'lg:max-h-[calc(100dvh-8rem)]' => ! $hasMetaAnswer])>
             {{-- Across clues panel (desktop) --}}
-            <div class="hidden w-64 flex-col overflow-hidden lg:flex">
+            <div class="hidden w-64 flex-col overflow-hidden lg:flex lg:max-h-[calc(100dvh-8rem)]">
                 <flux:heading size="sm" class="mb-2 shrink-0">{{ __('Across') }}</flux:heading>
                 <div class="flex-1 space-y-0.5 overflow-y-auto" x-ref="acrossPanel">
                     <template x-for="clue in computedCluesAcross" :key="'across-' + clue.number">
@@ -431,9 +435,9 @@ class extends Component {
             <div class="sr-only" aria-live="polite" aria-atomic="true" x-text="activeClueAnnouncement()"></div>
 
             {{-- Grid --}}
-            <div class="flex min-w-0 flex-1 items-start justify-center overflow-hidden">
+            <div class="flex min-w-0 flex-1 flex-col items-center overflow-hidden">
                 <div
-                    class="relative touch-pan-y"
+                    class="relative max-w-full shrink-0 touch-pan-y"
                     :style="'width: ' + Math.min(600, width * 40) + 'px;'"
                     x-on:keydown="handleKeydown($event)"
                     x-on:touchstart.passive="onSwipeStart($event)"
@@ -517,10 +521,19 @@ class extends Component {
                         </template>
                     </div>
                 </div>
+
+                {{-- Meta Answer: directly under the grid the whole time, as wide as the
+                     grid (wider under a small one), so solvers can fill it in at any point while solving; it
+                     checks itself once every blank is filled. --}}
+                @if($hasMetaAnswer)
+                    <div class="max-w-full shrink-0" :style="'width: ' + Math.max(384, Math.min(600, width * 40)) + 'px;'" data-test="meta-answer-under-grid">
+                        @include('partials.meta-answer-entry')
+                    </div>
+                @endif
             </div>
 
             {{-- Down clues panel (desktop) --}}
-            <div class="hidden w-64 flex-col overflow-hidden lg:flex">
+            <div class="hidden w-64 flex-col overflow-hidden lg:flex lg:max-h-[calc(100dvh-8rem)]">
                 <flux:heading size="sm" class="mb-2 shrink-0">{{ __('Down') }}</flux:heading>
                 <div class="flex-1 space-y-0.5 overflow-y-auto" x-ref="downPanel">
                     <template x-for="clue in computedCluesDown" :key="'down-' + clue.number">
@@ -612,12 +625,6 @@ class extends Component {
                 </div>
             </div>
         </div>
-
-        {{-- Meta Answer: beneath the puzzle the whole time; it checks itself
-             once every blank is filled. --}}
-        @if($hasMetaAnswer)
-            @include('partials.meta-answer-entry')
-        @endif
 
         {{-- Signup banner --}}
         <div class="mt-4 flex items-center justify-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 dark:border-amber-800/50 dark:bg-amber-900/20">

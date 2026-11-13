@@ -420,3 +420,26 @@ test('previously submitted meta answer is loaded on solver mount', function () {
         ->assertSet('metaAnswerSubmission', 'Movies')
         ->assertSet('metaAnswerCorrect', true);
 });
+
+test('the meta answer blanks sit directly under the grid, ahead of the clue panels that follow it', function (string $page, bool $signedIn) {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()
+        ->for($user)
+        ->withMetaAnswer('What is the hidden theme?', ['MOVIES'], reveal: true)
+        ->create(['is_published' => true]);
+
+    if ($signedIn) {
+        $this->actingAs($user);
+    }
+
+    Livewire::test($page, ['crossword' => $crossword])
+        ->assertSeeHtmlInOrder([
+            'id="crossword-grid"',
+            'data-test="meta-answer-under-grid"',
+            'data-test="meta-answer-blanks"',
+            'x-ref="downPanel"',
+        ]);
+})->with([
+    'signed-in solver' => ['pages::crosswords.solver', true],
+    'public solve page' => ['pages::puzzles.solve', false],
+]);
