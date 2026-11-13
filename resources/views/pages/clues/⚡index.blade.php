@@ -53,7 +53,7 @@ new class extends Component {
     #[Computed]
     public function clues()
     {
-        $query = ClueEntry::with(['user:id,name', 'user.subscriptions', 'crossword:id,title,width,height,puzzle_type,grid,styles']);
+        $query = ClueEntry::with(['crossword:id,title,width,height,puzzle_type,grid,styles']);
 
         // Hide unvetted clues from everyone except the author. Moderators see
         // the queue in Filament; the rest of the library is approved-only.
@@ -408,7 +408,6 @@ new class extends Component {
                                 </button>
                             </th>
                         <th scope="col" class="meta-classical hidden px-3 py-3 text-left font-normal sm:table-cell">{{ __('Source') }}</th>
-                        <th scope="col" class="meta-classical hidden px-3 py-3 text-left font-normal md:table-cell">{{ __('Author') }}</th>
                         <th scope="col" class="meta-classical px-3 py-3 text-right font-normal">{{ __('Actions') }}</th>
                     </tr>
                 </thead>
@@ -423,7 +422,6 @@ new class extends Component {
                                     <input type="text" wire:model="editClue" class="field-classical h-9 w-full px-3" />
                                 </td>
                                 <td class="hidden px-3 py-2.5 sm:table-cell"></td>
-                                <td class="hidden px-3 py-2.5 md:table-cell"></td>
                                 <td class="px-3 py-2.5">
                                     <div class="flex justify-end gap-2">
                                         <button type="button" class="btn-classical btn-amber-outline h-8 px-3 text-[14px]" wire:click="saveEdit">{{ __('Save') }}</button>
@@ -443,7 +441,6 @@ new class extends Component {
                                         <span class="chip-classical border-ink-faint text-ink-faint">{{ __('Standalone') }}</span>
                                     @endif
                                 </td>
-                                <td class="text-ink-muted hidden px-3 py-3.5 md:table-cell">{{ $entry->user->name ?? __('Unknown') }} <x-supporter-badge :user="$entry->user" /></td>
                                 <td class="px-3 py-3.5">
                                     <div class="flex items-center justify-end gap-2">
                                         @if($entry->status === \App\Models\ClueEntry::STATUS_PENDING)
