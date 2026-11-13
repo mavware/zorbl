@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\PdfLayout;
 use App\Models\Crossword;
 use App\Services\PdfExporter;
 
@@ -967,4 +968,45 @@ it('prints exactly one copyright symbol', function (string $copyright, string $e
     'line without a symbol' => ['2026 Ada Lovelace', '© 2026 Ada Lovelace'],
     'line that already has the symbol' => ['© 2026 Ada Lovelace', '© 2026 Ada Lovelace'],
     'line spelled out as Copyright' => ['Copyright 2026 Ada Lovelace', 'Copyright 2026 Ada Lovelace'],
+]);
+
+it('exports each wrap-around layout as a single puzzle page', function (PdfLayout $layout) {
+    $crossword = Crossword::factory()->make([
+        'title' => 'Wrapped Puzzle',
+        'author' => 'Test Author',
+        'width' => 3,
+        'height' => 3,
+        'grid' => [
+            [1, 2, '#'],
+            [3, 0, 4],
+            ['#', 5, 0],
+        ],
+        'solution' => [
+            ['C', 'A', '#'],
+            ['B', 'O', 'T'],
+            ['#', 'L', 'O'],
+        ],
+        'clues_across' => [
+            ['number' => 1, 'clue' => 'California'],
+            ['number' => 3, 'clue' => 'Robot helper'],
+            ['number' => 5, 'clue' => 'Hello'],
+        ],
+        'clues_down' => [
+            ['number' => 1, 'clue' => 'Cowboy'],
+            ['number' => 2, 'clue' => 'All'],
+            ['number' => 4, 'clue' => 'Also'],
+        ],
+    ]);
+
+    $pdf = app(PdfExporter::class)->export($crossword, includeSolution: false, narrative: 'An introduction.', layout: $layout);
+
+    preg_match('/\/Type\s*\/Pages\b.*?\/Count\s+(\d+)/s', $pdf, $pageTree);
+
+    expect($pdf)->toStartWith('%PDF')
+        ->and((int) $pageTree[1])->toBe(1);
+})->with([
+    PdfLayout::GridTopLeft,
+    PdfLayout::GridTopRight,
+    PdfLayout::GridBottomLeft,
+    PdfLayout::GridBottomRight,
 ]);

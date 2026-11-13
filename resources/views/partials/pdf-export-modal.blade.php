@@ -15,11 +15,31 @@
                     <flux:radio value="landscape" label="{{ __('Landscape') }}" description="{{ __('Horizontal layout (11 × 8.5 in) — better for wide puzzles') }}" />
                 </flux:radio.group>
 
-                <flux:select wire:model="pdfLayout" label="{{ __('Layout') }}">
-                    @foreach (\App\Enums\PdfLayout::cases() as $layout)
-                        <flux:select.option value="{{ $layout->value }}">{{ __($layout->label()) }}</flux:select.option>
-                    @endforeach
-                </flux:select>
+                {{-- Selection is tracked by Alpine straight off $wire, so a click highlights
+                     at once and the preview's own watcher picks the change up. --}}
+                <flux:field>
+                    <flux:label>{{ __('Layout') }}</flux:label>
+                    <div class="mt-2 grid grid-cols-5 gap-2" data-testid="pdf-layout-picker">
+                        @foreach (\App\Enums\PdfLayout::cases() as $layout)
+                            <button
+                                type="button"
+                                x-data
+                                x-on:click="$wire.pdfLayout = '{{ $layout->value }}'"
+                                x-bind:aria-pressed="($wire.pdfLayout === '{{ $layout->value }}').toString()"
+                                x-bind:class="$wire.pdfLayout === '{{ $layout->value }}'
+                                    ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500 dark:border-blue-400 dark:bg-blue-950/40 dark:ring-blue-400'
+                                    : 'border-zinc-300 hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:border-zinc-500 dark:hover:bg-zinc-800'"
+                                class="flex flex-col items-center gap-1.5 rounded-lg border p-2 transition-colors"
+                                title="{{ __($layout->description()) }}"
+                            >
+                                <div class="w-full overflow-hidden rounded">
+                                    {{ $layout->icon() }}
+                                </div>
+                                <span class="line-clamp-2 text-center text-[10px] leading-tight text-zinc-700 dark:text-zinc-400">{{ __($layout->label()) }}</span>
+                            </button>
+                        @endforeach
+                    </div>
+                </flux:field>
 
                 <div>
                     <flux:input type="file" wire:model="pdfImage" label="{{ __('Header Image') }}" accept="image/png,image/jpeg,image/gif,image/webp" />

@@ -17,14 +17,31 @@ class PdfWrapLayout
 {
     private const float COLUMN_GAP = 14.0;
 
-    private const float GRID_GAP = 12.0;
+    private const float GRID_GAP = 14.0;
 
     private const float MAX_CELL_SIZE = 36.0;
 
     private const float MAX_IMAGE_HEIGHT = 144.0;
 
-    /** Clue sizes tried from largest to smallest until the clues fit on the grid's page. */
-    private const array CLUE_FONT_SIZES = [10.0, 9.5, 9.0, 8.5, 8.0, 7.5, 7.0];
+    private const float MIN_CELL_SIZE = 15.0;
+
+    /** Share of the page height the grid may take when the clues run onto further pages anyway. */
+    private const float OVERFLOW_GRID_SHARE = 0.6;
+
+    /** Width held back from each line so rounding never pushes a planned line past its column. */
+    private const float LINE_SAFETY = 1.0;
+
+    /** dompdf draws each column one border wider than the cell width it is given, plus one closing border. */
+    private const float GRID_BORDER = 1.0;
+
+    /** Measured height dompdf adds to the grid table beyond its rows. */
+    private const float GRID_ROW_SLACK = 4.0;
+
+    /** Clue sizes, largest first, that the grid is shrunk to make room for. */
+    private const array COMFORTABLE_FONT_SIZES = [10.0, 9.5, 9.0, 8.5, 8.0];
+
+    /** Clue sizes used only when no grid size leaves room for a comfortable one. */
+    private const array SMALL_FONT_SIZES = [7.5, 7.0];
 
     /**
      * @param  (Closure(string $text, string $fontStyle, float $fontSize): float)|null  $measureText  Width of a run of text; defaults to dompdf's Helvetica metrics.
@@ -73,24 +90,36 @@ class PdfWrapLayout
         $columnWidth = ($pageWidth - 2 * self::COLUMN_GAP) / 3;
         $gridBoxWidth = 2 * $columnWidth + self::COLUMN_GAP;
 
-        $cellSize = floor(min(self::MAX_CELL_SIZE, $gridBoxWidth / $gridColumns, ($bodyHeight - 2) / $gridRows) * 100) / 100;
-        $gridWidth = $cellSize * $gridColumns + 1;
-        $gridHeight = $cellSize * $gridRows + 1;
-
-        $gridLeft = $layout->gridIsOnRight() ? $pageWidth - $gridWidth : 0.0;
-        $gridTop = $layout->gridIsAtBottom() ? $pageHeight - $gridHeight : $bodyTop;
-
-        $gridPageRegions = $this->regionsAroundGrid($layout, $columnWidth, $bodyTop, $bodyHeight, $gridHeight);
+        $largestCellSize = min(
+            self::MAX_CELL_SIZE,
+            ($gridBoxWidth - self::GRID_BORDER) / $gridColumns - self::GRID_BORDER,
+            ($bodyHeight - self::GRID_ROW_SLACK) / $gridRows,
+        );
         $fullPageRegions = $this->fullHeightRegions($columnWidth, $pageHeight);
 
-        foreach (self::CLUE_FONT_SIZES as $fontSize) {
-            $items = $this->clueItems($cluesAcross, $cluesDown, $fontSize, $columnWidth);
-            $pagesOfRegions = $this->distribute($items, $gridPageRegions, $fullPageRegions, $fontSize);
+        $itemsBySize = [];
+        $attempt = function (float $cellSize, float $fontSize) use (&$itemsBySize, $layout, $columnWidth, $bodyTop, $bodyHeight, $gridRows, $cluesAcross, $cluesDown, $fullPageRegions): array {
+            $itemsBySize[(string) $fontSize] ??= $this->clueItems($cluesAcross, $cluesDown, $fontSize, $columnWidth);
+            $gridHeight = $cellSize * $gridRows + self::GRID_ROW_SLACK;
 
-            if (count($pagesOfRegions) === 1) {
-                break;
-            }
-        }
+            return $this->distribute(
+                $itemsBySize[(string) $fontSize],
+                $this->regionsAroundGrid($layout, $columnWidth, $bodyTop, $bodyHeight, $gridHeight),
+                $fullPageRegions,
+                $fontSize,
+            );
+        };
+
+        [$cellSize, $fontSize, $pagesOfRegions] = $this->fit(
+            $largestCellSize,
+            min($largestCellSize, self::OVERFLOW_GRID_SHARE * $bodyHeight / $gridRows),
+            $attempt,
+        );
+
+        $gridWidth = $gridColumns * ($cellSize + self::GRID_BORDER) + self::GRID_BORDER;
+        $gridHeight = $cellSize * $gridRows + self::GRID_ROW_SLACK;
+        $gridLeft = $layout->gridIsOnRight() ? $pageWidth - $gridWidth : 0.0;
+        $gridTop = $layout->gridIsAtBottom() ? $pageHeight - $gridHeight : $bodyTop;
 
         $pages = [];
         if ($headerHasOwnPage) {
@@ -116,6 +145,44 @@ class PdfWrapLayout
             'header' => $headerBlocks,
             'pages' => $pages,
         ];
+    }
+
+    /**
+     * Choose the grid and clue sizes: the largest grid whose page still holds
+     * every clue at a comfortable size, then at a small one. When even the
+     * smallest grid cannot share its page with all the clues, the grid takes
+     * `$overflowCellSize` and the clues continue on further pages.
+     *
+     * @param  Closure(float $cellSize, float $fontSize): list<list<array<string, mixed>>>  $attempt  Pages of filled regions for one combination.
+     * @return array{float, float, list<list<array<string, mixed>>>}
+     */
+    private function fit(float $largestCellSize, float $overflowCellSize, Closure $attempt): array
+    {
+        $cellSizes = [];
+        for ($scale = 1.0; $scale > 0.3; $scale -= 0.05) {
+            $cellSize = floor($largestCellSize * $scale * 100) / 100;
+            if ($cellSizes !== [] && $cellSize < self::MIN_CELL_SIZE) {
+                break;
+            }
+            $cellSizes[] = $cellSize;
+        }
+
+        foreach ([self::COMFORTABLE_FONT_SIZES, self::SMALL_FONT_SIZES] as $fontSizes) {
+            foreach ($cellSizes as $cellSize) {
+                foreach ($fontSizes as $fontSize) {
+                    $pages = $attempt($cellSize, $fontSize);
+                    if (count($pages) === 1) {
+                        return [$cellSize, $fontSize, $pages];
+                    }
+                }
+            }
+        }
+
+        $fontSize = self::COMFORTABLE_FONT_SIZES[array_key_last(self::COMFORTABLE_FONT_SIZES)];
+
+        $overflowCellSize = floor($overflowCellSize * 100) / 100;
+
+        return [$overflowCellSize, $fontSize, $attempt($overflowCellSize, $fontSize)];
     }
 
     /**
@@ -349,6 +416,7 @@ class PdfWrapLayout
     private function wrap(string $text, string $fontStyle, float $fontSize, float $width, float $firstLineIndent = 0.0): array
     {
         $lines = [];
+        $width -= self::LINE_SAFETY;
 
         foreach (preg_split('/\R/u', $text) ?: [''] as $paragraph) {
             $line = '';

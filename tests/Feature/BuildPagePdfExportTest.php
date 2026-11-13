@@ -1,8 +1,10 @@
 <?php
 
+use App\Enums\PdfLayout;
 use App\Models\Crossword;
 use App\Models\User;
 use App\Services\AnonymousUserManager;
+use App\Services\PdfExporter;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
@@ -60,10 +62,12 @@ test('cancelling the PDF export modal on the Build page resets its settings', fu
     Livewire::test('pages::crosswords.index')
         ->call('choosePdfExportFor', $puzzle->id)
         ->set('pdfOrientation', 'landscape')
+        ->set('pdfLayout', PdfLayout::GridTopRight->value)
         ->set('pdfNarrative', 'Some intro')
         ->call('cancelPdfExport')
         ->assertSet('showPdfExportModal', false)
         ->assertSet('pdfOrientation', 'portrait')
+        ->assertSet('pdfLayout', PdfLayout::Standard->value)
         ->assertSet('pdfNarrative', '');
 });
 
@@ -113,6 +117,29 @@ test('the PDF preview renders the unsaved modal settings without saving them', f
 
     expect($puzzle->fresh()->pdf_narrative)->toBe('Saved intro');
 });
+
+test('the PDF is rendered in the layout chosen in the export modal', function (string $chosen, PdfLayout $rendered) {
+    $user = User::factory()->create();
+    $puzzle = makePuzzle($user);
+
+    $this->actingAs($user);
+
+    $this->mock(PdfExporter::class)
+        ->shouldReceive('export')
+        ->once()
+        ->withArgs(fn (...$arguments): bool => in_array($rendered, $arguments, true))
+        ->andReturn('%PDF-stub');
+
+    Livewire::test('pages::crosswords.index')
+        ->call('choosePdfExportFor', $puzzle->id)
+        ->assertSet('pdfLayout', PdfLayout::Standard->value)
+        ->set('pdfLayout', $chosen)
+        ->call('pdfPreview')
+        ->assertReturned(base64_encode('%PDF-stub'));
+})->with([
+    'a wrap-around layout' => [PdfLayout::GridBottomLeft->value, PdfLayout::GridBottomLeft],
+    'an unknown layout falls back to the standard one' => ['sideways', PdfLayout::Standard],
+]);
 
 test('the PDF preview returns nothing when the export modal is not open', function () {
     $user = User::factory()->create();

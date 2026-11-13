@@ -113,10 +113,7 @@
                                 </div>
                             @elseif ($block['type'] !== 'space')
                                 <div class="lines {{ $block['type'] }}" style="line-height: {{ $block['lineHeight'] }}pt;">
-                                    @foreach ($block['lines'] as $line)
-                                        @if ($line === '')&nbsp;@else{{ $line }}@endif
-                                        @unless ($loop->last)<br>@endunless
-                                    @endforeach
+                                    @foreach ($block['lines'] as $line)@if ($line === '')&nbsp;@else{{ $line }}@endif @unless ($loop->last)<br>@endunless @endforeach
                                 </div>
                             @endif
                         </div>
@@ -136,13 +133,8 @@
                         @if ($item['type'] === 'heading')
                             <div class="lines clues-heading" style="margin-top: {{ $item['marginTop'] }}pt;">{{ $item['lines'][0] }}</div>
                         @else
-                            <div class="lines clue-item">
-                                <span class="clue-number">{{ $item['number'] }}</span>
-                                @foreach ($item['lines'] as $line)
-                                    {{ $line }}
-                                    @unless ($loop->last)<br>@endunless
-                                @endforeach
-                            </div>
+                            {{-- Kept on one line: stray whitespace would add width to lines the plan measured exactly. --}}
+                            <div class="lines clue-item"><span class="clue-number">{{ $item['number'] }}&nbsp;</span>@foreach ($item['lines'] as $line){{ $line }}@unless ($loop->last)<br>@endunless @endforeach</div>
                         @endif
                     @endforeach
                 </div>
