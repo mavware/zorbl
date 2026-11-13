@@ -20,7 +20,7 @@
 @endphp
 <flux:modal
     wire:model="showPdfExportModal"
-    class="w-full md:in-data-[wide=false]:max-w-lg md:in-data-[wide=true]:max-w-5xl"
+    class="w-full md:in-data-[wide=false]:max-w-2xl md:in-data-[wide=true]:max-w-5xl"
     x-data
     x-bind:data-wide="($wire.downloadFormat === 'pdf' && {{ $canDownloadPdf ? 'true' : 'false' }}).toString()"
     data-test="download-modal"
@@ -31,12 +31,26 @@
             <flux:text class="mt-2">{{ __('Choose a file format. A PDF can be laid out for printing, with an image and narrative text of your own.') }}</flux:text>
         </div>
 
+        {{-- One selectable button per format, in a row across the top. Selection is tracked by
+             Alpine straight off $wire, like the PDF layout picker below. --}}
         @if (count($downloadFormatOptions) > 1)
-            <flux:radio.group wire:model="downloadFormat" label="{{ __('Format') }}" data-test="download-format">
+            <div class="flex flex-wrap gap-2" role="radiogroup" aria-label="{{ __('Format') }}" data-test="download-format">
                 @foreach ($downloadFormatOptions as $format => $option)
-                    <flux:radio value="{{ $format }}" label="{{ $option['label'] }}" description="{{ $option['description'] }}" />
+                    <button
+                        type="button"
+                        role="radio"
+                        x-data
+                        x-on:click="$wire.downloadFormat = '{{ $format }}'"
+                        x-bind:aria-checked="($wire.downloadFormat === '{{ $format }}').toString()"
+                        x-bind:class="$wire.downloadFormat === '{{ $format }}'
+                            ? 'border-blue-500 bg-blue-50 text-blue-900 ring-1 ring-blue-500 dark:border-blue-400 dark:bg-blue-950/40 dark:text-blue-100 dark:ring-blue-400'
+                            : 'border-zinc-300 text-zinc-700 hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:bg-zinc-800'"
+                        class="flex-1 rounded-lg border px-3 py-2 text-center text-sm font-medium whitespace-nowrap transition-colors"
+                        title="{{ $option['description'] }}"
+                        data-format="{{ $format }}"
+                    >{{ $option['label'] }}</button>
                 @endforeach
-            </flux:radio.group>
+            </div>
         @endif
 
         @if ($canDownloadPdf)

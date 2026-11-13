@@ -44,11 +44,11 @@ it('shows the PDF options only while PDF is the chosen format, and names the for
         ->assertVisible('[data-test="download-pdf-options"]')
         ->assertSeeIn('[data-test="download-confirm"]', 'Download PDF');
 
-    $page->click('[data-test="download-format"] [value="puz"]')
+    $page->click('[data-test="download-format"] [data-format="puz"]')
         ->assertScript("getComputedStyle(document.querySelector('[data-test=\"download-pdf-options\"]')).display", 'none')
         ->assertScript("document.querySelector('[data-test=\"download-confirm\"]').innerText.trim()", 'Download .puz');
 
-    $page->click('[data-test="download-format"] [value="pdf"]')
+    $page->click('[data-test="download-format"] [data-format="pdf"]')
         ->assertVisible('[data-test="download-pdf-options"]')
         ->assertNoJavaScriptErrors();
 });
