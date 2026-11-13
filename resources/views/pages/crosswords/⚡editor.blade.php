@@ -5,14 +5,12 @@ use App\Enums\PuzzleType;
 use App\Models\ClueEntry;
 use App\Models\Crossword;
 use App\Models\Tag;
-use App\Notifications\NewPuzzlePublished;
 use App\Services\ClueHarvester;
 use App\Services\ClueQualityChecker;
 use App\Livewire\Concerns\ExportsCrossword;
-use Illuminate\Support\Facades\Notification;
 use CrosswordBuilder\CrosswordIO\GridNumberer;
 use App\Services\WordSuggester;
-use App\Services\DifficultyRater;
+use App\Services\CrosswordPublisher;
 use App\Services\GridFiller;
 use App\Services\AiFillPicker;
 use App\Services\AiClueGenerator;
@@ -562,31 +560,16 @@ class extends Component {
             $this->authorize('publish', $crossword);
         }
 
-        $crossword->update(['is_published' => $this->isPublished]);
-
-        $harvester = app(ClueHarvester::class);
+        $publisher = app(CrosswordPublisher::class);
 
         if ($this->isPublished) {
-            $harvester->harvest($crossword);
-
-            $rater = app(DifficultyRater::class);
-            $rating = $rater->rate($crossword);
-            $crossword->update([
-                'difficulty_score' => $rating['score'],
-                'difficulty_label' => $rating['label'],
-            ]);
-
-            $user = Auth::user();
-            $followers = $user->followers;
-            if ($followers->isNotEmpty()) {
-                Notification::send($followers, new NewPuzzlePublished($crossword, $user));
-            }
+            $publisher->publish($crossword);
 
             // A guest's first publish is the one moment they have something to
             // keep: hand them the link to share, then the account that saves it.
-            $this->showGuestShareModal = $user->isAnonymous();
+            $this->showGuestShareModal = Auth::user()->isAnonymous();
         } else {
-            $harvester->purge($crossword);
+            $publisher->unpublish($crossword);
         }
 
         $this->showPublishWarning = false;
