@@ -2,19 +2,20 @@
 
 namespace App\Services;
 
+use App\Enums\PdfLayout;
 use App\Models\Crossword;
 use Barryvdh\DomPDF\Facade\Pdf;
 use CrosswordBuilder\CrosswordIO\GridNumberer;
 
 class PdfExporter
 {
-    public function __construct(private readonly GridNumberer $numberer) {}
+    public function __construct(private readonly GridNumberer $numberer, private readonly PdfWrapLayout $wrapLayout) {}
 
     /**
      * @param  'portrait'|'landscape'  $orientation
      * @return string The raw PDF binary content.
      */
-    public function export(Crossword $crossword, bool $includeSolution = true, string $orientation = 'portrait', ?string $narrative = null, ?string $imagePath = null): string
+    public function export(Crossword $crossword, bool $includeSolution = true, string $orientation = 'portrait', ?string $narrative = null, ?string $imagePath = null, PdfLayout $layout = PdfLayout::Standard): string
     {
         $result = $this->numberer->number(
             $crossword->grid,
@@ -32,12 +33,34 @@ class PdfExporter
         $maxGridHeight = $pageHeight - 2 * $margin - 1.5;
         $cellSize = round(min(0.33, $maxGridWidth / $crossword->width, $maxGridHeight / $crossword->height), 3);
 
+        $cluesAcross = $crossword->clues_across ?? [];
+        $cluesDown = $crossword->clues_down ?? [];
+
+        $plan = null;
+        if ($layout->wrapsCluesAroundGrid()) {
+            $plan = $this->wrapLayout->plan(
+                $layout,
+                ($pageWidth - 2 * $margin) * 72,
+                ($pageHeight - 2 * $margin) * 72,
+                $crossword->width,
+                $crossword->height,
+                [
+                    'title' => $crossword->displayTitle(),
+                    'author' => $crossword->author,
+                    'copyright' => $crossword->copyright,
+                    'notes' => $crossword->notes,
+                    'narrative' => $narrative,
+                    'imagePath' => $imagePath,
+                ],
+                $cluesAcross,
+                $cluesDown,
+            );
+            $cellSize = round($plan['cellSize'] / 72, 4);
+        }
+
         $numberFontSize = round(max(4, $cellSize * 18), 1);
         $letterFontSize = round(max(6, $cellSize * 28), 1);
         $numberHeight = round($cellSize * 0.35, 3);
-
-        $cluesAcross = $crossword->clues_across ?? [];
-        $cluesDown = $crossword->clues_down ?? [];
 
         $forceCluePageBreak = $this->shouldBreakBeforeClues(
             $crossword->height,
@@ -53,7 +76,7 @@ class PdfExporter
             $imageDataUri = 'data:'.$mime.';base64,'.base64_encode(file_get_contents($imagePath));
         }
 
-        $pdf = Pdf::loadView('exports.crossword-pdf', [
+        $pdf = Pdf::loadView($plan ? 'exports.crossword-pdf-wrap' : 'exports.crossword-pdf', [
             'title' => $crossword->displayTitle(),
             'author' => $crossword->author,
             'copyright' => $crossword->copyright,
@@ -73,6 +96,7 @@ class PdfExporter
             'numberHeight' => $numberHeight,
             'forceCluePageBreak' => $forceCluePageBreak,
             'orientation' => $orientation,
+            'plan' => $plan,
         ]);
 
         $pdf->setPaper('letter', $orientation);

@@ -36,7 +36,7 @@ export function pdfPreview() {
                 }
             });
 
-            for (const setting of ['pdfOrientation', 'pdfImage', 'pdfRemoveImage', 'pdfIncludeAnswerKey']) {
+            for (const setting of ['pdfOrientation', 'pdfLayout', 'pdfImage', 'pdfRemoveImage', 'pdfIncludeAnswerKey']) {
                 this.$wire.$watch(setting, () => this.schedule(SETTING_PREVIEW_MS));
             }
 

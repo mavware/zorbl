@@ -5,7 +5,7 @@
     <div class="space-y-6">
         <div>
             <flux:heading size="lg">{{ __('PDF Export Settings') }}</flux:heading>
-            <flux:text class="mt-2">{{ __('Configure the page orientation, add an image, and optional narrative text for your PDF export.') }}</flux:text>
+            <flux:text class="mt-2">{{ __('Configure the page orientation and layout, add an image, and optional narrative text for your PDF export.') }}</flux:text>
         </div>
 
         <div class="grid gap-6 md:grid-cols-2">
@@ -14,6 +14,12 @@
                     <flux:radio value="portrait" label="{{ __('Portrait') }}" description="{{ __('Standard vertical layout (8.5 × 11 in)') }}" />
                     <flux:radio value="landscape" label="{{ __('Landscape') }}" description="{{ __('Horizontal layout (11 × 8.5 in) — better for wide puzzles') }}" />
                 </flux:radio.group>
+
+                <flux:select wire:model="pdfLayout" label="{{ __('Layout') }}">
+                    @foreach (\App\Enums\PdfLayout::cases() as $layout)
+                        <flux:select.option value="{{ $layout->value }}">{{ __($layout->label()) }}</flux:select.option>
+                    @endforeach
+                </flux:select>
 
                 <div>
                     <flux:input type="file" wire:model="pdfImage" label="{{ __('Header Image') }}" accept="image/png,image/jpeg,image/gif,image/webp" />

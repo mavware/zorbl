@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Concerns;
 
+use App\Enums\PdfLayout;
 use App\Models\Crossword;
 use App\Services\PdfExporter;
 use CrosswordBuilder\CrosswordIO\Exceptions\ExportValidationException;
@@ -27,6 +28,9 @@ trait ExportsCrossword
     public bool $showPdfExportModal = false;
 
     public string $pdfOrientation = 'portrait';
+
+    /** A PdfLayout value: where the grid sits and how the clues are arranged around it. */
+    public string $pdfLayout = PdfLayout::Standard->value;
 
     public string $pdfNarrative = '';
 
@@ -195,6 +199,7 @@ trait ExportsCrossword
 
         $crossword = $this->getExportableCrossword();
         $this->pdfOrientation = 'portrait';
+        $this->pdfLayout = PdfLayout::Standard->value;
         $this->pdfNarrative = $crossword->pdf_narrative ?? '';
         $this->pdfImage = null;
         $this->pdfRemoveImage = false;
@@ -238,6 +243,7 @@ trait ExportsCrossword
     {
         $this->showPdfExportModal = false;
         $this->pdfOrientation = 'portrait';
+        $this->pdfLayout = PdfLayout::Standard->value;
         $this->pdfNarrative = '';
         $this->pdfImage = null;
         $this->pdfRemoveImage = false;
@@ -304,6 +310,7 @@ trait ExportsCrossword
             orientation: $orientation,
             narrative: $narrative ?: null,
             imagePath: $imagePath,
+            layout: PdfLayout::tryFrom($this->pdfLayout) ?? PdfLayout::Standard,
         );
     }
 
