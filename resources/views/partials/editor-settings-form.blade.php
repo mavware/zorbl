@@ -438,32 +438,19 @@
         @if ($settingsSurface === 'pane')
             @include('partials.editor-suggestions-pane')
 
-            {{-- Export and Save sit right under whichever settings panel is
-                 showing, so they are always in reach without scrolling past
+            {{-- Save sits right under whichever settings panel is
+                 showing, so it is always in reach without scrolling past
                  the whole form. Every field except the grid dimensions
                  already saves itself (the component's updated() hook: text
                  fields a short debounce after typing, the rest on change);
                  Save remains as an explicit confirmation. The Ideas
-                 tab has nothing to save or export, so the row hides there.
+                 tab has nothing to save, so the row hides there.
                  The flyout has its own sticky Save / Cancel footer. --}}
             <div
                 x-show="settingsTab !== 'suggestions'"
-                class="border-line mt-6 flex shrink-0 items-center justify-between gap-2 border-t pt-4"
+                class="border-line mt-6 flex shrink-0 items-center justify-end gap-2 border-t pt-4"
                 data-test="settings-pane-actions"
             >
-                {{-- Export --}}
-                <flux:dropdown position="top" align="start">
-                    <flux:button variant="ghost" size="sm" icon="arrow-down-tray">
-                        {{ __('Export') }}
-                    </flux:button>
-                    <flux:menu>
-                        <flux:menu.item wire:click="attemptExport('ipuz')">{{ __('.ipuz') }}</flux:menu.item>
-                        <flux:menu.item wire:click="attemptExport('puz')">{{ __('.puz (Across Lite)') }}</flux:menu.item>
-                        <flux:menu.item wire:click="attemptExport('jpz')">{{ __('.jpz (Crossword Compiler)') }}</flux:menu.item>
-                        <flux:menu.item wire:click="attemptExport('pdf')">{{ __('.pdf (Print-Ready)') }}</flux:menu.item>
-                    </flux:menu>
-                </flux:dropdown>
-
                 <flux:button variant="primary" size="sm" wire:click="saveMetadata">{{ __('Save') }}</flux:button>
             </div>
         @endif

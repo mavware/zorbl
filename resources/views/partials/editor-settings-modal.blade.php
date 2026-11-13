@@ -1,8 +1,7 @@
 {{-- Mobile settings modal. Below `lg` the toolbar cog opens this full-height
      flyout on the right, so the grid stays visible while metadata is edited.
      It holds the same shared form as the desktop sidebar
-     (editor-settings-pane), with Export in the header and Save/Cancel pinned
-     to the bottom. Hidden from `lg` up, where the sidebar takes over. --}}
+     (editor-settings-pane), with Save/Cancel pinned to the bottom. Hidden from `lg` up, where the sidebar takes over. --}}
 <flux:modal
     wire:model="showSettingsModal"
     variant="flyout"
@@ -10,21 +9,8 @@
     class="w-full max-w-xl md:min-w-[28rem]! flex flex-col pb-0! lg:hidden"
     data-test="settings-flyout"
 >
-    <div class="mb-4 flex shrink-0 items-center justify-between gap-4 pe-8">
+    <div class="mb-4 shrink-0 pe-8">
         <flux:heading size="lg">{{ __('Puzzle Settings') }}</flux:heading>
-
-        {{-- Export --}}
-        <flux:dropdown position="bottom" align="end">
-            <flux:button variant="ghost" size="sm" icon="arrow-down-tray">
-                {{ __('Export') }}
-            </flux:button>
-            <flux:menu>
-                <flux:menu.item wire:click="attemptExport('ipuz')">{{ __('.ipuz') }}</flux:menu.item>
-                <flux:menu.item wire:click="attemptExport('puz')">{{ __('.puz (Across Lite)') }}</flux:menu.item>
-                <flux:menu.item wire:click="attemptExport('jpz')">{{ __('.jpz (Crossword Compiler)') }}</flux:menu.item>
-                <flux:menu.item wire:click="attemptExport('pdf')">{{ __('.pdf (Print-Ready)') }}</flux:menu.item>
-            </flux:menu>
-        </flux:dropdown>
     </div>
 
     @include('partials.editor-settings-form', ['settingsSurface' => 'modal'])

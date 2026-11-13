@@ -3,7 +3,7 @@
      row and the workspace row, so it runs from the top of the page content
      to its foot beside whichever puzzle layout is active. It holds the
      shared settings form (editor-settings-form) with no heading of its own:
-     the tab bar sits at the top, and Export and Save follow the active
+     the tab bar sits at the top, and Save follows the active
      tab's fields inside the form rather than pinning to the pane's foot.
      Rendered from `lg` up only; below that the toolbar cog opens the modal
      (editor-settings-modal) instead.

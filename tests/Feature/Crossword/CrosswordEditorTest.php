@@ -433,28 +433,34 @@ test('settings open in a full-height flyout panel', function () {
         ->and($dialog[0])->toContain('min-h-dvh');
 });
 
-test('settings modal shows the export menu at the top', function () {
+test('the download menu sits beside the publish button, not in the settings', function () {
     $user = User::factory()->create();
     $crossword = Crossword::factory()->for($user)->create();
 
     $this->actingAs($user);
 
     $html = Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
-        ->assertSeeInOrder(['Puzzle Settings', 'Export', '.ipuz', '.puz (Across Lite)', '.jpz (Crossword Compiler)', '.pdf (Print-Ready)', 'Title'])
+        ->assertSeeInOrder(['Download', '.ipuz', '.puz (Across Lite)', '.jpz (Crossword Compiler)', '.pdf (Print-Ready)', 'Publish'])
         ->html();
 
-    // Once in the sidebar footer, once in the flyout header.
-    expect(substr_count($html, "attemptExport('ipuz')"))->toBe(2);
-    expect(strpos(editorSettingsFlyoutHtml($html), "attemptExport('ipuz')"))
-        ->toBeLessThan(strpos(editorSettingsFlyoutHtml($html), 'wire:model.live.debounce.750ms="title"'));
+    // Once in the toolbar, once beside the mobile clue tabs: each directly before its Publish button.
+    expect(substr_count($html, "attemptExport('ipuz')"))->toBe(2)
+        ->and(substr_count($html, 'data-test="editor-download-button"'))->toBe(1)
+        ->and(substr_count($html, 'data-test="editor-download-button-mobile"'))->toBe(1)
+        ->and(strpos($html, 'data-test="editor-toolbar-publish"'))->toBeLessThan(strpos($html, 'data-test="editor-download-button"'))
+        ->and(strpos($html, 'data-test="editor-download-button"'))->toBeLessThan(strpos($html, 'data-test="editor-publish-button"'))
+        ->and(strpos($html, 'data-test="editor-download-button-mobile"'))->toBeLessThan(strpos($html, 'data-test="editor-publish-button-mobile"'));
 
-    // The sidebar has no heading; Export and Save follow the panels inside
-    // the form's scrolling body, after the Suggestions panel, Export first.
+    // Neither settings surface offers the files any more.
+    expect(editorSettingsFlyoutHtml($html))->not->toContain('attemptExport');
+
+    // The sidebar has no heading; Save follows the panels inside the
+    // form's scrolling body, after the Suggestions panel.
     $pane = editorSettingsPaneHtml($html);
     expect($pane)->not->toContain('Puzzle Settings')
-        ->and(strpos($pane, 'wire:model.live.debounce.750ms="title"'))->toBeLessThan(strpos($pane, "attemptExport('ipuz')"))
+        ->not->toContain('attemptExport')
         ->and(strpos($pane, 'data-suggestions-pane'))->toBeLessThan(strpos($pane, 'data-test="settings-pane-actions"'))
-        ->and(strpos($pane, "attemptExport('ipuz')"))->toBeLessThan(strpos($pane, 'wire:click="saveMetadata"'))
+        ->and(strpos($pane, 'data-test="settings-pane-actions"'))->toBeLessThan(strpos($pane, 'wire:click="saveMetadata"'))
         ->and(substr_count($pane, 'data-test="settings-pane-actions"'))->toBe(1);
 
     // The panels' scroll box bleeds past the content and pads back by the
@@ -1300,12 +1306,11 @@ test('settings render in a permanent flush sidebar column down the left of the e
         ->not->toContain('data-test="settings-pane-close"')
         ->not->toContain('settingsPaneOpen');
 
-    // The same export menu, tabs and Save as the flyout sit inside, plus a
+    // The same tabs and Save as the flyout sit inside, plus a
     // fourth Suggestions tab whose panel holds the suggestions pane (its
     // own Words / Clue library tabs make six tabs in all).
     $pane = editorSettingsPaneHtml($html);
-    expect($pane)->toContain("attemptExport('ipuz')")
-        ->toContain('id="pane-settings-panel-details"')
+    expect($pane)->toContain('id="pane-settings-panel-details"')
         ->toContain('id="pane-settings-panel-grid"')
         ->toContain('id="pane-settings-panel-theme"')
         ->toContain('id="pane-settings-tab-suggestions"')

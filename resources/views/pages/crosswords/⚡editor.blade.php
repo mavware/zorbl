@@ -1288,11 +1288,13 @@ class extends Component {
                  progress meters. Desktop only whenever the mobile clue tabs
                  render, since they carry their own copy; an unlocked
                  freestyle grid has no tabs yet, so the toolbar button stays
-                 on every width. --}}
+                 on every width. The Download menu (editor-download-button)
+                 sits directly before it and follows it to the mobile tabs. --}}
             @php
                 $mobileTabsRender = ! ($puzzleType === PuzzleType::Freestyle && ! $freestyleLocked);
             @endphp
             <div class="{{ $mobileTabsRender ? 'hidden lg:contents' : 'contents' }}" data-test="editor-toolbar-publish">
+                @include('partials.editor-download-button', ['testId' => 'editor-download-button', 'iconOnly' => false])
                 @include('partials.editor-publish-button', ['testId' => 'editor-publish-button', 'withRing' => true])
             </div>
         </div>

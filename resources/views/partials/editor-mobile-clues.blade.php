@@ -19,7 +19,8 @@
                     class="border-b-2 px-4 py-2 text-sm font-medium"
                 >{{ __('Down') }}</button>
 
-                <div class="ml-auto pb-1.5 pl-2">
+                <div class="ml-auto flex items-center gap-2 pb-1.5 pl-2">
+                    @include('partials.editor-download-button', ['testId' => 'editor-download-button-mobile', 'iconOnly' => true])
                     @include('partials.editor-publish-button', ['testId' => 'editor-publish-button-mobile', 'withRing' => true])
                 </div>
             </div>
