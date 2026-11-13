@@ -348,7 +348,8 @@ new #[Title('Solve Crossword')] class extends Component {
         $this->crosswordId = $crossword->id;
         $this->attemptId = $attempt->id;
         $this->title = $crossword->displayTitle();
-        $this->authorName = $crossword->user->name ?? '';
+        // A puzzle whose constructor name was left empty carries no byline.
+        $this->authorName = filled($crossword->author) ? ($crossword->user->name ?? '') : '';
         $this->authorIsSupporter = $crossword->user?->isSupporter() ?? false;
         $this->width = $crossword->width;
         $this->height = $crossword->height;

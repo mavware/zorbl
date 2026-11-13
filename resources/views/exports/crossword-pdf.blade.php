@@ -123,10 +123,10 @@
     {{-- Page 1: Blank numbered grid --}}
     <div class="header">
         <p class="title">{{ $title }}</p>
-        @if ($author)
+        @if (filled($author))
             <p class="meta">By {{ $author }}</p>
         @endif
-        @if ($copyright)
+        @if (filled($copyright))
             {{-- The editor's default copyright line already starts with the symbol; typed or imported ones may not. --}}
             <p class="meta">@unless (preg_match('/^\s*(©|\(c\)|copyright\b)/iu', $copyright))&copy; @endunless{{ trim($copyright) }}</p>
         @endif

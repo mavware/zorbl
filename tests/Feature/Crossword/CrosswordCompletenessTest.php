@@ -44,11 +44,24 @@ test('completeness is 100% even without a title', function () {
     expect($crossword->completeness()['percentage'])->toBe(100);
 });
 
-test('completeness detects missing author', function () {
-    $crossword = Crossword::factory()->create(['author' => null]);
+test('completeness does not require a constructor name or copyright line', function (?string $empty) {
+    $crossword = Crossword::factory()->create([
+        'author' => $empty,
+        'copyright' => $empty,
+        'grid' => [[1]],
+        'solution' => [['A']],
+        'clues_across' => [['number' => 1, 'clue' => 'First letter']],
+        'clues_down' => [['number' => 1, 'clue' => 'Top grade']],
+    ]);
 
-    expect($crossword->completeness()['checks']['author'])->toBeFalse();
-});
+    $result = $crossword->completeness();
+
+    expect($result['percentage'])->toBe(100)
+        ->and($result['checks'])->not->toHaveKey('author');
+})->with([
+    'never set' => [null],
+    'cleared' => [''],
+]);
 
 test('completeness detects unfilled cells', function () {
     $crossword = Crossword::factory()->create([
@@ -103,11 +116,10 @@ test('completeness percentage is calculated correctly', function () {
 
     $result = $crossword->completeness();
 
-    expect($result['checks']['author'])->toBeTrue()
-        ->and($result['checks']['fill'])->toBeTrue()
+    expect($result['checks']['fill'])->toBeTrue()
         ->and($result['checks']['clues_across'])->toBeFalse()
         ->and($result['checks']['clues_down'])->toBeFalse()
-        ->and($result['percentage'])->toBe(50);
+        ->and($result['percentage'])->toBe(33);
 });
 
 test('publish button shows warning when puzzle is incomplete', function () {
@@ -268,7 +280,7 @@ test('publish warning details only cover the checks that failed', function () {
 
     Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
         ->call('attemptPublish')
-        ->assertSet('incompleteChecks', ['author', 'clues_down'])
+        ->assertSet('incompleteChecks', ['clues_down'])
         ->assertSet('incompleteDetails', [
             'answers' => [],
             'clues' => [
@@ -279,10 +291,11 @@ test('publish warning details only cover the checks that failed', function () {
         ->assertDontSee('Answers with missing letters');
 });
 
-test('publish warning hides the details section when only the constructor name is missing', function () {
+test('a puzzle missing only its constructor name and copyright publishes without a warning', function () {
     $user = User::factory()->create();
     $crossword = Crossword::factory()->for($user)->create([
         'author' => '',
+        'copyright' => '',
         'width' => 3,
         'height' => 3,
         'grid' => [[1, 2, 3], [4, 0, 0], [5, 0, 0]],
@@ -301,13 +314,10 @@ test('publish warning hides the details section when only the constructor name i
 
     $this->actingAs($user);
 
-    $html = Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
+    Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
         ->call('attemptPublish')
-        ->assertSet('incompleteChecks', ['author'])
-        ->assertSet('incompleteDetails', ['answers' => [], 'clues' => []])
-        ->html();
-
-    expect($html)->not->toContain('data-test="publish-warning-details"');
+        ->assertSet('showPublishWarning', false)
+        ->assertSet('isPublished', true);
 });
 
 test('publishing anyway clears the incomplete details', function () {

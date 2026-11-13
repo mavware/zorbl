@@ -1330,9 +1330,6 @@ class extends Component {
                                   clip-rule="evenodd"/>
                         </svg>
                         @switch($check)
-                            @case('author')
-                                {{ __('Constructor name') }}
-                                @break
                             @case('fill')
                                 {{ __('Not all cells have letters') }}
                                 @break

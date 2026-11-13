@@ -249,12 +249,13 @@ class Crossword extends Model
     /**
      * Calculate puzzle completeness as a breakdown of individual checks.
      *
-     * @return array{percentage: int, checks: array{author: bool, fill: bool, clues_across: bool, clues_down: bool}}
+     * The constructor name and copyright line are optional: a puzzle is
+     * complete without them, and the solver and PDF then leave those lines out.
+     *
+     * @return array{percentage: int, checks: array{fill: bool, clues_across: bool, clues_down: bool}}
      */
     public function completeness(): array
     {
-        $hasAuthor = filled($this->author);
-
         // Check all non-block, non-void cells have letters
         $totalCells = 0;
         $filledCells = 0;
@@ -287,7 +288,6 @@ class Crossword extends Model
         $hasAllDown = count($downClues) > 0 && collect($downClues)->every(fn ($c) => filled($c['clue'] ?? ''));
 
         $checks = [
-            'author' => $hasAuthor,
             'fill' => $hasFill,
             'clues_across' => $hasAllAcross,
             'clues_down' => $hasAllDown,
