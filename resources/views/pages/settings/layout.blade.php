@@ -7,7 +7,6 @@
                 ['route' => 'notifications.edit', 'match' => 'notifications.*', 'label' => __('Notifications')],
                 ['route' => 'security.edit', 'match' => 'security.*', 'label' => __('Security')],
                 ['route' => 'webhooks.index', 'match' => 'webhooks.*', 'label' => __('Webhooks')],
-                ['route' => 'appearance.edit', 'match' => 'appearance.*', 'label' => __('Appearance')],
             ] as $item)
                 @php($current = request()->routeIs($item['match']))
                 <li>

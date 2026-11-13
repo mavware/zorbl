@@ -18,7 +18,7 @@
         @stack('head_meta')
         @include('partials.google-tag')
         @vite(['resources/css/app.css', 'resources/js/app.js'])
-        @fluxAppearance
+        @include('partials.forced-dark-appearance')
     </head>
     <body class="bg-page min-h-screen antialiased">
         @include('partials.impersonation-banner')
