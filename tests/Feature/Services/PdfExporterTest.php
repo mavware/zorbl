@@ -1010,3 +1010,38 @@ it('exports each wrap-around layout as a single puzzle page', function (PdfLayou
     PdfLayout::GridBottomLeft,
     PdfLayout::GridBottomRight,
 ]);
+
+it('draws the meta answer prompt and a blank per letter under the grid', function (PdfLayout $layout, string $view) {
+    $crossword = Crossword::factory()->withMetaAnswer('What is the hidden theme?', ["ROCK 'N' ROLL"])->make();
+
+    $viewData = null;
+    view()->composer($view, function ($view) use (&$viewData) {
+        $viewData = $view->getData();
+    });
+
+    $pdf = app(PdfExporter::class)->export($crossword, layout: $layout);
+
+    $metaAnswer = $viewData['metaAnswer'] ?? $viewData['plan']['pages'][0]['metaAnswer'];
+    $cells = collect($metaAnswer['lines'] ?? $metaAnswer['blankLines'])->flatMap(fn (array $line): array => $line['cells']);
+
+    expect($pdf)->toStartWith('%PDF')
+        ->and($cells->where('type', 'slot'))->toHaveCount(9)
+        ->and($cells->where('type', 'literal')->pluck('char')->all())->toBe(["'", "'"])
+        ->and($metaAnswer['prompt'] ?? implode(' ', $metaAnswer['promptLines']))->toBe('What is the hidden theme?');
+})->with([
+    'standard layout' => [PdfLayout::Standard, 'exports.crossword-pdf'],
+    'wrap-around layout' => [PdfLayout::GridTopLeft, 'exports.crossword-pdf-wrap'],
+]);
+
+it('leaves the meta answer out of the PDF for a puzzle without one', function () {
+    $crossword = Crossword::factory()->make();
+
+    $viewData = null;
+    view()->composer('exports.crossword-pdf', function ($view) use (&$viewData) {
+        $viewData = $view->getData();
+    });
+
+    app(PdfExporter::class)->export($crossword);
+
+    expect($viewData['metaAnswer'])->toBeNull();
+});

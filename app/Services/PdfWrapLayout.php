@@ -37,6 +37,16 @@ class PdfWrapLayout
     /** Measured height dompdf adds to the grid table beyond its rows. */
     private const float GRID_ROW_SLACK = 4.0;
 
+    /** Space between the grid and the meta answer beneath it. */
+    private const float META_ANSWER_GAP = 14.0;
+
+    private const float META_PROMPT_FONT_SIZE = 9.0;
+
+    private const float META_PROMPT_LINE_HEIGHT = 12.0;
+
+    /** Space between the meta answer's prompt and its blanks. */
+    private const float META_PROMPT_SPACING = 6.0;
+
     /** Clue sizes, largest first, that the grid is shrunk to make room for. */
     private const array COMFORTABLE_FONT_SIZES = [10.0, 9.5, 9.0, 8.5, 8.0];
 
@@ -46,12 +56,13 @@ class PdfWrapLayout
     /**
      * @param  (Closure(string $text, string $fontStyle, float $fontSize): float)|null  $measureText  Width of a run of text; defaults to dompdf's Helvetica metrics.
      */
-    public function __construct(private ?Closure $measureText = null) {}
+    public function __construct(private ?Closure $measureText = null, private PdfMetaAnswerBlanks $metaAnswerBlanks = new PdfMetaAnswerBlanks) {}
 
     /**
      * @param  array{title: string, author?: ?string, copyright?: ?string, notes?: ?string, narrative?: ?string, imagePath?: ?string}  $header
      * @param  list<array{number: int|string, clue?: ?string}>  $cluesAcross
      * @param  list<array{number: int|string, clue?: ?string}>  $cluesDown
+     * @param  array{pattern: string, prompt?: ?string}|null  $metaAnswer  The blanks (and optional prompt) drawn under the grid.
      * @return array{
      *     pageWidth: float,
      *     cellSize: float,
@@ -65,6 +76,7 @@ class PdfWrapLayout
      *     pages: list<array{
      *         showsHeader: bool,
      *         grid: ?array{left: float, top: float},
+     *         metaAnswer: ?array{left: float, top: float, width: float, promptLines: list<string>, promptLineHeight: float, promptSpacing: float, blankLines: list<array{width: float, cells: list<array<string, mixed>>}>},
      *         regions: list<array{left: float, top: float, width: float, items: list<array{type: string, lines: list<string>, number?: string, marginTop?: float}>}>
      *     }>
      * }
@@ -78,6 +90,7 @@ class PdfWrapLayout
         array $header,
         array $cluesAcross,
         array $cluesDown,
+        ?array $metaAnswer = null,
     ): array {
         $headerBlocks = $this->headerBlocks($header, $pageWidth);
         $headerHeight = array_sum(array_column($headerBlocks, 'height'));
@@ -90,17 +103,21 @@ class PdfWrapLayout
         $columnWidth = ($pageWidth - 2 * self::COLUMN_GAP) / 3;
         $gridBoxWidth = 2 * $columnWidth + self::COLUMN_GAP;
 
+        // The meta answer sits under the grid and is part of the box the clues flow around.
+        $metaBlock = $this->metaAnswerBlock($metaAnswer, $gridBoxWidth);
+        $metaHeight = $metaBlock['height'] ?? 0.0;
+
         $largestCellSize = min(
             self::MAX_CELL_SIZE,
             ($gridBoxWidth - self::GRID_BORDER) / $gridColumns - self::GRID_BORDER,
-            ($bodyHeight - self::GRID_ROW_SLACK) / $gridRows,
+            ($bodyHeight - self::GRID_ROW_SLACK - $metaHeight) / $gridRows,
         );
         $fullPageRegions = $this->fullHeightRegions($columnWidth, $pageHeight);
 
         $itemsBySize = [];
-        $attempt = function (float $cellSize, float $fontSize) use (&$itemsBySize, $layout, $columnWidth, $bodyTop, $bodyHeight, $gridRows, $cluesAcross, $cluesDown, $fullPageRegions): array {
+        $attempt = function (float $cellSize, float $fontSize) use (&$itemsBySize, $layout, $columnWidth, $bodyTop, $bodyHeight, $gridRows, $cluesAcross, $cluesDown, $fullPageRegions, $metaHeight): array {
             $itemsBySize[(string) $fontSize] ??= $this->clueItems($cluesAcross, $cluesDown, $fontSize, $columnWidth);
-            $gridHeight = $cellSize * $gridRows + self::GRID_ROW_SLACK;
+            $gridHeight = $cellSize * $gridRows + self::GRID_ROW_SLACK + $metaHeight;
 
             return $this->distribute(
                 $itemsBySize[(string) $fontSize],
@@ -119,16 +136,35 @@ class PdfWrapLayout
         $gridWidth = $gridColumns * ($cellSize + self::GRID_BORDER) + self::GRID_BORDER;
         $gridHeight = $cellSize * $gridRows + self::GRID_ROW_SLACK;
         $gridLeft = $layout->gridIsOnRight() ? $pageWidth - $gridWidth : 0.0;
-        $gridTop = $layout->gridIsAtBottom() ? $pageHeight - $gridHeight : $bodyTop;
+        $gridTop = $layout->gridIsAtBottom() ? $pageHeight - $gridHeight - $metaHeight : $bodyTop;
+
+        $placedMetaAnswer = null;
+        if ($metaBlock !== null) {
+            // Centred under the grid, but kept inside the two columns the grid's box spans.
+            $metaWidth = max($gridWidth, $metaBlock['contentWidth']);
+            $boxLeft = $layout->gridIsOnRight() ? $pageWidth - $gridBoxWidth : 0.0;
+            $metaLeft = max($boxLeft, min($gridLeft + ($gridWidth - $metaWidth) / 2, $boxLeft + $gridBoxWidth - $metaWidth));
+
+            $placedMetaAnswer = [
+                'left' => round($metaLeft, 2),
+                'top' => round($gridTop + $gridHeight + self::META_ANSWER_GAP, 2),
+                'width' => round($metaWidth, 2),
+                'promptLines' => $metaBlock['promptLines'],
+                'promptLineHeight' => self::META_PROMPT_LINE_HEIGHT,
+                'promptSpacing' => self::META_PROMPT_SPACING,
+                'blankLines' => $metaBlock['blankLines'],
+            ];
+        }
 
         $pages = [];
         if ($headerHasOwnPage) {
-            $pages[] = ['showsHeader' => true, 'grid' => null, 'regions' => []];
+            $pages[] = ['showsHeader' => true, 'grid' => null, 'metaAnswer' => null, 'regions' => []];
         }
         foreach ($pagesOfRegions as $index => $regions) {
             $pages[] = [
                 'showsHeader' => $index === 0 && ! $headerHasOwnPage,
                 'grid' => $index === 0 ? ['left' => round($gridLeft, 2), 'top' => round($gridTop, 2)] : null,
+                'metaAnswer' => $index === 0 ? $placedMetaAnswer : null,
                 'regions' => $regions,
             ];
         }
@@ -144,6 +180,39 @@ class PdfWrapLayout
             'headingSpacing' => $this->headingSpacing(),
             'header' => $headerBlocks,
             'pages' => $pages,
+        ];
+    }
+
+    /**
+     * The meta answer's prompt and blanks, broken into lines no wider than
+     * the grid's box, with the height they take under the grid.
+     *
+     * @param  array{pattern: string, prompt?: ?string}|null  $metaAnswer
+     * @return array{height: float, contentWidth: float, promptLines: list<string>, blankLines: list<array{width: float, cells: list<array<string, mixed>>}>}|null
+     */
+    private function metaAnswerBlock(?array $metaAnswer, float $width): ?array
+    {
+        $blankLines = $metaAnswer === null ? [] : $this->metaAnswerBlanks->lines($metaAnswer['pattern'], $width);
+
+        if ($blankLines === []) {
+            return null;
+        }
+
+        $prompt = trim((string) ($metaAnswer['prompt'] ?? ''));
+        $promptLines = $prompt === '' ? [] : $this->wrap($prompt, 'normal', self::META_PROMPT_FONT_SIZE, $width);
+
+        $lineWidths = [
+            ...array_column($blankLines, 'width'),
+            ...array_map(fn (string $line): float => $this->measure($line, 'normal', self::META_PROMPT_FONT_SIZE) + self::LINE_SAFETY, $promptLines),
+        ];
+
+        return [
+            'height' => self::META_ANSWER_GAP
+                + ($promptLines === [] ? 0.0 : count($promptLines) * self::META_PROMPT_LINE_HEIGHT + self::META_PROMPT_SPACING)
+                + $this->metaAnswerBlanks->height(count($blankLines)),
+            'contentWidth' => max($lineWidths),
+            'promptLines' => $promptLines,
+            'blankLines' => $blankLines,
         ];
     }
 

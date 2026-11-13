@@ -7,9 +7,10 @@ use App\Services\PdfWrapLayout;
  * Plan a 15×15 puzzle on a portrait letter page, measuring text as half its font size per character.
  *
  * @param  array<string, mixed>  $header
+ * @param  array{pattern: string, prompt?: ?string}|null  $metaAnswer
  * @return array<string, mixed>
  */
-function planWrapLayout(PdfLayout $layout, int $cluesPerDirection = 30, string $clueText = 'Short clue', array $header = []): array
+function planWrapLayout(PdfLayout $layout, int $cluesPerDirection = 30, string $clueText = 'Short clue', array $header = [], ?array $metaAnswer = null): array
 {
     $clues = fn (): array => array_map(
         fn (int $number): array => ['number' => $number, 'clue' => $clueText],
@@ -18,7 +19,7 @@ function planWrapLayout(PdfLayout $layout, int $cluesPerDirection = 30, string $
 
     $measure = fn (string $text, string $fontStyle, float $fontSize): float => mb_strlen($text) * $fontSize * 0.5;
 
-    return (new PdfWrapLayout($measure))->plan($layout, 504.0, 648.0, 15, 15, ['title' => 'Wrapped', ...$header], $clues(), $clues());
+    return (new PdfWrapLayout($measure))->plan($layout, 504.0, 648.0, 15, 15, ['title' => 'Wrapped', ...$header], $clues(), $clues(), $metaAnswer);
 }
 
 /**
@@ -108,4 +109,34 @@ it('gives a header that fills most of the page a page of its own', function () {
         ->and($plan['pages'][0]['grid'])->toBeNull()
         ->and($plan['pages'][1]['showsHeader'])->toBeFalse()
         ->and($plan['pages'][1]['grid'])->toBe(['left' => 0.0, 'top' => 0.0]);
+});
+
+it('puts the meta answer blanks under the grid and keeps the clues clear of them', function (PdfLayout $layout) {
+    $plan = planWrapLayout($layout, metaAnswer: ['pattern' => '____ ____', 'prompt' => 'What is the hidden theme?']);
+    $page = $plan['pages'][0];
+    $meta = $page['metaAnswer'];
+    $gridBottom = $page['grid']['top'] + $plan['cellSize'] * 15;
+
+    expect($plan['pages'])->toHaveCount(1)
+        ->and($meta['promptLines'])->toBe(['What is the hidden theme?'])
+        ->and($meta['blankLines'])->toHaveCount(1)
+        ->and($meta['top'])->toBeGreaterThan($gridBottom)
+        ->and($meta['top'] + 40.0)->toBeLessThanOrEqual(648.0)
+        ->and($meta['left'])->toBeGreaterThanOrEqual(0.0)
+        ->and($meta['left'] + $meta['width'])->toBeLessThanOrEqual(504.0);
+
+    // Clue columns that share the grid's side of the page start below the blanks or end above the grid.
+    foreach ($page['regions'] as $region) {
+        $overlapsHorizontally = $region['left'] < $meta['left'] + $meta['width'] && $meta['left'] < $region['left'] + $region['width'];
+        if ($overlapsHorizontally) {
+            expect($region['top'] < $page['grid']['top'] || $region['top'] > $meta['top'] + 40.0)->toBeTrue();
+        }
+    }
+})->with([
+    PdfLayout::GridTopLeft,
+    PdfLayout::GridBottomRight,
+]);
+
+it('plans no meta answer for a puzzle without one', function () {
+    expect(planWrapLayout(PdfLayout::GridTopLeft)['pages'][0]['metaAnswer'])->toBeNull();
 });

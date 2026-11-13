@@ -40,6 +40,8 @@
 
         @include('exports.partials.pdf-grid-styles')
 
+        @include('exports.partials.pdf-meta-answer-styles')
+
         .title {
             font-size: 18pt;
             font-weight: bold;
@@ -124,6 +126,17 @@
             @if ($page['grid'])
                 <div class="placed" style="top: {{ $page['grid']['top'] }}pt; left: {{ $page['grid']['left'] }}pt; width: {{ $plan['gridWidth'] }}pt;">
                     @include('exports.partials.pdf-grid', ['showSolution' => false])
+                </div>
+            @endif
+
+            @if ($page['metaAnswer'] ?? null)
+                <div class="placed" style="top: {{ $page['metaAnswer']['top'] }}pt; left: {{ $page['metaAnswer']['left'] }}pt; width: {{ $page['metaAnswer']['width'] }}pt;">
+                    @if ($page['metaAnswer']['promptLines'] !== [])
+                        <div class="lines meta-prompt" style="line-height: {{ $page['metaAnswer']['promptLineHeight'] }}pt; margin-bottom: {{ $page['metaAnswer']['promptSpacing'] }}pt;">
+                            @foreach ($page['metaAnswer']['promptLines'] as $line){{ $line }}@unless ($loop->last)<br>@endunless @endforeach
+                        </div>
+                    @endif
+                    @include('exports.partials.pdf-meta-answer-blanks', ['lines' => $page['metaAnswer']['blankLines'], 'width' => $page['metaAnswer']['width']])
                 </div>
             @endif
 

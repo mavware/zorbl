@@ -39,6 +39,16 @@
 
         @include('exports.partials.pdf-grid-styles')
 
+        @include('exports.partials.pdf-meta-answer-styles')
+
+        .meta-answer {
+            margin-top: 12pt;
+        }
+
+        .meta-answer .meta-prompt {
+            margin: 0 0 8pt 0;
+        }
+
         /* Clues section */
         .clues-section {
             margin-top: 16pt;
@@ -138,6 +148,16 @@
     <div class="grid-wrapper">
         @include('exports.partials.pdf-grid', ['showSolution' => false])
     </div>
+
+    {{-- Meta answer: its prompt and a blank per letter, directly under the grid as on the solve page --}}
+    @if ($metaAnswer ?? null)
+        <div class="meta-answer">
+            @if (filled($metaAnswer['prompt']))
+                <p class="meta-prompt">{{ $metaAnswer['prompt'] }}</p>
+            @endif
+            @include('exports.partials.pdf-meta-answer-blanks', ['lines' => $metaAnswer['lines'], 'width' => $metaAnswer['width']])
+        </div>
+    @endif
 
     {{-- Clues: separate page for large puzzles, inline for small ones --}}
     @if ($forceCluePageBreak ?? false)

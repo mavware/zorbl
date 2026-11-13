@@ -9,7 +9,7 @@ use CrosswordBuilder\CrosswordIO\GridNumberer;
 
 class PdfExporter
 {
-    public function __construct(private readonly GridNumberer $numberer, private readonly PdfWrapLayout $wrapLayout) {}
+    public function __construct(private readonly GridNumberer $numberer, private readonly PdfWrapLayout $wrapLayout, private readonly PdfMetaAnswerBlanks $metaAnswerBlanks) {}
 
     /**
      * @param  'portrait'|'landscape'  $orientation
@@ -29,8 +29,21 @@ class PdfExporter
         $pageHeight = $isLandscape ? 8.5 : 11.0;
         $margin = 0.75;
 
+        // The meta answer's blanks go under the grid, as on the solve page; the standard layout centres them on the page.
+        $metaAnswerPattern = $crossword->metaAnswerPattern();
+        $metaAnswer = null;
+        $metaAnswerHeight = 0.0;
+        if ($metaAnswerPattern !== null) {
+            $contentWidth = ($pageWidth - 2 * $margin) * 72;
+            $blankLines = $this->metaAnswerBlanks->lines($metaAnswerPattern, $contentWidth);
+            if ($blankLines !== []) {
+                $metaAnswer = ['prompt' => $crossword->meta_answer_prompt, 'lines' => $blankLines, 'width' => $contentWidth];
+                $metaAnswerHeight = (12 + (filled($crossword->meta_answer_prompt) ? 20 : 0) + $this->metaAnswerBlanks->height(count($blankLines))) / 72;
+            }
+        }
+
         $maxGridWidth = $pageWidth - 2 * $margin;
-        $maxGridHeight = $pageHeight - 2 * $margin - 1.5;
+        $maxGridHeight = $pageHeight - 2 * $margin - 1.5 - $metaAnswerHeight;
         $cellSize = round(min(0.33, $maxGridWidth / $crossword->width, $maxGridHeight / $crossword->height), 3);
 
         $cluesAcross = $crossword->clues_across ?? [];
@@ -54,6 +67,7 @@ class PdfExporter
                 ],
                 $cluesAcross,
                 $cluesDown,
+                $metaAnswerPattern === null ? null : ['pattern' => $metaAnswerPattern, 'prompt' => $crossword->meta_answer_prompt],
             );
             $cellSize = round($plan['cellSize'] / 72, 4);
         }
@@ -68,6 +82,7 @@ class PdfExporter
             count($cluesAcross),
             count($cluesDown),
             $pageHeight - 2 * $margin,
+            $metaAnswerHeight,
         );
 
         $imageDataUri = null;
@@ -97,6 +112,7 @@ class PdfExporter
             'forceCluePageBreak' => $forceCluePageBreak,
             'orientation' => $orientation,
             'plan' => $plan,
+            'metaAnswer' => $metaAnswer,
         ]);
 
         $pdf->setPaper('letter', $orientation);
@@ -110,10 +126,10 @@ class PdfExporter
      * For small puzzles, grid and clues fit together on one page.
      * For larger puzzles, a page break prevents awkward mid-clue splits.
      */
-    public function shouldBreakBeforeClues(int $gridHeight, float $cellSize, int $acrossCount, int $downCount, float $availableHeight = 9.5): bool
+    public function shouldBreakBeforeClues(int $gridHeight, float $cellSize, int $acrossCount, int $downCount, float $availableHeight = 9.5, float $metaAnswerHeight = 0.0): bool
     {
         $headerHeight = 0.5;
-        $gridTotalHeight = $gridHeight * $cellSize + 0.17; // grid + header margin
+        $gridTotalHeight = $gridHeight * $cellSize + 0.17 + $metaAnswerHeight; // grid + header margin + the blanks under it
 
         // Each clue section: heading (~0.5") + ceil(clueCount / 2) rows at ~0.20" each
         $clueLineHeight = 0.20;
