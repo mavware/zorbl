@@ -458,6 +458,7 @@ test('an answer saved in the editor without a prompt still gives solvers the bla
         ->assertSet('hasMetaAnswer', true)
         ->assertSet('metaAnswerPattern', '______')
         ->assertSeeHtml('data-test="meta-answer-blanks"')
+        ->assertDontSee('Meta Answer')
         ->set('metaAnswerSubmission', 'movies')
         ->call('submitMetaAnswer')
         ->assertSet('metaAnswerCorrect', true);

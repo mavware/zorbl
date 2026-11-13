@@ -12,27 +12,35 @@
      the blanks on the submitted letters, green when known correct, neutral
      when the builder chose not to reveal. The state is in the wire:key so
      Livewire swaps the whole card between states and the Alpine entry
-     starts fresh rather than being morphed in place. --}}
+     starts fresh rather than being morphed in place.
+
+     The prompt is optional. Without one there is no card, icon or "Meta
+     Answer" heading: only the blanks, centred, plus the verdict once an
+     answer has been checked. --}}
 @php
     $metaEntryState = $metaAnswerSubmitted ? ($metaAnswerCorrect === false ? 'retry' : 'done') : 'open';
+    $metaEntryHasPrompt = filled($metaAnswerPrompt);
 @endphp
 <div
-    class="mt-4 rounded-xl border border-purple-200 bg-purple-50/50 p-5 dark:border-purple-900/40 dark:bg-purple-950/20"
+    @class([
+        'mt-4',
+        'rounded-xl border border-purple-200 bg-purple-50/50 p-5 dark:border-purple-900/40 dark:bg-purple-950/20' => $metaEntryHasPrompt,
+    ])
     wire:key="meta-answer-section-{{ $metaEntryState }}"
     data-test="meta-answer-section"
     data-state="{{ $metaEntryState }}"
 >
-    <div class="mb-4 flex items-center gap-3">
-        <div class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-900/30">
-            <svg xmlns="http://www.w3.org/2000/svg" class="size-5 text-purple-600 dark:text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
-        </div>
-        <div>
-            <div class="font-semibold text-purple-800 dark:text-purple-200">{{ __('Meta Answer') }}</div>
-            @if(filled($metaAnswerPrompt))
+    @if($metaEntryHasPrompt)
+        <div class="mb-4 flex items-center gap-3">
+            <div class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-900/30">
+                <svg xmlns="http://www.w3.org/2000/svg" class="size-5 text-purple-600 dark:text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
+            </div>
+            <div>
+                <div class="font-semibold text-purple-800 dark:text-purple-200">{{ __('Meta Answer') }}</div>
                 <div class="text-sm text-purple-700 dark:text-purple-400">{{ $metaAnswerPrompt }}</div>
-            @endif
+            </div>
         </div>
-    </div>
+    @endif
 
     @if($metaEntryState === 'done')
         @php($metaEntryTone = $metaAnswerCorrect === true ? 'emerald' : 'zinc')
@@ -57,12 +65,12 @@
                 data-pattern="{{ $metaAnswerPattern }}"
                 data-locked
             >
-                @include('partials.meta-answer-blanks', ['tone' => $metaEntryTone, 'locked' => true])
+                @include('partials.meta-answer-blanks', ['tone' => $metaEntryTone, 'locked' => true, 'centered' => ! $metaEntryHasPrompt])
             </div>
         </div>
     @else
         @if($metaEntryState === 'retry')
-            <div class="mb-3 flex items-center gap-2 text-sm text-red-700 dark:text-red-400" role="status">
+            <div @class(['mb-3 flex items-center gap-2 text-sm text-red-700 dark:text-red-400', 'justify-center' => ! $metaEntryHasPrompt]) role="status">
                 <svg xmlns="http://www.w3.org/2000/svg" class="size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
                 <span>{{ __('Not quite! Change some letters and try again.') }}</span>
             </div>
@@ -74,7 +82,7 @@
             data-test="meta-answer-entry"
             data-pattern="{{ $metaAnswerPattern }}"
         >
-            @include('partials.meta-answer-blanks', ['tone' => $metaEntryState === 'retry' ? 'red' : 'purple', 'locked' => false])
+            @include('partials.meta-answer-blanks', ['tone' => $metaEntryState === 'retry' ? 'red' : 'purple', 'locked' => false, 'centered' => ! $metaEntryHasPrompt])
         </div>
         <flux:error name="metaAnswerSubmission" />
     @endif

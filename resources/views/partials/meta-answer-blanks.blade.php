@@ -3,7 +3,7 @@
      words. A visually hidden input behind them takes the typing; clicking
      anywhere on the row focuses it. Expects `$tone` ('purple' while open,
      'red' holding a wrong answer, 'emerald' once correct, 'zinc' once
-     submitted blind) and `$locked`. --}}
+     submitted blind) and `$locked`; `$centered` (optional) centres the row. --}}
 @php
     $slotTone = match ($tone) {
         'emerald' => 'border-emerald-500 text-emerald-800 dark:border-emerald-500 dark:text-emerald-200',
@@ -16,6 +16,7 @@
     @class([
         'flex flex-wrap items-end gap-x-5 gap-y-2 select-none',
         'cursor-text' => ! $locked,
+        'justify-center' => $centered ?? false,
     ])
     x-on:click="focusInput()"
     role="group"
