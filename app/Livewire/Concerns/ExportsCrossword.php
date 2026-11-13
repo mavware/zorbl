@@ -35,8 +35,16 @@ trait ExportsCrossword
 
     public bool $pdfRemoveImage = false;
 
+    /** Whether the exporter asked for the answer key on its own page at the end of the PDF. */
+    public bool $pdfIncludeAnswerKey = false;
+
     abstract protected function getExportableCrossword(): Crossword;
 
+    /**
+     * Whether this page may put the answer key in a PDF at all. Builder
+     * pages allow it; pages that export for a solver do not, whatever
+     * `pdfIncludeAnswerKey` is set to.
+     */
     protected function getPdfIncludeSolution(): bool
     {
         return false;
@@ -190,6 +198,7 @@ trait ExportsCrossword
         $this->pdfNarrative = $crossword->pdf_narrative ?? '';
         $this->pdfImage = null;
         $this->pdfRemoveImage = false;
+        $this->pdfIncludeAnswerKey = false;
         $this->showPdfExportModal = true;
     }
 
@@ -232,6 +241,7 @@ trait ExportsCrossword
         $this->pdfNarrative = '';
         $this->pdfImage = null;
         $this->pdfRemoveImage = false;
+        $this->pdfIncludeAnswerKey = false;
     }
 
     /**
@@ -290,7 +300,7 @@ trait ExportsCrossword
 
         return app(PdfExporter::class)->export(
             $crossword,
-            includeSolution: $this->getPdfIncludeSolution(),
+            includeSolution: $this->pdfIncludeAnswerKey && $this->getPdfIncludeSolution(),
             orientation: $orientation,
             narrative: $narrative ?: null,
             imagePath: $imagePath,

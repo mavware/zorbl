@@ -1,5 +1,6 @@
 {{-- PDF Export Settings Modal, shared by every page that uses the ExportsCrossword trait.
-     Expects $hasSavedPdfImage: whether the puzzle being exported already has a header image saved. --}}
+     Expects $hasSavedPdfImage: whether the puzzle being exported already has a header image saved,
+     and $canIncludeAnswerKey: whether this page may offer the answer key (builder pages only). --}}
 <flux:modal wire:model="showPdfExportModal" class="w-full md:max-w-5xl">
     <div class="space-y-6">
         <div>
@@ -28,6 +29,10 @@
                         </div>
                     @endif
                 </div>
+
+                @if ($canIncludeAnswerKey)
+                    <flux:checkbox wire:model="pdfIncludeAnswerKey" label="{{ __('Include answer key') }}" description="{{ __('Adds the solved grid on its own page at the end.') }}" />
+                @endif
 
                 <flux:textarea wire:model="pdfNarrative" label="{{ __('Narrative Text') }}" placeholder="{{ __('Add introductory text, theme explanation, or instructions that will appear above the puzzle grid...') }}" rows="4" />
             </div>

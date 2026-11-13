@@ -159,3 +159,50 @@ test('uploading a header image that is not an image is rejected immediately', fu
         ->call('pdfPreview')
         ->assertReturned(fn (?string $encoded): bool => str_starts_with(base64_decode((string) $encoded), '%PDF'));
 });
+
+/** The number of pages in a base64-encoded PDF, read from its page tree. */
+function pdfPageCount(?string $encoded): int
+{
+    preg_match('/\/Type\s*\/Pages\b.*?\/Count\s+(\d+)/s', base64_decode((string) $encoded), $matches);
+
+    return (int) ($matches[1] ?? 0);
+}
+
+test('the PDF gains an answer key page only when the builder asks for one', function () {
+    $user = User::factory()->create();
+    $puzzle = makePuzzle($user);
+
+    $this->actingAs($user);
+
+    $component = Livewire::test('pages::crosswords.index')
+        ->call('choosePdfExportFor', $puzzle->id)
+        ->assertSet('pdfIncludeAnswerKey', false);
+
+    $pagesWithoutKey = pdfPageCount($component->call('pdfPreview')->effects['returns'][0]);
+
+    $component->set('pdfIncludeAnswerKey', true)
+        ->call('pdfPreview')
+        ->assertReturned(fn (string $encoded): bool => pdfPageCount($encoded) === $pagesWithoutKey + 1)
+        ->call('confirmPdfExport')
+        ->assertFileDownloaded();
+
+    expect($pagesWithoutKey)->toBeGreaterThan(0);
+});
+
+test('a solver cannot get the answer key in a PDF by asking for it', function () {
+    $user = User::factory()->create();
+    $puzzle = makePuzzle($user, ['is_published' => true]);
+
+    $this->actingAs($user);
+
+    $component = Livewire::test('pages::crosswords.solver', ['crossword' => $puzzle])
+        ->call('attemptExport', 'pdf')
+        ->assertSet('showPdfExportModal', true)
+        ->assertDontSee('Include answer key');
+
+    $pagesWithoutKey = pdfPageCount($component->call('pdfPreview')->effects['returns'][0]);
+
+    $component->set('pdfIncludeAnswerKey', true)
+        ->call('pdfPreview')
+        ->assertReturned(fn (string $encoded): bool => pdfPageCount($encoded) === $pagesWithoutKey);
+});

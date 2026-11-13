@@ -677,7 +677,7 @@ new #[Title('Build')] class extends Component {
         </div>
     </flux:modal>
 
-    @include('partials.pdf-export-modal', ['hasSavedPdfImage' => (bool) $this->pdfExportCrossword?->pdf_image])
+    @include('partials.pdf-export-modal', ['hasSavedPdfImage' => (bool) $this->pdfExportCrossword?->pdf_image, 'canIncludeAnswerKey' => true])
 
     {{-- Import Modal --}}
     <flux:modal wire:model="showImportModal">

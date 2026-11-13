@@ -1599,7 +1599,7 @@ new #[Title('Solve Crossword')] class extends Component {
         </div>
     </div>
 
-    @include('partials.pdf-export-modal', ['hasSavedPdfImage' => (bool) $this->crossword->pdf_image])
+    @include('partials.pdf-export-modal', ['hasSavedPdfImage' => (bool) $this->crossword->pdf_image, 'canIncludeAnswerKey' => false])
 
     {{-- Export Warning Modal --}}
     <flux:modal wire:model="showExportWarning">

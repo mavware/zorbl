@@ -1397,7 +1397,7 @@ class extends Component {
         </div>
     </flux:modal>
 
-    @include('partials.pdf-export-modal', ['hasSavedPdfImage' => (bool) $this->crossword->pdf_image])
+    @include('partials.pdf-export-modal', ['hasSavedPdfImage' => (bool) $this->crossword->pdf_image, 'canIncludeAnswerKey' => true])
 
     {{-- Export Warning Modal --}}
     <flux:modal wire:model="showExportWarning">
