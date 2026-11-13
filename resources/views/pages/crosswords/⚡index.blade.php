@@ -317,7 +317,7 @@ new #[Title('Build')] class extends Component {
     }
 
     /**
-     * Open the PDF export settings for one puzzle, chosen from its card menu.
+     * Open the PDF download settings for one puzzle, chosen from its card menu.
      */
     public function choosePdfExportFor(int $id): void
     {
@@ -358,7 +358,7 @@ new #[Title('Build')] class extends Component {
         $this->pdfExportPuzzleId = null;
 
         Flux::toast(
-            text: __('Create a free account to export PDFs.'),
+            text: __('Create a free account to download PDFs.'),
             variant: 'warning',
         );
     }
@@ -510,7 +510,7 @@ new #[Title('Build')] class extends Component {
                                         {{ __('Duplicate') }}
                                     </flux:menu.item>
                                     <flux:menu.item icon="document-arrow-down" wire:click="choosePdfExportFor({{ $crossword->id }})">
-                                        {{ __('Export PDF') }}
+                                        {{ __('Download PDF') }}
                                     </flux:menu.item>
                                     <flux:menu.item icon="trash" variant="danger" wire:click="deletePuzzle({{ $crossword->id }})" wire:confirm="{{ __('Are you sure you want to delete this puzzle?') }}">
                                         {{ __('Delete') }}
@@ -677,7 +677,7 @@ new #[Title('Build')] class extends Component {
         </div>
     </flux:modal>
 
-    @include('partials.pdf-export-modal', ['hasSavedPdfImage' => (bool) $this->pdfExportCrossword?->pdf_image, 'canIncludeAnswerKey' => true])
+    @include('partials.pdf-export-modal', ['hasSavedPdfImage' => (bool) $this->pdfExportCrossword?->pdf_image, 'canIncludeAnswerKey' => true, 'downloadFormats' => ['pdf']])
 
     {{-- Import Modal --}}
     <flux:modal wire:model="showImportModal">

@@ -1,10 +1,11 @@
 /**
- * The live preview in the PDF export modal.
+ * The live PDF preview in the download modal.
  *
  * The preview is the real PDF: the server renders it with the settings
  * currently in the modal (saving none of them) and it is shown in an iframe
- * through a blob URL. It is rendered when the modal opens and again whenever
- * a setting changes, so what the constructor sees is what Export downloads.
+ * through a blob URL. It is rendered when the modal opens on the PDF format
+ * (or the format is switched to PDF) and again whenever a setting changes, so
+ * what the constructor sees is what Download saves.
  */
 
 /** Pause after the last keystroke in the narrative before re-rendering. */
@@ -42,6 +43,9 @@ export function pdfPreview() {
 
             this.$wire.$watch('pdfNarrative', () => this.schedule(NARRATIVE_PREVIEW_MS));
 
+            // Other formats have no preview; coming back to PDF renders it afresh.
+            this.$wire.$watch('downloadFormat', () => this.schedule(SETTING_PREVIEW_MS));
+
             if (this.$wire.showPdfExportModal) {
                 this.schedule(SETTING_PREVIEW_MS);
             }
@@ -56,7 +60,7 @@ export function pdfPreview() {
         },
 
         schedule(delay) {
-            if (!this.$wire.showPdfExportModal) return;
+            if (!this.$wire.showPdfExportModal || this.$wire.downloadFormat !== 'pdf') return;
 
             clearTimeout(timer);
             this.loading = true;

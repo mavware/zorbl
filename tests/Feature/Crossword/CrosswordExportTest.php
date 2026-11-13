@@ -354,3 +354,63 @@ test('cancelling PDF export resets state', function () {
 
     expect($crossword->fresh()->pdf_narrative)->toBe('Original narrative');
 });
+
+test('the download modal opens on PDF and lists the formats PDF first', function () {
+    $user = makeExportProUser();
+    $crossword = Crossword::factory()->for($user)->create(['pdf_narrative' => 'Saved intro']);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->call('openDownloadModal')
+        ->assertSet('showPdfExportModal', true)
+        ->assertSet('downloadFormat', 'pdf')
+        ->assertSet('pdfNarrative', 'Saved intro')
+        ->assertSeeInOrder(['Download Puzzle', 'PDF (Print-Ready)', '.ipuz', '.puz (Across Lite)', '.jpz (Crossword Compiler)', 'Download PDF'])
+        ->assertDontSee('.pdf (Print-Ready)');
+});
+
+test('the download modal downloads the chosen format and closes', function (string $format, string $filename) {
+    $user = makeExportProUser();
+    $crossword = Crossword::factory()->for($user)->withBlocks()->withSolution()->create(['title' => 'Pick A Format']);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->call('openDownloadModal')
+        ->set('downloadFormat', $format)
+        ->call('confirmDownload')
+        ->assertSet('showPdfExportModal', false)
+        ->assertFileDownloaded($filename);
+})->with([
+    'pdf' => ['pdf', 'pick-a-format.pdf'],
+    'ipuz' => ['ipuz', 'pick-a-format.ipuz'],
+    'puz' => ['puz', 'pick-a-format.puz'],
+    'jpz' => ['jpz', 'pick-a-format.jpz'],
+]);
+
+test('the PDF preview is not rendered while another format is chosen', function () {
+    $user = makeExportProUser();
+    $crossword = Crossword::factory()->for($user)->withBlocks()->create();
+
+    $this->actingAs($user);
+
+    $component = Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->call('openDownloadModal')
+        ->set('downloadFormat', 'ipuz');
+
+    expect($component->instance()->pdfPreview())->toBeNull();
+});
+
+test('the solver opens the same download modal', function () {
+    $user = makeExportProUser();
+    $crossword = Crossword::factory()->for($user)->published()->create();
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::crosswords.solver', ['crossword' => $crossword])
+        ->assertSeeHtml('data-test="solver-download-button"')
+        ->call('openDownloadModal')
+        ->assertSet('showPdfExportModal', true)
+        ->assertSeeInOrder(['PDF (Print-Ready)', '.ipuz', '.puz (Across Lite)', '.jpz (Crossword Compiler)']);
+});

@@ -440,11 +440,12 @@ test('the download menu sits beside the publish button, not in the settings', fu
     $this->actingAs($user);
 
     $html = Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
-        ->assertSeeInOrder(['Download', '.ipuz', '.puz (Across Lite)', '.jpz (Crossword Compiler)', '.pdf (Print-Ready)', 'Publish'])
+        ->assertSeeInOrder(['Download', 'Publish'])
         ->html();
 
-    // Once in the toolbar, once beside the mobile clue tabs: each directly before its Publish button.
-    expect(substr_count($html, "attemptExport('ipuz')"))->toBe(2)
+    // Once in the toolbar, once beside the mobile clue tabs: each opens the
+    // download modal and sits directly before its Publish button.
+    expect(substr_count($html, 'wire:click="openDownloadModal"'))->toBe(2)
         ->and(substr_count($html, 'data-test="editor-download-button"'))->toBe(1)
         ->and(substr_count($html, 'data-test="editor-download-button-mobile"'))->toBe(1)
         ->and(strpos($html, 'data-test="editor-toolbar-publish"'))->toBeLessThan(strpos($html, 'data-test="editor-download-button"'))
@@ -452,13 +453,13 @@ test('the download menu sits beside the publish button, not in the settings', fu
         ->and(strpos($html, 'data-test="editor-download-button-mobile"'))->toBeLessThan(strpos($html, 'data-test="editor-publish-button-mobile"'));
 
     // Neither settings surface offers the files any more.
-    expect(editorSettingsFlyoutHtml($html))->not->toContain('attemptExport');
+    expect(editorSettingsFlyoutHtml($html))->not->toContain('openDownloadModal');
 
     // The sidebar has no heading; Save follows the panels inside the
     // form's scrolling body, after the Suggestions panel.
     $pane = editorSettingsPaneHtml($html);
     expect($pane)->not->toContain('Puzzle Settings')
-        ->not->toContain('attemptExport')
+        ->not->toContain('openDownloadModal')
         ->and(strpos($pane, 'data-suggestions-pane'))->toBeLessThan(strpos($pane, 'data-test="settings-pane-actions"'))
         ->and(strpos($pane, 'data-test="settings-pane-actions"'))->toBeLessThan(strpos($pane, 'wire:click="saveMetadata"'))
         ->and(substr_count($pane, 'data-test="settings-pane-actions"'))->toBe(1);
@@ -1222,9 +1223,6 @@ test('settings flyout groups its fields into details, grid and theme tabs', func
     $details = substr($flyout, $detailsStart, $gridStart - $detailsStart);
     $grid = substr($flyout, $gridStart, $themeStart - $gridStart);
     $theme = substr($flyout, $themeStart, $footerStart - $themeStart);
-
-    // Export stays in the header above the tabs; Save/Cancel stay in the sticky footer.
-    expect(strpos($flyout, "attemptExport('ipuz')"))->toBeLessThan($detailsStart);
 
     expect($details)->toContain('x-show="settingsTab === \'details\'"')
         ->toContain('wire:model.live.debounce.750ms="title"')

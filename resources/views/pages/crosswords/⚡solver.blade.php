@@ -791,26 +791,10 @@ new #[Title('Solve Crossword')] class extends Component {
                 </flux:menu>
             </flux:dropdown>
 
-            {{-- Download for offline --}}
-            <flux:dropdown position="bottom" align="end">
-                <flux:tooltip content="{{ __('Download this puzzle to solve offline or print') }}">
-                    <flux:button variant="ghost" size="sm" icon="arrow-down-tray" aria-label="{{ __('Download puzzle') }}" />
-                </flux:tooltip>
-                <flux:menu>
-                    <flux:tooltip content="{{ __('Open standard supported by most modern crossword apps') }}" position="left">
-                        <flux:menu.item wire:click="attemptExport('ipuz')">{{ __('.ipuz') }}</flux:menu.item>
-                    </flux:tooltip>
-                    <flux:tooltip content="{{ __('Classic format for Across Lite and many desktop solvers') }}" position="left">
-                        <flux:menu.item wire:click="attemptExport('puz')">{{ __('.puz (Across Lite)') }}</flux:menu.item>
-                    </flux:tooltip>
-                    <flux:tooltip content="{{ __('XML format for Crossword Compiler and compatible apps') }}" position="left">
-                        <flux:menu.item wire:click="attemptExport('jpz')">{{ __('.jpz (Crossword Compiler)') }}</flux:menu.item>
-                    </flux:tooltip>
-                    <flux:tooltip content="{{ __('Printable grid and clues for solving on paper') }}" position="left">
-                        <flux:menu.item wire:click="attemptExport('pdf')">{{ __('.pdf (Print-Ready)') }}</flux:menu.item>
-                    </flux:tooltip>
-                </flux:menu>
-            </flux:dropdown>
+            {{-- Download for offline: opens the download modal, where the format is chosen --}}
+            <flux:tooltip content="{{ __('Download this puzzle to solve offline or print') }}">
+                <flux:button variant="ghost" size="sm" icon="arrow-down-tray" wire:click="openDownloadModal" aria-label="{{ __('Download puzzle') }}" data-test="solver-download-button" />
+            </flux:tooltip>
 
             {{-- Keyboard shortcuts help --}}
             <flux:tooltip content="{{ __('See every keyboard shortcut for solving') }}" kbd="?">
@@ -1652,11 +1636,11 @@ new #[Title('Solve Crossword')] class extends Component {
 
     @include('partials.pdf-export-modal', ['hasSavedPdfImage' => (bool) $this->crossword->pdf_image, 'canIncludeAnswerKey' => false])
 
-    {{-- Export Warning Modal --}}
+    {{-- Download Warning Modal --}}
     <flux:modal wire:model="showExportWarning">
         <div class="space-y-6">
-            <flux:heading size="lg">{{ __('Export Warning') }}</flux:heading>
-            <flux:text>{{ __('This crossword uses features not fully supported by :format export:', ['format' => '.' . $pendingExportFormat]) }}</flux:text>
+            <flux:heading size="lg">{{ __('Download Warning') }}</flux:heading>
+            <flux:text>{{ __('This crossword uses features not fully supported by the :format format:', ['format' => '.' . $pendingExportFormat]) }}</flux:text>
 
             <ul class="space-y-1.5 text-sm">
                 @foreach($exportWarnings as $warning)
@@ -1674,7 +1658,7 @@ new #[Title('Solve Crossword')] class extends Component {
 
             <div class="flex justify-end gap-2">
                 <flux:button wire:click="cancelExport">{{ __('Cancel') }}</flux:button>
-                <flux:button variant="primary" wire:click="confirmExport">{{ __('Export Anyway') }}</flux:button>
+                <flux:button variant="primary" wire:click="confirmExport">{{ __('Download Anyway') }}</flux:button>
             </div>
         </div>
     </flux:modal>

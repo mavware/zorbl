@@ -1398,11 +1398,11 @@ class extends Component {
 
     @include('partials.pdf-export-modal', ['hasSavedPdfImage' => (bool) $this->crossword->pdf_image, 'canIncludeAnswerKey' => true])
 
-    {{-- Export Warning Modal --}}
+    {{-- Download Warning Modal --}}
     <flux:modal wire:model="showExportWarning">
         <div class="space-y-6">
-            <flux:heading size="lg">{{ __('Export Warning') }}</flux:heading>
-            <flux:text>{{ __('This crossword uses features not fully supported by :format export:', ['format' => '.' . $pendingExportFormat]) }}</flux:text>
+            <flux:heading size="lg">{{ __('Download Warning') }}</flux:heading>
+            <flux:text>{{ __('This crossword uses features not fully supported by the :format format:', ['format' => '.' . $pendingExportFormat]) }}</flux:text>
 
             <ul class="space-y-1.5 text-sm">
                 @foreach($exportWarnings as $warning)
@@ -1420,7 +1420,7 @@ class extends Component {
 
             <div class="flex justify-end gap-2">
                 <flux:button wire:click="cancelExport">{{ __('Cancel') }}</flux:button>
-                <flux:button variant="primary" wire:click="confirmExport">{{ __('Export Anyway') }}</flux:button>
+                <flux:button variant="primary" wire:click="confirmExport">{{ __('Download Anyway') }}</flux:button>
             </div>
         </div>
     </flux:modal>

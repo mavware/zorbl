@@ -25,7 +25,11 @@ trait ExportsCrossword
     /** @var list<string> */
     public array $exportWarnings = [];
 
+    /** Whether the download modal is open: the format choice plus, for a PDF, its settings and preview. */
     public bool $showPdfExportModal = false;
+
+    /** The format picked in the download modal: 'pdf', 'ipuz', 'puz' or 'jpz'. */
+    public string $downloadFormat = 'pdf';
 
     public string $pdfOrientation = 'portrait';
 
@@ -64,6 +68,44 @@ trait ExportsCrossword
             'jpz' => null,
             'pdf' => null,
         ];
+    }
+
+    /**
+     * Open the download modal, where the format is chosen. It starts on PDF,
+     * or on .ipuz for someone whose plan does not include PDFs.
+     */
+    public function openDownloadModal(): void
+    {
+        $this->resetPdfSettings();
+        $this->pdfNarrative = $this->getExportableCrossword()->pdf_narrative ?? '';
+        $this->downloadFormat = $this->canDownloadFormat('pdf') ? 'pdf' : 'ipuz';
+        $this->showPdfExportModal = true;
+    }
+
+    /**
+     * Download the puzzle in the format picked in the download modal.
+     */
+    public function confirmDownload(): mixed
+    {
+        $format = in_array($this->downloadFormat, ['pdf', 'ipuz', 'puz', 'jpz'], true) ? $this->downloadFormat : 'pdf';
+
+        if ($format === 'pdf' && $this->canDownloadFormat('pdf')) {
+            return $this->confirmPdfExport();
+        }
+
+        $this->cancelPdfExport();
+
+        return $this->attemptExport($format);
+    }
+
+    /**
+     * Whether the signed-in user's plan includes downloads in this format.
+     */
+    public function canDownloadFormat(string $format): bool
+    {
+        $gate = $this->getExportPlanGates()[$format] ?? null;
+
+        return ! $gate || Auth::user()->planLimits()->{$gate}();
     }
 
     public function attemptExport(string $format): mixed
@@ -197,13 +239,9 @@ trait ExportsCrossword
             return;
         }
 
-        $crossword = $this->getExportableCrossword();
-        $this->pdfOrientation = 'portrait';
-        $this->pdfLayout = PdfLayout::Standard->value;
-        $this->pdfNarrative = $crossword->pdf_narrative ?? '';
-        $this->pdfImage = null;
-        $this->pdfRemoveImage = false;
-        $this->pdfIncludeAnswerKey = false;
+        $this->resetPdfSettings();
+        $this->pdfNarrative = $this->getExportableCrossword()->pdf_narrative ?? '';
+        $this->downloadFormat = 'pdf';
         $this->showPdfExportModal = true;
     }
 
@@ -242,6 +280,12 @@ trait ExportsCrossword
     public function cancelPdfExport(): void
     {
         $this->showPdfExportModal = false;
+        $this->downloadFormat = 'pdf';
+        $this->resetPdfSettings();
+    }
+
+    private function resetPdfSettings(): void
+    {
         $this->pdfOrientation = 'portrait';
         $this->pdfLayout = PdfLayout::Standard->value;
         $this->pdfNarrative = '';
@@ -263,12 +307,12 @@ trait ExportsCrossword
      * Render the PDF as it would be exported with the settings currently in
      * the export modal, without saving any of them.
      *
-     * @return string|null The base64-encoded PDF, or null when the export modal is not open.
+     * @return string|null The base64-encoded PDF, or null when the download modal is not open on a PDF the user may download.
      */
     #[Renderless]
     public function pdfPreview(): ?string
     {
-        if (! $this->showPdfExportModal) {
+        if (! $this->showPdfExportModal || $this->downloadFormat !== 'pdf' || ! $this->canDownloadFormat('pdf')) {
             return null;
         }
 
