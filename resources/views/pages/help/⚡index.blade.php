@@ -103,7 +103,7 @@ class extends Component {
                         @php $articles = $grouped[$key] ?? null; @endphp
                         @if ($articles && $articles->isNotEmpty())
                             <section>
-                                <h2 class="label-classical font-classical text-[12px] font-semibold text-amber-400 [--label-tracking:0.14em]">
+                                <h2 class="label-classical font-classical text-[12px] font-semibold text-amber-ink [--label-tracking:0.14em]">
                                     {{ \App\Models\HelpArticle::CATEGORIES[$key] }}
                                 </h2>
                                 <ul class="border-border divide-hairline mt-3 divide-y rounded-sm border">
@@ -115,12 +115,12 @@ class extends Component {
                                                 class="group flex items-start justify-between gap-4 px-[18px] py-3.5 transition-colors focus:outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-amber-400"
                                             >
                                                 <div class="min-w-0">
-                                                    <p class="font-classical text-ink group-hover:text-amber-300 text-[18px] leading-tight font-semibold transition-colors">{{ $article->title }}</p>
+                                                    <p class="font-classical text-ink group-hover:text-amber-ink-hover text-[18px] leading-tight font-semibold transition-colors">{{ $article->title }}</p>
                                                     @if ($article->summary)
                                                         <p class="text-ink-muted mt-1 text-sm">{{ $article->summary }}</p>
                                                     @endif
                                                 </div>
-                                                <flux:icon name="chevron-right" class="text-ink-faint mt-1 size-5 shrink-0 transition-colors group-hover:text-amber-400" />
+                                                <flux:icon name="chevron-right" class="text-ink-faint mt-1 size-5 shrink-0 transition-colors group-hover:text-amber-ink" />
                                             </a>
                                         </li>
                                     @endforeach

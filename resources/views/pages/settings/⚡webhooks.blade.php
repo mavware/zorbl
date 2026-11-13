@@ -124,7 +124,7 @@ class extends Component {
                                         <span class="text-ink truncate font-mono text-sm">{{ $endpoint->url }}</span>
                                         @if ($endpoint->is_active)
                                             <span
-                                                class="chip-classical border-amber-400 text-amber-400">{{ __('Active') }}</span>
+                                                class="chip-classical border-amber-ink text-amber-ink">{{ __('Active') }}</span>
                                         @else
                                             <span
                                                 class="chip-classical border-ink-faint text-ink-faint">{{ __('Inactive') }}</span>

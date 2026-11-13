@@ -53,13 +53,13 @@ new #[Title('Ticket Detail')] class extends Component {
     {{-- Status badges --}}
     <div class="flex flex-wrap items-center gap-2">
         <span class="chip-classical border-ink-faint text-ink-faint tnum">#{{ $ticket->id }}</span>
-        <span class="chip-classical {{ match($ticket->status) { 'in_progress', 'resolved' => 'border-amber-400 text-amber-400', default => 'border-ink-faint text-ink-faint' } }}">
+        <span class="chip-classical {{ match($ticket->status) { 'in_progress', 'resolved' => 'border-amber-ink text-amber-ink', default => 'border-ink-faint text-ink-faint' } }}">
             {{ match($ticket->status) {
                 'in_progress' => __('In Progress'),
                 default => __(ucfirst($ticket->status)),
             } }}
         </span>
-        <span class="chip-classical {{ match($ticket->priority) { 'high', 'urgent' => 'border-amber-400 text-amber-400', default => 'border-ink-faint text-ink-faint' } }}">
+        <span class="chip-classical {{ match($ticket->priority) { 'high', 'urgent' => 'border-amber-ink text-amber-ink', default => 'border-ink-faint text-ink-faint' } }}">
             {{ __(ucfirst($ticket->priority)) }} {{ __('Priority') }}
         </span>
         <span class="chip-classical border-ink-faint text-ink-faint">
@@ -99,12 +99,12 @@ new #[Title('Ticket Detail')] class extends Component {
         @else
             <div class="space-y-3">
                 @foreach($this->responses as $response)
-                    <div class="rounded-sm border p-4.5 {{ $response->is_admin_response ? 'border-amber-400/60' : 'border-border' }}">
+                    <div class="rounded-sm border p-4.5 {{ $response->is_admin_response ? 'border-amber-ink/60' : 'border-border' }}">
                         <div class="mb-2 flex flex-wrap items-center gap-2">
                             <span class="font-classical text-ink text-[16px] leading-none font-semibold">{{ $response->user->name }}</span>
                             <x-supporter-badge :user="$response->user" />
                             @if($response->is_admin_response)
-                                <span class="chip-classical border-amber-400 text-amber-400">{{ __('Staff') }}</span>
+                                <span class="chip-classical border-amber-ink text-amber-ink">{{ __('Staff') }}</span>
                             @endif
                             <span class="meta-classical">&middot; {{ $response->created_at->diffForHumans() }}</span>
                         </div>
@@ -122,7 +122,7 @@ new #[Title('Ticket Detail')] class extends Component {
             <label class="block">
                 <span class="sr-only">{{ __('Add a Response') }}</span>
                 <textarea wire:model="responseBody" rows="3" placeholder="{{ __('Type your response...') }}" class="field-classical h-auto w-full px-3.5 py-2.5 leading-[1.65]"></textarea>
-                @error('responseBody') <p class="mt-1.5 text-xs text-amber-400">{{ $message }}</p> @enderror
+                @error('responseBody') <p class="mt-1.5 text-xs text-amber-ink">{{ $message }}</p> @enderror
             </label>
             <div class="flex justify-end">
                 <button type="button" class="btn-classical btn-amber-outline" wire:click="addResponse">{{ __('Send Response') }}</button>

@@ -214,7 +214,7 @@ new class extends Component {
                                 <button type="button" wire:click="sortBy('word')" class="meta-classical hover:text-ink inline-flex items-center gap-1 transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">
                                     {{ __('Word') }}
                                     @if($sortField === 'word')
-                                        <flux:icon :name="$sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'" class="size-3 text-amber-400" />
+                                        <flux:icon :name="$sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'" class="size-3 text-amber-ink" />
                                     @endif
                                 </button>
                             </th>
@@ -222,7 +222,7 @@ new class extends Component {
                                 <button type="button" wire:click="sortBy('length')" class="meta-classical hover:text-ink inline-flex items-center gap-1 transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">
                                     {{ __('Length') }}
                                     @if($sortField === 'length')
-                                        <flux:icon :name="$sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'" class="size-3 text-amber-400" />
+                                        <flux:icon :name="$sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'" class="size-3 text-amber-ink" />
                                     @endif
                                 </button>
                             </th>
@@ -230,7 +230,7 @@ new class extends Component {
                                 <button type="button" wire:click="sortBy('score')" class="meta-classical hover:text-ink inline-flex items-center gap-1 transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">
                                     {{ __('Score') }}
                                     @if($sortField === 'score')
-                                        <flux:icon :name="$sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'" class="size-3 text-amber-400" />
+                                        <flux:icon :name="$sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'" class="size-3 text-amber-ink" />
                                     @endif
                                 </button>
                             </th>
@@ -238,7 +238,7 @@ new class extends Component {
                                 <button type="button" wire:click="sortBy('clue_count')" class="meta-classical hover:text-ink inline-flex items-center gap-1 transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">
                                     {{ __('Clues') }}
                                     @if($sortField === 'clue_count')
-                                        <flux:icon :name="$sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'" class="size-3 text-amber-400" />
+                                        <flux:icon :name="$sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'" class="size-3 text-amber-ink" />
                                     @endif
                                 </button>
                             </th>
@@ -255,7 +255,7 @@ new class extends Component {
                         <tr wire:key="word-{{ $word->id }}" @if($isLinked) x-on:click="window.location.href = '{{ route('words.show', $word) }}'" @endif class="group {{ $isLinked ? 'cursor-pointer' : '' }}">
                             <td class="px-3 py-3.5 whitespace-nowrap">
                                 @if($isLinked)
-                                    <a href="{{ route('words.show', $word) }}" wire:navigate class="font-classical text-ink group-hover:text-amber-300 text-[18px] leading-none font-semibold tracking-[0.06em] transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">{{ $word->word }}</a>
+                                    <a href="{{ route('words.show', $word) }}" wire:navigate class="font-classical text-ink group-hover:text-amber-ink-hover text-[18px] leading-none font-semibold tracking-[0.06em] transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">{{ $word->word }}</a>
                                 @else
                                     <span class="font-classical text-ink text-[18px] leading-none font-semibold tracking-[0.06em]">{{ $word->word }}</span>
                                 @endif

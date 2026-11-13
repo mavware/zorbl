@@ -186,7 +186,7 @@ new #[Title('Roadmap')] class extends Component {
     @if($this->groupedItems['in_progress']->isNotEmpty())
         <section>
             <div class="border-hairline mb-4 flex items-center gap-2.5 border-b pb-3.5">
-                <flux:icon name="arrow-path" class="text-amber-400 size-5" />
+                <flux:icon name="arrow-path" class="text-amber-ink size-5" />
                 <h2 class="font-classical text-ink text-[26px] leading-tight font-medium">{{ __('In Progress') }}</h2>
                 <span class="chip-classical border-ink-faint text-ink-faint tnum">{{ $this->groupedItems['in_progress']->count() }}</span>
             </div>

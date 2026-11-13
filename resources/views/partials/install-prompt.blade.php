@@ -79,19 +79,19 @@
     x-cloak
     role="dialog"
     aria-labelledby="install-banner-title"
-    class="fixed bottom-4 left-4 z-[55] w-[calc(100%-2rem)] max-w-sm rounded-xl border border-zinc-800 bg-zinc-950/95 p-4 shadow-2xl backdrop-blur-lg sm:bottom-6 sm:left-6"
+    class="fixed bottom-4 left-4 z-[55] w-[calc(100%-2rem)] max-w-sm rounded-xl border border-line-soft bg-panel/95 dark:bg-zinc-950/95 p-4 shadow-2xl backdrop-blur-lg sm:bottom-6 sm:left-6"
 >
     <div class="flex items-start gap-3">
-        <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-amber-500/10 text-amber-500">
+        <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-500">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-5 w-5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
             </svg>
         </div>
         <div class="flex-1 min-w-0">
-            <p id="install-banner-title" class="text-sm font-semibold text-zinc-100">
+            <p id="install-banner-title" class="text-sm font-semibold text-ink">
                 {{ __('Install :app', ['app' => config('app.name')]) }}
             </p>
-            <p class="mt-1 text-xs text-zinc-400">
+            <p class="mt-1 text-xs text-ink-muted">
                 <span x-show="!isIos">{{ __('Add it to your home screen for one-tap access and a full-screen solving experience.') }}</span>
                 <span x-show="isIos" x-cloak>{{ __('Tap Share, then "Add to Home Screen" to install :app on your iPhone or iPad.', ['app' => config('app.name')]) }}</span>
             </p>
@@ -107,14 +107,14 @@
                 <button
                     type="button"
                     x-on:click="dismiss()"
-                    class="inline-flex items-center justify-center rounded-lg border border-zinc-700 px-3 py-1.5 text-xs font-semibold text-zinc-100 hover:border-zinc-500 hover:bg-zinc-800 transition"
+                    class="inline-flex items-center justify-center rounded-lg border border-line px-3 py-1.5 text-xs font-semibold text-ink hover:border-zinc-400 dark:hover:border-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition"
                 >
                     {{ __('Not now') }}
                 </button>
             </div>
 
             {{-- iOS step-by-step tip --}}
-            <div x-show="showIosTip" x-cloak x-transition class="mt-3 rounded-lg border border-zinc-800 bg-zinc-900 p-3 text-xs text-zinc-300">
+            <div x-show="showIosTip" x-cloak x-transition class="mt-3 rounded-lg border border-line dark:border-zinc-800 bg-panel p-3 text-xs text-ink-muted dark:text-zinc-300">
                 <ol class="list-decimal space-y-1 pl-4">
                     <li>{{ __('Tap the Share icon in Safari\'s toolbar.') }}</li>
                     <li>{{ __('Scroll and tap "Add to Home Screen".') }}</li>

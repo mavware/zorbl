@@ -69,8 +69,8 @@ new #[Title('Billing')] class extends Component {
     <x-pages::settings.layout :heading="__('Billing')" :subheading="__('Manage your subscription and billing')">
         <div class="my-6 w-full space-y-6">
             @if (request()->query('checkout') === 'success')
-                <div class="border-amber-400/60 flex items-start gap-3.5 rounded-sm border p-4.5">
-                    <div class="border-amber-400 flex size-9 shrink-0 items-center justify-center rounded-sm border text-amber-400">
+                <div class="border-amber-ink/60 flex items-start gap-3.5 rounded-sm border p-4.5">
+                    <div class="border-amber-ink flex size-9 shrink-0 items-center justify-center rounded-sm border text-amber-ink">
                         <flux:icon name="check-circle" class="size-4" />
                     </div>
                     <div>
@@ -91,15 +91,15 @@ new #[Title('Billing')] class extends Component {
 
                     <div class="text-ink mb-4 space-y-2 text-sm">
                         <div class="flex items-center gap-2">
-                            <flux:icon name="check-circle" class="size-5 shrink-0 text-amber-400" />
+                            <flux:icon name="check-circle" class="size-5 shrink-0 text-amber-ink" />
                             <span>{{ __('AI Autofill — 50 uses/month') }}</span>
                         </div>
                         <div class="flex items-center gap-2">
-                            <flux:icon name="check-circle" class="size-5 shrink-0 text-amber-400" />
+                            <flux:icon name="check-circle" class="size-5 shrink-0 text-amber-ink" />
                             <span>{{ __('AI Clue Generation — 50 uses/month') }}</span>
                         </div>
                         <div class="flex items-center gap-2">
-                            <flux:icon name="check-circle" class="size-5 shrink-0 text-amber-400" />
+                            <flux:icon name="check-circle" class="size-5 shrink-0 text-amber-ink" />
                             <span>{{ __('A Supporter badge next to your name') }}</span>
                         </div>
                     </div>

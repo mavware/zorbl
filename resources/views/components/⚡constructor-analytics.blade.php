@@ -205,7 +205,7 @@ new class extends Component {
                                         <button type="button" wire:click="sortBy('{{ $column['field'] }}')" class="meta-classical hover:text-ink inline-flex items-center gap-1 transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">
                                             {{ $column['label'] }}
                                             @if($sortField === $column['field'])
-                                                <flux:icon :name="$sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'" class="size-3 text-amber-400" />
+                                                <flux:icon :name="$sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'" class="size-3 text-amber-ink" />
                                             @endif
                                         </button>
                                     @else
@@ -219,7 +219,7 @@ new class extends Component {
                         @foreach($this->publishedPuzzles as $puzzle)
                             <tr wire:key="analytics-{{ $puzzle->id }}">
                                 <td class="px-3 py-3.5">
-                                    <a href="{{ route('crosswords.editor', $puzzle) }}" wire:navigate class="font-classical text-ink hover:text-amber-400 text-[17px] leading-tight font-medium transition-colors">
+                                    <a href="{{ route('crosswords.editor', $puzzle) }}" wire:navigate class="font-classical text-ink hover:text-amber-ink text-[17px] leading-tight font-medium transition-colors">
                                         {{ $puzzle->displayTitle() }}
                                     </a>
                                     <div class="meta-classical mt-1">{{ $puzzle->width }}&times;{{ $puzzle->height }}</div>
@@ -242,7 +242,7 @@ new class extends Component {
                                 <td class="px-3 py-3.5 text-right">
                                     @if($puzzle->avg_rating)
                                         <span class="font-classical text-ink tnum inline-flex items-center gap-1.5 text-[15px] font-medium">
-                                            <flux:icon name="star" variant="outline" class="size-3.5 text-amber-400" />
+                                            <flux:icon name="star" variant="outline" class="size-3.5 text-amber-ink" />
                                             {{ round($puzzle->avg_rating, 1) }}
                                         </span>
                                         @if($puzzle->reviews_count > 0)
@@ -322,11 +322,11 @@ new class extends Component {
                     <path :d="areaPath" class="fill-amber-400/10" />
 
                     {{-- Line --}}
-                    <path :d="linePath" fill="none" class="stroke-amber-400" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                    <path :d="linePath" fill="none" class="stroke-amber-ink" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
 
                     {{-- Data points --}}
                     @foreach($this->ratingTrend as $point)
-                        <circle :cx="x({{ $loop->index }})" :cy="y({{ $point['avg_rating'] }})" r="4" class="fill-ground stroke-amber-400" stroke-width="1.5" @mouseenter="showTooltip({{ $loop->index }})" @mouseleave="hideTooltip()" style="cursor: pointer" />
+                        <circle :cx="x({{ $loop->index }})" :cy="y({{ $point['avg_rating'] }})" r="4" class="fill-ground stroke-amber-ink" stroke-width="1.5" @mouseenter="showTooltip({{ $loop->index }})" @mouseleave="hideTooltip()" style="cursor: pointer" />
                     @endforeach
 
                     {{-- X-axis labels --}}

@@ -215,7 +215,7 @@ new #[Title('Favorites')] class extends Component {
             aria-selected="{{ $list === 'liked' ? 'true' : 'false' }}"
             @class([
                 'font-classical inline-flex h-8 items-center gap-1.5 rounded-sm border px-3 text-[15px] font-medium transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400',
-                'border-amber-400 bg-amber-400/10 text-amber-400' => $list === 'liked',
+                'border-amber-ink bg-amber-400/10 text-amber-ink' => $list === 'liked',
                 'border-border-strong text-ink-muted hover:border-border-hover hover:text-ink' => $list !== 'liked',
             ])
         >
@@ -232,7 +232,7 @@ new #[Title('Favorites')] class extends Component {
                 aria-selected="{{ $list === (string) $favoriteList->id ? 'true' : 'false' }}"
                 @class([
                     'font-classical inline-flex h-8 items-center gap-1.5 rounded-sm border px-3 text-[15px] font-medium transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400',
-                    'border-amber-400 bg-amber-400/10 text-amber-400' => $list === (string) $favoriteList->id,
+                    'border-amber-ink bg-amber-400/10 text-amber-ink' => $list === (string) $favoriteList->id,
                     'border-border-strong text-ink-muted hover:border-border-hover hover:text-ink' => $list !== (string) $favoriteList->id,
                 ])
             >
@@ -284,7 +284,7 @@ new #[Title('Favorites')] class extends Component {
                 <article wire:key="fav-{{ $crossword->id }}" class="border-border hover:border-border-strong flex flex-col gap-3.5 rounded-sm border p-4.5 transition-colors">
                     <div class="min-w-0">
                         <h3 class="font-classical text-ink truncate text-[21px] leading-tight font-semibold">
-                            <a href="{{ route('crosswords.solver', $crossword) }}" wire:navigate class="hover:text-amber-300 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">
+                            <a href="{{ route('crosswords.solver', $crossword) }}" wire:navigate class="hover:text-amber-ink-hover focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">
                                 {{ $crossword->displayTitle() }}
                             </a>
                         </h3>
@@ -304,7 +304,7 @@ new #[Title('Favorites')] class extends Component {
                             :height="$crossword->height"
                             frame-class="border-hairline bg-hairline rounded-sm border"
                             open-class="bg-panel"
-                            block-class="bg-zinc-300"
+                            block-class="bg-zinc-800 dark:bg-zinc-300"
                         />
                     </a>
 

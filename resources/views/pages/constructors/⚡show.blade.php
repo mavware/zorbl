@@ -316,7 +316,7 @@ new #[Title('Constructor Profile')] class extends Component {
                     >
                         <div class="flex items-start justify-between gap-3">
                             <div class="min-w-0">
-                                <h3 class="font-classical text-ink group-hover:text-amber-300 truncate text-[21px] leading-tight font-semibold transition-colors">
+                                <h3 class="font-classical text-ink group-hover:text-amber-ink-hover truncate text-[21px] leading-tight font-semibold transition-colors">
                                     {{ $puzzle->displayTitle() }}
                                 </h3>
                                 <div class="meta-classical mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5">
@@ -337,7 +337,7 @@ new #[Title('Constructor Profile')] class extends Component {
                                 :height="$puzzle->height"
                                 frame-class="border-hairline bg-hairline rounded-sm border"
                                 open-class="bg-panel"
-                                block-class="bg-zinc-300"
+                                block-class="bg-zinc-800 dark:bg-zinc-300"
                             />
                         </div>
 

@@ -147,17 +147,17 @@ new #[Title('Security settings')] class extends Component {
             <label class="block">
                 <span class="meta-classical mb-1.5 block">{{ __('Current password') }}</span>
                 <input type="password" wire:model="current_password" required autocomplete="current-password" class="field-classical w-full px-3.5" />
-                @error('current_password') <p class="mt-1.5 text-xs text-amber-400">{{ $message }}</p> @enderror
+                @error('current_password') <p class="mt-1.5 text-xs text-amber-ink">{{ $message }}</p> @enderror
             </label>
             <label class="block">
                 <span class="meta-classical mb-1.5 block">{{ __('New password') }}</span>
                 <input type="password" wire:model="password" required autocomplete="new-password" class="field-classical w-full px-3.5" />
-                @error('password') <p class="mt-1.5 text-xs text-amber-400">{{ $message }}</p> @enderror
+                @error('password') <p class="mt-1.5 text-xs text-amber-ink">{{ $message }}</p> @enderror
             </label>
             <label class="block">
                 <span class="meta-classical mb-1.5 block">{{ __('Confirm password') }}</span>
                 <input type="password" wire:model="password_confirmation" required autocomplete="new-password" class="field-classical w-full px-3.5" />
-                @error('password_confirmation') <p class="mt-1.5 text-xs text-amber-400">{{ $message }}</p> @enderror
+                @error('password_confirmation') <p class="mt-1.5 text-xs text-amber-ink">{{ $message }}</p> @enderror
             </label>
 
             <div class="flex items-center gap-4">
@@ -181,7 +181,7 @@ new #[Title('Security settings')] class extends Component {
             <label class="block">
                 <span class="meta-classical mb-1.5 block">{{ __('Current password') }}</span>
                 <input type="password" wire:model="logout_other_password" required autocomplete="current-password" class="field-classical w-full px-3.5" />
-                @error('logout_other_password') <p class="mt-1.5 text-xs text-amber-400">{{ $message }}</p> @enderror
+                @error('logout_other_password') <p class="mt-1.5 text-xs text-amber-ink">{{ $message }}</p> @enderror
             </label>
 
                 <div class="flex items-center gap-4">

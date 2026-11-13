@@ -74,7 +74,7 @@ new #[Title('Support Tickets')] class extends Component {
                     class="group flex flex-wrap items-center justify-between gap-3 px-[18px] py-3.5 transition-colors focus:outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-amber-400"
                 >
                     <div class="min-w-0 flex-1">
-                        <div class="font-classical text-ink group-hover:text-amber-300 truncate text-[18px] leading-tight font-semibold transition-colors">{{ $ticket->subject }}</div>
+                        <div class="font-classical text-ink group-hover:text-amber-ink-hover truncate text-[18px] leading-tight font-semibold transition-colors">{{ $ticket->subject }}</div>
                         <div class="meta-classical mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5">
                             <span class="tnum whitespace-nowrap">#{{ $ticket->id }}</span>
                             <span aria-hidden="true">&middot;</span>
@@ -92,14 +92,14 @@ new #[Title('Support Tickets')] class extends Component {
                                 default => __('General'),
                             } }}
                         </span>
-                        <span class="chip-classical {{ match($ticket->status) { 'in_progress', 'resolved' => 'border-amber-400 text-amber-400', default => 'border-ink-faint text-ink-faint' } }}">
+                        <span class="chip-classical {{ match($ticket->status) { 'in_progress', 'resolved' => 'border-amber-ink text-amber-ink', default => 'border-ink-faint text-ink-faint' } }}">
                             {{ match($ticket->status) {
                                 'in_progress' => __('In Progress'),
                                 default => __(ucfirst($ticket->status)),
                             } }}
                         </span>
                         @if($ticket->priority !== 'normal')
-                            <span class="chip-classical {{ match($ticket->priority) { 'high', 'urgent' => 'border-amber-400 text-amber-400', default => 'border-ink-faint text-ink-faint' } }}">
+                            <span class="chip-classical {{ match($ticket->priority) { 'high', 'urgent' => 'border-amber-ink text-amber-ink', default => 'border-ink-faint text-ink-faint' } }}">
                                 {{ __(ucfirst($ticket->priority)) }}
                             </span>
                         @endif

@@ -97,28 +97,28 @@ new #[Title('Profile settings')] class extends Component {
             <label class="block">
                 <span class="meta-classical mb-1.5 block">{{ __('Name') }}</span>
                 <input type="text" wire:model="name" required autofocus autocomplete="name" class="field-classical w-full px-3.5" />
-                @error('name') <p class="mt-1.5 text-xs text-amber-400">{{ $message }}</p> @enderror
+                @error('name') <p class="mt-1.5 text-xs text-amber-ink">{{ $message }}</p> @enderror
             </label>
 
             <label class="block">
                 <span class="meta-classical mb-1.5 block">{{ __('Copyright name') }}</span>
                 <input type="text" wire:model="copyrightName" placeholder="{{ Auth::user()->name }}" class="field-classical w-full px-3.5" />
                 <span class="text-ink-muted mt-1.5 block text-sm">{{ __('Used as the default copyright holder on your puzzles. Defaults to your name if blank.') }}</span>
-                @error('copyrightName') <p class="mt-1.5 text-xs text-amber-400">{{ $message }}</p> @enderror
+                @error('copyrightName') <p class="mt-1.5 text-xs text-amber-ink">{{ $message }}</p> @enderror
             </label>
 
             <label class="block">
                 <span class="meta-classical mb-1.5 block">{{ __('Bio') }}</span>
                 <textarea wire:model="bio" rows="3" placeholder="{{ __('Tell solvers a little about yourself…') }}" class="field-classical w-full px-3.5"></textarea>
                 <span class="text-ink-muted mt-1.5 block text-sm">{{ __('Displayed on your public constructor profile. Max 500 characters.') }}</span>
-                @error('bio') <p class="mt-1.5 text-xs text-amber-400">{{ $message }}</p> @enderror
+                @error('bio') <p class="mt-1.5 text-xs text-amber-ink">{{ $message }}</p> @enderror
             </label>
 
             <div>
                 <label class="block">
                     <span class="meta-classical mb-1.5 block">{{ __('Email') }}</span>
                     <input type="email" wire:model="email" required autocomplete="email" class="field-classical w-full px-3.5" />
-                    @error('email') <p class="mt-1.5 text-xs text-amber-400">{{ $message }}</p> @enderror
+                    @error('email') <p class="mt-1.5 text-xs text-amber-ink">{{ $message }}</p> @enderror
                 </label>
 
                 @if ($this->hasUnverifiedEmail)
@@ -126,13 +126,13 @@ new #[Title('Profile settings')] class extends Component {
                         <p class="text-ink-muted mt-4 text-sm">
                             {{ __('Your email address is unverified.') }}
 
-                            <button type="button" wire:click="resendVerificationNotification" class="text-amber-400 hover:text-amber-300 cursor-pointer underline underline-offset-4 transition-colors">
+                            <button type="button" wire:click="resendVerificationNotification" class="text-amber-ink hover:text-amber-ink-hover cursor-pointer underline underline-offset-4 transition-colors">
                                 {{ __('Click here to re-send the verification email.') }}
                             </button>
                         </p>
 
                         @if (session('status') === 'verification-link-sent')
-                            <p class="mt-2 text-sm font-medium text-amber-400">
+                            <p class="mt-2 text-sm font-medium text-amber-ink">
                                 {{ __('A new verification link has been sent to your email address.') }}
                             </p>
                         @endif
@@ -147,7 +147,7 @@ new #[Title('Profile settings')] class extends Component {
                     <span class="text-ink-muted mt-0.5 block text-sm">
                         {{ __('Hide puzzles whose title or clues contain profanity or strong language. Recommended for solvers of all ages.') }}
                     </span>
-                    @error('safeSearchEnabled') <p class="mt-1.5 text-xs text-amber-400">{{ $message }}</p> @enderror
+                    @error('safeSearchEnabled') <p class="mt-1.5 text-xs text-amber-ink">{{ $message }}</p> @enderror
                 </span>
             </label>
 

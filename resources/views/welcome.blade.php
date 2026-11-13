@@ -120,23 +120,23 @@
 
         @include('partials.google-tag')
         @vite(['resources/css/app.css', 'resources/js/app.js'])
-        @include('partials.forced-dark-appearance')
+        @fluxAppearance
     </head>
-    <body class="bg-page text-zinc-100 antialiased">
+    <body class="bg-page text-ink antialiased">
         @include('partials.impersonation-banner')
         {{-- Navigation --}}
-        <nav class="fixed top-0 inset-x-0 z-50 border-b border-zinc-800 bg-page">
+        <nav class="fixed top-0 inset-x-0 z-50 border-b border-line bg-panel dark:border-line-soft dark:bg-page">
             <div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
-                <a href="/" class="flex items-center gap-3 text-xl tracking-tight text-white">
+                <a href="/" class="flex items-center gap-3 text-xl tracking-tight text-ink">
                     <x-app-logo-icon class="h-8 w-auto" />
                     <span class="hidden md:flex">{{ $appName }}</span>
                 </a>
                 <div class="flex items-center gap-4">
-{{--                    <a href="{{ route('puzzles.index') }}" class="text-sm text-zinc-500 hover:text-zinc-100 transition">Browse Puzzles</a>--}}
+{{--                    <a href="{{ route('puzzles.index') }}" class="text-sm text-ink-faint hover:text-ink transition">Browse Puzzles</a>--}}
                     @auth
                         <a href="{{ route('crosswords.index') }}" class="btn-amber-outline rounded-lg border px-4 py-2 text-sm font-semibold transition">Dashboard</a>
                     @else
-                        <a href="{{ route('login') }}" class="rounded-lg border border-zinc-500 px-4 py-2 text-sm font-semibold text-zinc-500 hover:border-zinc-100 hover:text-zinc-100 transition">Log in</a>
+                        <a href="{{ route('login') }}" class="rounded-lg border border-zinc-400 dark:border-zinc-500 px-4 py-2 text-sm font-semibold text-ink-faint hover:border-ink hover:text-ink transition">Log in</a>
                         <a href="{{ route('register') }}" class="btn-amber-outline rounded-lg border px-4 py-2 text-sm font-semibold transition">Sign up</a>
                     @endauth
                 </div>
@@ -152,16 +152,16 @@
             >
                 {{-- Hero copy — sits beside the builder panel --}}
                 <div class="flex min-w-0 flex-col text-left">
-                    <div class="hidden md:flex label-classical font-display mb-5 text-[13px] font-semibold tabular-nums text-amber-400 [--label-tracking:0.14em]">
+                    <div class="hidden md:flex label-classical font-display mb-5 text-[13px] font-semibold tabular-nums text-amber-ink [--label-tracking:0.14em]">
                         {{ __('Free forever') }} &middot; {{ __("Every tool you'll ever need") }}
                     </div>
 
-                    <h1 class="font-display md:mb-6 text-4xl leading-[1.02] tracking-tight text-zinc-100 sm:text-5xl lg:text-6xl">
+                    <h1 class="font-display md:mb-6 text-4xl leading-[1.02] tracking-tight text-ink sm:text-5xl lg:text-6xl">
                         {{ __('Build a crossword') }}<br class="hidden sm:block">
                         {{ __('in ten minutes.') }}
                     </h1>
 
-                    <p class="hidden md:flex mb-8 max-w-[46ch] text-[17px] leading-relaxed text-zinc-300">
+                    <p class="hidden md:flex mb-8 max-w-[46ch] text-[17px] leading-relaxed text-ink-muted dark:text-zinc-300">
                         {{ __('A visual editor that handles symmetry, numbering and the boring bookkeeping — so you can spend the afternoon on the fill and the wordplay.') }}
                     </p>
                 </div>
@@ -170,7 +170,7 @@
                 <div class="relative min-w-0 text-center">
                     <div class="flex justify-between w-full">
                     {{-- Solve / Build Toggle --}}
-                    <div class="relative inline-grid grid-cols-2 rounded-full border border-zinc-800 bg-zinc-900/60 p-1">
+                    <div class="relative inline-grid grid-cols-2 rounded-full border border-line dark:border-zinc-800 bg-panel dark:bg-zinc-900/bg-zinc-900/60 p-1">
                         {{-- Sliding highlight pill --}}
                         <div
                             class="absolute inset-y-1 left-1 w-[calc(50%-0.25rem)] rounded-full border border-amber-500 bg-amber-500/10 ring-1 ring-amber-500 transition-transform duration-300 ease-out"
@@ -180,7 +180,7 @@
                         <button
                             type="button"
                             @click="tab = 'build'"
-                            :class="tab === 'build' ? 'text-amber-300' : 'text-zinc-400 hover:text-zinc-100 cursor-pointer'"
+                            :class="tab === 'build' ? 'text-amber-ink-hover' : 'text-ink-muted hover:text-ink cursor-pointer'"
                             class="flex relative rounded-full px-8 py-2 font-semibold transition"
                         >
                             Build
@@ -188,7 +188,7 @@
                         <button
                             type="button"
                             @click="tab = 'solve'"
-                            :class="tab === 'solve' ? 'text-amber-300' : 'text-zinc-400 hover:text-zinc-100 cursor-pointer'"
+                            :class="tab === 'solve' ? 'text-amber-ink-hover' : 'text-ink-muted hover:text-ink cursor-pointer'"
                             class="flex relative rounded-full px-8 py-2 font-semibold transition"
                         >
                             Solve
@@ -198,11 +198,11 @@
 
 
 
-                        <div x-show="tab === 'solve'" class="font-display hidden md:flex text-3xl font-medium text-white">
+                        <div x-show="tab === 'solve'" class="font-display hidden md:flex text-3xl font-medium text-ink">
                             Browse tons of puzzles.
                         </div>
 
-                        <div x-show="tab === 'build'" class="font-display hidden md:flex text-3xl font-medium text-white">
+                        <div x-show="tab === 'build'" class="font-display hidden md:flex text-3xl font-medium text-ink">
                             Start with a shape.
                         </div>
 
@@ -212,7 +212,7 @@
                          hero doesn't reflow (CLS) when Alpine boots. The build panel
                          below stays hidden via an inline display:none until Alpine. --}}
                     <div x-show="tab === 'solve'">
-                        <div class="mt-8 w-full rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 shadow-2xl shadow-amber-500/5 sm:p-8">
+                        <div class="mt-8 w-full rounded-2xl border border-line dark:border-zinc-800 bg-panel dark:bg-zinc-900/bg-zinc-900/50 p-6 shadow-2xl shadow-amber-500/5 sm:p-8">
                             <livewire:puzzle-discovery :limit="7" />
                         </div>
                     </div>
@@ -226,26 +226,26 @@
                             class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
                             x-on:click.self="showSignup = false"
                         >
-                            <div class="mx-4 w-full max-w-md rounded-2xl bg-zinc-900 p-8 text-center shadow-xl ring-1 ring-zinc-800" x-on:click.stop>
+                            <div class="mx-4 w-full max-w-md rounded-2xl bg-panel p-8 text-center shadow-xl ring-1 ring-line-soft" x-on:click.stop>
                                 <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-500/10">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="size-8 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="size-8 text-amber-ink" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                         <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/>
                                         <path d="m9 15 2 2 4-4"/>
                                     </svg>
                                 </div>
-                                <h3 class="text-xl font-bold text-zinc-100">{{ __('Ready for more puzzles?') }}</h3>
-                                <p class="mt-2 text-sm text-zinc-400">
+                                <h3 class="text-xl font-bold text-ink">{{ __('Ready for more puzzles?') }}</h3>
+                                <p class="mt-2 text-sm text-ink-muted">
                                     {{ __('Create a free account to solve unlimited puzzles, save your progress across devices, and track your stats.') }}
                                 </p>
                                 <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
                                     <a href="{{ route('register') }}" class="btn-amber-outline rounded-xl border px-6 py-2.5 text-sm font-semibold transition">
                                         {{ __('Create Free Account') }}
                                     </a>
-                                    <a href="{{ route('login') }}" class="rounded-xl border border-zinc-300 px-6 py-2.5 text-sm font-semibold text-zinc-300 hover:bg-zinc-800 transition">
+                                    <a href="{{ route('login') }}" class="rounded-xl border border-zinc-400 dark:border-zinc-300 px-6 py-2.5 text-sm font-semibold text-ink-muted dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition">
                                         {{ __('Log In') }}
                                     </a>
                                 </div>
-                                <button x-on:click="showSignup = false" class="mt-4 text-xs text-zinc-500 hover:text-zinc-300">
+                                <button x-on:click="showSignup = false" class="mt-4 text-xs text-ink-faint hover:text-ink dark:hover:text-zinc-300">
                                     {{ __('Maybe later') }}
                                 </button>
                             </div>
@@ -254,7 +254,7 @@
 
                     {{-- Build panel --}}
                     <div x-show="tab === 'build'" x-cloak style="display: none">
-                        <div class="mt-8 w-full rounded-2xl border border-zinc-800 bg-zinc-900/50 px-6 py-4 shadow-2xl shadow-amber-500/5 sm:px-8 sm:py-6">
+                        <div class="mt-8 w-full rounded-2xl border border-line dark:border-zinc-800 bg-panel dark:bg-zinc-900/bg-zinc-900/50 px-6 py-4 shadow-2xl shadow-amber-500/5 sm:px-8 sm:py-6">
                             <livewire:welcome-builder />
                         </div>
                     </div>
@@ -264,7 +264,7 @@
 
         {{-- Live trust strip (only renders if at least one stat clears the credibility floor) --}}
         @if ($visibleStats->isNotEmpty())
-            <section class="border-t border-zinc-800 bg-zinc-950/60 py-10">
+            <section class="border-t border-line-soft bg-panel dark:bg-zinc-950/60 py-10">
                 <div class="mx-auto max-w-5xl px-6">
                     @php
                         $statsCols = match ($visibleStats->count()) {
@@ -276,8 +276,8 @@
                     <dl class="grid gap-8 text-center {{ $statsCols }}">
                         @foreach ($visibleStats as $stat)
                             <div>
-                                <dt class="text-xs uppercase tracking-wider text-zinc-600">{{ $stat['label'] }}</dt>
-                                <dd class="mt-2 text-3xl font-bold text-amber-500">{{ number_format($stat['value']) }}</dd>
+                                <dt class="text-xs uppercase tracking-wider text-ink-muted dark:text-zinc-600">{{ $stat['label'] }}</dt>
+                                <dd class="mt-2 text-3xl font-bold text-amber-600 dark:text-amber-500">{{ number_format($stat['value']) }}</dd>
                             </div>
                         @endforeach
                     </dl>
@@ -286,96 +286,96 @@
         @endif
 
         {{-- Features --}}
-        <section class="relative border-t border-zinc-800 bg-zinc-950 py-24">
+        <section class="relative border-t border-line-soft bg-ground py-24">
             <div class="mx-auto max-w-6xl px-6">
                 <h2 class="text-center text-3xl font-bold tracking-tight sm:text-4xl">A toolkit built by puzzle people, for puzzle people</h2>
-                <p class="mx-auto mt-4 max-w-2xl text-center text-zinc-500">Everything you need to take a puzzle from idea to inbox — and everything a solver needs to keep coming back.</p>
+                <p class="mx-auto mt-4 max-w-2xl text-center text-ink-faint">Everything you need to take a puzzle from idea to inbox — and everything a solver needs to keep coming back.</p>
 
                 <div class="mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                     {{-- Feature 1 --}}
-                    <div class="group rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 transition hover:border-amber-500/30 hover:bg-zinc-900">
-                        <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/10 text-amber-500">
+                    <div class="group rounded-2xl border border-line dark:border-zinc-800 bg-panel dark:bg-zinc-900/bg-zinc-900/50 p-6 transition hover:border-amber-500/30 dark:hover:bg-zinc-900">
+                        <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-500">
                             <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25a2.25 2.25 0 0 1-2.25-2.25v-2.25Z" /></svg>
                         </div>
                         <h3 class="mt-4 text-lg font-semibold">Symmetry on autopilot</h3>
-                        <p class="mt-2 text-sm text-zinc-500">Click to drop a block, type to fill a letter. Rotational symmetry mirrors your blocks automatically so the grid always looks the part.</p>
+                        <p class="mt-2 text-sm text-ink-faint">Click to drop a block, type to fill a letter. Rotational symmetry mirrors your blocks automatically so the grid always looks the part.</p>
                     </div>
 
                     {{-- Feature 2 --}}
-                    <div class="group rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 transition hover:border-amber-500/30 hover:bg-zinc-900">
-                        <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/10 text-amber-500">
+                    <div class="group rounded-2xl border border-line dark:border-zinc-800 bg-panel dark:bg-zinc-900/bg-zinc-900/50 p-6 transition hover:border-amber-500/30 dark:hover:bg-zinc-900">
+                        <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-500">
                             <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15.91 11.672a.375.375 0 0 1 0 .656l-5.603 3.113a.375.375 0 0 1-.557-.328V8.887c0-.286.307-.466.557-.327l5.603 3.112Z" /></svg>
                         </div>
                         <h3 class="mt-4 text-lg font-semibold">Pick up where you left off</h3>
-                        <p class="mt-2 text-sm text-zinc-500">Solve any puzzle in the catalog and your progress saves automatically — across devices, between tabs, no logins lost.</p>
+                        <p class="mt-2 text-sm text-ink-faint">Solve any puzzle in the catalog and your progress saves automatically — across devices, between tabs, no logins lost.</p>
                     </div>
 
                     {{-- Feature 3 --}}
-                    <div class="group rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 transition hover:border-amber-500/30 hover:bg-zinc-900">
-                        <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/10 text-amber-500">
+                    <div class="group rounded-2xl border border-line dark:border-zinc-800 bg-panel dark:bg-zinc-900/bg-zinc-900/50 p-6 transition hover:border-amber-500/30 dark:hover:bg-zinc-900">
+                        <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-500">
                             <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" /></svg>
                         </div>
                         <h3 class="mt-4 text-lg font-semibold">Bring your own .ipuz</h3>
-                        <p class="mt-2 text-sm text-zinc-500">Already constructing? Import .ipuz files from your favorite tool and keep working. Export anytime — your puzzles stay yours.</p>
+                        <p class="mt-2 text-sm text-ink-faint">Already constructing? Import .ipuz files from your favorite tool and keep working. Export anytime — your puzzles stay yours.</p>
                     </div>
 
                     {{-- Feature 4 --}}
-                    <div class="group rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 transition hover:border-amber-500/30 hover:bg-zinc-900">
-                        <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/10 text-amber-500">
+                    <div class="group rounded-2xl border border-line dark:border-zinc-800 bg-panel dark:bg-zinc-900/bg-zinc-900/50 p-6 transition hover:border-amber-500/30 dark:hover:bg-zinc-900">
+                        <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-500">
                             <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" /></svg>
                         </div>
                         <h3 class="mt-4 text-lg font-semibold">Never stare at a blank clue again</h3>
-                        <p class="mt-2 text-sm text-zinc-500">See how other constructors clued the same answer. The clue library turns the community's collective wit into your inspiration.</p>
+                        <p class="mt-2 text-sm text-ink-faint">See how other constructors clued the same answer. The clue library turns the community's collective wit into your inspiration.</p>
                     </div>
 
                     {{-- Feature 5 --}}
-                    <div class="group rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 transition hover:border-amber-500/30 hover:bg-zinc-900">
-                        <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/10 text-amber-500">
+                    <div class="group rounded-2xl border border-line dark:border-zinc-800 bg-panel dark:bg-zinc-900/bg-zinc-900/50 p-6 transition hover:border-amber-500/30 dark:hover:bg-zinc-900">
+                        <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-500">
                             <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 19.5 15-15m0 0H8.25m11.25 0v11.25" /></svg>
                         </div>
                         <h3 class="mt-4 text-lg font-semibold">Squares, diamonds, anything</h3>
-                        <p class="mt-2 text-sm text-zinc-500">Go beyond the classic 15x15. Build minis, themelesses, diamonds, irregular shapes — with full void-cell support for the wild ideas.</p>
+                        <p class="mt-2 text-sm text-ink-faint">Go beyond the classic 15x15. Build minis, themelesses, diamonds, irregular shapes — with full void-cell support for the wild ideas.</p>
                     </div>
 
                     {{-- Feature 6 --}}
-                    <div class="group rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 transition hover:border-amber-500/30 hover:bg-zinc-900">
-                        <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/10 text-amber-500">
+                    <div class="group rounded-2xl border border-line dark:border-zinc-800 bg-panel dark:bg-zinc-900/bg-zinc-900/50 p-6 transition hover:border-amber-500/30 dark:hover:bg-zinc-900">
+                        <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-500">
                             <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z" /></svg>
                         </div>
                         <h3 class="mt-4 text-lg font-semibold">One-click publish</h3>
-                        <p class="mt-2 text-sm text-zinc-500">When the grid is solid and the clues sing, ship it. Your puzzle goes live for solvers around the world to find and finish.</p>
+                        <p class="mt-2 text-sm text-ink-faint">When the grid is solid and the clues sing, ship it. Your puzzle goes live for solvers around the world to find and finish.</p>
                     </div>
                 </div>
             </div>
         </section>
 
         {{-- Free reference tools --}}
-        <section class="border-t border-zinc-800 bg-zinc-950/60 py-24">
+        <section class="border-t border-line-soft bg-ground dark:bg-zinc-950/60 py-24">
             <div class="mx-auto max-w-6xl px-6">
                 <h2 class="text-center text-3xl font-bold tracking-tight sm:text-4xl">Free reference tools — no account needed</h2>
-                <p class="mx-auto mt-4 max-w-2xl text-center text-zinc-500">Two open libraries for constructors and solvers alike. Search them anytime, sign-in optional.</p>
+                <p class="mx-auto mt-4 max-w-2xl text-center text-ink-faint">Two open libraries for constructors and solvers alike. Search them anytime, sign-in optional.</p>
 
                 <div class="mt-16 grid gap-6 sm:grid-cols-2">
                     {{-- Words --}}
-                    <a href="{{ route('words.index') }}" class="group flex flex-col rounded-2xl border border-zinc-800 bg-zinc-900/50 p-8 transition hover:border-amber-500/40 hover:bg-zinc-900">
-                        <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/10 text-amber-500">
+                    <a href="{{ route('words.index') }}" class="group flex flex-col rounded-2xl border border-line dark:border-zinc-800 bg-panel dark:bg-zinc-900/bg-zinc-900/50 p-8 transition hover:border-amber-500/40 dark:hover:bg-zinc-900">
+                        <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-500">
                             <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" /></svg>
                         </div>
-                        <h3 class="mt-5 text-xl font-bold text-zinc-100">Words</h3>
-                        <p class="mt-2 text-sm text-zinc-500">Stuck on a fill? Search hundreds of thousands of crossword answers by length and pattern — <code class="rounded bg-zinc-800 px-1 text-xs text-amber-400">C?T</code> or <code class="rounded bg-zinc-800 px-1 text-xs text-amber-400">S*E</code> — with clue counts and fill scores for each entry.</p>
-                        <span class="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-amber-500">Search the catalog
+                        <h3 class="mt-5 text-xl font-bold text-ink">Words</h3>
+                        <p class="mt-2 text-sm text-ink-faint">Stuck on a fill? Search hundreds of thousands of crossword answers by length and pattern — <code class="rounded bg-zinc-200 dark:bg-zinc-800 px-1 text-xs text-amber-ink">C?T</code> or <code class="rounded bg-zinc-200 dark:bg-zinc-800 px-1 text-xs text-amber-ink">S*E</code> — with clue counts and fill scores for each entry.</p>
+                        <span class="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-amber-600 dark:text-amber-500">Search the catalog
                             <svg class="h-4 w-4 transition group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" /></svg>
                         </span>
                     </a>
 
                     {{-- Clues --}}
-                    <a href="{{ route('clues.index') }}" class="group flex flex-col rounded-2xl border border-zinc-800 bg-zinc-900/50 p-8 transition hover:border-amber-500/40 hover:bg-zinc-900">
-                        <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/10 text-amber-500">
+                    <a href="{{ route('clues.index') }}" class="group flex flex-col rounded-2xl border border-line dark:border-zinc-800 bg-panel dark:bg-zinc-900/bg-zinc-900/50 p-8 transition hover:border-amber-500/40 dark:hover:bg-zinc-900">
+                        <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-500">
                             <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" /></svg>
                         </div>
-                        <h3 class="mt-5 text-xl font-bold text-zinc-100">Clues</h3>
-                        <p class="mt-2 text-sm text-zinc-500">See how constructors have clued any answer. Search a community library of crossword clues for inspiration, or add your own to help the next puzzle-maker.</p>
-                        <span class="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-amber-500">Browse the library
+                        <h3 class="mt-5 text-xl font-bold text-ink">Clues</h3>
+                        <p class="mt-2 text-sm text-ink-faint">See how constructors have clued any answer. Search a community library of crossword clues for inspiration, or add your own to help the next puzzle-maker.</p>
+                        <span class="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-amber-600 dark:text-amber-500">Browse the library
                             <svg class="h-4 w-4 transition group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" /></svg>
                         </span>
                     </a>
@@ -384,76 +384,76 @@
         </section>
 
         {{-- How it works --}}
-        <section class="border-t border-zinc-800 py-24">
+        <section class="border-t border-line-soft py-24">
             <div class="mx-auto max-w-4xl px-6">
                 <h2 class="text-center text-3xl font-bold tracking-tight sm:text-4xl">How it works</h2>
                 <div class="mt-16 grid gap-12 sm:grid-cols-3">
                     <div class="text-center">
-                        <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-amber-500 text-xl font-bold text-amber-500">1</div>
+                        <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-amber-500 text-xl font-bold text-amber-600 dark:text-amber-500">1</div>
                         <h3 class="mt-4 text-lg font-semibold">Design your grid</h3>
-                        <p class="mt-2 text-sm text-zinc-500">Pick a size, place blocks, and fill in answers with the visual editor. Symmetry happens automatically.</p>
+                        <p class="mt-2 text-sm text-ink-faint">Pick a size, place blocks, and fill in answers with the visual editor. Symmetry happens automatically.</p>
                     </div>
                     <div class="text-center">
-                        <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-amber-500 text-xl font-bold text-amber-500">2</div>
+                        <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-amber-500 text-xl font-bold text-amber-600 dark:text-amber-500">2</div>
                         <h3 class="mt-4 text-lg font-semibold">Write your clues</h3>
-                        <p class="mt-2 text-sm text-zinc-500">Sharpen each clue. Browse the community library when you need a spark of inspiration.</p>
+                        <p class="mt-2 text-sm text-ink-faint">Sharpen each clue. Browse the community library when you need a spark of inspiration.</p>
                     </div>
                     <div class="text-center">
-                        <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-amber-500 text-xl font-bold text-amber-500">3</div>
+                        <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-amber-500 text-xl font-bold text-amber-600 dark:text-amber-500">3</div>
                         <h3 class="mt-4 text-lg font-semibold">Publish & solve</h3>
-                        <p class="mt-2 text-sm text-zinc-500">Hit publish and your puzzle is live. Then unwind with crosswords from constructors around the world.</p>
+                        <p class="mt-2 text-sm text-ink-faint">Hit publish and your puzzle is live. Then unwind with crosswords from constructors around the world.</p>
                     </div>
                 </div>
             </div>
         </section>
 
         {{-- FAQ --}}
-        <section class="border-t border-zinc-800 bg-zinc-950 py-24">
+        <section class="border-t border-line-soft bg-ground py-24">
             <div class="mx-auto max-w-3xl px-6">
                 <h2 class="text-center text-3xl font-bold tracking-tight sm:text-4xl">Questions, answered</h2>
-                <div class="mt-12 divide-y divide-zinc-800 rounded-2xl border border-zinc-800 bg-zinc-900/40">
+                <div class="mt-12 divide-y divide-line-soft rounded-2xl border border-line dark:border-zinc-800 bg-panel dark:bg-zinc-900/bg-zinc-900/40">
                     <details class="group p-6">
-                        <summary class="flex cursor-pointer items-center justify-between text-base font-semibold text-zinc-100 marker:hidden list-none">
+                        <summary class="flex cursor-pointer items-center justify-between text-base font-semibold text-ink marker:hidden list-none">
                             Do I need crossword construction experience?
-                            <svg class="h-5 w-5 shrink-0 text-zinc-600 transition group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
+                            <svg class="h-5 w-5 shrink-0 text-ink-faint dark:text-zinc-600 transition group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
                         </summary>
-                        <p class="mt-3 text-sm text-zinc-500">No. The visual editor handles symmetry, numbering, and the boring bookkeeping. If you can spell, you can build a mini in an afternoon.</p>
+                        <p class="mt-3 text-sm text-ink-faint">No. The visual editor handles symmetry, numbering, and the boring bookkeeping. If you can spell, you can build a mini in an afternoon.</p>
                     </details>
                     <details class="group p-6">
-                        <summary class="flex cursor-pointer items-center justify-between text-base font-semibold text-zinc-100 marker:hidden list-none">
+                        <summary class="flex cursor-pointer items-center justify-between text-base font-semibold text-ink marker:hidden list-none">
                             Is it really free?
-                            <svg class="h-5 w-5 shrink-0 text-zinc-600 transition group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
+                            <svg class="h-5 w-5 shrink-0 text-ink-faint dark:text-zinc-600 transition group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
                         </summary>
-                        <p class="mt-3 text-sm text-zinc-500">Yes. Building, publishing, and solving are free with no credit card required. An optional Pro plan adds AI-assisted grid filling and clue suggestions for constructors who want a head start.</p>
+                        <p class="mt-3 text-sm text-ink-faint">Yes. Building, publishing, and solving are free with no credit card required. An optional Pro plan adds AI-assisted grid filling and clue suggestions for constructors who want a head start.</p>
                     </details>
                     <details class="group p-6">
-                        <summary class="flex cursor-pointer items-center justify-between text-base font-semibold text-zinc-100 marker:hidden list-none">
+                        <summary class="flex cursor-pointer items-center justify-between text-base font-semibold text-ink marker:hidden list-none">
                             Can I import puzzles I&rsquo;ve already built elsewhere?
-                            <svg class="h-5 w-5 shrink-0 text-zinc-600 transition group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
+                            <svg class="h-5 w-5 shrink-0 text-ink-faint dark:text-zinc-600 transition group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
                         </summary>
-                        <p class="mt-3 text-sm text-zinc-500">Yes. Import standard <code class="rounded bg-zinc-800 px-1 text-xs text-amber-400">.ipuz</code> files from any tool that exports them and keep working. Export back out anytime.</p>
+                        <p class="mt-3 text-sm text-ink-faint">Yes. Import standard <code class="rounded bg-zinc-200 dark:bg-zinc-800 px-1 text-xs text-amber-ink">.ipuz</code> files from any tool that exports them and keep working. Export back out anytime.</p>
                     </details>
                     <details class="group p-6">
-                        <summary class="flex cursor-pointer items-center justify-between text-base font-semibold text-zinc-100 marker:hidden list-none">
+                        <summary class="flex cursor-pointer items-center justify-between text-base font-semibold text-ink marker:hidden list-none">
                             What grid sizes and shapes are supported?
-                            <svg class="h-5 w-5 shrink-0 text-zinc-600 transition group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
+                            <svg class="h-5 w-5 shrink-0 text-ink-faint dark:text-zinc-600 transition group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
                         </summary>
-                        <p class="mt-3 text-sm text-zinc-500">Anything from 4x4 minis up through Sunday-sized 21x21 grids. Diamonds, asymmetric layouts, and void cells are all first-class citizens.</p>
+                        <p class="mt-3 text-sm text-ink-faint">Anything from 4x4 minis up through Sunday-sized 21x21 grids. Diamonds, asymmetric layouts, and void cells are all first-class citizens.</p>
                     </details>
                     <details class="group p-6">
-                        <summary class="flex cursor-pointer items-center justify-between text-base font-semibold text-zinc-100 marker:hidden list-none">
+                        <summary class="flex cursor-pointer items-center justify-between text-base font-semibold text-ink marker:hidden list-none">
                             How is this different from solving on the NYT?
-                            <svg class="h-5 w-5 shrink-0 text-zinc-600 transition group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
+                            <svg class="h-5 w-5 shrink-0 text-ink-faint dark:text-zinc-600 transition group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
                         </summary>
-                        <p class="mt-3 text-sm text-zinc-500">{{ $appName }} is a place to <em>build</em> as well as solve, with puzzles from independent constructors you won&rsquo;t find on big-paper sites. Think of it as the indie venue for crossword craft.</p>
+                        <p class="mt-3 text-sm text-ink-faint">{{ $appName }} is a place to <em>build</em> as well as solve, with puzzles from independent constructors you won&rsquo;t find on big-paper sites. Think of it as the indie venue for crossword craft.</p>
                     </details>
                     @if (config('crosswordbuilder.features.contests'))
                     <details class="group p-6">
-                        <summary class="flex cursor-pointer items-center justify-between text-base font-semibold text-zinc-100 marker:hidden list-none">
+                        <summary class="flex cursor-pointer items-center justify-between text-base font-semibold text-ink marker:hidden list-none">
                             Can I run a contest with my puzzles?
-                            <svg class="h-5 w-5 shrink-0 text-zinc-600 transition group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
+                            <svg class="h-5 w-5 shrink-0 text-ink-faint dark:text-zinc-600 transition group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
                         </summary>
-                        <p class="mt-3 text-sm text-zinc-500">Yes. Contests let you bundle puzzles, set a window, and see a live leaderboard as solvers race to the finish.</p>
+                        <p class="mt-3 text-sm text-ink-faint">Yes. Contests let you bundle puzzles, set a window, and see a live leaderboard as solvers race to the finish.</p>
                     </details>
                     @endif
                 </div>
@@ -461,10 +461,10 @@
         </section>
 
         {{-- CTA --}}
-        <section class="border-t border-zinc-800 py-24">
+        <section class="border-t border-line-soft py-24">
             <div class="mx-auto max-w-2xl px-6 text-center">
                 <h2 class="text-3xl font-bold tracking-tight sm:text-4xl">Build your first puzzle in under 10 minutes</h2>
-                <p class="mt-4 text-zinc-500">Join {{ $appName }} and start crafting or solving today.</p>
+                <p class="mt-4 text-ink-faint">Join {{ $appName }} and start crafting or solving today.</p>
                 <div class="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
                     @auth
                         <a href="{{ route('crosswords.index') }}" class="btn-amber-outline rounded-xl border px-8 py-3.5 text-base font-semibold transition">
@@ -474,7 +474,7 @@
                         <a href="{{ route('register') }}" class="btn-amber-outline rounded-xl border px-8 py-3.5 text-base font-semibold transition">
                             Create your free account
                         </a>
-                        <a href="{{ route('puzzles.index') }}" class="rounded-xl border border-zinc-700 px-8 py-3.5 text-base font-semibold text-zinc-100 hover:border-zinc-500 hover:bg-zinc-800 transition">
+                        <a href="{{ route('puzzles.index') }}" class="rounded-xl border border-line px-8 py-3.5 text-base font-semibold text-ink hover:border-zinc-400 dark:hover:border-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition">
                             Browse puzzles
                         </a>
                     @endauth
@@ -483,22 +483,22 @@
         </section>
 
         {{-- Footer --}}
-        <footer class="border-t border-zinc-800 py-8">
-            <div class="mx-auto flex max-w-6xl flex-col items-center gap-3 px-6 text-center text-sm text-zinc-700 sm:flex-row sm:justify-between">
+        <footer class="border-t border-line-soft py-8">
+            <div class="mx-auto flex max-w-6xl flex-col items-center gap-3 px-6 text-center text-sm text-ink-faint dark:text-zinc-700 sm:flex-row sm:justify-between">
                 <p>&copy; {{ date('Y') }} {{ $appName }}. All rights reserved.</p>
                 <div class="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
-                    <a href="{{ route('register') }}" class="text-zinc-500 hover:text-zinc-300">Build a Crossword</a>
-                    <a href="{{ route('puzzles.daily-history') }}" class="text-zinc-500 hover:text-zinc-300">Puzzle of the Day</a>
-                    <a href="{{ route('puzzles.index', ['sortBy' => 'newest']) }}" class="text-zinc-500 hover:text-zinc-300">Newest Puzzles</a>
-                    <a href="{{ route('puzzles.index') }}" class="text-zinc-500 hover:text-zinc-300">Trending Puzzles</a>
-                    <a href="{{ route('words.index') }}" class="text-zinc-500 hover:text-zinc-300">Words</a>
-                    <a href="{{ route('clues.index') }}" class="text-zinc-500 hover:text-zinc-300">Clues</a>
-                    <a href="{{ route('help.index') }}" class="text-zinc-500 hover:text-zinc-300">Help</a>
-                    <a href="{{ route('roadmap.index') }}" class="text-zinc-500 hover:text-zinc-300">Roadmap</a>
-                    <a href="{{ route('legal.terms') }}" class="text-zinc-500 hover:text-zinc-300">Terms</a>
-                    <a href="{{ route('legal.privacy') }}" class="text-zinc-500 hover:text-zinc-300">Privacy</a>
-                    <a href="{{ route('legal.cookies') }}" class="text-zinc-500 hover:text-zinc-300">Cookies</a>
-                    <a href="{{ route('legal.dmca') }}" class="text-zinc-500 hover:text-zinc-300">DMCA</a>
+                    <a href="{{ route('register') }}" class="text-ink-faint hover:text-ink dark:hover:text-zinc-300">Build a Crossword</a>
+                    <a href="{{ route('puzzles.daily-history') }}" class="text-ink-faint hover:text-ink dark:hover:text-zinc-300">Puzzle of the Day</a>
+                    <a href="{{ route('puzzles.index', ['sortBy' => 'newest']) }}" class="text-ink-faint hover:text-ink dark:hover:text-zinc-300">Newest Puzzles</a>
+                    <a href="{{ route('puzzles.index') }}" class="text-ink-faint hover:text-ink dark:hover:text-zinc-300">Trending Puzzles</a>
+                    <a href="{{ route('words.index') }}" class="text-ink-faint hover:text-ink dark:hover:text-zinc-300">Words</a>
+                    <a href="{{ route('clues.index') }}" class="text-ink-faint hover:text-ink dark:hover:text-zinc-300">Clues</a>
+                    <a href="{{ route('help.index') }}" class="text-ink-faint hover:text-ink dark:hover:text-zinc-300">Help</a>
+                    <a href="{{ route('roadmap.index') }}" class="text-ink-faint hover:text-ink dark:hover:text-zinc-300">Roadmap</a>
+                    <a href="{{ route('legal.terms') }}" class="text-ink-faint hover:text-ink dark:hover:text-zinc-300">Terms</a>
+                    <a href="{{ route('legal.privacy') }}" class="text-ink-faint hover:text-ink dark:hover:text-zinc-300">Privacy</a>
+                    <a href="{{ route('legal.cookies') }}" class="text-ink-faint hover:text-ink dark:hover:text-zinc-300">Cookies</a>
+                    <a href="{{ route('legal.dmca') }}" class="text-ink-faint hover:text-ink dark:hover:text-zinc-300">DMCA</a>
                 </div>
             </div>
         </footer>

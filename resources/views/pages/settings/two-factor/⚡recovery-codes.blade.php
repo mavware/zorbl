@@ -103,7 +103,7 @@ new class extends Component {
         >
             <div class="mt-3 space-y-3">
                 @error('recoveryCodes')
-                    <div class="border-amber-400/60 rounded-sm border p-3.5 text-sm text-amber-400">{{ $message }}</div>
+                    <div class="border-amber-ink/60 rounded-sm border p-3.5 text-sm text-amber-ink">{{ $message }}</div>
                 @enderror
 
                 @if (filled($recoveryCodes))

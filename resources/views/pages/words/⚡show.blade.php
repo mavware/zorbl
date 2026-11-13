@@ -184,7 +184,7 @@ new class extends Component {
         <div class="flex flex-wrap items-center gap-2">
             <span class="chip-classical border-ink-faint text-ink-faint tnum h-7 px-2.5">{{ $this->word->length }} {{ __('letters') }}</span>
             <span class="chip-classical border-ink-faint text-ink-faint tnum h-7 px-2.5">{{ __('Score') }}: {{ number_format($this->word->score, 1) }}</span>
-            <span class="chip-classical border-amber-400 text-amber-400 tnum h-7 px-2.5">{{ number_format($this->clues->total()) }} {{ trans_choice('clue|clues', $this->clues->total()) }}</span>
+            <span class="chip-classical border-amber-ink text-amber-ink tnum h-7 px-2.5">{{ number_format($this->clues->total()) }} {{ trans_choice('clue|clues', $this->clues->total()) }}</span>
             @auth
                 <x-header-button icon="plus" wire:click="$set('showAddModal', true)" class="ms-1" data-test="add-clue-button">
                     {{ __('Add Clue') }}
@@ -209,7 +209,7 @@ new class extends Component {
                             <button type="button" wire:click="sortBy('clue')" class="meta-classical hover:text-ink inline-flex items-center gap-1 transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">
                                 {{ __('Clue') }}
                                 @if($sortField === 'clue')
-                                    <flux:icon :name="$sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'" class="size-3 text-amber-400" />
+                                    <flux:icon :name="$sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'" class="size-3 text-amber-ink" />
                                 @endif
                             </button>
                         </th>

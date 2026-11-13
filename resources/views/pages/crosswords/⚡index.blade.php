@@ -470,14 +470,14 @@ new #[Title('Build')] class extends Component {
                                         {{-- Phones drop the badge for space; a dot keeps the status visible. --}}
                                         <span class="size-1.5 shrink-0 rounded-full bg-amber-400 sm:hidden" title="{{ __('Published') }}" data-test="published-dot"></span>
                                     @endif
-                                    <a href="{{ route('crosswords.editor', $crossword) }}" wire:navigate class="truncate hover:text-amber-300 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">
+                                    <a href="{{ route('crosswords.editor', $crossword) }}" wire:navigate class="truncate hover:text-amber-ink-hover focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">
                                         {{ $crossword->displayTitle() }}
                                     </a>
                                 </h3>
                                 <x-puzzle-details :crossword="$crossword" />
                             </div>
                             @if($crossword->is_published)
-                                <span class="badge-classical border-amber-400 text-amber-400 max-sm:hidden!">{{ __('Published') }}</span>
+                                <span class="badge-classical border-amber-ink text-amber-ink max-sm:hidden!">{{ __('Published') }}</span>
                             @else
                                 <span class="badge-classical border-ink-faint text-ink-faint max-sm:hidden!">{{ __('Draft') }}</span>
                             @endif
@@ -491,7 +491,7 @@ new #[Title('Build')] class extends Component {
                                 :fluid="true"
                                 frame-class="border-hairline bg-hairline rounded-sm border"
                                 open-class="bg-panel"
-                                block-class="bg-zinc-300"
+                                block-class="bg-zinc-800 dark:bg-zinc-300"
                             />
                         </a>
 
@@ -551,14 +551,14 @@ new #[Title('Build')] class extends Component {
                             <flux:icon :name="$type->icon()" @class([
                                 'size-6',
                                 'text-blue-600 dark:text-blue-400' => $puzzleType === $type->value,
-                                'text-zinc-400' => $puzzleType !== $type->value,
+                                'text-ink-faint' => $puzzleType !== $type->value,
                             ]) />
                             <span @class([
                                 'text-sm font-medium',
                                 'text-blue-700 dark:text-blue-300' => $puzzleType === $type->value,
                                 'text-zinc-700 dark:text-zinc-300' => $puzzleType !== $type->value,
                             ])>{{ __($type->label()) }}</span>
-                            <span class="text-[11px] leading-tight text-zinc-400">{{ __($type->description()) }}</span>
+                            <span class="text-ink-faint text-[11px] leading-tight">{{ __($type->description()) }}</span>
                         </button>
                     @endforeach
                 </div>

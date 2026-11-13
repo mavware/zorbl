@@ -16,7 +16,7 @@
                     @if ($tab->current) aria-current="page" data-current @endif
                     @class([
                         'label-classical font-classical flex items-center gap-2 border-b-2 py-3.5 text-[13px] font-semibold transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400 [--label-tracking:0.12em]',
-                        'border-amber-400 text-ink' => $tab->current,
+                        'border-amber-ink text-ink' => $tab->current,
                         'text-ink-muted hover:text-ink border-transparent' => ! $tab->current,
                     ])
                     data-test="page-tab"

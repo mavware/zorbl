@@ -57,12 +57,12 @@ new #[Title('Contests')] class extends Component {
                         class="border-border hover:border-border-strong group flex flex-col gap-3 rounded-sm border p-4.5 transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
                     >
                         <div class="flex flex-wrap items-center gap-1.5">
-                            <span class="chip-classical border-amber-400 text-amber-400">{{ __('Active') }}</span>
+                            <span class="chip-classical border-amber-ink text-amber-ink">{{ __('Active') }}</span>
                             @if($contest->is_featured)
-                                <span class="chip-classical border-amber-400 text-amber-400">{{ __('Featured') }}</span>
+                                <span class="chip-classical border-amber-ink text-amber-ink">{{ __('Featured') }}</span>
                             @endif
                         </div>
-                        <h3 class="font-classical text-ink group-hover:text-amber-300 truncate text-[21px] leading-tight font-semibold transition-colors">{{ $contest->title }}</h3>
+                        <h3 class="font-classical text-ink group-hover:text-amber-ink-hover truncate text-[21px] leading-tight font-semibold transition-colors">{{ $contest->title }}</h3>
                         <div class="meta-classical tnum">
                             {{ $contest->starts_at->format('M j') }} &ndash; {{ $contest->ends_at->format('M j, Y') }}
                         </div>
@@ -72,7 +72,7 @@ new #[Title('Contests')] class extends Component {
                             <span class="whitespace-nowrap"><span class="font-classical text-ink tnum text-[15px] font-medium tracking-normal">{{ $contest->entries_count }}</span> {{ __('participants') }}</span>
                         </div>
                         @if($contest->ends_at->isFuture())
-                            <div class="meta-classical text-amber-400">{{ __('Ends :time', ['time' => $contest->ends_at->diffForHumans()]) }}</div>
+                            <div class="meta-classical text-amber-ink">{{ __('Ends :time', ['time' => $contest->ends_at->diffForHumans()]) }}</div>
                         @endif
                     </a>
                 @endforeach
@@ -95,10 +95,10 @@ new #[Title('Contests')] class extends Component {
                         <div class="flex flex-wrap items-center gap-1.5">
                             <span class="chip-classical border-ink-faint text-ink-faint">{{ __('Upcoming') }}</span>
                             @if($contest->is_featured)
-                                <span class="chip-classical border-amber-400 text-amber-400">{{ __('Featured') }}</span>
+                                <span class="chip-classical border-amber-ink text-amber-ink">{{ __('Featured') }}</span>
                             @endif
                         </div>
-                        <h3 class="font-classical text-ink group-hover:text-amber-300 truncate text-[21px] leading-tight font-semibold transition-colors">{{ $contest->title }}</h3>
+                        <h3 class="font-classical text-ink group-hover:text-amber-ink-hover truncate text-[21px] leading-tight font-semibold transition-colors">{{ $contest->title }}</h3>
                         <div class="meta-classical tnum">
                             {{ $contest->starts_at->format('M j') }} &ndash; {{ $contest->ends_at->format('M j, Y') }}
                         </div>
@@ -129,7 +129,7 @@ new #[Title('Contests')] class extends Component {
                         <div class="flex flex-wrap items-center gap-1.5">
                             <span class="chip-classical border-ink-faint text-ink-faint">{{ __('Ended') }}</span>
                         </div>
-                        <h3 class="font-classical text-ink group-hover:text-amber-300 truncate text-[21px] leading-tight font-semibold transition-colors">{{ $contest->title }}</h3>
+                        <h3 class="font-classical text-ink group-hover:text-amber-ink-hover truncate text-[21px] leading-tight font-semibold transition-colors">{{ $contest->title }}</h3>
                         <div class="meta-classical tnum">
                             {{ $contest->starts_at->format('M j') }} &ndash; {{ $contest->ends_at->format('M j, Y') }}
                         </div>

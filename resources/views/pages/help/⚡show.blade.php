@@ -87,7 +87,7 @@ class extends Component {
         <x-page-header :title="$articleTitle" :subtitle="$articleSummary !== '' ? $articleSummary : null">
             <x-slot:kicker>
                 <nav class="flex items-center gap-2" aria-label="{{ __('Breadcrumb') }}">
-                    <a href="{{ route('help.index') }}" wire:navigate class="hover:text-amber-300">{{ __('Help Center') }}</a>
+                    <a href="{{ route('help.index') }}" wire:navigate class="hover:text-amber-ink-hover">{{ __('Help Center') }}</a>
                     <span aria-hidden="true">/</span>
                     <span>{{ $categoryLabel }}</span>
                 </nav>
@@ -95,13 +95,13 @@ class extends Component {
         </x-page-header>
 
         <article class="mx-auto w-full max-w-3xl space-y-10">
-            <div class="prose-help text-ink space-y-4 [&_a]:text-amber-400 [&_a]:underline [&_code]:rounded [&_code]:bg-zinc-800 [&_code]:px-1 [&_code]:text-xs [&_h2]:mt-8 [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:text-ink [&_h3]:mt-6 [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:text-ink [&_li]:my-1 [&_ol]:list-decimal [&_ol]:space-y-1 [&_ol]:pl-6 [&_p]:leading-relaxed [&_ul]:list-disc [&_ul]:space-y-1 [&_ul]:pl-6">
+            <div class="prose-help text-ink space-y-4 [&_a]:text-amber-ink [&_a]:underline [&_code]:rounded [&_code]:bg-zinc-200 dark:[&_code]:bg-zinc-800 [&_code]:px-1 [&_code]:text-xs [&_h2]:mt-8 [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:text-ink [&_h3]:mt-6 [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:text-ink [&_li]:my-1 [&_ol]:list-decimal [&_ol]:space-y-1 [&_ol]:pl-6 [&_p]:leading-relaxed [&_ul]:list-disc [&_ul]:space-y-1 [&_ul]:pl-6">
                 {!! $renderedBody !!}
             </div>
 
             @if ($this->related->isNotEmpty())
                 <section class="border-hairline border-t pt-8">
-                    <h2 class="label-classical font-classical text-[12px] font-semibold text-amber-400 [--label-tracking:0.14em]">
+                    <h2 class="label-classical font-classical text-[12px] font-semibold text-amber-ink [--label-tracking:0.14em]">
                         {{ __('More in :category', ['category' => $categoryLabel]) }}
                     </h2>
                     <ul class="border-border divide-hairline mt-3 divide-y rounded-sm border">
@@ -112,8 +112,8 @@ class extends Component {
                                     wire:navigate
                                     class="group flex items-center justify-between gap-4 px-[18px] py-3.5 transition-colors focus:outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-amber-400"
                                 >
-                                    <span class="font-classical text-ink group-hover:text-amber-300 text-[18px] leading-tight font-semibold transition-colors">{{ $r->title }}</span>
-                                    <flux:icon name="chevron-right" class="text-ink-faint size-4 shrink-0 transition-colors group-hover:text-amber-400" />
+                                    <span class="font-classical text-ink group-hover:text-amber-ink-hover text-[18px] leading-tight font-semibold transition-colors">{{ $r->title }}</span>
+                                    <flux:icon name="chevron-right" class="text-ink-faint size-4 shrink-0 transition-colors group-hover:text-amber-ink" />
                                 </a>
                             </li>
                         @endforeach
@@ -124,9 +124,9 @@ class extends Component {
             <div class="border-border text-ink-muted rounded-sm border p-5 text-sm">
                 {{ __("Still stuck? Reach out and we'll help.") }}
                 @auth
-                    <a href="{{ route('support.create') }}" wire:navigate class="text-amber-400 hover:underline">{{ __('Open a support ticket →') }}</a>
+                    <a href="{{ route('support.create') }}" wire:navigate class="text-amber-ink hover:underline">{{ __('Open a support ticket →') }}</a>
                 @else
-                    <a href="{{ route('login') }}" class="text-amber-400 hover:underline">{{ __('Log in to contact support →') }}</a>
+                    <a href="{{ route('login') }}" class="text-amber-ink hover:underline">{{ __('Log in to contact support →') }}</a>
                 @endauth
             </div>
         </article>

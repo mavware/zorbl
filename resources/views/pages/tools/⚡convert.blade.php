@@ -302,15 +302,15 @@ class extends Component {
     <div class="mx-auto max-w-2xl py-8">
         <header class="text-center">
             <h1 class="text-3xl font-bold tracking-tight sm:text-4xl">{{ __('Crossword File Converter') }}</h1>
-            <p class="mt-3 text-zinc-500">{{ __('Convert crossword puzzles between .puz, .jpz, and .ipuz — free, instant, and right in your browser. No account or software required.') }}</p>
+            <p class="mt-3 text-ink-faint">{{ __('Convert crossword puzzles between .puz, .jpz, and .ipuz — free, instant, and right in your browser. No account or software required.') }}</p>
         </header>
 
-        <div class="mt-10 rounded-xl border border-zinc-800 bg-zinc-900/40 p-6 sm:p-8">
+        <div class="mt-10 rounded-xl border border-line dark:border-zinc-800 bg-panel dark:bg-zinc-900/40 p-6 sm:p-8">
             {{-- Upload area --}}
             @if (! $fileLoaded)
                 <div class="space-y-4">
                     <flux:heading size="lg">{{ __('Upload a puzzle file') }}</flux:heading>
-                    <flux:text class="text-zinc-400">
+                    <flux:text class="text-ink-muted">
                         {{ __('Supported formats: .puz (Across Lite), .jpz (Crossword Compiler), .ipuz / .json (iPuz), .pdf') }}
                     </flux:text>
 
@@ -319,7 +319,7 @@ class extends Component {
                         <flux:error name="file" />
                     </div>
 
-                    <div wire:loading wire:target="file" class="flex items-center gap-2 text-sm text-zinc-400">
+                    <div wire:loading wire:target="file" class="flex items-center gap-2 text-sm text-ink-muted">
                         <flux:icon.arrow-path class="h-4 w-4 animate-spin" />
                         {{ __('Reading file…') }}
                     </div>
@@ -336,7 +336,7 @@ class extends Component {
                     <div class="flex items-start justify-between gap-4">
                         <div>
                             <flux:heading size="lg">{{ $puzzleTitle }}</flux:heading>
-                            <flux:text class="mt-1 text-zinc-400">
+                            <flux:text class="mt-1 text-ink-muted">
                                 {{ $detectedFormat }} · {{ $puzzleWidth }}×{{ $puzzleHeight }} · {{ trans_choice(':count clue|:count clues', $clueCount) }}
                             </flux:text>
                         </div>
@@ -373,17 +373,17 @@ class extends Component {
         {{-- Supported formats info --}}
         <h2 class="mt-10 text-xl font-bold tracking-tight">{{ __('Supported crossword formats') }}</h2>
         <div class="mt-4 grid gap-4 sm:grid-cols-3">
-            <div class="rounded-xl border border-zinc-800 bg-zinc-900/40 p-5">
-                <p class="font-semibold text-zinc-100">.puz</p>
-                <p class="mt-1 text-sm text-zinc-500">{{ __('Across Lite format. The most widely supported crossword format, used by major publications.') }}</p>
+            <div class="rounded-xl border border-line dark:border-zinc-800 bg-panel dark:bg-zinc-900/40 p-5">
+                <p class="font-semibold text-ink">.puz</p>
+                <p class="mt-1 text-sm text-ink-faint">{{ __('Across Lite format. The most widely supported crossword format, used by major publications.') }}</p>
             </div>
-            <div class="rounded-xl border border-zinc-800 bg-zinc-900/40 p-5">
-                <p class="font-semibold text-zinc-100">.jpz</p>
-                <p class="mt-1 text-sm text-zinc-500">{{ __('Crossword Compiler format. XML-based format with support for advanced grid features.') }}</p>
+            <div class="rounded-xl border border-line dark:border-zinc-800 bg-panel dark:bg-zinc-900/40 p-5">
+                <p class="font-semibold text-ink">.jpz</p>
+                <p class="mt-1 text-sm text-ink-faint">{{ __('Crossword Compiler format. XML-based format with support for advanced grid features.') }}</p>
             </div>
-            <div class="rounded-xl border border-zinc-800 bg-zinc-900/40 p-5">
-                <p class="font-semibold text-zinc-100">.ipuz</p>
-                <p class="mt-1 text-sm text-zinc-500">{{ __('Modern open standard. JSON-based, lossless, supports all puzzle features.') }}</p>
+            <div class="rounded-xl border border-line dark:border-zinc-800 bg-panel dark:bg-zinc-900/40 p-5">
+                <p class="font-semibold text-ink">.ipuz</p>
+                <p class="mt-1 text-sm text-ink-faint">{{ __('Modern open standard. JSON-based, lossless, supports all puzzle features.') }}</p>
             </div>
         </div>
 
@@ -391,51 +391,51 @@ class extends Component {
         <h2 class="mt-10 text-xl font-bold tracking-tight">{{ __('How to convert a crossword file') }}</h2>
         <ol class="mt-4 space-y-3">
             <li class="flex gap-3">
-                <span class="flex size-6 shrink-0 items-center justify-center rounded-full bg-amber-500/15 text-sm font-bold text-amber-500">1</span>
-                <span class="text-sm text-zinc-400">{{ __('Upload your crossword file (.puz, .jpz, .ipuz, or .pdf).') }}</span>
+                <span class="flex size-6 shrink-0 items-center justify-center rounded-full bg-amber-500/15 text-sm font-bold text-amber-600 dark:text-amber-500">1</span>
+                <span class="text-sm text-ink-muted">{{ __('Upload your crossword file (.puz, .jpz, .ipuz, or .pdf).') }}</span>
             </li>
             <li class="flex gap-3">
-                <span class="flex size-6 shrink-0 items-center justify-center rounded-full bg-amber-500/15 text-sm font-bold text-amber-500">2</span>
-                <span class="text-sm text-zinc-400">{{ __('Choose the format you want to convert to.') }}</span>
+                <span class="flex size-6 shrink-0 items-center justify-center rounded-full bg-amber-500/15 text-sm font-bold text-amber-600 dark:text-amber-500">2</span>
+                <span class="text-sm text-ink-muted">{{ __('Choose the format you want to convert to.') }}</span>
             </li>
             <li class="flex gap-3">
-                <span class="flex size-6 shrink-0 items-center justify-center rounded-full bg-amber-500/15 text-sm font-bold text-amber-500">3</span>
-                <span class="text-sm text-zinc-400">{{ __('Click Convert & Download — your converted puzzle saves straight to your device.') }}</span>
+                <span class="flex size-6 shrink-0 items-center justify-center rounded-full bg-amber-500/15 text-sm font-bold text-amber-600 dark:text-amber-500">3</span>
+                <span class="text-sm text-ink-muted">{{ __('Click Convert & Download — your converted puzzle saves straight to your device.') }}</span>
             </li>
         </ol>
 
         {{-- Supported conversions (targets specific "X to Y" searches) --}}
         <h2 class="mt-10 text-xl font-bold tracking-tight">{{ __('Popular conversions') }}</h2>
-        <p class="mt-2 text-sm text-zinc-500">{{ __('The converter works in every direction between the major crossword formats:') }}</p>
-        <ul class="mt-4 grid grid-cols-2 gap-2 text-sm text-zinc-400 sm:grid-cols-3">
-            <li class="rounded-lg border border-zinc-800 bg-zinc-900/40 px-3 py-2">{{ __('.puz to .ipuz') }}</li>
-            <li class="rounded-lg border border-zinc-800 bg-zinc-900/40 px-3 py-2">{{ __('.ipuz to .puz') }}</li>
-            <li class="rounded-lg border border-zinc-800 bg-zinc-900/40 px-3 py-2">{{ __('.puz to .jpz') }}</li>
-            <li class="rounded-lg border border-zinc-800 bg-zinc-900/40 px-3 py-2">{{ __('.jpz to .puz') }}</li>
-            <li class="rounded-lg border border-zinc-800 bg-zinc-900/40 px-3 py-2">{{ __('.jpz to .ipuz') }}</li>
-            <li class="rounded-lg border border-zinc-800 bg-zinc-900/40 px-3 py-2">{{ __('.ipuz to .jpz') }}</li>
-            <li class="rounded-lg border border-zinc-800 bg-zinc-900/40 px-3 py-2">{{ __('.pdf to .ipuz') }}</li>
-            <li class="rounded-lg border border-zinc-800 bg-zinc-900/40 px-3 py-2">{{ __('.pdf to .puz') }}</li>
-            <li class="rounded-lg border border-zinc-800 bg-zinc-900/40 px-3 py-2">{{ __('.pdf to .jpz') }}</li>
+        <p class="mt-2 text-sm text-ink-faint">{{ __('The converter works in every direction between the major crossword formats:') }}</p>
+        <ul class="mt-4 grid grid-cols-2 gap-2 text-sm text-ink-muted sm:grid-cols-3">
+            <li class="rounded-lg border border-line dark:border-zinc-800 bg-panel dark:bg-zinc-900/40 px-3 py-2">{{ __('.puz to .ipuz') }}</li>
+            <li class="rounded-lg border border-line dark:border-zinc-800 bg-panel dark:bg-zinc-900/40 px-3 py-2">{{ __('.ipuz to .puz') }}</li>
+            <li class="rounded-lg border border-line dark:border-zinc-800 bg-panel dark:bg-zinc-900/40 px-3 py-2">{{ __('.puz to .jpz') }}</li>
+            <li class="rounded-lg border border-line dark:border-zinc-800 bg-panel dark:bg-zinc-900/40 px-3 py-2">{{ __('.jpz to .puz') }}</li>
+            <li class="rounded-lg border border-line dark:border-zinc-800 bg-panel dark:bg-zinc-900/40 px-3 py-2">{{ __('.jpz to .ipuz') }}</li>
+            <li class="rounded-lg border border-line dark:border-zinc-800 bg-panel dark:bg-zinc-900/40 px-3 py-2">{{ __('.ipuz to .jpz') }}</li>
+            <li class="rounded-lg border border-line dark:border-zinc-800 bg-panel dark:bg-zinc-900/40 px-3 py-2">{{ __('.pdf to .ipuz') }}</li>
+            <li class="rounded-lg border border-line dark:border-zinc-800 bg-panel dark:bg-zinc-900/40 px-3 py-2">{{ __('.pdf to .puz') }}</li>
+            <li class="rounded-lg border border-line dark:border-zinc-800 bg-panel dark:bg-zinc-900/40 px-3 py-2">{{ __('.pdf to .jpz') }}</li>
         </ul>
 
         {{-- FAQ — mirrors the FAQPage structured data above --}}
         <h2 class="mt-10 text-xl font-bold tracking-tight">{{ __('Frequently asked questions') }}</h2>
-        <div class="mt-4 divide-y divide-zinc-800 rounded-xl border border-zinc-800 bg-zinc-900/40">
+        <div class="mt-4 divide-y divide-line-soft rounded-xl border border-line dark:border-zinc-800 bg-panel dark:bg-zinc-900/40">
             @foreach ($faqs as $faq)
                 <details class="group p-5">
-                    <summary class="flex cursor-pointer list-none items-center justify-between text-sm font-semibold text-zinc-100 marker:hidden">
+                    <summary class="flex cursor-pointer list-none items-center justify-between text-sm font-semibold text-ink marker:hidden">
                         {{ $faq['q'] }}
-                        <svg class="size-4 shrink-0 text-zinc-500 transition group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
+                        <svg class="size-4 shrink-0 text-ink-faint transition group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
                     </summary>
-                    <p class="mt-2 text-sm text-zinc-500">{{ $faq['a'] }}</p>
+                    <p class="mt-2 text-sm text-ink-faint">{{ $faq['a'] }}</p>
                 </details>
             @endforeach
         </div>
 
         {{-- CTA for logged-in features --}}
-        <div class="mt-8 rounded-xl border border-zinc-800 bg-zinc-900/40 p-6 text-center">
-            <p class="text-sm text-zinc-400">
+        <div class="mt-8 rounded-xl border border-line dark:border-zinc-800 bg-panel dark:bg-zinc-900/40 p-6 text-center">
+            <p class="text-sm text-ink-muted">
                 {{ __('Want to build and publish your own crossword puzzles?') }}
             </p>
             @auth
@@ -461,10 +461,10 @@ class extends Component {
     <flux:modal wire:model.self="showWarningModal" class="max-w-md">
         <div class="space-y-4">
             <flux:heading size="lg">{{ __('Some features may be lost') }}</flux:heading>
-            <flux:text class="text-zinc-400">
+            <flux:text class="text-ink-muted">
                 {{ __('The target format does not support all features in this puzzle. The following will be lost or simplified:') }}
             </flux:text>
-            <ul class="list-inside list-disc space-y-1 text-sm text-amber-400">
+            <ul class="list-inside list-disc space-y-1 text-sm text-amber-ink">
                 @foreach ($exportWarnings as $warning)
                     <li>{{ $warning }}</li>
                 @endforeach

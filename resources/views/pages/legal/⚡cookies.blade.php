@@ -23,39 +23,39 @@ class extends Component {
 
 <div>
     <article class="mx-auto max-w-3xl py-8">
-        <header class="mb-10 border-b border-zinc-800 pb-8">
+        <header class="mb-10 border-b border-line-soft pb-8">
             <h1 class="text-3xl font-bold tracking-tight sm:text-4xl">{{ __('Cookie Policy') }}</h1>
-            <p class="mt-3 text-sm text-zinc-500">{{ __('Effective :date', ['date' => $effectiveDate]) }}</p>
-            <p class="mt-4 text-zinc-400">
+            <p class="mt-3 text-sm text-ink-faint">{{ __('Effective :date', ['date' => $effectiveDate]) }}</p>
+            <p class="mt-4 text-ink-muted">
                 {{ __('This Cookie Policy explains how :app uses cookies and similar technologies, and the choices available to you. For more on how we handle personal data, see our', ['app' => $appName]) }}
-                <a href="{{ route('legal.privacy') }}" class="text-amber-500 hover:underline">{{ __('Privacy Policy') }}</a>.
+                <a href="{{ route('legal.privacy') }}" class="text-amber-600 dark:text-amber-500 hover:underline">{{ __('Privacy Policy') }}</a>.
             </p>
         </header>
 
-        <div class="space-y-10 text-zinc-300">
+        <div class="space-y-10 text-ink-muted dark:text-zinc-300">
             <section>
-                <h2 class="text-xl font-semibold text-zinc-100">1. {{ __('What Are Cookies?') }}</h2>
+                <h2 class="text-xl font-semibold text-ink">1. {{ __('What Are Cookies?') }}</h2>
                 <p class="mt-3">
                     {{ __('A cookie is a small text file that a website stores on your device so it can recognise your browser between requests. Similar technologies — local storage, session storage — store information in your browser without using cookies. We use both, and refer to them collectively as "cookies" in this policy.') }}
                 </p>
             </section>
 
             <section>
-                <h2 class="text-xl font-semibold text-zinc-100">2. {{ __('Categories') }}</h2>
+                <h2 class="text-xl font-semibold text-ink">2. {{ __('Categories') }}</h2>
                 <p class="mt-3">{{ __('Cookies fall into four broad categories:') }}</p>
-                <ul class="mt-3 list-disc space-y-1 pl-6 text-zinc-400">
-                    <li><strong class="text-zinc-100">{{ __('Strictly necessary.') }}</strong> {{ __('Required to run the service — for example, to keep you logged in and protect against cross-site request forgery. These cannot be switched off.') }}</li>
-                    <li><strong class="text-zinc-100">{{ __('Functional.') }}</strong> {{ __('Remember preferences (such as your theme) and improve the experience.') }}</li>
-                    <li><strong class="text-zinc-100">{{ __('Analytics.') }}</strong> {{ __('Help us understand how the service is used so we can improve it. We currently do not use any analytics cookies.') }}</li>
-                    <li><strong class="text-zinc-100">{{ __('Marketing.') }}</strong> {{ __('Used to measure advertising or build interest profiles. We currently do not use any marketing cookies.') }}</li>
+                <ul class="mt-3 list-disc space-y-1 pl-6 text-ink-muted">
+                    <li><strong class="text-ink">{{ __('Strictly necessary.') }}</strong> {{ __('Required to run the service — for example, to keep you logged in and protect against cross-site request forgery. These cannot be switched off.') }}</li>
+                    <li><strong class="text-ink">{{ __('Functional.') }}</strong> {{ __('Remember preferences (such as your theme) and improve the experience.') }}</li>
+                    <li><strong class="text-ink">{{ __('Analytics.') }}</strong> {{ __('Help us understand how the service is used so we can improve it. We currently do not use any analytics cookies.') }}</li>
+                    <li><strong class="text-ink">{{ __('Marketing.') }}</strong> {{ __('Used to measure advertising or build interest profiles. We currently do not use any marketing cookies.') }}</li>
                 </ul>
             </section>
 
             <section>
-                <h2 class="text-xl font-semibold text-zinc-100">3. {{ __('Cookies We Use') }}</h2>
-                <div class="mt-4 overflow-x-auto rounded-xl border border-zinc-800">
+                <h2 class="text-xl font-semibold text-ink">3. {{ __('Cookies We Use') }}</h2>
+                <div class="mt-4 overflow-x-auto rounded-xl border border-line-soft">
                     <table class="w-full text-left text-sm">
-                        <thead class="bg-zinc-900/60 text-xs uppercase tracking-wider text-zinc-500">
+                        <thead class="bg-panel dark:bg-zinc-900/60 text-xs uppercase tracking-wider text-ink-faint">
                             <tr>
                                 <th class="px-4 py-3">{{ __('Name') }}</th>
                                 <th class="px-4 py-3">{{ __('Category') }}</th>
@@ -63,27 +63,27 @@ class extends Component {
                                 <th class="px-4 py-3">{{ __('Expiry') }}</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-zinc-800 text-zinc-300">
+                        <tbody class="divide-y divide-line-soft text-ink-muted dark:text-zinc-300">
                             <tr>
-                                <td class="px-4 py-3 font-mono text-xs text-amber-400">{{ $sessionCookie }}</td>
+                                <td class="px-4 py-3 font-mono text-xs text-amber-ink">{{ $sessionCookie }}</td>
                                 <td class="px-4 py-3">{{ __('Strictly necessary') }}</td>
                                 <td class="px-4 py-3">{{ __('Keeps you signed in for the duration of your session.') }}</td>
                                 <td class="px-4 py-3">{{ __(':minutes minutes', ['minutes' => config('session.lifetime')]) }}</td>
                             </tr>
                             <tr>
-                                <td class="px-4 py-3 font-mono text-xs text-amber-400">XSRF-TOKEN</td>
+                                <td class="px-4 py-3 font-mono text-xs text-amber-ink">XSRF-TOKEN</td>
                                 <td class="px-4 py-3">{{ __('Strictly necessary') }}</td>
                                 <td class="px-4 py-3">{{ __('Protects forms and actions against cross-site request forgery.') }}</td>
                                 <td class="px-4 py-3">{{ __('Session') }}</td>
                             </tr>
                             <tr>
-                                <td class="px-4 py-3 font-mono text-xs text-amber-400">{{ __('Local storage (solver progress)') }}</td>
+                                <td class="px-4 py-3 font-mono text-xs text-amber-ink">{{ __('Local storage (solver progress)') }}</td>
                                 <td class="px-4 py-3">{{ __('Functional') }}</td>
                                 <td class="px-4 py-3">{{ __('Keeps your in-progress solve on this device when you solve without an account.') }}</td>
                                 <td class="px-4 py-3">{{ __('Until cleared') }}</td>
                             </tr>
                             <tr>
-                                <td class="px-4 py-3 font-mono text-xs text-amber-400">{{ __('Stripe cookies') }}</td>
+                                <td class="px-4 py-3 font-mono text-xs text-amber-ink">{{ __('Stripe cookies') }}</td>
                                 <td class="px-4 py-3">{{ __('Strictly necessary') }}</td>
                                 <td class="px-4 py-3">{{ __('Set by Stripe on the checkout and billing portal to process your payment securely. See Stripe\'s cookie policy.') }}</td>
                                 <td class="px-4 py-3">{{ __('Varies') }}</td>
@@ -91,13 +91,13 @@ class extends Component {
                         </tbody>
                     </table>
                 </div>
-                <p class="mt-3 text-sm text-zinc-500">
+                <p class="mt-3 text-sm text-ink-faint">
                     {{ __('We currently do not use analytics or advertising cookies. If that changes, we will update this table and ask for your consent first where required.') }}
                 </p>
             </section>
 
             <section>
-                <h2 class="text-xl font-semibold text-zinc-100">4. {{ __('Your Choices') }}</h2>
+                <h2 class="text-xl font-semibold text-ink">4. {{ __('Your Choices') }}</h2>
                 <p class="mt-3">
                     {{ __(':app currently only uses strictly necessary cookies, so we do not display a consent banner. If we add analytics or advertising cookies in the future, we will update this policy and ask for your consent first where required.', ['app' => $appName]) }}
                 </p>
@@ -107,14 +107,14 @@ class extends Component {
             </section>
 
             <section>
-                <h2 class="text-xl font-semibold text-zinc-100">5. {{ __('Changes') }}</h2>
+                <h2 class="text-xl font-semibold text-ink">5. {{ __('Changes') }}</h2>
                 <p class="mt-3">
                     {{ __('We may update this Cookie Policy as our use of cookies changes. The "Effective" date above shows the most recent revision.') }}
                 </p>
             </section>
 
             <section>
-                <h2 class="text-xl font-semibold text-zinc-100">6. {{ __('Contact') }}</h2>
+                <h2 class="text-xl font-semibold text-ink">6. {{ __('Contact') }}</h2>
                 <p class="mt-3">
                     {{ __('Questions? Email :email.', ['email' => $contactEmail]) }}
                 </p>

@@ -172,7 +172,7 @@ new #[Title('Constructors')] class extends Component {
                             {{ $constructor->initials() }}
                         </div>
                         <div class="min-w-0 flex-1">
-                            <h3 class="font-classical text-ink group-hover:text-amber-300 truncate text-[21px] leading-tight font-semibold transition-colors">
+                            <h3 class="font-classical text-ink group-hover:text-amber-ink-hover truncate text-[21px] leading-tight font-semibold transition-colors">
                                 {{ $constructor->name }}
                                 <x-supporter-badge :user="$constructor" class="ml-1" />
                             </h3>

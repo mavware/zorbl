@@ -395,7 +395,7 @@ new class extends Component {
                                 <button type="button" wire:click="sortBy('answer')" class="meta-classical hover:text-ink inline-flex items-center gap-1 transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">
                                     {{ __('Answer') }}
                                     @if($sortField === 'answer')
-                                        <flux:icon :name="$sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'" class="size-3 text-amber-400" />
+                                        <flux:icon :name="$sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'" class="size-3 text-amber-ink" />
                                     @endif
                                 </button>
                             </th>
@@ -403,7 +403,7 @@ new class extends Component {
                                 <button type="button" wire:click="sortBy('clue')" class="meta-classical hover:text-ink inline-flex items-center gap-1 transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">
                                     {{ __('Clue') }}
                                     @if($sortField === 'clue')
-                                        <flux:icon :name="$sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'" class="size-3 text-amber-400" />
+                                        <flux:icon :name="$sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'" class="size-3 text-amber-ink" />
                                     @endif
                                 </button>
                             </th>
@@ -430,7 +430,7 @@ new class extends Component {
                                 </td>
                             @else
                                 <td class="px-3 py-3.5 whitespace-nowrap">
-                                    <a href="{{ route('words.show', $entry->answer) }}" wire:navigate class="font-classical text-ink hover:text-amber-300 text-[18px] leading-none font-semibold tracking-[0.06em] transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">{{ $entry->answer }}</a>
+                                    <a href="{{ route('words.show', $entry->answer) }}" wire:navigate class="font-classical text-ink hover:text-amber-ink-hover text-[18px] leading-none font-semibold tracking-[0.06em] transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">{{ $entry->answer }}</a>
                                     <span class="meta-classical tnum ml-1.5">({{ mb_strlen($entry->answer) }})</span>
                                 </td>
                                 <td class="text-ink px-3 py-3.5">{{ $entry->clue }}</td>
@@ -444,17 +444,17 @@ new class extends Component {
                                 <td class="px-3 py-3.5">
                                     <div class="flex items-center justify-end gap-2">
                                         @if($entry->status === \App\Models\ClueEntry::STATUS_PENDING)
-                                            <span class="chip-classical border-amber-400 text-amber-400">{{ __('Pending review') }}</span>
+                                            <span class="chip-classical border-amber-ink text-amber-ink">{{ __('Pending review') }}</span>
                                         @endif
 
                                         @if($entry->quality_issues)
                                             <flux:tooltip content="{{ $entry->qualityIssuesSummary() }}">
-                                                <span class="chip-classical border-amber-400 text-amber-400 cursor-help" data-test="clue-quality-chip">{{ __('Quality issues') }}</span>
+                                                <span class="chip-classical border-amber-ink text-amber-ink cursor-help" data-test="clue-quality-chip">{{ __('Quality issues') }}</span>
                                             </flux:tooltip>
                                         @endif
 
                                         @if($entry->reports_count > 0)
-                                            <span class="chip-classical border-amber-400 text-amber-400 tnum">
+                                            <span class="chip-classical border-amber-ink text-amber-ink tnum">
                                                 {{ $entry->reports_count }} {{ trans_choice('report|reports', $entry->reports_count) }}
                                             </span>
                                         @endif

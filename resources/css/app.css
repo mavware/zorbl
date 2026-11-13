@@ -188,7 +188,7 @@ select:focus[data-flux-control] {
 }
 
 .btn-header-primary {
-    @apply border-amber-400 text-amber-400 hover:border-amber-300 hover:text-amber-300;
+    @apply border-amber-ink text-amber-ink hover:border-amber-ink-hover hover:text-amber-ink-hover;
     /* The primary action takes the larger share of the phone row. */
     @apply max-sm:flex-[1.6] max-sm:text-[14px];
 }
@@ -257,12 +257,16 @@ select:focus[data-flux-control] {
 /* Checkbox: outline square that fills with a soft amber wash and an amber check. */
 .check-classical {
     @apply border-border-strong size-4 shrink-0 cursor-pointer appearance-none rounded-sm border bg-transparent transition-colors;
-    @apply checked:border-amber-400 checked:bg-amber-400/15 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400;
+    @apply checked:border-amber-ink checked:bg-amber-400/15 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400;
 }
 
 .check-classical:checked {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23e1ad66' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.5 8.5l3 3 6-7'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%237d5411' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.5 8.5l3 3 6-7'/%3E%3C/svg%3E");
     background-size: 100% 100%;
+}
+
+.dark .check-classical:checked {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23e1ad66' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.5 8.5l3 3 6-7'/%3E%3C/svg%3E");
 }
 
 /* Multi-line fields grow with their `rows` instead of taking the fixed height. */

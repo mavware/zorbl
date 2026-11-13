@@ -98,7 +98,7 @@ new class extends Component {
                         placeholder="{{ __('e.g. MacBook Pro, iPhone') }}"
                         class="field-classical w-full px-3.5"
                     />
-                    <p x-show="error" x-cloak x-text="error" class="mt-1.5 text-xs text-amber-400" role="alert"></p>
+                    <p x-show="error" x-cloak x-text="error" class="mt-1.5 text-xs text-amber-ink" role="alert"></p>
                 </label>
 
                 <div class="flex items-center gap-4">

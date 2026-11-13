@@ -181,7 +181,7 @@ new #[Title('Solve Statistics')] class extends Component {
             <div class="flex flex-wrap gap-2">
                 @foreach($achievements as $achievement)
                     <flux:tooltip :content="$achievement->description">
-                        <span class="chip-classical border-amber-400 text-amber-400 h-7 gap-1.5 px-2.5">
+                        <span class="chip-classical border-amber-ink text-amber-ink h-7 gap-1.5 px-2.5">
                             <flux:icon :name="$achievement->icon" class="size-3.5" />
                             {{ $achievement->label }}
                         </span>
@@ -212,7 +212,7 @@ new #[Title('Solve Statistics')] class extends Component {
                             </div>
                             <div class="flex items-center justify-between py-1.5">
                                 <dt class="meta-classical">{{ __('Fastest') }}</dt>
-                                <dd class="font-classical tnum text-[15px] font-medium text-amber-400">{{ $this->formatTime($size['fastest']) }}</dd>
+                                <dd class="font-classical tnum text-[15px] font-medium text-amber-ink">{{ $this->formatTime($size['fastest']) }}</dd>
                             </div>
                         </dl>
                     </div>
@@ -242,7 +242,7 @@ new #[Title('Solve Statistics')] class extends Component {
                             </div>
                             <div class="flex items-center justify-between py-1.5">
                                 <dt class="meta-classical">{{ __('Fastest') }}</dt>
-                                <dd class="font-classical tnum text-[15px] font-medium text-amber-400">{{ $this->formatTime($difficulty['fastest']) }}</dd>
+                                <dd class="font-classical tnum text-[15px] font-medium text-amber-ink">{{ $this->formatTime($difficulty['fastest']) }}</dd>
                             </div>
                         </dl>
                     </div>
@@ -273,7 +273,7 @@ new #[Title('Solve Statistics')] class extends Component {
                                 <button type="button" wire:click="sortBy('solve_time_seconds')" class="meta-classical hover:text-ink inline-flex items-center gap-1 transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">
                                     {{ __('Solve Time') }}
                                     @if($sortField === 'solve_time_seconds')
-                                        <flux:icon :name="$sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'" class="size-3 text-amber-400" />
+                                        <flux:icon :name="$sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'" class="size-3 text-amber-ink" />
                                     @endif
                                 </button>
                             </th>
@@ -282,7 +282,7 @@ new #[Title('Solve Statistics')] class extends Component {
                                 <button type="button" wire:click="sortBy('completed_at')" class="meta-classical hover:text-ink inline-flex items-center gap-1 transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">
                                     {{ __('Completed') }}
                                     @if($sortField === 'completed_at')
-                                        <flux:icon :name="$sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'" class="size-3 text-amber-400" />
+                                        <flux:icon :name="$sortDirection === 'asc' ? 'chevron-up' : 'chevron-down'" class="size-3 text-amber-ink" />
                                     @endif
                                 </button>
                             </th>
@@ -294,7 +294,7 @@ new #[Title('Solve Statistics')] class extends Component {
                             @php($diff = $communityAvg && $communityAvg['solver_count'] > 1 ? $attempt->solve_time_seconds - $communityAvg['avg_time'] : null)
                             <tr wire:key="attempt-{{ $attempt->id }}" class="align-middle">
                                 <td class="px-3 py-3">
-                                    <a href="{{ route('crosswords.solver', $attempt->crossword_id) }}" wire:navigate class="font-classical text-ink hover:text-amber-300 text-[17px] leading-tight font-semibold transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">
+                                    <a href="{{ route('crosswords.solver', $attempt->crossword_id) }}" wire:navigate class="font-classical text-ink hover:text-amber-ink-hover text-[17px] leading-tight font-semibold transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">
                                         {{ $attempt->crossword->displayTitle() }}
                                     </a>
                                 </td>
@@ -303,7 +303,7 @@ new #[Title('Solve Statistics')] class extends Component {
                                 <td class="tnum px-3 py-3 text-right whitespace-nowrap">
                                     @if($diff !== null)
                                         @if($diff < 0)
-                                            <span class="text-amber-400">{{ $this->formatTime(abs($diff)) }} {{ __('faster') }}</span>
+                                            <span class="text-amber-ink">{{ $this->formatTime(abs($diff)) }} {{ __('faster') }}</span>
                                         @elseif($diff > 0)
                                             <span class="text-ink-muted">{{ $this->formatTime($diff) }} {{ __('slower') }}</span>
                                         @else

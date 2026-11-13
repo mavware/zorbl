@@ -145,12 +145,12 @@ new class extends Component {
     wire:click="startSolving"
     @class([
         'group relative flex cursor-pointer flex-col gap-3.5 rounded-sm border p-4.5 transition-colors',
-        'border-amber-400/60 hover:border-amber-400' => $isDaily,
+        'border-amber-ink/60 hover:border-amber-ink' => $isDaily,
         'border-border hover:border-border-strong' => ! $isDaily,
     ])
 >
     @if($isDaily)
-        <div class="meta-classical text-amber-400 flex items-center gap-1.5">
+        <div class="meta-classical text-amber-ink flex items-center gap-1.5">
             <flux:icon name="star" class="size-3.5" />
             {{ __('Puzzle of the Day') }}
         </div>
@@ -158,13 +158,13 @@ new class extends Component {
 
     <div class="flex items-start justify-between gap-3">
         <div class="min-w-0">
-            <h3 class="font-classical text-ink group-hover:text-amber-300 truncate text-[21px] leading-tight font-semibold transition-colors">{{ $title }}</h3>
+            <h3 class="font-classical text-ink group-hover:text-amber-ink-hover truncate text-[21px] leading-tight font-semibold transition-colors">{{ $title }}</h3>
             <div class="meta-classical mt-1 flex items-center gap-1">
                 {{ __('by :author', ['author' => $authorName]) }} <x-supporter-badge :supporter="$authorIsSupporter" />
             </div>
         </div>
         @if($isSolved)
-            <span class="chip-classical border-amber-400 text-amber-400 gap-1" title="{{ __('Solved') }}">
+            <span class="chip-classical border-amber-ink text-amber-ink gap-1" title="{{ __('Solved') }}">
                 <flux:icon name="check-circle" class="size-3" />
                 {{ __('Solved') }}
             </span>
@@ -178,7 +178,7 @@ new class extends Component {
             :height="$height"
             frame-class="border-hairline bg-hairline rounded-sm border"
             open-class="bg-panel"
-            block-class="bg-zinc-300"
+            block-class="bg-zinc-800 dark:bg-zinc-300"
         />
     </div>
 
@@ -215,7 +215,7 @@ new class extends Component {
         @if($avgRating)
             <span class="flex items-center gap-0.5" title="{{ __(':rating out of 5', ['rating' => number_format($avgRating, 1)]) }}">
                 @for($i = 1; $i <= 5; $i++)
-                    <svg xmlns="http://www.w3.org/2000/svg" class="size-3 {{ $i <= round($avgRating) ? 'text-amber-400' : 'text-border-strong' }}" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.006 5.404.434c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.434 2.082-5.005Z" clip-rule="evenodd"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="size-3 {{ $i <= round($avgRating) ? 'text-amber-ink' : 'text-border-strong' }}" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.006 5.404.434c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.434 2.082-5.005Z" clip-rule="evenodd"/></svg>
                 @endfor
             </span>
         @endif

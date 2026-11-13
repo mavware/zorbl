@@ -38,15 +38,15 @@ new #[Title('Submit a Ticket')] class extends Component {
     </x-page-header>
 
     <div class="mx-auto max-w-2xl space-y-6">
-        <div class="border-amber-400/60 flex items-start gap-3.5 rounded-sm border p-4.5">
-            <div class="border-amber-400 flex size-9 shrink-0 items-center justify-center rounded-sm border text-amber-400">
+        <div class="border-amber-ink/60 flex items-start gap-3.5 rounded-sm border p-4.5">
+            <div class="border-amber-ink flex size-9 shrink-0 items-center justify-center rounded-sm border text-amber-ink">
                 <flux:icon name="question-mark-circle" class="size-4" />
             </div>
             <div class="min-w-0">
                 <div class="font-classical text-ink text-[19px] leading-tight font-semibold">{{ __('Try the Help Center first') }}</div>
                 <p class="text-ink-muted mt-1.5 text-sm leading-[1.65]">
                     {{ __('Many common questions are answered in our guides — you may get a faster answer there.') }}
-                    <a href="{{ route('help.index') }}" wire:navigate class="text-amber-400 hover:text-amber-300 underline underline-offset-4 transition-colors">{{ __('Browse the Help Center →') }}</a>
+                    <a href="{{ route('help.index') }}" wire:navigate class="text-amber-ink hover:text-amber-ink-hover underline underline-offset-4 transition-colors">{{ __('Browse the Help Center →') }}</a>
                 </p>
             </div>
         </div>
@@ -54,7 +54,7 @@ new #[Title('Submit a Ticket')] class extends Component {
         <label class="block">
             <span class="meta-classical mb-1.5 block">{{ __('Subject') }}</span>
             <input type="text" wire:model="subject" placeholder="{{ __('Brief summary of your issue') }}" class="field-classical w-full px-3.5" />
-            @error('subject') <p class="mt-1.5 text-xs text-amber-400">{{ $message }}</p> @enderror
+            @error('subject') <p class="mt-1.5 text-xs text-amber-ink">{{ $message }}</p> @enderror
         </label>
 
         <label class="block">
@@ -70,14 +70,14 @@ new #[Title('Submit a Ticket')] class extends Component {
                 </select>
                 <flux:icon name="chevron-down" class="text-ink-faint pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2" />
             </span>
-            @error('category') <p class="mt-1.5 text-xs text-amber-400">{{ $message }}</p> @enderror
+            @error('category') <p class="mt-1.5 text-xs text-amber-ink">{{ $message }}</p> @enderror
         </label>
 
         <label class="block">
             <span class="meta-classical mb-1.5 block">{{ __('Description') }}</span>
             <span class="text-ink-muted mb-2 block text-sm">{{ __('Please provide as much detail as possible so we can help you effectively.') }}</span>
             <textarea wire:model="description" rows="5" placeholder="{{ __('Describe your issue in detail...') }}" class="field-classical h-auto w-full px-3.5 py-2.5 leading-[1.65]"></textarea>
-            @error('description') <p class="mt-1.5 text-xs text-amber-400">{{ $message }}</p> @enderror
+            @error('description') <p class="mt-1.5 text-xs text-amber-ink">{{ $message }}</p> @enderror
         </label>
 
         <div class="flex justify-end gap-3">

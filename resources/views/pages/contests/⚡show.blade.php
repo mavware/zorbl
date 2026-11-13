@@ -98,14 +98,14 @@ new #[Title('Contest')] class extends Component {
     <x-page-header :kicker="__('Contest')" :title="$contest->title">
         <x-slot:badges>
             @if($contest->isActive())
-                <span class="chip-classical border-amber-400 text-amber-400">{{ __('Active') }}</span>
+                <span class="chip-classical border-amber-ink text-amber-ink">{{ __('Active') }}</span>
             @elseif($contest->isUpcoming())
                 <span class="chip-classical border-ink-faint text-ink-faint">{{ __('Upcoming') }}</span>
             @elseif($contest->hasEnded())
                 <span class="chip-classical border-ink-faint text-ink-faint">{{ __('Ended') }}</span>
             @endif
             @if($contest->is_featured)
-                <span class="chip-classical border-amber-400 text-amber-400">{{ __('Featured') }}</span>
+                <span class="chip-classical border-amber-ink text-amber-ink">{{ __('Featured') }}</span>
             @endif
         </x-slot:badges>
 
@@ -114,7 +114,7 @@ new #[Title('Contest')] class extends Component {
             <span class="whitespace-nowrap"><span class="font-classical text-ink tnum text-[15px] font-medium tracking-normal">{{ $contest->crosswords_count }}</span> {{ __('puzzles') }}</span>
             <span class="whitespace-nowrap"><span class="font-classical text-ink tnum text-[15px] font-medium tracking-normal">{{ $contest->entries_count }}</span> {{ __('participants') }}</span>
             @if($contest->isActive() && $contest->ends_at->isFuture())
-                <span class="whitespace-nowrap text-amber-400">{{ __('Ends :time', ['time' => $contest->ends_at->diffForHumans()]) }}</span>
+                <span class="whitespace-nowrap text-amber-ink">{{ __('Ends :time', ['time' => $contest->ends_at->diffForHumans()]) }}</span>
             @endif
         </x-slot:meta>
     </x-page-header>
@@ -182,7 +182,7 @@ new #[Title('Contest')] class extends Component {
 
                     <div class="flex items-center gap-3">
                         @if(isset($this->puzzleStatuses[$crossword->id]))
-                            <span class="chip-classical border-amber-400 text-amber-400 gap-1">
+                            <span class="chip-classical border-amber-ink text-amber-ink gap-1">
                                 <flux:icon name="check" class="size-3" />
                                 {{ __('Solved') }}
                             </span>

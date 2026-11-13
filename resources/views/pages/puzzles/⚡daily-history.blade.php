@@ -128,21 +128,21 @@ class extends Component {
                     wire:key="daily-{{ $daily->id }}"
                     @class([
                         'flex flex-col gap-3.5 rounded-sm border p-4.5 transition-colors',
-                        'border-amber-400/60 hover:border-amber-400' => $isToday,
+                        'border-amber-ink/60 hover:border-amber-ink' => $isToday,
                         'border-border hover:border-border-strong' => ! $isToday,
                     ])
                 >
                     <div class="flex flex-wrap items-center justify-between gap-2">
                         <div class="flex flex-wrap items-center gap-1.5">
-                            <span class="chip-classical tnum {{ $isToday ? 'border-amber-400 text-amber-400' : 'border-ink-faint text-ink-faint' }}">
+                            <span class="chip-classical tnum {{ $isToday ? 'border-amber-ink text-amber-ink' : 'border-ink-faint text-ink-faint' }}">
                                 {{ $daily->date->format('M j, Y') }}
                             </span>
                             @if($isToday)
-                                <span class="chip-classical border-amber-400 text-amber-400">{{ __('Today') }}</span>
+                                <span class="chip-classical border-amber-ink text-amber-ink">{{ __('Today') }}</span>
                             @endif
                         </div>
                         @if($isSolved)
-                            <span class="chip-classical border-amber-400 text-amber-400 gap-1">
+                            <span class="chip-classical border-amber-ink text-amber-ink gap-1">
                                 <flux:icon name="check-circle" class="size-3" />
                                 {{ __('Solved') }}
                             </span>
@@ -167,7 +167,7 @@ class extends Component {
                             :height="$crossword->height"
                             frame-class="border-hairline bg-hairline rounded-sm border"
                             open-class="bg-panel"
-                            block-class="bg-zinc-300"
+                            block-class="bg-zinc-800 dark:bg-zinc-300"
                         />
                     </div>
 

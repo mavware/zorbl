@@ -295,7 +295,7 @@ new #[Title('Leaderboard')] class extends Component {
                             @foreach($this->topSolvers as $index => $solver)
                                 <tr wire:key="solver-{{ $solver->id }}" @class(['align-middle', 'shadow-[inset_2px_0_0_0_var(--color-amber-400)]' => $solver->id === Auth::id()])>
                                     <td class="w-14 px-3 py-3"><x-leaderboard-rank :rank="$index + 1" /></td>
-                                    <td class="px-3 py-3"><a href="{{ route('constructors.show', $solver->id) }}" wire:navigate class="font-classical text-ink hover:text-amber-300 text-[17px] leading-tight font-semibold transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">
+                                    <td class="px-3 py-3"><a href="{{ route('constructors.show', $solver->id) }}" wire:navigate class="font-classical text-ink hover:text-amber-ink-hover text-[17px] leading-tight font-semibold transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">
                                         {{ $solver->name }} <x-supporter-badge :supporter="in_array($solver->id, $this->supporterIds, true)" />
                                     </a></td>
                                     <td class="px-3 py-3 text-right whitespace-nowrap"><span class="font-classical text-ink tnum text-[16px] font-medium">{{ number_format($solver->completed_count) }}</span></td>
@@ -309,9 +309,9 @@ new #[Title('Leaderboard')] class extends Component {
 
         @if($yourSolverRank = $this->yourSolverRank)
             @unless($this->topSolvers->contains('id', Auth::id()))
-                <div class="border-amber-400/60 flex flex-wrap items-center justify-between gap-3 rounded-sm border p-4.5" data-test="your-solver-rank">
+                <div class="border-amber-ink/60 flex flex-wrap items-center justify-between gap-3 rounded-sm border p-4.5" data-test="your-solver-rank">
                     <div class="flex items-center gap-3.5">
-                        <div class="border-amber-400 font-classical text-amber-400 tnum flex size-10 shrink-0 items-center justify-center rounded-sm border text-[15px] font-semibold">#{{ $yourSolverRank['rank'] }}</div>
+                        <div class="border-amber-ink font-classical text-amber-ink tnum flex size-10 shrink-0 items-center justify-center rounded-sm border text-[15px] font-semibold">#{{ $yourSolverRank['rank'] }}</div>
                         <div>
                             <div class="font-classical text-ink text-[18px] leading-tight font-semibold">{{ __('Your Rank') }}</div>
                             <div class="text-ink-muted mt-0.5 text-sm">
@@ -353,7 +353,7 @@ new #[Title('Leaderboard')] class extends Component {
                             @foreach($this->speedDemons as $index => $solver)
                                 <tr wire:key="solver-{{ $solver->id }}" @class(['align-middle', 'shadow-[inset_2px_0_0_0_var(--color-amber-400)]' => $solver->id === Auth::id()])>
                                     <td class="w-14 px-3 py-3"><x-leaderboard-rank :rank="$index + 1" /></td>
-                                    <td class="px-3 py-3"><a href="{{ route('constructors.show', $solver->id) }}" wire:navigate class="font-classical text-ink hover:text-amber-300 text-[17px] leading-tight font-semibold transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">
+                                    <td class="px-3 py-3"><a href="{{ route('constructors.show', $solver->id) }}" wire:navigate class="font-classical text-ink hover:text-amber-ink-hover text-[17px] leading-tight font-semibold transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">
                                         {{ $solver->name }} <x-supporter-badge :supporter="in_array($solver->id, $this->supporterIds, true)" />
                                     </a></td>
                                     <td class="px-3 py-3 text-right whitespace-nowrap"><span class="font-classical text-ink tnum text-[16px] font-medium">{{ $this->formatTime((int) $solver->avg_time) }}</span></td>
@@ -368,9 +368,9 @@ new #[Title('Leaderboard')] class extends Component {
 
         @if($yourSpeedRank = $this->yourSpeedRank)
             @unless($this->speedDemons->contains('id', Auth::id()))
-                <div class="border-amber-400/60 flex flex-wrap items-center justify-between gap-3 rounded-sm border p-4.5" data-test="your-speed-rank">
+                <div class="border-amber-ink/60 flex flex-wrap items-center justify-between gap-3 rounded-sm border p-4.5" data-test="your-speed-rank">
                     <div class="flex items-center gap-3.5">
-                        <div class="border-amber-400 font-classical text-amber-400 tnum flex size-10 shrink-0 items-center justify-center rounded-sm border text-[15px] font-semibold">#{{ $yourSpeedRank['rank'] }}</div>
+                        <div class="border-amber-ink font-classical text-amber-ink tnum flex size-10 shrink-0 items-center justify-center rounded-sm border text-[15px] font-semibold">#{{ $yourSpeedRank['rank'] }}</div>
                         <div>
                             <div class="font-classical text-ink text-[18px] leading-tight font-semibold">{{ __('Your Rank') }}</div>
                             <div class="text-ink-muted mt-0.5 text-sm">
@@ -408,7 +408,7 @@ new #[Title('Leaderboard')] class extends Component {
                             @foreach($this->topConstructors as $index => $constructor)
                                 <tr wire:key="constructor-{{ $constructor->id }}" @class(['align-middle', 'shadow-[inset_2px_0_0_0_var(--color-amber-400)]' => $constructor->id === Auth::id()])>
                                     <td class="w-14 px-3 py-3"><x-leaderboard-rank :rank="$index + 1" /></td>
-                                    <td class="px-3 py-3"><a href="{{ route('constructors.show', $constructor->id) }}" wire:navigate class="font-classical text-ink hover:text-amber-300 text-[17px] leading-tight font-semibold transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">
+                                    <td class="px-3 py-3"><a href="{{ route('constructors.show', $constructor->id) }}" wire:navigate class="font-classical text-ink hover:text-amber-ink-hover text-[17px] leading-tight font-semibold transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">
                                         {{ $constructor->name }} <x-supporter-badge :supporter="in_array($constructor->id, $this->supporterIds, true)" />
                                     </a></td>
                                     <td class="px-3 py-3 text-right whitespace-nowrap"><span class="text-ink-muted tnum">{{ number_format($constructor->published_count) }}</span></td>
@@ -423,9 +423,9 @@ new #[Title('Leaderboard')] class extends Component {
 
         @if($yourConstructorRank = $this->yourConstructorRank)
             @unless($this->topConstructors->contains('id', Auth::id()))
-                <div class="border-amber-400/60 flex flex-wrap items-center justify-between gap-3 rounded-sm border p-4.5" data-test="your-constructor-rank">
+                <div class="border-amber-ink/60 flex flex-wrap items-center justify-between gap-3 rounded-sm border p-4.5" data-test="your-constructor-rank">
                     <div class="flex items-center gap-3.5">
-                        <div class="border-amber-400 font-classical text-amber-400 tnum flex size-10 shrink-0 items-center justify-center rounded-sm border text-[15px] font-semibold">#{{ $yourConstructorRank['rank'] }}</div>
+                        <div class="border-amber-ink font-classical text-amber-ink tnum flex size-10 shrink-0 items-center justify-center rounded-sm border text-[15px] font-semibold">#{{ $yourConstructorRank['rank'] }}</div>
                         <div>
                             <div class="font-classical text-ink text-[18px] leading-tight font-semibold">{{ __('Your Rank') }}</div>
                             <div class="text-ink-muted mt-0.5 text-sm">
@@ -469,13 +469,13 @@ new #[Title('Leaderboard')] class extends Component {
                             @foreach($this->streakLeaders as $index => $user)
                                 <tr wire:key="user-{{ $user->id }}" @class(['align-middle', 'shadow-[inset_2px_0_0_0_var(--color-amber-400)]' => $user->id === Auth::id()])>
                                     <td class="w-14 px-3 py-3"><x-leaderboard-rank :rank="$index + 1" /></td>
-                                    <td class="px-3 py-3"><a href="{{ route('constructors.show', $user->id) }}" wire:navigate class="font-classical text-ink hover:text-amber-300 text-[17px] leading-tight font-semibold transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">
+                                    <td class="px-3 py-3"><a href="{{ route('constructors.show', $user->id) }}" wire:navigate class="font-classical text-ink hover:text-amber-ink-hover text-[17px] leading-tight font-semibold transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">
                                         {{ $user->name }} <x-supporter-badge :supporter="in_array($user->id, $this->supporterIds, true)" />
                                     </a></td>
                                     <td class="px-3 py-3 text-right whitespace-nowrap"><span class="font-classical text-ink tnum text-[16px] font-medium">{{ $user->longest_streak }} {{ __('days') }}</span></td>
                                     <td class="px-3 py-3 text-right whitespace-nowrap">
                                         @if($user->current_streak > 0)
-                                            <span class="font-classical tnum text-[16px] font-medium text-amber-400">{{ $user->current_streak }} {{ __('days') }}</span>
+                                            <span class="font-classical tnum text-[16px] font-medium text-amber-ink">{{ $user->current_streak }} {{ __('days') }}</span>
                                         @else
                                             <span class="text-ink-faint">&mdash;</span>
                                         @endif
@@ -490,9 +490,9 @@ new #[Title('Leaderboard')] class extends Component {
 
         @if($yourStreakRank = $this->yourStreakRank)
             @unless($this->streakLeaders->contains('id', Auth::id()))
-                <div class="border-amber-400/60 flex flex-wrap items-center justify-between gap-3 rounded-sm border p-4.5" data-test="your-streak-rank">
+                <div class="border-amber-ink/60 flex flex-wrap items-center justify-between gap-3 rounded-sm border p-4.5" data-test="your-streak-rank">
                     <div class="flex items-center gap-3.5">
-                        <div class="border-amber-400 font-classical text-amber-400 tnum flex size-10 shrink-0 items-center justify-center rounded-sm border text-[15px] font-semibold">#{{ $yourStreakRank['rank'] }}</div>
+                        <div class="border-amber-ink font-classical text-amber-ink tnum flex size-10 shrink-0 items-center justify-center rounded-sm border text-[15px] font-semibold">#{{ $yourStreakRank['rank'] }}</div>
                         <div>
                             <div class="font-classical text-ink text-[18px] leading-tight font-semibold">{{ __('Your Rank') }}</div>
                             <div class="text-ink-muted mt-0.5 text-sm">

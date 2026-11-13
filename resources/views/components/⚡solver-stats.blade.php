@@ -125,7 +125,7 @@ new class extends Component {
     @endphp
     <div class="grid grid-cols-2 {{ count($stats) === 6 ? 'lg:grid-cols-6' : 'lg:grid-cols-5' }}">
         @foreach ($stats as $stat)
-            <div class="border-hairline border-t-0 border px-4 py-3 sm:px-6 sm:py-4.5 lg:px-8 {{ $stat['mobile'] ? '' : 'hidden sm:block' }}" data-test="solver-stat">
+            <div class="border-hairline border-t-0 border bg-white px-4 py-3 dark:bg-transparent sm:px-6 sm:py-4.5 lg:px-8 {{ $stat['mobile'] ? '' : 'hidden sm:block' }}" data-test="solver-stat">
                 <div class="font-classical tnum text-[22px] leading-none font-medium text-amber-700 sm:text-[30px] dark:text-amber-400">{{ $stat['value'] }}</div>
                 <div class="meta-classical mt-1 sm:mt-1.5">{{ $stat['label'] }}</div>
             </div>

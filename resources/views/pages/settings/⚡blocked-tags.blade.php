@@ -55,7 +55,7 @@ new class extends Component {
                     aria-pressed="{{ in_array($tag->id, $blockedTagIds) ? 'true' : 'false' }}"
                     @class([
                         'font-classical inline-flex h-8 items-center gap-1.5 rounded-sm border px-3 text-[15px] font-medium transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400',
-                        'border-amber-400 text-amber-400' => in_array($tag->id, $blockedTagIds),
+                        'border-amber-ink text-amber-ink' => in_array($tag->id, $blockedTagIds),
                         'border-border-strong text-ink-muted hover:border-border-hover hover:text-ink' => ! in_array($tag->id, $blockedTagIds),
                     ])
                 >

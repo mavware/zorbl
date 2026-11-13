@@ -7,14 +7,14 @@
 <div {{ $attributes->class([
     'rounded-sm border p-4.5 transition-colors',
     'border-border' => $solved,
-    'border-amber-400/60' => ! $solved,
+    'border-amber-ink/60' => ! $solved,
 ]) }} data-daily-puzzle-banner>
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div class="flex items-center gap-4">
             <div @class([
                 'flex size-12 shrink-0 items-center justify-center rounded-sm border',
                 'border-border-strong text-ink-faint' => $solved,
-                'border-amber-400 text-amber-400' => ! $solved,
+                'border-amber-ink text-amber-ink' => ! $solved,
             ])>
                 <flux:icon :name="$solved ? 'check-circle' : 'star'" class="size-6" />
             </div>
@@ -23,7 +23,7 @@
                     <h2 class="font-classical text-ink text-[22px] leading-tight font-medium">{{ __('Puzzle of the Day') }}</h2>
                     <span class="chip-classical border-ink-faint text-ink-faint">{{ today()->format('M j') }}</span>
                     @if($solved)
-                        <span class="chip-classical border-amber-400 text-amber-400 gap-1">
+                        <span class="chip-classical border-amber-ink text-amber-ink gap-1">
                             <flux:icon name="check-circle" class="size-3" />
                             {{ __('Solved') }}
                         </span>
@@ -52,7 +52,7 @@
                     {{ __('Solve Today\'s Puzzle') }}
                 </a>
             @endif
-            <a href="{{ route('puzzles.daily-history') }}" wire:navigate class="meta-classical hover:text-amber-300 transition-colors">
+            <a href="{{ route('puzzles.daily-history') }}" wire:navigate class="meta-classical hover:text-amber-ink-hover transition-colors">
                 {{ __('View past puzzles') }} &rarr;
             </a>
         </div>

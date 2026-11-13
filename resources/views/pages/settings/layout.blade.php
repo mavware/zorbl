@@ -7,6 +7,7 @@
                 ['route' => 'notifications.edit', 'match' => 'notifications.*', 'label' => __('Notifications')],
                 ['route' => 'security.edit', 'match' => 'security.*', 'label' => __('Security')],
                 ['route' => 'webhooks.index', 'match' => 'webhooks.*', 'label' => __('Webhooks')],
+                ['route' => 'appearance.edit', 'match' => 'appearance.*', 'label' => __('Appearance')],
             ] as $item)
                 @php($current = request()->routeIs($item['match']))
                 <li>
@@ -16,7 +17,7 @@
                         @if($current) aria-current="page" @endif
                         @class([
                             'font-classical flex h-9 items-center rounded-sm border-l-2 px-3 text-[16px] font-medium transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400',
-                            'rounded-l-none border-amber-400 bg-amber-400/10 text-amber-400' => $current,
+                            'rounded-l-none border-amber-ink bg-amber-400/10 text-amber-ink' => $current,
                             'text-ink-muted hover:text-ink border-transparent' => ! $current,
                         ])
                     >{{ $item['label'] }}</a>

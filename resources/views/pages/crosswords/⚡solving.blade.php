@@ -334,7 +334,7 @@ new #[Title('Solving')] class extends Component {
                                         {{-- Phones drop the badge for space; a dot keeps the status visible. --}}
                                         <span class="size-1.5 shrink-0 rounded-full bg-amber-400 sm:hidden" title="{{ __('Completed') }}" data-test="completed-dot"></span>
                                     @endif
-                                    <a href="{{ route('crosswords.solver', $attempt->crossword) }}" wire:navigate class="truncate hover:text-amber-300 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">
+                                    <a href="{{ route('crosswords.solver', $attempt->crossword) }}" wire:navigate class="truncate hover:text-amber-ink-hover focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">
                                         {{ $attempt->crossword->displayTitle() }}
                                     </a>
                                 </h3>
@@ -352,7 +352,7 @@ new #[Title('Solving')] class extends Component {
                                 </div>
                             </div>
                             @if($attempt->is_completed)
-                                <span class="badge-classical border-amber-400 text-amber-400 max-sm:hidden!">{{ __('Completed') }}</span>
+                                <span class="badge-classical border-amber-ink text-amber-ink max-sm:hidden!">{{ __('Completed') }}</span>
                             @else
                                 <span class="badge-classical border-ink-faint text-ink-faint max-sm:hidden!">{{ __('In Progress') }}</span>
                             @endif
@@ -366,7 +366,7 @@ new #[Title('Solving')] class extends Component {
                                 :fluid="true"
                                 frame-class="border-hairline bg-hairline rounded-sm border"
                                 open-class="bg-panel"
-                                block-class="bg-zinc-300"
+                                block-class="bg-zinc-800 dark:bg-zinc-300"
                             />
                         </a>
 
@@ -389,7 +389,7 @@ new #[Title('Solving')] class extends Component {
                                 </span>
                             @endif
                             @if($solveTimeDiffPercent !== null && $solveTimeDiffPercent !== 0)
-                                <span class="badge-classical {{ $solveTimeDiffPercent > 0 ? 'border-amber-400 text-amber-400' : 'border-ink-faint text-ink-faint' }}">
+                                <span class="badge-classical {{ $solveTimeDiffPercent > 0 ? 'border-amber-ink text-amber-ink' : 'border-ink-faint text-ink-faint' }}">
                                     {{ abs($solveTimeDiffPercent) }}% {{ $solveTimeDiffPercent > 0 ? __('faster') : __('slower') }}
                                 </span>
                             @endif
@@ -441,12 +441,12 @@ new #[Title('Solving')] class extends Component {
                         class="border-border hover:border-border-strong group flex flex-col gap-3 rounded-sm border p-4.5 transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
                     >
                         <div class="flex flex-wrap items-center gap-1.5">
-                            <span class="chip-classical border-amber-400 text-amber-400">{{ __('Active') }}</span>
+                            <span class="chip-classical border-amber-ink text-amber-ink">{{ __('Active') }}</span>
                             @if($contest->is_featured)
-                                <span class="chip-classical border-amber-400 text-amber-400">{{ __('Featured') }}</span>
+                                <span class="chip-classical border-amber-ink text-amber-ink">{{ __('Featured') }}</span>
                             @endif
                         </div>
-                        <h3 class="font-classical text-ink group-hover:text-amber-300 truncate text-[21px] leading-tight font-semibold transition-colors">
+                        <h3 class="font-classical text-ink group-hover:text-amber-ink-hover truncate text-[21px] leading-tight font-semibold transition-colors">
                             {{ $contest->title }}
                         </h3>
                         <div class="meta-classical flex flex-wrap items-center gap-x-2 gap-y-0.5">
@@ -455,7 +455,7 @@ new #[Title('Solving')] class extends Component {
                             <span class="whitespace-nowrap"><span class="font-classical text-ink tnum text-[15px] font-medium tracking-normal">{{ $contest->entries_count }}</span> {{ __('participants') }}</span>
                         </div>
                         @if($contest->ends_at->isFuture())
-                            <div class="meta-classical text-amber-400">
+                            <div class="meta-classical text-amber-ink">
                                 {{ __('Ends :time', ['time' => $contest->ends_at->diffForHumans()]) }}
                             </div>
                         @endif
@@ -472,10 +472,10 @@ new #[Title('Solving')] class extends Component {
                         <div class="flex flex-wrap items-center gap-1.5">
                             <span class="chip-classical border-ink-faint text-ink-faint">{{ __('Upcoming') }}</span>
                             @if($contest->is_featured)
-                                <span class="chip-classical border-amber-400 text-amber-400">{{ __('Featured') }}</span>
+                                <span class="chip-classical border-amber-ink text-amber-ink">{{ __('Featured') }}</span>
                             @endif
                         </div>
-                        <h3 class="font-classical text-ink group-hover:text-amber-300 truncate text-[21px] leading-tight font-semibold transition-colors">
+                        <h3 class="font-classical text-ink group-hover:text-amber-ink-hover truncate text-[21px] leading-tight font-semibold transition-colors">
                             {{ $contest->title }}
                         </h3>
                         <div class="meta-classical flex flex-wrap items-center gap-x-2 gap-y-0.5">
@@ -519,7 +519,7 @@ new #[Title('Solving')] class extends Component {
                             class="border-border hover:border-border-strong group flex flex-col gap-3.5 rounded-sm border p-4.5 transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
                         >
                             <div class="min-w-0">
-                                <h3 class="font-classical text-ink group-hover:text-amber-300 truncate text-[21px] leading-tight font-semibold transition-colors">
+                                <h3 class="font-classical text-ink group-hover:text-amber-ink-hover truncate text-[21px] leading-tight font-semibold transition-colors">
                                     {{ $crossword->displayTitle() }}
                                 </h3>
                                 <div class="meta-classical mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5">
@@ -540,7 +540,7 @@ new #[Title('Solving')] class extends Component {
                                     :max-width="80"
                                     frame-class="border-hairline bg-hairline rounded-sm border"
                                     open-class="bg-panel"
-                                    block-class="bg-zinc-300"
+                                    block-class="bg-zinc-800 dark:bg-zinc-300"
                                 />
                             </div>
 
@@ -598,7 +598,7 @@ new #[Title('Solving')] class extends Component {
 {{--                                block-class="bg-zinc-300"--}}
 {{--                            />--}}
 {{--                            <div class="min-w-0 flex-1">--}}
-{{--                                <div class="font-classical text-ink group-hover:text-amber-300 truncate text-[17px] leading-tight font-semibold transition-colors">{{ $crossword->displayTitle() }}</div>--}}
+{{--                                <div class="font-classical text-ink group-hover:text-amber-ink-hover truncate text-[17px] leading-tight font-semibold transition-colors">{{ $crossword->displayTitle() }}</div>--}}
 {{--                                <div class="meta-classical mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5">--}}
 {{--                                    <span class="flex items-center gap-1">--}}
 {{--                                        {{ __('by :author', ['author' => $crossword->user->name ?? __('Unknown')]) }} <x-supporter-badge :user="$crossword->user" />--}}
@@ -610,7 +610,7 @@ new #[Title('Solving')] class extends Component {
 {{--                                    </span>--}}
 {{--                                </div>--}}
 {{--                            </div>--}}
-{{--                            <flux:icon name="chevron-right" class="text-ink-faint group-hover:text-amber-300 size-4 shrink-0 transition-colors" />--}}
+{{--                            <flux:icon name="chevron-right" class="text-ink-faint group-hover:text-amber-ink-hover size-4 shrink-0 transition-colors" />--}}
 {{--                        </a>--}}
 {{--                    @endforeach--}}
 {{--                </div>--}}
@@ -651,7 +651,7 @@ new #[Title('Solving')] class extends Component {
 {{--                                block-class="bg-zinc-300"--}}
 {{--                            />--}}
 {{--                            <div class="min-w-0 flex-1">--}}
-{{--                                <div class="font-classical text-ink group-hover:text-amber-300 truncate text-[17px] leading-tight font-semibold transition-colors">{{ $crossword->displayTitle() }}</div>--}}
+{{--                                <div class="font-classical text-ink group-hover:text-amber-ink-hover truncate text-[17px] leading-tight font-semibold transition-colors">{{ $crossword->displayTitle() }}</div>--}}
 {{--                                <div class="meta-classical mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5">--}}
 {{--                                    <span class="flex items-center gap-1">--}}
 {{--                                        {{ __('by :author', ['author' => $crossword->user->name ?? __('Unknown')]) }} <x-supporter-badge :user="$crossword->user" />--}}
@@ -660,7 +660,7 @@ new #[Title('Solving')] class extends Component {
 {{--                                    <span class="whitespace-nowrap">{{ $crossword->created_at->diffForHumans() }}</span>--}}
 {{--                                </div>--}}
 {{--                            </div>--}}
-{{--                            <flux:icon name="chevron-right" class="text-ink-faint group-hover:text-amber-300 size-4 shrink-0 transition-colors" />--}}
+{{--                            <flux:icon name="chevron-right" class="text-ink-faint group-hover:text-amber-ink-hover size-4 shrink-0 transition-colors" />--}}
 {{--                        </a>--}}
 {{--                    @endforeach--}}
 {{--                </div>--}}

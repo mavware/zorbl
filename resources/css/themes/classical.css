@@ -33,17 +33,24 @@
     --label-transform:      uppercase;
     --label-tracking-scale: 1;
 
-    /* Classical system (dark ground) — headings, buttons and numerals set in
-       Cormorant; body in Lora. Colour is stroke, never fill. */
-    --color-ground:        var(--color-zinc-950);   /* #171615 */
-    --color-panel:         #201f1d;
-    --color-ink:           #f3f2f2;
-    --color-ink-muted:     var(--color-zinc-400);   /* #bab6b6 */
-    --color-ink-faint:     var(--color-zinc-500);   /* #9b9797 */
-    --color-hairline:      rgb(243 242 242 / 0.14);
-    --color-border:        rgb(243 242 242 / 0.18);
-    --color-border-strong: rgb(243 242 242 / 0.25);
-    --color-border-hover:  rgb(243 242 242 / 0.4);
+    /* Classical system — headings, buttons and numerals set in Cormorant;
+       body in Lora. Colour is stroke, never fill. These are the light-ground
+       values; the dark-ground set lives under `.dark` below. */
+    --color-ground:        #ffffff;
+    --color-panel:         #ffffff;
+    --color-ink:           var(--color-zinc-950);   /* #171615 */
+    --color-ink-muted:     var(--color-zinc-700);   /* #605d5d */
+    --color-ink-faint:     var(--color-zinc-600);   /* #7d7979 */
+    --color-hairline:      rgb(23 22 21 / 0.24);
+    --color-border:        rgb(23 22 21 / 0.3);
+    --color-border-strong: rgb(23 22 21 / 0.42);
+    --color-border-hover:  rgb(23 22 21 / 0.62);
+
+    /* Accent as text or stroke: the amber step that stays legible on the
+       current ground (deep on light, bright on dark). Fills keep the numbered
+       amber steps. */
+    --color-amber-ink:       var(--color-amber-700);
+    --color-amber-ink-hover: var(--color-amber-800);
 
     /* Warm ink — replaces the cool zinc ramp */
     --color-zinc-50:  #faf8f8;
@@ -76,8 +83,8 @@
     --color-accent-foreground: var(--color-white);
 
     /* Semantic surface tokens — change these to adjust the whole app */
-    --color-page:           var(--color-zinc-100);
-    --color-surface:        var(--color-zinc-100);
+    --color-page:           #ffffff;
+    --color-surface:        #ffffff;
     --color-elevated:       #ffffff;
     --color-muted:          var(--color-zinc-100);
 
@@ -87,9 +94,9 @@
     --color-fg-subtle:      var(--color-zinc-500);
 
     /* Semantic border tokens */
-    --color-line:           color-mix(in oklab, var(--color-zinc-300) 50%, var(--color-zinc-400));
-    --color-line-soft:      var(--color-zinc-200);
-    --color-line-strong:    var(--color-zinc-400);
+    --color-line:           var(--color-zinc-400);
+    --color-line-soft:      var(--color-zinc-300);
+    --color-line-strong:    var(--color-zinc-500);
 }
 
 @layer theme {
@@ -107,6 +114,20 @@
         --color-accent: var(--color-white);
         --color-accent-content: var(--color-white);
         --color-accent-foreground: var(--color-neutral-800);
+
+        /* Classical system on dark ground */
+        --color-ground:        var(--color-zinc-950);   /* #171615 */
+        --color-panel:         #201f1d;
+        --color-ink:           #f3f2f2;
+        --color-ink-muted:     var(--color-zinc-400);   /* #bab6b6 */
+        --color-ink-faint:     var(--color-zinc-500);   /* #9b9797 */
+        --color-hairline:      rgb(243 242 242 / 0.14);
+        --color-border:        rgb(243 242 242 / 0.18);
+        --color-border-strong: rgb(243 242 242 / 0.25);
+        --color-border-hover:  rgb(243 242 242 / 0.4);
+
+        --color-amber-ink:       var(--color-amber-400);
+        --color-amber-ink-hover: var(--color-amber-300);
 
         /* Semantic tokens — dark mode overrides */
         --color-page:        var(--color-zinc-950);
