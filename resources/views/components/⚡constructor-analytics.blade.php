@@ -105,7 +105,6 @@ new class extends Component {
         $puzzles = Auth::user()
             ->crosswords()
             ->where('is_published', true)
-            ->whereNotNull('meta_answer_prompt')
             ->whereNotNull('meta_answers')
             ->get();
 
@@ -132,7 +131,7 @@ new class extends Component {
             $results[] = [
                 'puzzle_id' => $puzzle->id,
                 'puzzle_title' => $puzzle->displayTitle(),
-                'prompt' => $puzzle->meta_answer_prompt,
+                'prompt' => $puzzle->meta_answer_prompt ?? '',
                 'accepted_answers' => $puzzle->meta_answers,
                 'responses' => $responses->map(fn ($r) => [
                     'answer' => $r->meta_answer,
@@ -362,7 +361,9 @@ new class extends Component {
                         <div class="mb-1 flex items-center justify-between">
                             <flux:heading size="sm">{{ $puzzleData['puzzle_title'] }}</flux:heading>
                         </div>
-                        <flux:text size="sm" class="mb-3 text-zinc-500 italic">&ldquo;{{ $puzzleData['prompt'] }}&rdquo;</flux:text>
+                        @if(filled($puzzleData['prompt']))
+                            <flux:text size="sm" class="mb-3 text-zinc-500 italic">&ldquo;{{ $puzzleData['prompt'] }}&rdquo;</flux:text>
+                        @endif
 
                         <div class="space-y-1.5">
                             @php($totalResponses = collect($puzzleData['responses'])->sum('count'))

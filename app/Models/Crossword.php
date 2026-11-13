@@ -478,9 +478,13 @@ class Crossword extends Model
         ]);
     }
 
+    /**
+     * A puzzle has a meta answer as soon as the builder saves an answer. The
+     * prompt is optional: without one, solvers still get the blanks.
+     */
     public function hasMetaAnswer(): bool
     {
-        return filled($this->meta_answer_prompt) && ! empty($this->meta_answers);
+        return $this->metaAnswer() !== null;
     }
 
     /**

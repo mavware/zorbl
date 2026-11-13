@@ -154,7 +154,7 @@ test('meta answer matching is case-insensitive', function () {
         ->and($crossword->isMetaAnswerCorrect('wrong'))->toBeFalse();
 });
 
-test('hasMetaAnswer returns false when prompt or answers are missing', function () {
+test('a puzzle has a meta answer whenever an answer is saved, with or without a prompt', function () {
     $noPrompt = Crossword::factory()->create([
         'meta_answer_prompt' => null,
         'meta_answers' => ['MOVIES'],
@@ -172,7 +172,7 @@ test('hasMetaAnswer returns false when prompt or answers are missing', function 
 
     $valid = Crossword::factory()->withMetaAnswer()->create();
 
-    expect($noPrompt->hasMetaAnswer())->toBeFalse()
+    expect($noPrompt->hasMetaAnswer())->toBeTrue()
         ->and($noAnswers->hasMetaAnswer())->toBeFalse()
         ->and($emptyAnswers->hasMetaAnswer())->toBeFalse()
         ->and($valid->hasMetaAnswer())->toBeTrue();
@@ -443,3 +443,22 @@ test('the meta answer blanks sit directly under the grid, ahead of the clue pane
     'signed-in solver' => ['pages::crosswords.solver', true],
     'public solve page' => ['pages::puzzles.solve', false],
 ]);
+
+test('an answer saved in the editor without a prompt still gives solvers the blanks under the grid', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create();
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])
+        ->set('metaAnswer', 'MOVIES')
+        ->call('saveMetadata');
+
+    Livewire::test('pages::crosswords.solver', ['crossword' => $crossword->refresh()])
+        ->assertSet('hasMetaAnswer', true)
+        ->assertSet('metaAnswerPattern', '______')
+        ->assertSeeHtml('data-test="meta-answer-blanks"')
+        ->set('metaAnswerSubmission', 'movies')
+        ->call('submitMetaAnswer')
+        ->assertSet('metaAnswerCorrect', true);
+});

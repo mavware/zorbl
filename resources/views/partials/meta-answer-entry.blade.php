@@ -28,7 +28,9 @@
         </div>
         <div>
             <div class="font-semibold text-purple-800 dark:text-purple-200">{{ __('Meta Answer') }}</div>
-            <div class="text-sm text-purple-700 dark:text-purple-400">{{ $metaAnswerPrompt }}</div>
+            @if(filled($metaAnswerPrompt))
+                <div class="text-sm text-purple-700 dark:text-purple-400">{{ $metaAnswerPrompt }}</div>
+            @endif
         </div>
     </div>
 

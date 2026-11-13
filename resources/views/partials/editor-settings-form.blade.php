@@ -381,7 +381,7 @@
                 </flux:heading>
 
                 <flux:field>
-                    <flux:label>{{ __('Prompt') }}</flux:label>
+                    <flux:label>{{ __('Prompt (optional)') }}</flux:label>
                     <div class="relative">
                         <flux:input wire:model.live.debounce.750ms="metaAnswerPrompt"
                                     placeholder="{{ __('e.g. What is the hidden theme? or Unscramble the circled letters') }}"
