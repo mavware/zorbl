@@ -807,6 +807,23 @@ test('CluesBottom layout renders both clue panels side-by-side beneath the grid'
     expect(strpos($html, '>Across<'))->toBeLessThan(strpos($html, '>Down<'));
 });
 
+test('a corner layout runs the Across clues in two columns beside the grid and Down in one', function () {
+    $user = User::factory()->create();
+    $crossword = Crossword::factory()->for($user)->create([
+        'width' => 15,
+        'height' => 15,
+        'layout' => CrosswordLayout::CornerGridTopLeft,
+    ]);
+
+    $this->actingAs($user);
+
+    $html = Livewire::test('pages::crosswords.editor', ['crossword' => $crossword])->html();
+
+    expect($html)->toContain('data-test="corner-layout"')
+        ->and(substr_count($html, 'data-test="clue-columns"'))->toBe(1)
+        ->and(strpos($html, 'data-test="clue-columns"'))->toBeLessThan(strpos($html, '>Down<'));
+});
+
 test('every CrosswordLayout case has a renderable partial', function (CrosswordLayout $case) {
     $user = User::factory()->create();
     $crossword = Crossword::factory()->for($user)->create([

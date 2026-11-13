@@ -33,6 +33,11 @@ enum CrosswordLayout: int
     case SplitGridLeftAcrossRightDown = 60;
     case SplitGridTopAcrossBottomDown = 61;
 
+    case CornerGridTopLeft = 70;
+    case CornerGridTopRight = 71;
+    case CornerGridBottomLeft = 72;
+    case CornerGridBottomRight = 73;
+
     /**
      * Cases in the order they should appear in user-facing pickers. Edit this
      * list to reorder or group layouts in the UI without touching the `case`
@@ -66,6 +71,11 @@ enum CrosswordLayout: int
 
             self::SplitGridLeftAcrossRightDown,
             self::SplitGridTopAcrossBottomDown,
+
+            self::CornerGridTopLeft,
+            self::CornerGridTopRight,
+            self::CornerGridBottomLeft,
+            self::CornerGridBottomRight,
 
             self::CluesOverlay,
             self::CluesDrawerLeft,
@@ -124,6 +134,11 @@ enum CrosswordLayout: int
 
             self::SplitGridLeftAcrossRightDown => 'partials.layouts.split-grid-left-across-right-down',
             self::SplitGridTopAcrossBottomDown => 'partials.layouts.split-grid-top-across-bottom-down',
+
+            self::CornerGridTopLeft => 'partials.layouts.corner-grid-top-left',
+            self::CornerGridTopRight => 'partials.layouts.corner-grid-top-right',
+            self::CornerGridBottomLeft => 'partials.layouts.corner-grid-bottom-left',
+            self::CornerGridBottomRight => 'partials.layouts.corner-grid-bottom-right',
         };
     }
 
@@ -155,6 +170,32 @@ enum CrosswordLayout: int
 
             self::SplitGridLeftAcrossRightDown => 'Split view: grid left, across top-right, down bottom-right',
             self::SplitGridTopAcrossBottomDown => 'Split view: grid top, across bottom-left, down bottom-right',
+
+            self::CornerGridTopLeft => 'Grid upper left, clues wrap around',
+            self::CornerGridTopRight => 'Grid upper right, clues wrap around',
+            self::CornerGridBottomLeft => 'Grid lower left, clues wrap around',
+            self::CornerGridBottomRight => 'Grid lower right, clues wrap around',
         };
+    }
+
+    /**
+     * Whether the grid sits in one corner with the clues wrapped around it:
+     * Across in columns along the grid's free horizontal edge, Down in a
+     * full-height column beside it. These are the only layouts the solver
+     * pages take over from the builder's choice.
+     */
+    public function wrapsCluesAroundCorner(): bool
+    {
+        return in_array($this, [self::CornerGridTopLeft, self::CornerGridTopRight, self::CornerGridBottomLeft, self::CornerGridBottomRight], true);
+    }
+
+    public function gridIsOnRight(): bool
+    {
+        return in_array($this, [self::CornerGridTopRight, self::CornerGridBottomRight], true);
+    }
+
+    public function gridIsAtBottom(): bool
+    {
+        return in_array($this, [self::CornerGridBottomLeft, self::CornerGridBottomRight], true);
     }
 }

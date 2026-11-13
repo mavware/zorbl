@@ -116,6 +116,31 @@
             ['kind' => 'panel-boxed', 'x' => 1, 'y' => 16, 'w' => 14.5, 'h' => 7, 'label' => 'A'],
             ['kind' => 'panel-boxed', 'x' => 16.5, 'y' => 16, 'w' => 14.5, 'h' => 7, 'label' => 'D'],
         ],
+        // Corner layouts: Across in two columns along the grid's free edge, Down in the full-height side column.
+        CrosswordLayout::CornerGridTopLeft => [
+            ['kind' => 'grid', 'x' => 1, 'y' => 1, 'w' => 21, 'h' => 14],
+            ['kind' => 'panel', 'x' => 1, 'y' => 16, 'w' => 10, 'h' => 7, 'label' => 'A'],
+            ['kind' => 'panel', 'x' => 12, 'y' => 16, 'w' => 10, 'h' => 7],
+            ['kind' => 'panel', 'x' => 23, 'y' => 1, 'w' => 8, 'h' => 22, 'label' => 'D'],
+        ],
+        CrosswordLayout::CornerGridTopRight => [
+            ['kind' => 'panel', 'x' => 1, 'y' => 1, 'w' => 8, 'h' => 22, 'label' => 'D'],
+            ['kind' => 'grid', 'x' => 10, 'y' => 1, 'w' => 21, 'h' => 14],
+            ['kind' => 'panel', 'x' => 10, 'y' => 16, 'w' => 10, 'h' => 7, 'label' => 'A'],
+            ['kind' => 'panel', 'x' => 21, 'y' => 16, 'w' => 10, 'h' => 7],
+        ],
+        CrosswordLayout::CornerGridBottomLeft => [
+            ['kind' => 'panel', 'x' => 1, 'y' => 1, 'w' => 10, 'h' => 7, 'label' => 'A'],
+            ['kind' => 'panel', 'x' => 12, 'y' => 1, 'w' => 10, 'h' => 7],
+            ['kind' => 'grid', 'x' => 1, 'y' => 9, 'w' => 21, 'h' => 14],
+            ['kind' => 'panel', 'x' => 23, 'y' => 1, 'w' => 8, 'h' => 22, 'label' => 'D'],
+        ],
+        CrosswordLayout::CornerGridBottomRight => [
+            ['kind' => 'panel', 'x' => 1, 'y' => 1, 'w' => 8, 'h' => 22, 'label' => 'D'],
+            ['kind' => 'panel', 'x' => 10, 'y' => 1, 'w' => 10, 'h' => 7, 'label' => 'A'],
+            ['kind' => 'panel', 'x' => 21, 'y' => 1, 'w' => 10, 'h' => 7],
+            ['kind' => 'grid', 'x' => 10, 'y' => 9, 'w' => 21, 'h' => 14],
+        ],
     };
 @endphp
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 24" class="h-auto w-full" aria-hidden="true">

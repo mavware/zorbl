@@ -45,3 +45,20 @@ test('ordered() contains every CrosswordLayout case exactly once', function () {
 
     expect($orderedValues)->toBe($caseValues);
 });
+
+test('only the corner layouts wrap the clues around the grid, each in its own corner', function (CrosswordLayout $layout, bool $gridOnRight, bool $gridAtBottom) {
+    expect($layout->wrapsCluesAroundCorner())->toBeTrue()
+        ->and($layout->gridIsOnRight())->toBe($gridOnRight)
+        ->and($layout->gridIsAtBottom())->toBe($gridAtBottom);
+})->with([
+    [CrosswordLayout::CornerGridTopLeft, false, false],
+    [CrosswordLayout::CornerGridTopRight, true, false],
+    [CrosswordLayout::CornerGridBottomLeft, false, true],
+    [CrosswordLayout::CornerGridBottomRight, true, true],
+]);
+
+test('the other layouts do not wrap the clues around a corner', function () {
+    $wrapping = array_filter(CrosswordLayout::cases(), fn (CrosswordLayout $layout): bool => $layout->wrapsCluesAroundCorner());
+
+    expect($wrapping)->toHaveCount(4);
+});

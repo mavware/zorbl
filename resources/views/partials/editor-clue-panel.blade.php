@@ -1,5 +1,7 @@
 @php
     /** @var string $direction 'across' or 'down' */
+    /** @var int $columns (optional) 1, or 2 to run the clues in two columns as the corner layouts do for Across */
+    $columns ??= 1;
     $label = $direction === 'across' ? __('Across') : __('Down');
     $computed = $direction === 'across' ? 'computedCluesAcross' : 'computedCluesDown';
     $panelRef = $direction === 'across' ? 'acrossPanel' : 'downPanel';
@@ -13,7 +15,12 @@
     </div>
 @else
 <flux:heading size="sm" class="mb-2 shrink-0">{{ $label }}</flux:heading>
-<div class="flex-1 space-y-0.5 overflow-y-auto" x-ref="{{ $panelRef }}" :class="{ 'editor-complete-flash': cluesCompleteFlash }">
+{{-- With several columns the scroll area wraps a balanced multi-column block:
+     a multi-column box that is itself height-limited would grow sideways. --}}
+<div @class(['flex-1 overflow-y-auto', 'space-y-0.5' => $columns === 1]) x-ref="{{ $panelRef }}" :class="{ 'editor-complete-flash': cluesCompleteFlash }">
+    @if ($columns > 1)
+        <div class="gap-4 space-y-0.5 [columns:2_13rem]" data-test="clue-columns">
+    @endif
     <template x-for="clue in {{ $computed }}" :key="'{{ $direction }}-' + clue.number">
         <div
             x-on:click="selectClue('{{ $direction }}', clue.number, $event)"
@@ -25,7 +32,7 @@
 activeClueNumber === clue.number && direction === '{{ $direction }}' ? 'bg-blue-100 dark:bg-blue-900/40' : 'hover:bg-zinc-100 dark:hover:bg-zinc-700/50',
 isClueIncomplete('{{ $direction }}') && !clue.clue?.trim() ? 'ring-2 ring-amber-400 dark:ring-amber-500' : ''
 ]"
-            class="cursor-pointer rounded px-2 py-1"
+            class="cursor-pointer break-inside-avoid rounded px-2 py-1"
             :id="'clue-{{ $direction }}-' + clue.number"
         >
             <div class="flex items-start gap-1.5">
@@ -49,5 +56,8 @@ isClueIncomplete('{{ $direction }}') && !clue.clue?.trim() ? 'ring-2 ring-amber-
             </div>
         </div>
     </template>
+    @if ($columns > 1)
+        </div>
+    @endif
 </div>
 @endif

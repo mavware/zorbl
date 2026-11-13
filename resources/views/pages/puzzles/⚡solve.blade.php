@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\CrosswordLayout;
 use App\Models\Crossword;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
@@ -35,6 +36,10 @@ class extends Component {
      * attempt row, so a submission is checked but never stored; the page
      * only ever holds the answer's blank pattern, not the answer.
      */
+    /** The builder's layout, when it is one of the corner layouts the solver follows; null keeps the standard arrangement. */
+    #[Locked]
+    public ?CrosswordLayout $cornerLayout = null;
+
     public bool $hasMetaAnswer = false;
     public string $metaAnswerPrompt = '';
     public string $metaAnswerPattern = '';
@@ -84,6 +89,7 @@ class extends Component {
 
         $this->solveCount = (int) $crossword->cached_completed_count;
 
+        $this->cornerLayout = $crossword->layout?->wrapsCluesAroundCorner() ? $crossword->layout : null;
         $this->hasMetaAnswer = $crossword->hasMetaAnswer();
         $this->metaAnswerPrompt = $crossword->meta_answer_prompt ?? '';
         $this->metaAnswerPattern = $crossword->metaAnswerPattern() ?? '';
@@ -403,11 +409,42 @@ class extends Component {
              With a meta answer under the grid the cap moves to the panels alone:
              the grid column may then run taller than the viewport, and the page
              scrolls to the answer blanks instead of clipping them. --}}
-        <div @class(['flex flex-1 gap-4 overflow-hidden max-lg:flex-col', 'lg:max-h-[calc(100dvh-8rem)]' => ! $hasMetaAnswer])>
+        {{-- When the builder picked a corner layout, the same three areas are placed
+             on a two-column grid from `lg` up instead: the puzzle grid in its corner,
+             Across in two columns along the grid's free edge, Down in the full-height
+             column beside it. The puzzle grid is held to what the viewport leaves
+             once Across has its share, so all three stay on screen together. --}}
+        @php
+            $isCornerLayout = $cornerLayout !== null;
+            $cornerGridOnRight = (bool) $cornerLayout?->gridIsOnRight();
+            $cornerGridAtBottom = (bool) $cornerLayout?->gridIsAtBottom();
+        @endphp
+        <div
+            @class([
+                'flex flex-1 gap-4 overflow-hidden max-lg:flex-col',
+                'lg:max-h-[calc(100dvh-8rem)]' => ! $hasMetaAnswer,
+                'lg:grid' => $isCornerLayout,
+                'lg:grid-cols-[minmax(0,1fr)_16rem]' => $isCornerLayout && ! $cornerGridOnRight,
+                'lg:grid-cols-[16rem_minmax(0,1fr)]' => $isCornerLayout && $cornerGridOnRight,
+                'lg:grid-rows-[auto_minmax(10rem,1fr)]' => $isCornerLayout && ! $cornerGridAtBottom,
+                'lg:grid-rows-[minmax(10rem,1fr)_auto]' => $isCornerLayout && $cornerGridAtBottom,
+            ])
+            @if ($isCornerLayout) data-test="corner-layout" data-corner-layout="{{ $cornerLayout->name }}" @endif
+        >
             {{-- Across clues panel (desktop) --}}
-            <div class="hidden w-64 flex-col overflow-hidden lg:flex lg:max-h-[calc(100dvh-8rem)]">
+            <div @class([
+                'hidden flex-col overflow-hidden lg:flex lg:max-h-[calc(100dvh-8rem)]',
+                'w-64' => ! $isCornerLayout,
+                'min-h-0' => $isCornerLayout,
+                'lg:col-start-1' => $isCornerLayout && ! $cornerGridOnRight,
+                'lg:col-start-2' => $isCornerLayout && $cornerGridOnRight,
+                'lg:row-start-2' => $isCornerLayout && ! $cornerGridAtBottom,
+                'lg:row-start-1' => $isCornerLayout && $cornerGridAtBottom,
+            ])>
                 <flux:heading size="sm" class="mb-2 shrink-0">{{ __('Across') }}</flux:heading>
-                <div class="flex-1 space-y-0.5 overflow-y-auto" x-ref="acrossPanel">
+                <div class="flex-1 overflow-y-auto" x-ref="acrossPanel">
+                {{-- The columns sit inside the scroll area: a multi-column box that is itself height-limited would grow sideways. --}}
+                <div @class(['space-y-0.5', 'gap-4 [columns:2_13rem]' => $isCornerLayout])>
                     <template x-for="clue in computedCluesAcross" :key="'across-' + clue.number">
                         <div
                             x-on:click="selectClue('across', clue.number)"
@@ -415,7 +452,7 @@ class extends Component {
                             x-on:keydown.tab.prevent="focusNextClue($el, 'across', false)"
                             x-on:keydown.shift.tab.prevent="focusNextClue($el, 'across', true)"
                             :class="activeClueNumber === clue.number && direction === 'across' ? 'bg-blue-100 dark:bg-blue-900/40' : 'hover:bg-zinc-100 dark:hover:bg-zinc-700/50'"
-                            class="cursor-pointer rounded px-2 py-1"
+                            class="cursor-pointer break-inside-avoid rounded px-2 py-1"
                             :id="'clue-across-' + clue.number"
                             tabindex="0"
                         >
@@ -429,16 +466,23 @@ class extends Component {
                         </div>
                     </template>
                 </div>
+                </div>
             </div>
 
             {{-- Screen reader live region for active clue --}}
             <div class="sr-only" aria-live="polite" aria-atomic="true" x-text="activeClueAnnouncement()"></div>
 
             {{-- Grid --}}
-            <div class="flex min-w-0 flex-1 flex-col items-center overflow-hidden">
+            <div @class([
+                'flex min-w-0 flex-1 flex-col items-center overflow-hidden',
+                'lg:items-start lg:col-start-1' => $isCornerLayout && ! $cornerGridOnRight,
+                'lg:items-end lg:col-start-2' => $isCornerLayout && $cornerGridOnRight,
+                'lg:row-start-1' => $isCornerLayout && ! $cornerGridAtBottom,
+                'lg:row-start-2' => $isCornerLayout && $cornerGridAtBottom,
+            ])>
                 <div
-                    class="relative max-w-full shrink-0 touch-pan-y"
-                    :style="'width: ' + Math.min(600, width * 40) + 'px;'"
+                    @class(['relative max-w-full shrink-0 touch-pan-y', 'lg:max-w-[min(100%,calc((100dvh-20rem)*var(--grid-aspect)))]' => $isCornerLayout])
+                    :style="'width: ' + Math.min(600, width * 40) + 'px; --grid-aspect: ' + (width / height) + ';'"
                     x-on:keydown="handleKeydown($event)"
                     x-on:touchstart.passive="onSwipeStart($event)"
                     x-on:touchend.passive="onSwipeEnd($event)"
@@ -533,7 +577,13 @@ class extends Component {
             </div>
 
             {{-- Down clues panel (desktop) --}}
-            <div class="hidden w-64 flex-col overflow-hidden lg:flex lg:max-h-[calc(100dvh-8rem)]">
+            <div @class([
+                'hidden flex-col overflow-hidden lg:flex lg:max-h-[calc(100dvh-8rem)]',
+                'w-64' => ! $isCornerLayout,
+                'min-h-0 lg:row-span-2 lg:row-start-1' => $isCornerLayout,
+                'lg:col-start-2' => $isCornerLayout && ! $cornerGridOnRight,
+                'lg:col-start-1' => $isCornerLayout && $cornerGridOnRight,
+            ])>
                 <flux:heading size="sm" class="mb-2 shrink-0">{{ __('Down') }}</flux:heading>
                 <div class="flex-1 space-y-0.5 overflow-y-auto" x-ref="downPanel">
                     <template x-for="clue in computedCluesDown" :key="'down-' + clue.number">
