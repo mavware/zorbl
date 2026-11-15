@@ -64,6 +64,51 @@ select:focus[data-flux-control] {
     @apply outline-hidden ring-2 ring-accent ring-offset-2 ring-offset-accent-foreground;
 }
 
+/* Light mode — Flux's own strokes are paler than the app's line tokens, so
+   wherever a Flux element still carries its stock zinc border it takes the
+   matching token instead. Matching on Flux's class keeps any border colour a
+   view sets itself. Un-layered so it beats Flux's utilities; dark mode keeps
+   Flux's values. */
+:root:not(.dark) :is(
+    [data-flux-control],
+    [data-flux-button],
+    [data-flux-menu],
+    [data-flux-navmenu],
+    [data-flux-input-group-prefix],
+    [data-flux-input-group-suffix],
+    [data-flux-input-file],
+    [data-flux-toast-dialog],
+    [data-flux-pagination] *
+)[class~="border-zinc-200"] {
+    border-color: var(--color-line);
+}
+
+/* Inputs keep Flux's slightly heavier bottom edge. */
+:root:not(.dark) [data-flux-control][class~="border-b-zinc-300/80"],
+:root:not(.dark) [data-flux-button][class~="border-b-zinc-300/80"] {
+    border-bottom-color: var(--color-line-strong);
+}
+
+:root:not(.dark) :is([data-flux-checkbox-indicator], [data-flux-radio-indicator])[class~="border-zinc-300"] {
+    border-color: var(--color-line-strong);
+}
+
+:root:not(.dark) :is([data-flux-column], [data-flux-cell])[class~="border-zinc-800/10"] {
+    border-color: var(--color-line-soft);
+}
+
+:root:not(.dark) [data-flux-separator][class~="bg-zinc-800/15"] {
+    background-color: var(--color-line);
+}
+
+:root:not(.dark) [data-flux-separator][class~="bg-zinc-800/5"] {
+    background-color: var(--color-line-soft);
+}
+
+:root:not(.dark) [data-flux-modal] > dialog[class~="ring-black/5"] {
+    --tw-ring-color: var(--color-line);
+}
+
 /* \[:where(&)\]:size-4 {
     @apply size-4;
 } */

@@ -281,10 +281,12 @@ new #[Title('Favorites')] class extends Component {
     @else
         <div class="grid gap-[22px] [grid-template-columns:repeat(auto-fill,minmax(268px,1fr))]">
             @foreach($this->activeListCrosswords as $crossword)
-                <article wire:key="fav-{{ $crossword->id }}" class="border-border hover:border-border-strong flex flex-col gap-3.5 rounded-sm border p-4.5 transition-colors">
+                {{-- The whole card opens the puzzle: the title link stretches over the
+                     card, and the actions menu sits above it. --}}
+                <article wire:key="fav-{{ $crossword->id }}" class="border-border hover:border-border-strong relative flex flex-col gap-3.5 rounded-sm border p-4.5 transition-colors">
                     <div class="min-w-0">
                         <h3 class="font-classical text-ink truncate text-[21px] leading-tight font-semibold">
-                            <a href="{{ route('crosswords.solver', $crossword) }}" wire:navigate class="hover:text-amber-ink-hover focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">
+                            <a href="{{ route('crosswords.solver', $crossword) }}" wire:navigate class="after:absolute after:inset-0 hover:text-amber-ink-hover focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">
                                 {{ $crossword->displayTitle() }}
                             </a>
                         </h3>
@@ -317,7 +319,7 @@ new #[Title('Favorites')] class extends Component {
                         <a href="{{ route('crosswords.solver', $crossword) }}" wire:navigate class="btn-classical btn-amber-outline">
                             {{ __('Solve') }}
                         </a>
-                        <flux:dropdown position="bottom" align="end">
+                        <flux:dropdown position="bottom" align="end" class="relative z-10">
                             <button type="button" class="btn-classical btn-classical-muted w-9 px-0" aria-label="{{ __('More actions') }}">
                                 <flux:icon name="ellipsis-vertical" class="size-4" />
                             </button>

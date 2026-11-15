@@ -323,9 +323,11 @@ new #[Title('Solving')] class extends Component {
                     @php($solveProgress = $attempt->is_completed ? 100 : $attempt->solveProgress())
                     @php($avgSeconds = $attempt->is_completed ? ($attempt->crossword->cached_avg_solve_time ?? 0) : 0)
                     @php($solveTimeDiffPercent = ($attempt->is_completed && $attempt->solve_time_seconds && $avgSeconds > 0) ? (int) round((1 - $attempt->solve_time_seconds / $avgSeconds) * 100) : null)
+                    {{-- The whole card opens the puzzle: the title link stretches over the
+                         card, and the actions menu and tooltip sit above it. --}}
                     <article
                         wire:key="attempt-{{ $attempt->id }}"
-                        class="border-border hover:border-border-strong flex min-w-0 flex-col gap-2 rounded-sm border p-2 transition-colors sm:gap-3.5 sm:p-4.5"
+                        class="border-border hover:border-border-strong relative flex min-w-0 flex-col gap-2 rounded-sm border p-2 transition-colors sm:gap-3.5 sm:p-4.5"
                     >
                         <div class="flex items-start justify-between gap-3">
                             <div class="min-w-0">
@@ -334,13 +336,13 @@ new #[Title('Solving')] class extends Component {
                                         {{-- Phones drop the badge for space; a dot keeps the status visible. --}}
                                         <span class="size-1.5 shrink-0 rounded-full bg-amber-400 sm:hidden" title="{{ __('Completed') }}" data-test="completed-dot"></span>
                                     @endif
-                                    <a href="{{ route('crosswords.solver', $attempt->crossword) }}" wire:navigate class="truncate hover:text-amber-ink-hover focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">
+                                    <a href="{{ route('crosswords.solver', $attempt->crossword) }}" wire:navigate class="truncate after:absolute after:inset-0 hover:text-amber-ink-hover focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">
                                         {{ $attempt->crossword->displayTitle() }}
                                     </a>
                                 </h3>
                                 {{-- Same meta line as x-puzzle-details, with the constructor in place of the edit date. --}}
                                 <div class="text-ink-faint tnum mt-1.5 flex min-w-0 items-center gap-x-2 overflow-hidden text-[12px] whitespace-nowrap label-classical [--label-tracking:0.06em]">
-                                    <flux:tooltip :content="$attempt->crossword->puzzle_type->label()">
+                                    <flux:tooltip :content="$attempt->crossword->puzzle_type->label()" class="relative z-10">
                                         <flux:icon :name="$attempt->crossword->puzzle_type->icon()" class="size-3 shrink-0"/>
                                     </flux:tooltip>
                                     <span class="shrink-0">{{ $attempt->crossword->width }}&times;{{ $attempt->crossword->height }}</span>
@@ -400,7 +402,7 @@ new #[Title('Solving')] class extends Component {
                             <a href="{{ route('crosswords.solver', $attempt->crossword) }}" wire:navigate class="btn-classical btn-classical-compact btn-amber-outline flex-1 max-sm:hidden!">
                                 {{ $attempt->is_completed ? __('Review') : __('Continue') }}
                             </a>
-                            <flux:dropdown position="bottom" align="end" class="max-sm:flex-1">
+                            <flux:dropdown position="bottom" align="end" class="relative z-10 max-sm:flex-1">
                                 <button type="button" class="btn-classical btn-classical-compact btn-classical-muted max-sm:w-full max-sm:py-1.5!" aria-label="{{ __('More actions') }}">
                                     <flux:icon name="ellipsis-vertical" class="size-4" />
                                 </button>
