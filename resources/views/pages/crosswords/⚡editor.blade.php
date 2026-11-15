@@ -1127,7 +1127,7 @@ class extends Component {
                 <flux:tooltip content="{{ __('Undo') }}" kbd="Ctrl+Z">
                     <button
                         type="button"
-                        x-on:click="undo(); $refs.gridContainer?.focus()"
+                        x-on:click="undo(); focusGrid()"
                         :disabled="!canUndo"
                         class="rounded-lg p-1.5 transition-colors disabled:opacity-30"
                         :class="canUndo ? 'text-fg-muted hover:text-zinc-800 dark:hover:text-zinc-200' : 'text-fg-muted'"
@@ -1145,7 +1145,7 @@ class extends Component {
                 <flux:tooltip content="{{ __('Redo') }}" kbd="Ctrl+Shift+Z">
                     <button
                         type="button"
-                        x-on:click="redo(); $refs.gridContainer?.focus()"
+                        x-on:click="redo(); focusGrid()"
                         :disabled="!canRedo"
                         class="rounded-lg p-1.5 transition-colors disabled:opacity-30"
                         :class="canRedo ? 'text-fg-muted hover:text-zinc-800 dark:hover:text-zinc-200' : 'text-fg-muted'"

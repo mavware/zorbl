@@ -40,6 +40,10 @@ function serializeHistory({ grid, solution, styles, cluesAcross, cluesDown, pref
 /** How long a just-saved settings field shows its green check. */
 export const SETTING_FLASH_MS = 800;
 
+// Placeholder kept in the touch-keyboard input so a backspace always has a
+// character to delete and therefore always fires an input event.
+export const MOBILE_INPUT_SENTINEL = ' ';
+
 /** Pending flash timeouts keyed by settings property name. */
 const settingFlashTimers = new Map();
 
@@ -527,7 +531,7 @@ export function crosswordGrid({
                         this.multiSelectedCells[primaryKey] = true;
                     }
                 }
-                this.$refs.gridContainer?.focus();
+                this.focusGrid();
                 return;
             }
 
@@ -546,7 +550,7 @@ export function crosswordGrid({
             }
 
             this.scrollActiveClueIntoView();
-            this.$refs.gridContainer?.focus();
+            this.focusGrid();
             this.revealSuggestions(this.suggestionsTabForActiveSlot());
         },
 
@@ -574,7 +578,7 @@ export function crosswordGrid({
                     if (this.grid[row][col] === number) {
                         this.selectedRow = row;
                         this.selectedCol = col;
-                        if (!clickedInput) this.$refs.gridContainer?.focus();
+                        if (!clickedInput) this.focusGrid();
                         // Writing a clue wants the clue library; picking the
                         // slot by its number is like picking a cell.
                         this.revealSuggestions(clickedInput ? 'clues' : this.suggestionsTabForActiveSlot());
@@ -619,8 +623,49 @@ export function crosswordGrid({
         },
 
         // --- Keyboard handling ------------------------------------------------
+        // Hands keyboard focus to the grid. Touch devices only raise their
+        // on-screen keyboard for a real text field, so with a cell selected
+        // they focus the invisible mobileInput instead of the grid container.
+        focusGrid() {
+            const mobileInput = this.$refs.mobileInput;
+            const isTouchDevice = globalThis.matchMedia?.('(pointer: coarse)').matches;
+            if (mobileInput && isTouchDevice && this.selectedRow >= 0) {
+                mobileInput.value = MOBILE_INPUT_SENTINEL;
+                mobileInput.focus();
+                return;
+            }
+            this.$refs.gridContainer?.focus();
+        },
+
+        // Forwards on-screen keyboard typing to handleKeydown. Android
+        // keyboards report every keydown as "Unidentified", so the typed
+        // character is read from the input event instead. The field is reset
+        // to a sentinel after each event so a backspace always has something
+        // to delete (an empty field would not fire an input event).
+        handleMobileInput(e) {
+            const input = e.target;
+            const typed = e.data ?? input.value.slice(MOBILE_INPUT_SENTINEL.length);
+            const isDeletion = e.inputType?.startsWith('delete')
+                || input.value.length < MOBILE_INPUT_SENTINEL.length;
+            input.value = MOBILE_INPUT_SENTINEL;
+
+            const key = isDeletion ? 'Backspace' : typed.slice(-1);
+            if (!key) return;
+
+            this.handleKeydown({
+                key, target: input, ctrlKey: false, metaKey: false, shiftKey: false, preventDefault() {},
+            });
+        },
+
+        // True for inputs and textareas that own their keystrokes (clue
+        // fields, modals) — everything except the grid's own mobileInput.
+        _isOtherEditableField(target) {
+            if (!target || target === this.$refs.mobileInput) return false;
+            return target.tagName === 'INPUT' || target.tagName === 'TEXTAREA';
+        },
+
         handleKeydown(e) {
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            if (this._isOtherEditableField(e.target)) return;
 
             const key = e.key;
 
@@ -1072,7 +1117,7 @@ export function crosswordGrid({
             this.showRebusInput = false;
 
             if (!value) {
-                this.$refs.gridContainer?.focus();
+                this.focusGrid();
                 return;
             }
 
@@ -1087,14 +1132,14 @@ export function crosswordGrid({
             this.clearMultiSelection();
             this.markDirty();
             this.savePrefilled();
-            this.$refs.gridContainer?.focus();
+            this.focusGrid();
         },
 
         cancelRebus() {
             this.showRebusInput = false;
             this.rebusInputValue = '';
             this.rebusCells = [];
-            this.$refs.gridContainer?.focus();
+            this.focusGrid();
         },
 
         clearRebus() {
@@ -1114,7 +1159,7 @@ export function crosswordGrid({
             this.clearMultiSelection();
             this.showRebusInput = false;
             this.markDirty();
-            this.$refs.gridContainer?.focus();
+            this.focusGrid();
         },
 
         // --- Custom number overlay -------------------------------------------
@@ -1144,7 +1189,7 @@ export function crosswordGrid({
             this.showCustomNumberInput = false;
 
             if (value === '') {
-                this.$refs.gridContainer?.focus();
+                this.focusGrid();
                 return;
             }
 
@@ -1155,14 +1200,14 @@ export function crosswordGrid({
 
             this.clearMultiSelection();
             this.markDirty();
-            this.$refs.gridContainer?.focus();
+            this.focusGrid();
         },
 
         cancelCustomNumber() {
             this.showCustomNumberInput = false;
             this.customNumberInputValue = '';
             this.customNumberCells = [];
-            this.$refs.gridContainer?.focus();
+            this.focusGrid();
         },
 
         removeCustomNumber() {
@@ -1172,7 +1217,7 @@ export function crosswordGrid({
             this.clearMultiSelection();
             this.showCustomNumberInput = false;
             this.markDirty();
-            this.$refs.gridContainer?.focus();
+            this.focusGrid();
         },
 
         ensurePrefillGrid() {
@@ -1275,7 +1320,7 @@ export function crosswordGrid({
         // the browser's own undo.
         handleShortcutKeydown(e) {
             const tag = e.target?.tagName;
-            if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || e.target?.isContentEditable) return;
+            if (this._isOtherEditableField(e.target) || tag === 'SELECT' || e.target?.isContentEditable) return;
             if (!(e.metaKey || e.ctrlKey)) return;
 
             const key = e.key.toLowerCase();
@@ -1762,7 +1807,7 @@ export function crosswordGrid({
                 e.stopPropagation();
                 this.suggestionsIndex = -1;
                 this.clearSuggestionPreview();
-                this.$refs.gridContainer?.focus();
+                this.focusGrid();
                 return;
             }
 

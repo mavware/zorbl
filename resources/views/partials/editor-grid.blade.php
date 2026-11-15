@@ -9,6 +9,27 @@
                 role="grid"
                 :aria-label="'Crossword grid, ' + width + ' columns by ' + height + ' rows'"
             >
+                {{-- Touch devices only raise their keyboard for a real text
+                     field, so selecting a cell focuses this invisible input
+                     (see focusGrid) and its typing is forwarded to
+                     handleKeydown. It sits on the selected cell so the browser
+                     scrolls that cell clear of the keyboard; the 16px font
+                     stops iOS zooming in on focus. --}}
+                <input
+                    x-ref="mobileInput"
+                    x-on:input="handleMobileInput($event)"
+                    type="text"
+                    inputmode="text"
+                    autocomplete="off"
+                    autocorrect="off"
+                    autocapitalize="characters"
+                    spellcheck="false"
+                    tabindex="-1"
+                    aria-label="{{ __('Type into the selected cell') }}"
+                    class="pointer-events-none absolute size-px border-0 bg-transparent p-0 text-base opacity-0 outline-none"
+                    :style="'top: ' + (Math.max(0, selectedRow) / height * 100) + '%; left: ' + (Math.max(0, selectedCol) / width * 100) + '%;'"
+                />
+
                 {{-- wire:ignore: the cells are rendered entirely by Alpine from
                      nested x-for templates. Livewire's morph only skips past
                      the outer template's last rendered element (the final
