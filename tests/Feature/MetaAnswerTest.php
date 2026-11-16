@@ -22,7 +22,7 @@ test('solver sees meta answer prompt after completing a puzzle with meta answers
     ]);
 
     Livewire::test('pages::crosswords.solver', ['crossword' => $crossword])
-        ->assertSee('Meta Answer')
+        ->assertDontSee('Meta Answer')
         ->assertSee('What is the hidden theme?');
 });
 
@@ -33,7 +33,7 @@ test('solver does not see meta answer prompt on puzzles without meta answers', f
     $this->actingAs($user);
 
     Livewire::test('pages::crosswords.solver', ['crossword' => $crossword])
-        ->assertDontSee('Meta Answer');
+        ->assertDontSeeHtml('data-test="meta-answer-section"');
 });
 
 test('solver sees the meta answer beneath the puzzle before completing it and can answer straight away', function () {
@@ -46,7 +46,7 @@ test('solver sees the meta answer beneath the puzzle before completing it and ca
     $this->actingAs($user);
 
     $component = Livewire::test('pages::crosswords.solver', ['crossword' => $crossword])
-        ->assertSee('Meta Answer')
+        ->assertDontSee('Meta Answer')
         ->assertSee('What is the hidden theme?')
         ->assertSet('isSolved', false);
 

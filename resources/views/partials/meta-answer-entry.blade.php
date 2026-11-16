@@ -14,9 +14,10 @@
      Livewire swaps the whole card between states and the Alpine entry
      starts fresh rather than being morphed in place.
 
-     The prompt is optional. Without one there is no card, icon or "Meta
-     Answer" heading: only the blanks, centred, plus the verdict once an
-     answer has been checked. --}}
+     The prompt is optional. With one, the card leads with the question
+     icon and the prompt itself, with no heading naming the feature. Without
+     one there is no card or icon: only the blanks, centred, plus the
+     verdict once an answer has been checked. --}}
 @php
     $metaEntryState = $metaAnswerSubmitted ? ($metaAnswerCorrect === false ? 'retry' : 'done') : 'open';
     $metaEntryHasPrompt = filled($metaAnswerPrompt);
@@ -35,10 +36,7 @@
             <div class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-900/30">
                 <svg xmlns="http://www.w3.org/2000/svg" class="size-5 text-purple-600 dark:text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
             </div>
-            <div>
-                <div class="font-semibold text-purple-800 dark:text-purple-200">{{ __('Meta Answer') }}</div>
-                <div class="text-sm text-purple-700 dark:text-purple-400">{{ $metaAnswerPrompt }}</div>
-            </div>
+            <div class="font-medium text-purple-800 dark:text-purple-200">{{ $metaAnswerPrompt }}</div>
         </div>
     @endif
 
