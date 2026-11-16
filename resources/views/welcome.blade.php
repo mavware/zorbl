@@ -120,6 +120,7 @@
 
         @include('partials.google-tag')
         @vite(['resources/css/app.css', 'resources/js/app.js'])
+        @include('partials.default-appearance')
         @fluxAppearance
     </head>
     <body class="bg-page text-ink antialiased">
