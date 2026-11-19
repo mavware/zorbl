@@ -1,0 +1,23 @@
+description = "Run targeted Pest (PHP) or Vitest (JS) tests cleanly."
+
+prompt = """
+# Run & Debug Tests
+
+Target test path, filter, or description: {{args}}
+
+## Rules
+1. Always run the narrowest relevant test path first — do **not** run the full suite upfront (it takes 8+ minutes and Browser tests require separate Playwright setup).
+2. **PHP (Pest 4)**:
+   - Targeted file: `php artisan test --compact <path>`
+   - Filtered test: `vendor/bin/pest <path> --filter="<name>"`
+   - Parallel module/suite verification (matches CI): `vendor/bin/pest --parallel --compact --testsuite=Unit,Feature`
+3. **JavaScript (Vitest)**:
+   - Run `npm test` (or `npx vitest run <file>`) for `tests/js/**/*.test.js`.
+4. **Creating new Pest tests**:
+   - Feature: `php artisan make:test --pest SomeFeatureTest --no-interaction`
+   - Unit: `php artisan make:test --unit --pest SomeUnitTest --no-interaction`
+   - Consult `.agents/skills/pest-testing/SKILL.md` and `.agents/skills/testing-best-practices/SKILL.md`.
+   - Never delete existing tests without explicit approval.
+
+Run the requested tests now, diagnose any failures concisely, and report exact pass/fail counts.
+"""

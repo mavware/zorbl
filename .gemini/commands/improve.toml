@@ -1,0 +1,41 @@
+description = "Run an autonomous improvement session on a dedicated gemini/* branch."
+
+prompt = """
+# Autonomous Improvement Session (Crossword Builder)
+
+Optional focus area or instructions: {{args}}
+
+## Context Snapshot
+Current git branch & recent commits:
+!{git branch --show-current && git log --oneline -15}
+
+## 1. Survey & Candidate Discovery
+1. Follow `GEMINI.md` and `AGENTS.md` rules (Laravel 13, Livewire 4 `⚡` SFCs, Flux UI Free v2 only, Filament 5, Pest 4, Larastan level 2, Vitest, Pint).
+2. Read `TODO.md` — prioritize uncompleted items (`- [ ]`) in the `Open` section unless the optional focus above specifies otherwise.
+3. Check open and recent PRs via `gh pr list --repo mavware/zorbl --state all --limit 25` (skip if `gh` is unauthenticated) so you do not duplicate already-merged or pending work.
+4. **Rotation guardrail**: If the last two automated PRs (`gemini/*`, `claude/*`, `auto/*`) were test-only, pick a feature, UX polish, refactor, or performance/bug fix instead.
+5. **Baseline test check**: Run only the narrow Pest/Vitest test files relevant to your chosen area (`php artisan test --compact <path>` or `npm test`). Never run the full test suite upfront.
+
+## 2. Implementation
+1. Create a clean branch: `git checkout -b gemini/<kebab-case-description>`. Never push directly to `main`.
+2. Match sibling conventions (check neighboring Livewire `⚡` components, models, policies, and Blade theme token classes). Use Boost `database-schema` before schema changes.
+3. Never use Flux Pro–only components or add `declare(strict_types=1)` to `app/` files.
+4. Add or update targeted Pest tests (and Vitest tests in `tests/js/` if editing `resources/js/`).
+
+## 3. Quality Gate
+1. Format PHP: `vendor/bin/pint --dirty --format agent`
+2. Static analysis (if PHP changed): `vendor/bin/phpstan analyse`
+3. Re-run targeted Pest tests: `php artisan test --compact <target-tests>`
+4. If JS/CSS/Blade changed: run `npm test` and `npm run build`.
+5. Update `TODO.md` in place (`- [ ]` -> `- [x]`) if completing a backlog item.
+
+## 4. Commit & Pull Request
+1. Commit with a clear message explaining what changed and why.
+2. Push branch: `git push -u origin gemini/<kebab-case-description>`.
+3. Open PR against `main`: `gh pr create --repo mavware/zorbl --base main --title "..." --body "..."` containing:
+   - **Branch**
+   - **Description** (2–4 sentences: what changed and why)
+   - **Verification** (exact before/after Pest, Vitest, PHPStan, and Pint results)
+   - **Dependencies** (any added packages, or "None")
+   - **Follow-up Opportunities**
+"""

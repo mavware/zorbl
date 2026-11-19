@@ -1,0 +1,27 @@
+description = "Run pre-commit/pre-PR review, Pint formatting, PHPStan, and targeted test checks."
+
+prompt = """
+# Review & Quality Gate
+
+Optional review focus: {{args}}
+
+## Current Workspace Diff
+Status:
+!{git status -s}
+
+Diff summary:
+!{git diff --stat}
+
+## Steps
+1. **Format PHP**: Run `vendor/bin/pint --dirty --format agent` if any PHP files were modified.
+2. **Static Analysis**: Run `vendor/bin/phpstan analyse` if PHP files under `app/` were modified.
+3. **Safety & Convention Audit**:
+   - Confirm no `.env`, secret keys, user PII, or personal machine paths (`/Users/...`) were touched.
+   - Check for N+1 queries, missing authorization/validation in Livewire actions, raw SQL injection, or mass-assignment risks.
+   - Confirm no Flux Pro–only components were used (only Flux Free v2 is installed) and no `declare(strict_types=1)` was added to `app/`.
+   - Confirm Blade changes use semantic theme token classes (`text-ink`, `border-hairline`, `btn-classical*`, etc.) so both `modern` and `classical` themes work.
+4. **Verify Tests & Build**:
+   - Run targeted Pest tests for changed files (`php artisan test --compact <affected-tests>`).
+   - Run `npm test` if `resources/js/` changed, and `npm run build` if CSS/JS/Blade changed.
+5. **Summary**: Report changed files, verification outputs, and any remaining risks or follow-ups.
+"""

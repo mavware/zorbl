@@ -1,116 +1,49 @@
 # Gemini & Antigravity Project Instructions
 
-## Foundational Context
+> **Note:** Laravel Boost guidelines and installed ecosystem rules are loaded from `AGENTS.md`. This file defines Crossword Builder–specific guardrails, workflows, and Gemini/Antigravity optimizations without duplicating `AGENTS.md`.
 
-This application is **Crossword Builder** (repository: `mavware/zorbl`), a full-featured Laravel TALL stack (Tailwind CSS v4, Alpine.js, Laravel 11/12, Livewire 3 + Flux UI Pro) application running on **PHP 8.5**.
+## Project & Runtime Snapshot
 
-- **Dev Environment**: Served locally via **Laravel Herd** at `https://crosswordbuilder.test`. Never attempt to run `php artisan serve`. Herd is always running and managing services.
-- **PHP CLI**: Always use Herd's PHP binary when needed (`/Users/michael/Library/Application Support/Herd/bin/php85` or `php`).
-- **Installed Packages**: Always check direct versions before assuming API syntax:
-  - PHP: `composer show --direct` or `composer show <vendor/package>`
-  - JS: `package.json`
+- **Application**: Crossword Builder (`github.com/mavware/zorbl`, **public repository**)
+- **Local URL**: `https://crosswordbuilder.test` via **Laravel Herd** (never run `php artisan serve`).
+- **Verified Stack** (always confirm via `composer show --direct` / `package.json` before assuming APIs):
+  - **Backend**: PHP 8.4+ (CI on 8.5; local Herd PHP), **Laravel 13**, **Livewire 4** (single-file `⚡` components), **Flux UI Free v2** (`livewire/flux` — Flux Pro is *not* installed), **Filament v5**, Fortify, Cashier (Stripe), Sanctum, Socialite, Spatie Permission & Query Builder, Nightwatch, Pulse.
+  - **Frontend**: **Tailwind CSS v4**, **Alpine.js v3**, **Vite v8**, **Vitest v3** (`tests/js/`).
+  - **Quality**: **Pest v4** (+ Playwright browser plugin), **Larastan v3** (PHPStan level 2), **Laravel Pint v1**.
 
----
+## Safety & Repository Guardrails
 
-## Safety Guardrails & Soft-Denies
+1. **No destructive database/storage commands**: Never run `php artisan migrate:fresh`, `php artisan migrate:reset`, or delete `database/*.sqlite*` or `storage/`.
+2. **Public repo secret hygiene**: Never read/print/commit `.env`, `.env.production`, API keys, user PII, or personal machine paths (e.g., `/Users/<name>/...`). Use portable commands (`php`, `artisan`, `vendor/bin/...`).
+3. **Branching**: Never push directly to `main` or force-push. Work on feature branches named `gemini/<kebab-case-description>`.
+4. **Ignore large/generated data**: Respect `.geminiignore` (excludes 6.3 MB `database/data/wordlist.txt`, 1 MB `xd-puzzles-parsed.json`, SQLite DBs, lockfiles, `_ide_helper.php`).
 
-1. **NEVER run destructive database commands**:
-   - `php artisan migrate:fresh` or `migrate:reset` is strictly forbidden.
-   - Do NOT delete or wipe SQLite databases (`database/*.sqlite`) or `storage/` contents.
-2. **Protect Secrets & Environment**:
-   - Never commit `.env` or print secret keys.
-   - This repository is **PUBLIC** (`github.com/mavware/zorbl`). Never push private API keys, user PII, or confidential credentials.
-3. **Branch Protection**:
-   - Do NOT push directly to `main`. Create feature branches (`gemini/<feature-name>`).
+## Verification & Quality Commands
 
----
+- **Targeted Pest tests** (always run narrowest path first; avoid full 8+ min suite upfront):
+  - `php artisan test --compact tests/Feature/YourTest.php`
+  - `vendor/bin/pest tests/Feature/YourTest.php --filter="test name"`
+- **Parallel Unit + Feature check** (matches CI; Browser tests have separate Playwright setup):
+  - `vendor/bin/pest --parallel --compact --testsuite=Unit,Feature`
+- **JavaScript unit tests**: `npm test` (Vitest for `tests/js/**/*.test.js`)
+- **Static analysis**: `vendor/bin/phpstan analyse` (Larastan level 2 per `phpstan.neon.dist`)
+- **Formatting (mandatory after any PHP edit)**: `vendor/bin/pint --dirty --format agent`
+- **Frontend build**: `npm run build` after CSS/JS/Blade changes
 
-## Laravel Boost & MCP Tools
+## Codebase Conventions Not Covered in `AGENTS.md`
 
-- Prefer Laravel Boost MCP tools over shell commands where applicable:
-  - `database-query`: Execute read-only SQL queries to inspect data.
-  - `database-schema`: Inspect database tables, indexes, and columns before migrations/models.
-  - `get-absolute-url`: Resolve valid URLs with correct scheme, domain, and port for `crosswordbuilder.test`.
-  - `browser-logs`: Read recent client-side browser errors and exceptions.
-- **Searching Documentation**:
-  - Use `search-docs` for framework or package documentation queries (Laravel, Livewire, Filament, Pest).
-  - Pass package arrays where applicable (e.g., `packages: ["livewire", "pest"]`).
+- **Type declarations**: Use explicit parameter and return types, constructor property promotion, curly braces on all control structures, and TitleCase enum keys. Do **not** add `declare(strict_types=1)` to `app/` files (the codebase omits it for consistency).
+- **Modular rules & skills**:
+  - Path-scoped Antigravity rules live in `.agents/rules/` (loaded automatically when editing matching files).
+  - Domain skills live in `.agents/skills/` (loaded progressively on demand).
+  - Workspace MCP (`laravel-boost`) is configured in `.agents/mcp_config.json` (Antigravity) and `.gemini/settings.json` (Gemini CLI).
 
----
+## Gemini 4 Model & Antigravity Workflow Strategy
 
-## Code Style & Formatting
-
-- **Pint Enforcement**:
-  - Run `vendor/bin/pint --dirty --format agent` after any PHP modification before concluding the task.
-  - Do NOT run `vendor/bin/pint --test`. Always apply changes cleanly.
-- **PHP 8.5 Standards**:
-  - Always use curly braces for control structures, even for single-line blocks.
-  - Use PHP 8 constructor property promotion: `public function __construct(public GitHub $github) {}`.
-  - Explicit parameter and return type declarations on all methods: `public function isAccessible(User $user, ?string $path = null): bool`.
-  - Enum keys MUST be TitleCase: `FavoritePerson`, `BestLake`, `Monthly`.
-  - Prefer PHPDoc blocks with array shape type definitions over vague inline comments.
-
----
-
-## Testing with Pest
-
-- **Framework**: All tests use **Pest**. Create tests with `php artisan make:test --pest {name}`.
-- **Test Execution**:
-  - Run narrow, targeted test suites covering your change:
-    - `php artisan test --compact tests/Feature/YourTest.php`
-    - Or direct binary: `vendor/bin/pest tests/Feature/YourTest.php --filter=testName`
-  - Re-run the affected test after every change to verify the fix.
-  - Note: Browser tests (`tests/Browser/*`) may require separate headless setup; prioritize Unit and Feature regression tests.
-- **Test Integrity**:
-  - Never delete existing tests without explicit user approval.
-  - Use model factories and existing factory states rather than manual DB records.
-
----
-
-## Livewire 3 & Frontend Architecture
-
-- **State Management**: Keep state server-side. Livewire components update reactively.
-- **Alpine.js**: Use Alpine for client-only UI interactions (modals, dropdowns, client animations).
-- **Flux UI Pro**: Use Flux UI components (`<flux:...>`) according to design conventions. Check sibling views before introducing raw markup.
-- **Vite Bundling**: If CSS/Blade changes don't reflect, run `npm run build`.
-
----
-
-## Antigravity Capabilities & Workflow Automation
-
-### 1. Dynamic Workflows (`run_workflow`)
-For multi-phase or autonomous sessions (e.g. survey -> pre-check -> implementation -> verify -> PR), execute automated Python workflow scripts located in `workflows/` (such as `workflows/autonomous_improve.py`).
-
-### 2. Specialized Subagents
-When a task divides cleanly into independent angles:
-- Delegate research or broad file scanning to `research` subagent.
-- Use `self` subagent or define specialized agents (e.g. `Pest-Test-Specialist`, `Livewire-Refactorer`) for isolated parallel execution.
-
-### 3. Visual & Structured Artifacts
-- Render architecture workflows and state transitions using **Mermaid** diagrams (`flowchart TD`, `sequenceDiagram`, `stateDiagram-v2`).
-- Store detailed architectural proposals, test results, and migration logs in markdown artifacts in the conversation artifact directory.
-- Bookmark web resources and local URLs using `.url.json` artifacts (`UserFacing: true` for actionable review targets).
-
-### 4. Interactive Clarification (`ask_question`)
-- When requirements are ambiguous, or when architectural trade-offs exist (e.g., choice between database schema designs or Livewire component structures), invoke `ask_question` to present structured options to the user.
-
----
-
-## Available Skills Reference (`.agents/skills/`)
-
-Trigger the relevant skill from `.agents/skills/` based on the domain of your work:
-- `pest-testing`: Pest PHP test creation, assertions, datasets, mocking, and Livewire component testing.
-- `laravel-best-practices`: Eloquent performance, query optimization, caching, routes, events, validation.
-- `livewire-development`: Livewire 3 components, Alpine hooks, reactivity, forms, actions.
-- `fluxui-development`: Flux UI Pro components, patterns, themes, and layouts.
-- `cashier-stripe-development` & `stripe-best-practices`: Subscriptions, webhooks, customer billing portal.
-- `filament-development`: Filament resource panels, tables, form fields, and actions.
-- `fortify-development`: Two-factor auth, registration, password resets, session management.
-- `infer-conventions`: Scanning existing patterns, lint conventions, and project architecture.
-- `laravel-permission-development`: Spatie permissions, roles, gates, and policies.
-- `laravel-query-builder`: Advanced filtering, sorting, and eager loading.
-- `pulse-development`: Laravel Pulse performance metrics, slow queries, and recorder config.
-- `socialite-development`: OAuth providers (Google, GitHub, Apple) authentication flows.
-- `tailwindcss-development`: Tailwind CSS v4 tokens, utility classes, and custom animations.
-- `configure-nightwatch`: Laravel Nightwatch observability and monitoring.
-- `run-workflow`: Dynamic Python orchestrations with parallel agents and phased pipelines.
+- **Model tiering**:
+  - **Gemini 4 Neon** (`gemini-4-neon`, default): Daily frontier coding, Livewire/Laravel feature work, debugging, and reviews.
+  - **Gemini 4 Carbon** (`gemini-4-carbon`): Escalate for deep architectural design, multi-file security audits, or complex long-horizon debugging.
+  - **Gemini 4 Hydrogen** (`gemini-4-hydrogen` / `flash` subagent tier): Fast, low-cost execution for file surveys, targeted test runs, formatting checks, and parallel subagent fan-out.
+- **Dynamic workflows**: Use `run_workflow` with `workflows/autonomous_improve.py` for phased autonomous improvement cycles (supports optional `Args` like `{"target_area": "clues", "dry_run": true}`).
+- **Subagents**: Delegate read-only codebase sweeps to `research`; keep independent edits isolated with `workspace="branch"` when running parallel agents.
+- **Interactive clarity**: Use `ask_question` before committing to ambiguous architectural or schema trade-offs.

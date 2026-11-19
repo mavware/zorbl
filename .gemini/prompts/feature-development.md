@@ -1,32 +1,31 @@
-# TALL Stack Feature Development Prompt (Gemini / Antigravity)
+# TALL Stack Feature Development Guide (Gemini / Antigravity)
 
-Use this guide when building a new feature or major capability in Crossword Builder.
+Use this guide when building a new feature or major capability in Crossword Builder (`github.com/mavware/zorbl`).
 
-## 1. Context & Architecture Requirements
+## 1. Verified Stack & Architecture Requirements
 
-- **PHP Version**: 8.5 with strict types and constructor property promotion.
-- **Frontend Stack**: Tailwind CSS v4, Alpine.js, Livewire 3 with Flux UI Pro components (`<flux:...>`).
+- **Backend**: PHP 8.4+ (CI 8.5), **Laravel 13**, **Livewire 4** (single-file `⚡*.blade.php` components), **Filament v5** (admin panel).
+  - Explicit parameter/return types, constructor property promotion, curly braces on all control structures, TitleCase enum keys. Do **not** add `declare(strict_types=1)` to `app/` files.
+- **Frontend**: **Tailwind CSS v4**, **Alpine.js v3**, **Flux UI Free v2** (`livewire/flux` — no Flux Pro components), **Vite v8**, **Vitest v3**.
+  - Use semantic theme token classes (`text-ink`, `text-ink-muted`, `border-hairline`, `btn-classical*`, etc.) so both `modern` and `classical` themes render cleanly.
 - **Database & Eloquent**:
-  - Always inspect existing schemas via `database-schema` before creating migrations.
-  - Create useful factories and seeders alongside models (`php artisan make:model <Name> -mf`).
-  - Follow API conventions with Eloquent API Resources when building endpoints.
+  - Inspect existing schemas via Laravel Boost `database-schema` before writing migrations or models.
+  - Create models with factories/migrations via `php artisan make:model <Name> -mf --no-interaction`.
+  - Follow existing API resource/versioning conventions under `app/Http/Controllers/Api/V1/`.
 
-## 2. Antigravity Execution Plan
+## 2. Execution Plan
 
-1. **Clarification**: If requirements are underspecified or architectural choices exist, use `ask_question` to confirm intent with the user.
-2. **Branching**:
-   - `git checkout -b gemini/<feature-name>`
-3. **Domain Skills Activation**:
-   - For tests, consult `.agents/skills/pest-testing/SKILL.md`.
-   - For Livewire, consult `.agents/skills/livewire-development/SKILL.md`.
-   - For Flux UI, consult `.agents/skills/fluxui-development/SKILL.md`.
-   - For Database / Models, consult `.agents/skills/laravel-best-practices/SKILL.md`.
-4. **Code Construction**:
-   - Create models/migrations via `php artisan make:model ...`.
-   - Implement Livewire components ensuring state stays server-side.
+1. **Clarification**: If requirements or schema/UI trade-offs are ambiguous, use `ask_question` before coding.
+2. **Branching**: `git checkout -b gemini/<kebab-case-feature-name>`.
+3. **Skills & Docs**:
+   - Query Laravel Boost `search-docs` for version-specific APIs before coding.
+   - Consult relevant skills in `.agents/skills/` (`livewire-development`, `fluxui-development`, `filament-development`, `laravel-best-practices`, `pest-testing`, `testing-best-practices`, `cashier-stripe-development`).
+4. **Implementation**:
+   - Keep Livewire state server-side; validate and authorize inside actions.
+   - Reuse existing Blade components, policies, and model factory states.
 5. **Quality Gate**:
-   - Run Pint: `vendor/bin/pint --dirty --format agent`.
-   - Run Pest tests: `php artisan test --compact tests/Feature/<FeatureTest>.php`.
-   - Verify assets: `npm run build`.
-6. **Artifact Generation**:
-   - Create a markdown artifact summarizing the architecture, routes added, and test coverage.
+   - Format PHP: `vendor/bin/pint --dirty --format agent`
+   - Static analysis: `vendor/bin/phpstan analyse`
+   - Targeted Pest tests: `php artisan test --compact tests/Feature/<FeatureTest>.php`
+   - JS tests & assets (if frontend changed): `npm test` and `npm run build`.
+6. **Summary**: Summarize routes/files changed, schema updates, and exact test/analysis results.

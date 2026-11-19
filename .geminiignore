@@ -1,0 +1,31 @@
+# Secrets & environment files
+.env
+.env.*
+!.env.example
+auth.json
+storage/*.key
+
+# Large data & local SQLite databases
+database/data/wordlist.txt
+database/seeders/data/xd-puzzles-parsed.json
+database/*.sqlite
+database/*.sqlite*
+
+# Generated & lock files
+_ide_helper.php
+composer.lock
+packages/*/composer.lock
+package-lock.json
+public/build/
+public/hot
+storage/
+vendor/
+node_modules/
+
+# Test & IDE caches
+.phpunit.cache/
+.phpunit.result.cache
+tests/Browser/Screenshots/
+tests/Browser/Console/
+tests/Browser/source/
+.idea/
