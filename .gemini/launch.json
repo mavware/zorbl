@@ -1,0 +1,14 @@
+{
+  "version": "0.1.0",
+  "configurations": [
+    {
+      "name": "Crossword Builder (Herd)",
+      "type": "web",
+      "request": "launch",
+      "url": "https://crosswordbuilder.test",
+      "serverManagedBy": "Laravel Herd",
+      "port": 443,
+      "autoOpen": false
+    }
+  ]
+}

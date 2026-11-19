@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json.schemastore.org/partial-gemini-settings.json",
+  "project": {
+    "name": "crosswordbuilder",
+    "repository": "github.com/mavware/zorbl",
+    "visibility": "public",
+    "framework": "laravel",
+    "phpVersion": "8.5",
+    "stack": ["tailwind-v4", "alpinejs", "laravel", "livewire-3", "flux-pro"]
+  },
+  "environment": {
+    "appUrl": "https://crosswordbuilder.test",
+    "server": "Laravel Herd",
+    "phpBinary": "/Users/michael/Library/Application Support/Herd/bin/php85",
+    "trustedDomains": [
+      "crosswordbuilder.test",
+      "zorbl.com",
+      "nightwatch.laravel.com"
+    ]
+  },
+  "guardrails": {
+    "softDeny": [
+      "php artisan migrate:fresh*",
+      "php artisan migrate:reset*",
+      "rm -rf database/*.sqlite*",
+      "rm -rf storage/*",
+      "git push origin main",
+      "git push --force*"
+    ],
+    "protectedBranches": [
+      "main"
+    ],
+    "secretFiles": [
+      ".env",
+      ".env.production",
+      "storage/oauth-private.key"
+    ]
+  },
+  "tools": {
+    "formatter": {
+      "command": "vendor/bin/pint --dirty --format agent",
+      "runBeforeCommit": true
+    },
+    "testRunner": {
+      "command": "php artisan test --compact",
+      "binary": "vendor/bin/pest",
+      "defaultFlags": ["--compact"]
+    },
+    "build": {
+      "command": "npm run build"
+    }
+  },
+  "mcpServers": {
+    "laravel-boost": {
+      "command": "/Users/michael/Library/Application Support/Herd/bin/php85",
+      "args": [
+        "/Users/michael/Herd/crosswordbuilder/artisan",
+        "boost:mcp"
+      ]
+    }
+  },
+  "branching": {
+    "prefix": "gemini/",
+    "namingPattern": "gemini/<kebab-case-description>"
+  }
+}
